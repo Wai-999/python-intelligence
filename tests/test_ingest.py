@@ -456,3 +456,135 @@ def test_cleanup_preserves_rollback_error(tmp_path, monkeypatch):
     with pytest.raises(IngestError, match='rollback failed'):
         module._publish(target, {'pages.jsonl': 'new'})
     assert len(list(tmp_path.glob('.book.tmp-*/old/marker'))) == 1
+
+
+def test_missing_metrics_do_not_shift_baseline():
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            def measured(text, x):
+                return dict(flags=8, bbox=(x, 0, x+100, 12), chars=[
+                    dict(c=c, bbox=(x+i*6, 0, x+(i+1)*6, 12))
+                    for i, c in enumerate(text)])
+            return {'blocks': [{'lines': [
+                {'spans': [measured('def f():', 50)]},
+                {'spans': [dict(text='    x = 1', flags=8)]},
+                {'spans': [measured('return x', 74)]},
+            ]}]}
+    code, = _code_blocks(Page())
+    assert code == 'def f():\n    x = 1\n    return x'
+    compile(code, '<fixture>', 'exec')
+
+
+def test_columns_and_double_blank_lines():
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for x, y, text in [(50, 80, 'def f():'), (76.4, 95, 'return 1'),
+                           (50, 140, 'def g():'), (76.4, 155, 'return 2'),
+                           (300, 50, 'def h():'), (326.4, 65, 'return 3')]:
+            page.insert_text((x, y), text, fontname='cour', fontsize=11)
+        blocks = _code_blocks(page)
+    assert blocks == ['def f():\n    return 1\ndef g():\n    return 2',
+                      'def h():\n    return 3']
+    for code in blocks:
+        compile(code, '<fixture>', 'exec')
+
+
+@pytest.mark.parametrize('name', ['SomeMono-Regular', 'ABC+CourierNew', 'Consolas', 'Menlo'])
+def test_named_monospace_without_flag(name):
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [{'spans': [dict(
+                text='answer = 42', font=name, flags=0)]}]}]}
+    assert _code_blocks(Page()) == ['answer = 42']
+
+
+def test_font_metric_fallback(monkeypatch):
+    from ingest.extract import _mono_font
+    _mono_font.cache_clear()
+    class Font:
+        is_monospaced = True
+    monkeypatch.setattr(pymupdf, 'Font', lambda name: Font())
+    assert _mono_font('FixtureFixedPitch')
+    _mono_font.cache_clear()
+
+
+def test_callouts_only_removed_from_code(tmp_path):
+    path = tmp_path / 'callouts.pdf'
+    # Embed a Unicode font so actual circled glyphs survive PDF extraction.
+    fontpath = Path('/System/Library/Fonts/Supplemental/Arial Unicode.ttf')
+    if not fontpath.exists():
+        # Raw layout fixture keeps this regression portable without system fonts.
+        from ingest.extract import _code_blocks
+        class Page:
+            def get_text(self, kind):
+                return {'blocks': [{'lines': [{'spans': [dict(
+                    text=t, flags=8)]} for t in ['x = "①" ①', 'y = 2❿', 'z = 3 ⑳']]}]}
+        assert _code_blocks(Page()) == ['x = "①"\ny = 2\nz = 3']
+        return
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_font(fontname='Callout', fontfile=str(fontpath))
+        page.insert_text((50, 50), 'value = 1 ', fontname='cour', fontsize=11)
+        page.insert_text((116, 50), '①', fontname='Callout', fontsize=11)
+        doc.save(path)
+    extract(path, 'book', tmp_path / 'out', expected_sha256=sha256_file(path))
+    row = json.loads((tmp_path / 'out/book/pages.jsonl').read_text())
+    assert '①' in row['text']
+    assert row['code_blocks'] == ['value = 1']
+
+
+def test_successful_publish_cleanup_warns(tmp_path, monkeypatch, capsys):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    def fail(*args):
+        raise OSError('cleanup failure')
+    monkeypatch.setattr(module.shutil, 'rmtree', fail)
+    module._publish(tmp_path / 'book', {'pages.jsonl': 'complete'})
+    assert (tmp_path / 'book/pages.jsonl').read_text() == 'complete'
+    assert 'Warning: output cleanup failed' in capsys.readouterr().err
+
+
+def test_stale_unmarked_workspace_recovery(tmp_path):
+    import os
+    import time
+    from ingest.extract import _publish
+    old = tmp_path / '.book.tmp-old'
+    fresh = tmp_path / '.book.tmp-fresh'
+    old.mkdir()
+    fresh.mkdir()
+    os.utime(old, (time.time()-3601, time.time()-3601))
+    _publish(tmp_path / 'book', {'pages.jsonl': 'complete'})
+    assert not old.exists()
+    assert fresh.exists()
+
+
+def test_overlapping_listings_split():
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_text((50, 50), 'left = 1', fontname='cour')
+        page.insert_text((300, 50), 'right = 2', fontname='cour')
+        assert _code_blocks(page) == ['left = 1', 'right = 2']
+
+
+def test_callout_ranges_and_interior_markers():
+    from ingest.extract import _code_blocks
+    lines = ['x = "①" ①', 'y = 2❿', 'z = 3 ⑳', '# ① interior']
+    class Page:
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [{'spans': [dict(text=t, flags=8)]}
+                                         for t in lines]}]}
+    assert _code_blocks(Page()) == ['x = "①"\ny = 2\nz = 3\n# ① interior']
+
+
+def test_unknown_font_is_not_monospace(monkeypatch):
+    from ingest.extract import _mono_font
+    _mono_font.cache_clear()
+    def unknown(name):
+        raise RuntimeError('unknown font')
+    monkeypatch.setattr(pymupdf, 'Font', unknown)
+    assert not _mono_font('FixtureUnknownFont')
+    _mono_font.cache_clear()
