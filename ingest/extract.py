@@ -84,6 +84,7 @@ def _code_blocks(page):
     previous = None
 
     def flush():
+        nonlocal previous
         if current:
             measured = [origin for _, origin, _ in current if origin is not None]
             baseline = min(measured) if measured else 0
@@ -93,6 +94,7 @@ def _code_blocks(page):
                 for text, origin, width in current))
             current.clear()
         pitches.clear()
+        previous = None
 
     layout = page.get_text("rawdict")
     for block in layout["blocks"]:
@@ -109,16 +111,6 @@ def _code_blocks(page):
             if total and mono / total >= 0.8:
                 bbox = line.get("bbox")
                 first = next(s for s in spans if _is_mono(s) and s["text"].strip())
-                if previous and bbox:
-                    delta = bbox[1] - previous[1]
-                    fallback = max(previous[3] - previous[1], 1.2 * first.get("size", 0))
-                    pitch = sorted(pitches)[len(pitches) // 2] if pitches else fallback
-                    # Full font bboxes can overlap even on consecutive baselines.
-                    # Without a measured pitch, a first gap may be two blank lines.
-                    if delta <= 0.01 or (pitches and delta > 3.5 * pitch):
-                        flush()
-                    elif delta <= 1.5 * fallback:
-                        pitches.append(delta)
                 widths = [c["bbox"][2] - c["bbox"][0]
                           for c in first.get("chars", [])
                           if not c["c"].isspace() and c["bbox"][2] > c["bbox"][0]]
@@ -128,6 +120,30 @@ def _code_blocks(page):
                 text = re.sub(r"(?: ?[\u2460-\u2473\u2776-\u277f])+$", "", text)
                 if not text.strip():
                     continue
+                # TeX PDFs can emit a statement or inline comment as two
+                # raw lines on the same baseline. Join only nearby fragments;
+                # a distant fragment is a separate listing/column.
+                if previous and bbox and current and width:
+                    delta = bbox[1] - previous[1]
+                    gap = bbox[0] - previous[2]
+                    limit = 24 if text.lstrip().startswith("#") else 10
+                    if abs(delta) <= 0.5 and -0.1 <= gap <= limit * width:
+                        old_text, old_origin, old_width = current[-1]
+                        current[-1] = (old_text + " " * max(0, round(gap / width)) + text,
+                                       old_origin, old_width)
+                        previous = (previous[0], previous[1], bbox[2],
+                                    max(previous[3], bbox[3]))
+                        continue
+                if previous and bbox:
+                    delta = bbox[1] - previous[1]
+                    fallback = max(previous[3] - previous[1], 1.2 * first.get("size", 0))
+                    pitch = sorted(pitches)[len(pitches) // 2] if pitches else fallback
+                    # Full font bboxes can overlap even on consecutive baselines.
+                    # Without a measured pitch, a first gap may be two blank lines.
+                    if delta <= 0.01 or delta > (3.5 * pitch if pitches else 4.5 * fallback):
+                        flush()
+                    elif delta <= 1.5 * fallback:
+                        pitches.append(delta)
                 current.append((text, origin, width or 1))
                 previous = bbox
             else:

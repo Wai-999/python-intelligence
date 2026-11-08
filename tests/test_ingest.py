@@ -652,3 +652,34 @@ def test_stale_unmarked_backup_is_preserved(tmp_path):
     os.utime(leftover, (time.time()-7200, time.time()-7200))
     _publish(tmp_path / 'book', {'pages.jsonl': 'complete'})
     assert (leftover / 'old/marker').read_text() == 'previous'
+
+
+@pytest.mark.parametrize('gap,fragment', [(2, 'n == 1:'), (18, '# alternative')])
+def test_same_baseline_listing_fragments(gap, fragment):
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_text((50, 50), 'if n == 0:', fontname='cour', fontsize=10)
+        page.insert_text((74, 65), 'value = 0', fontname='cour', fontsize=10)
+        page.insert_text((50, 80), 'elif' if gap == 2 else 'else:',
+                         fontname='cour', fontsize=10)
+        prefix = 'elif' if gap == 2 else 'else:'
+        page.insert_text((50 + (len(prefix) + gap) * 6, 80), fragment,
+                         fontname='cour', fontsize=10)
+        page.insert_text((74, 95), 'value = 1', fontname='cour', fontsize=10)
+        code, = _code_blocks(page)
+    assert prefix + ' ' * gap + fragment in code
+    compile(code, '<fragments>', 'exec')
+
+
+def test_large_first_gap_splits_and_resets_pitch():
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for y, text in [(50, 'standalone = 0'), (180, 'def f():'),
+                        (195, '    return 1'), (210, 'value = f()')]:
+            page.insert_text((50, y), text, fontname='cour', fontsize=11)
+        blocks = _code_blocks(page)
+    assert blocks == ['standalone = 0', 'def f():\n    return 1\nvalue = f()']
+    for code in blocks:
+        compile(code, '<gap>', 'exec')
