@@ -12,7 +12,7 @@ Machine-readable specs for Phase 1 are in [`tasks/phase1.toml`](../tasks/phase1.
 | P0-2 | Source inventory | Pinned SHA, 15 PDFs with blob SHA/size/presumed rights; no PDF bytes retained | ✅ `docs/audit/source_manifest.json` |
 | P0-3 | ADR + risk register | Design covers state machine, isolation, gates, recovery | ✅ `docs/adr/0001…`, `docs/RISK_REGISTER.md` |
 | P0-4 | Dry-run controller prototype + tests | `pytest` green | ✅ (recovery policy implemented 2026-11-08) |
-| P0-5 ⛔ | **Owner rights decisions** | For each source: use / don't use / fetch official copy; recorded in manifest | **Still waiting on owner.** Default applied: no PDFs used; all lessons are original |
+| P0-5 ⛔ | **Owner rights decisions** | For each source: use / don't use / fetch official copy; recorded in manifest | ✅ 2026-11-08: owner said "download pdf". 5 openly available titles downloaded to `sources/pdfs/` (gitignored); extraction cleared for Think Python 2e, Dive Into Python 3, Automate the Boring Stuff; MML and Big Book are reference-only; 9 commercial / suspected-unauthorized copies not downloaded. Nothing publishable. |
 
 ## Phase 1 — Controller MVP ✅ (completed 2026-11-08)
 
@@ -43,7 +43,7 @@ create a GitHub remote) remains open.
 | P2-5 | Claude | 3-node prerequisite graph + next-lesson recommendation + remediation rule | Unit tests on graph; broken edge blocks build |
 | P2-6 ⛔ | Owner | Phase 2 review; decide whether to create GitHub remote | — |
 
-## Phase 3 — Ingest MVP (≈ 5–7 days, **requires P0-5**)
+## Phase 3 — Ingest MVP (≈ 5–7 days, P0-5 done)
 
 Use two owner-approved, openly licensed books fetched from **official sources**. The current candidates are *Think Python 2e* (CC BY-NC 3.0) and *Dive Into Python 3* (CC BY-SA 3.0). Their licenses can't be combined in one lesson, so lesson licensing is tracked separately.
 

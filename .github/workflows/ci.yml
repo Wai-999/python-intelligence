@@ -1,5 +1,5 @@
-# CI on every push/PR. Deploy ONLY on a manual "Run workflow" (workflow_dispatch) by a human,
-# through the `github-pages` environment (add required reviewers in repo Settings > Environments).
+# CI on every push/PR. Every push to main that passes all gates deploys to GitHub Pages automatically
+# (owner decision 2026-11-08). PRs never deploy. A manual "Run workflow" can also deploy.
 name: ci
 
 on:
@@ -11,7 +11,7 @@ on:
       deploy:
         description: "Deploy to GitHub Pages after all gates pass"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -47,13 +47,13 @@ jobs:
       - name: Browser e2e (production build under a sub-path)
         run: npx playwright install --with-deps chromium && npm run test:e2e
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name == 'workflow_dispatch' && inputs.deploy
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.deploy)
         with:
           path: dist
 
   deploy:
     needs: gates
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.deploy)
     runs-on: ubuntu-latest
     permissions:
       pages: write

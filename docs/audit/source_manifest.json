@@ -10,14 +10,23 @@
       "path": "books/Automate the Boring Stuff with Python.pdf",
       "git_blob_sha1": "0f7fbf1168dcf37e9682b30ceb386292c645f768",
       "size_bytes": 18707968,
-      "sha256": null,
-      "downloaded": false,
+      "sha256": "ba5e3306438c985c969a159092957d039efa606f3a679292ed44e1015e697200",
+      "downloaded": true,
       "presumed_author_publisher": "Al Sweigart / No Starch Press",
       "rights_status": "open_upstream_copy_unverified",
-      "rights_verified": false,
+      "rights_verified": true,
       "allowed_to_publish": false,
-      "allowed_for_internal_extraction": false,
-      "notes": "Author's online edition is CC BY-NC-SA 3.0; this PDF's origin is unknown (may be the commercial No Starch PDF). Obtain from automatetheboringstuff.com instead."
+      "allowed_for_internal_extraction": true,
+      "notes": "Author's online edition is CC BY-NC-SA 3.0; this PDF's origin is unknown (may be the commercial No Starch PDF). Obtain from automatetheboringstuff.com instead.",
+      "local_path": "sources/pdfs/pch-automate-the-boring-stuff-with-python.pdf",
+      "downloaded_from": "https://raw.githubusercontent.com/Ravikisha/PythonCentralHub/d1590b79e98eb9975548da88001387bdedcd930a/books/Automate%20the%20Boring%20Stuff%20with%20Python.pdf",
+      "downloaded_size_bytes": 18707968,
+      "license": "CC BY-NC-SA 3.0",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "automatetheboringstuff.com states CC BY-NC-SA 3.0 (checked 2026-11-08)"
+      }
     },
     {
       "source_id": "pch-bigbooksmallpythonprojects",
@@ -26,14 +35,23 @@
       "path": "books/BigBookSmallPythonProjects.pdf",
       "git_blob_sha1": "f5bd72487571b77c1272c88a155cf42356866193",
       "size_bytes": 10452373,
-      "sha256": null,
-      "downloaded": false,
+      "sha256": "edc4905eacb143ea8b7ddc10270d012c2167270c9934bb8220fd600e19c21e7e",
+      "downloaded": true,
       "presumed_author_publisher": "Al Sweigart / No Starch Press",
       "rights_status": "open_upstream_copy_unverified",
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "Author's online edition is CC BY-NC-SA 3.0; this PDF's origin is unknown. Obtain from inventwithpython.com instead."
+      "notes": "Author's online edition is CC BY-NC-SA 3.0; this PDF's origin is unknown. Obtain from inventwithpython.com instead.",
+      "local_path": "sources/pdfs/pch-bigbooksmallpythonprojects.pdf",
+      "downloaded_from": "https://raw.githubusercontent.com/Ravikisha/PythonCentralHub/d1590b79e98eb9975548da88001387bdedcd930a/books/BigBookSmallPythonProjects.pdf",
+      "downloaded_size_bytes": 10452373,
+      "license": "free to read online; reuse licence not confirmed",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "inventwithpython.com offers it free to read; reuse licence not found, so reference only"
+      }
     },
     {
       "source_id": "pch-deep-learning-with-python",
@@ -44,12 +62,17 @@
       "size_bytes": 14456615,
       "sha256": null,
       "downloaded": false,
-      "presumed_author_publisher": "François Chollet / Manning",
+      "presumed_author_publisher": "Fran\u00e7ois Chollet / Manning",
       "rights_status": "commercial_all_rights_reserved",
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": ""
+      "notes": "",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-effective-python",
@@ -65,7 +88,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": ""
+      "notes": "",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-fluent-python",
@@ -81,7 +109,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": ""
+      "notes": "",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-hands-on-machine-learning-with-scikit-le",
@@ -92,12 +125,17 @@
       "size_bytes": 58542927,
       "sha256": null,
       "downloaded": false,
-      "presumed_author_publisher": "Aurélien Géron / O'Reilly",
+      "presumed_author_publisher": "Aur\u00e9lien G\u00e9ron / O'Reilly",
       "rights_status": "commercial_all_rights_reserved",
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": ""
+      "notes": "",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-head-first-python--a-brain-friendly-guid",
@@ -113,7 +151,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "Filename carries a PDFDrive.com marker."
+      "notes": "Filename carries a PDFDrive.com marker.",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-learn-python-3-the-hard-way--a-very-simp",
@@ -129,7 +172,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "Filename carries a PDFDrive.com marker."
+      "notes": "Filename carries a PDFDrive.com marker.",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-python-crash-course",
@@ -145,7 +193,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "Filename carries a PDFDrive.com marker."
+      "notes": "Filename carries a PDFDrive.com marker.",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-python-for-data-analysis",
@@ -161,7 +214,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "3rd ed. is free to read online at the author's site, which is not an open license."
+      "notes": "3rd ed. is free to read online at the author's site, which is not an open license.",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-python-cookbook-3rd-edition",
@@ -177,7 +235,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": ""
+      "notes": "",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-diveintopython3",
@@ -186,14 +249,23 @@
       "path": "books/diveintopython3.pdf",
       "git_blob_sha1": "482886cd76b0ef6e31ae4567abd71b3ff0e24b4b",
       "size_bytes": 2624640,
-      "sha256": null,
-      "downloaded": false,
+      "sha256": "5394901a2d48d77a2525ca95fcffadceedb31c34c6f0340d37c78c1296c4f118",
+      "downloaded": true,
       "presumed_author_publisher": "Mark Pilgrim",
       "rights_status": "open_license_presumed",
-      "rights_verified": false,
+      "rights_verified": true,
       "allowed_to_publish": false,
-      "allowed_for_internal_extraction": false,
-      "notes": "Presumed CC BY-SA 3.0; verify license page inside the PDF."
+      "allowed_for_internal_extraction": true,
+      "notes": "Presumed CC BY-SA 3.0; verify license page inside the PDF.",
+      "local_path": "sources/pdfs/pch-diveintopython3.pdf",
+      "downloaded_from": "https://raw.githubusercontent.com/Ravikisha/PythonCentralHub/d1590b79e98eb9975548da88001387bdedcd930a/books/diveintopython3.pdf",
+      "downloaded_size_bytes": 2624640,
+      "license": "CC BY-SA 3.0",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "diveintopython3.net/about.html states CC-BY-SA-3.0 (checked 2026-11-08)"
+      }
     },
     {
       "source_id": "pch-learning-python",
@@ -209,7 +281,12 @@
       "rights_verified": false,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "Could be Mark Lutz (O'Reilly, commercial) or another work; inspect PDF metadata before any use."
+      "notes": "Could be Mark Lutz (O'Reilly, commercial) or another work; inspect PDF metadata before any use.",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "commercial or unknown rights: not downloaded; owner may supply a purchased copy"
+      }
     },
     {
       "source_id": "pch-think-python-2nd",
@@ -218,14 +295,23 @@
       "path": "books/think-python-2nd.pdf",
       "git_blob_sha1": "66863f699dd2ad24f3002ea6a1d504b6a48023df",
       "size_bytes": 4410735,
-      "sha256": null,
-      "downloaded": false,
+      "sha256": "6033000bac3f9268ad75ee041bf8e5d9a3bc8a33bb156399cbd014918cb59f94",
+      "downloaded": true,
       "presumed_author_publisher": "Allen B. Downey / Green Tea Press",
       "rights_status": "open_license_presumed",
-      "rights_verified": false,
+      "rights_verified": true,
       "allowed_to_publish": false,
-      "allowed_for_internal_extraction": false,
-      "notes": "Presumed CC BY-NC 3.0; verify license page; official copy at greenteapress.com."
+      "allowed_for_internal_extraction": true,
+      "notes": "Presumed CC BY-NC 3.0; verify license page; official copy at greenteapress.com.",
+      "local_path": "sources/pdfs/pch-think-python-2nd.pdf",
+      "downloaded_from": "https://greenteapress.com/thinkpython2/thinkpython2.pdf",
+      "downloaded_size_bytes": 907689,
+      "license": "CC BY-NC 3.0",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "greenteapress.com states CC BY-NC 3.0 Unported (checked 2026-11-08); official copy"
+      }
     },
     {
       "source_id": "pch-mml-book",
@@ -234,14 +320,28 @@
       "path": "mml-book.pdf",
       "git_blob_sha1": "50b4aee3e0c1733675c0b1801a7ba66bc2bc8779",
       "size_bytes": 17085505,
-      "sha256": null,
-      "downloaded": false,
+      "sha256": "3f87b70c64a35d30ec4e565b4d5cfd18fe913002d3b3bed44691c7d0838911bc",
+      "downloaded": true,
       "presumed_author_publisher": "Deisenroth, Faisal, Ong / Cambridge University Press",
       "rights_status": "free_personal_use_only",
-      "rights_verified": false,
+      "rights_verified": true,
       "allowed_to_publish": false,
       "allowed_for_internal_extraction": false,
-      "notes": "Authors distribute a free PDF for personal use; not an open license."
+      "notes": "Authors distribute a free PDF for personal use; not an open license.",
+      "local_path": "sources/pdfs/pch-mml-book.pdf",
+      "downloaded_from": "https://mml-book.github.io/book/mml-book.pdf",
+      "downloaded_size_bytes": 17565898,
+      "license": "free PDF from authors; (c) Deisenroth, Faisal, Ong / CUP",
+      "decision": {
+        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "date": "2026-11-08",
+        "basis": "mml-book.github.io offers the PDF freely; no reuse licence, so reference only"
+      }
     }
-  ]
+  ],
+  "owner_decision_p0_5": {
+    "date": "2026-11-08",
+    "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+    "summary": "Openly licensed/free titles downloaded to sources/pdfs (gitignored, never published). Commercial titles and suspected unauthorized copies not downloaded."
+  }
 }
