@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { openProgressStore } from "./store";
 import { ImportError, type LessonProgress } from "./types";
 
@@ -103,13 +103,115 @@ describe("IndexedDB progress store", () => {
     const store = await open();
     await seed(store);
     const before = await store.exportAll();
-    const invalid = structuredClone(before);
-    // An extra uncloneable property passes field validation but makes IndexedDB put fail.
-    Object.assign(invalid.lessons[0]!, { uncloneable: () => undefined });
-    await expect(store.importAll(invalid)).rejects.toThrow();
+    const original = IDBObjectStore.prototype.put;
+    let calls = 0;
+    const spy = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (this: IDBObjectStore, ...args) {
+      if (++calls === 2) throw new Error("Injected write failure");
+      return original.apply(this, args);
+    });
+    try {
+      await expect(store.importAll(before)).rejects.toThrow("Injected write failure");
+    } finally { spy.mockRestore(); }
     expect(contents(await store.exportAll())).toEqual(contents(before));
   });
 
+  it("rejects invalid writes without changing data and preserves export/import compatibility", async () => {
+    const store = await open();
+    await seed(store);
+    const before = await store.exportAll();
+    for (const patch of [{ mastery: 2 }, { mastery: NaN }, { furthestStep: -1 },
+      { completed: "yes" }, { steps: { bad: { passed: true, attempts: -1, updatedAt: "bad" } } },
+      { struggles: { calls: -1 } }, { completedAt: "bad" }, { lessonId: "" }]) {
+      await expect(store.putLesson({ ...lesson, ...patch } as LessonProgress)).rejects.toThrow(Error);
+    }
+    await expect(store.setPosition("functions", -1)).rejects.toThrow("stepIndex");
+    await expect(store.setPosition("", 0)).rejects.toThrow("lessonId");
+    await expect(store.putDraft("functions", "exercise", 123 as unknown as string)).rejects.toThrow("string");
+    expect(contents(await store.exportAll())).toEqual(contents(before));
+    // importAll runs the full validator: both raw and JSON exports must be accepted.
+    for (const saved of [before, JSON.parse(JSON.stringify(before))]) {
+      await store.clear();
+      await store.importAll(saved);
+      expect(contents(await store.exportAll())).toEqual(contents(before));
+    }
+  });
+
+  it("stores normalized snapshots on direct writes and imports, reading getters once", async () => {
+    const store = await open();
+    const makeLesson = () => {
+      let reads = 0;
+      return { ...lesson, extra: () => undefined,
+        get mastery() { return ++reads === 1 ? 0.8 : 99; },
+        steps: { exercise: { ...lesson.steps.exercise!, extra: () => undefined } } };
+    };
+    await store.putLesson(makeLesson());
+    expect(await store.getLesson("functions")).toEqual(lesson);
+    const saved = await store.exportAll();
+    let positionReads = 0;
+    await store.importAll({ ...saved, extra: () => undefined, lessons: [makeLesson()],
+      position: { lessonId: "functions", stepIndex: 3, extra: () => undefined,
+        get updatedAt() { return ++positionReads === 1 ? lesson.completedAt : "bad"; } } });
+    expect(await store.getLesson("functions")).toEqual(lesson);
+    expect(await store.getPosition()).toEqual({ lessonId: "functions", stepIndex: 3, updatedAt: lesson.completedAt });
+    const exported = await store.exportAll();
+    await store.clear();
+    await store.importAll(exported);
+    expect(contents(await store.exportAll())).toEqual(contents(exported));
+  });
+
+  it.each(["bad", ":step", "lesson:"])("rejects unreachable imported draft key %s", async (key) => {
+    const store = await open();
+    await seed(store);
+    const saved = await store.exportAll();
+    await expect(store.importAll({ ...saved, drafts: { [key]: "code" } })).rejects.toThrow("lessonId:stepId");
+    expect(contents(await store.exportAll())).toEqual(contents(saved));
+  });
+
+  it("rejects ambiguous draft identifiers", async () => {
+    const store = await open();
+    await expect(store.putDraft("a:b", "c", "code")).rejects.toThrow("lessonId");
+    await expect(store.putDraft("", "c", "code")).rejects.toThrow("lessonId");
+    await expect(store.putDraft("a", "", "code")).rejects.toThrow("stepId");
+    await store.putDraft("a", "b:c", "code");
+    expect(await store.getDraft("a", "b:c")).toBe("code");
+    await store.importAll(await store.exportAll());
+  });
+
+  it("reopens after another connection upgrades the database", async () => {
+    const name = `upgrade-${Date.now()}-${serial++}`;
+    const store = await open(name);
+    await seed(store);
+    const upgraded = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(name, 2);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      await store.putDraft("functions", "exercise", "after upgrade");
+      await store.putLesson({ ...lesson, mastery: 1 });
+      expect(await store.getDraft("functions", "exercise")).toBe("after upgrade");
+      expect((await store.getLesson("functions"))!.mastery).toBe(1);
+      await store.importAll(await store.exportAll());
+    } finally { upgraded.close(); }
+  });
+
+  it("reports a blocked open and closes a late connection", async () => {
+    const request = new EventTarget() as IDBOpenDBRequest;
+    const lateConnection = { close: vi.fn() };
+    Object.defineProperty(request, "result", { value: lateConnection });
+    const spy = vi.spyOn(indexedDB, "open").mockReturnValue(request);
+    try {
+      const pending = openProgressStore("blocked-test");
+      request.onblocked!(new Event("blocked") as IDBVersionChangeEvent);
+      request.dispatchEvent(new Event("blocked"));
+      await expect(pending).rejects.toThrow("blocked");
+      request.onsuccess!(new Event("success"));
+      expect(lateConnection.close).toHaveBeenCalledOnce();
+    } finally { spy.mockRestore(); }
+  });
+
+  // Follow-up acceptance gate once the UI shell exists: use real browser IndexedDB
+  // to complete -> refresh -> resume at the exact step, and export -> clear -> import.
   it("rejects operations on a closed connection", async () => {
     const store = await open();
     store.close();

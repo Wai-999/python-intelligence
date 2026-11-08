@@ -23,61 +23,108 @@ function integer(value: unknown, path: string) {
 function unit(value: unknown, path: string) {
   check(typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1, `${path} must be between 0 and 1`);
 }
-function validate(data: unknown): asserts data is ProgressExport {
+function validateLesson(value: unknown, path = "lesson"): LessonProgress {
+  object(value, path);
+  const { lessonId, steps, furthestStep, completed, completedAt, mastery, struggles } = value;
+  check(typeof lessonId === "string" && lessonId.length > 0, `${path}.lessonId must be a nonempty string`);
+  integer(furthestStep, `${path}.furthestStep`);
+  unit(mastery, `${path}.mastery`);
+  check(typeof completed === "boolean", `${path}.completed must be boolean`);
+  if (completedAt !== undefined) timestamp(completedAt, `${path}.completedAt`);
+  object(steps, `${path}.steps`);
+  const normalizedSteps = Object.fromEntries(Object.entries(steps).map(([key, value]) => {
+    const stepPath = `${path}.steps.${key}`;
+    object(value, stepPath);
+    const { passed, attempts, updatedAt, score } = value;
+    check(typeof passed === "boolean", `${stepPath}.passed must be boolean`);
+    integer(attempts, `${stepPath}.attempts`);
+    timestamp(updatedAt, `${stepPath}.updatedAt`);
+    if (score !== undefined) unit(score, `${stepPath}.score`);
+    return [key, { passed, attempts, updatedAt, ...(score === undefined ? {} : { score }) }];
+  }));
+  object(struggles, `${path}.struggles`);
+  const normalizedStruggles = Object.fromEntries(Object.entries(struggles).map(([key, count]) => {
+    integer(count, `${path}.struggles.${key}`);
+    return [key, count];
+  }));
+  // All fields above are validated snapshots; never send the caller's objects to IndexedDB.
+  return { lessonId, steps: normalizedSteps, furthestStep, completed,
+    ...(completedAt === undefined ? {} : { completedAt }), mastery, struggles: normalizedStruggles } as LessonProgress;
+}
+function validatePosition(value: unknown): Position {
+  object(value, "position");
+  const { lessonId, stepIndex, updatedAt } = value;
+  check(typeof lessonId === "string" && lessonId.length > 0, "position.lessonId must be a nonempty string");
+  integer(stepIndex, "position.stepIndex");
+  timestamp(updatedAt, "position.updatedAt");
+  return { lessonId, stepIndex, updatedAt } as Position;
+}
+function validateDraft(key: string, code: unknown): string {
+  check(/^[^:]+:.+$/.test(key), `drafts.${key} key must be lessonId:stepId`);
+  check(typeof code === "string", `drafts.${key} must be a string`);
+  return code;
+}
+function validate(data: unknown): ProgressExport {
   object(data, "payload");
-  check(data.format === EXPORT_FORMAT, "format is not supported");
-  check(data.version === EXPORT_VERSION, "version is not supported");
-  timestamp(data.exportedAt, "exportedAt");
-  check(Array.isArray(data.lessons), "lessons must be an array");
+  const { format, version, exportedAt, lessons, drafts, position } = data;
+  check(format === EXPORT_FORMAT, "format is not supported");
+  check(version === EXPORT_VERSION, "version is not supported");
+  timestamp(exportedAt, "exportedAt");
+  check(Array.isArray(lessons), "lessons must be an array");
   const ids = new Set<string>();
-  data.lessons.forEach((lesson: unknown, i: number) => {
-    const path = `lessons[${i}]`;
-    object(lesson, path);
-    check(typeof lesson.lessonId === "string" && lesson.lessonId.length > 0, `${path}.lessonId must be a nonempty string`);
-    check(!ids.has(lesson.lessonId), `${path}.lessonId is duplicated`);
+  const normalizedLessons = lessons.map((value: unknown, i: number) => {
+    const lesson = validateLesson(value, `lessons[${i}]`);
+    check(!ids.has(lesson.lessonId), `lessons[${i}].lessonId is duplicated`);
     ids.add(lesson.lessonId);
-    integer(lesson.furthestStep, `${path}.furthestStep`);
-    unit(lesson.mastery, `${path}.mastery`);
-    check(typeof lesson.completed === "boolean", `${path}.completed must be boolean`);
-    if (lesson.completedAt !== undefined) timestamp(lesson.completedAt, `${path}.completedAt`);
-    object(lesson.steps, `${path}.steps`);
-    for (const [key, step] of Object.entries(lesson.steps)) {
-      const stepPath = `${path}.steps.${key}`;
-      object(step, stepPath);
-      check(typeof step.passed === "boolean", `${stepPath}.passed must be boolean`);
-      integer(step.attempts, `${stepPath}.attempts`);
-      timestamp(step.updatedAt, `${stepPath}.updatedAt`);
-      if (step.score !== undefined) unit(step.score, `${stepPath}.score`);
-    }
-    object(lesson.struggles, `${path}.struggles`);
-    for (const [key, count] of Object.entries(lesson.struggles)) integer(count, `${path}.struggles.${key}`);
+    return lesson;
   });
-  object(data.drafts, "drafts");
-  for (const [key, code] of Object.entries(data.drafts)) check(typeof code === "string", `drafts.${key} must be a string`);
-  if (data.position !== null) {
-    object(data.position, "position");
-    check(typeof data.position.lessonId === "string" && data.position.lessonId.length > 0, "position.lessonId must be a nonempty string");
-    integer(data.position.stepIndex, "position.stepIndex");
-    timestamp(data.position.updatedAt, "position.updatedAt");
-  }
+  object(drafts, "drafts");
+  return { format, version, exportedAt: exportedAt as string, lessons: normalizedLessons,
+    drafts: Object.fromEntries(Object.entries(drafts).map(([key, code]) => [key, validateDraft(key, code)])),
+    position: position === null ? null : validatePosition(position) };
 }
 
 export async function openProgressStore(dbName = "python-intelligence"): Promise<ProgressStore & { close(): void }> {
-  const db = await new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(dbName, 1);
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore("lessons", { keyPath: "lessonId" });
-      request.result.createObjectStore("drafts");
-      request.result.createObjectStore("meta");
-    };
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-  });
-  db.onversionchange = () => db.close();
+  let db: IDBDatabase | undefined;
+  let opening: Promise<IDBDatabase> | undefined;
+  let closed = false;
+  function connect(): Promise<IDBDatabase> {
+    if (closed) return Promise.reject(new Error("Progress store is closed"));
+    if (db) return Promise.resolve(db);
+    if (opening) return opening;
+    opening = new Promise<IDBDatabase>((resolve, reject) => {
+      // Opening without a version reconnects to an upgraded database in another tab.
+      const request = indexedDB.open(dbName);
+      request.onupgradeneeded = () => {
+        for (const name of stores) {
+          if (!request.result.objectStoreNames.contains(name)) {
+            request.result.createObjectStore(name, name === "lessons" ? { keyPath: "lessonId" } : undefined);
+          }
+        }
+      };
+      request.onblocked = () => reject(new Error("Progress database opening is blocked; close other tabs and retry"));
+      request.onerror = () => reject(request.error);
+      let blocked = false;
+      request.addEventListener("blocked", () => { blocked = true; });
+      request.onsuccess = () => {
+        const connection = request.result;
+        if (closed || blocked) { connection.close(); return; }
+        db = connection;
+        connection.onversionchange = () => {
+          connection.close();
+          if (db === connection) db = undefined;
+        };
+        resolve(connection);
+      };
+    }).finally(() => { opening = undefined; });
+    return opening;
+  }
+  await connect();
 
-  function transact<T>(names: string[], mode: IDBTransactionMode, work: (tx: IDBTransaction, result: (value: T) => void) => void): Promise<T> {
+  async function transact<T>(names: string[], mode: IDBTransactionMode, work: (tx: IDBTransaction, result: (value: T) => void) => void): Promise<T> {
+    const connection = await connect();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(names, mode);
+      const tx = connection.transaction(names, mode);
       let value: T;
       tx.oncomplete = () => resolve(value);
       tx.onerror = () => reject(tx.error ?? new Error("Progress transaction failed"));
@@ -97,14 +144,19 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
     return transact<void>([name], "readwrite", (tx) => { tx.objectStore(name).put(value, key); });
   }
   return {
-    close: () => db.close(),
+    close: () => { closed = true; db?.close(); db = undefined; },
     getLesson: (id) => read<LessonProgress | undefined>("lessons", id),
     allLessons: () => read<LessonProgress[]>("lessons"),
-    putLesson: (lesson) => put("lessons", lesson),
+    putLesson: async (lesson) => put("lessons", validateLesson(lesson)),
     getDraft: (lesson, step) => read<string | undefined>("drafts", `${lesson}:${step}`),
-    putDraft: (lesson, step, code) => put("drafts", code, `${lesson}:${step}`),
+    putDraft: async (lesson, step, code) => {
+      check(typeof lesson === "string" && lesson.length > 0 && !lesson.includes(":"), "draft lessonId must be nonempty and contain no colon");
+      check(typeof step === "string" && step.length > 0, "draft stepId must be a nonempty string");
+      const key = `${lesson}:${step}`;
+      await put("drafts", validateDraft(key, code), key);
+    },
     getPosition: async () => (await read<Position | undefined>("meta", "position")) ?? null,
-    setPosition: (lessonId, stepIndex) => put("meta", { lessonId, stepIndex, updatedAt: new Date().toISOString() }, "position"),
+    setPosition: async (lessonId, stepIndex) => put("meta", validatePosition({ lessonId, stepIndex, updatedAt: new Date().toISOString() }), "position"),
     exportAll: () => transact<ProgressExport>(stores, "readonly", (tx, result) => {
       const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null };
       const lessons = tx.objectStore("lessons").getAll();
@@ -122,12 +174,12 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       result(output);
     }),
     importAll: async (data) => {
-      validate(data);
+      const normalized = validate(data);
       await transact<void>(stores, "readwrite", (tx) => {
         for (const name of stores) tx.objectStore(name).clear();
-        for (const lesson of data.lessons) tx.objectStore("lessons").put(lesson);
-        for (const [key, code] of Object.entries(data.drafts)) tx.objectStore("drafts").put(code, key);
-        if (data.position !== null) tx.objectStore("meta").put(data.position, "position");
+        for (const lesson of normalized.lessons) tx.objectStore("lessons").put(lesson);
+        for (const [key, code] of Object.entries(normalized.drafts)) tx.objectStore("drafts").put(code, key);
+        if (normalized.position !== null) tx.objectStore("meta").put(normalized.position, "position");
       });
     },
     clear: () => transact<void>(stores, "readwrite", (tx) => {
