@@ -1,0 +1,205 @@
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+import pymupdf
+import pytest
+
+from ingest.extract import IngestError, extract, extract_from_manifest, score_page, sha256_file
+
+
+@pytest.fixture
+def pdf(tmp_path):
+    path = tmp_path / "fixture.pdf"
+    with pymupdf.open() as doc:
+        prose = "This is a normal prose paragraph explaining Python functions.\n" * 5
+        doc.new_page().insert_text((50, 50), prose)
+        page = doc.new_page()
+        page.insert_text((50, 50), prose)
+        page.insert_text((50, 170), "def square(x):\n    return x * x", fontname="cour")
+        doc.new_page()
+        doc.new_page().insert_text((50, 50), "Hi")
+        doc.set_page_labels([{"startpage": 0, "prefix": "", "style": "D", "firstpagenum": 1}])
+        doc.set_toc([[1, "Functions", 1]])
+        doc.save(path)
+    return path
+
+
+def test_extract(pdf, tmp_path):
+    out = tmp_path / "out"
+    meta = extract(pdf, "book", out, expected_sha256=sha256_file(pdf))
+    target = out / "book"
+    assert {p.name for p in target.iterdir()} == {"pages.jsonl", "meta.json", "review_queue.json"}
+    original = (target / "pages.jsonl").read_bytes()
+    rows = [json.loads(line) for line in original.splitlines()]
+    keys = {"source_id", "sha256", "page", "label", "text", "chars", "extraction_quality", "flags", "code_blocks"}
+    for index, row in enumerate(rows, 1):
+        assert set(row) == keys
+        assert row["page"] == index and row["label"] == str(index)
+        assert row["source_id"] == "book" and row["sha256"] == sha256_file(pdf)
+        assert row["chars"] == len(row["text"])
+        assert 0 <= row["extraction_quality"] <= 1
+        assert row["flags"] == sorted(row["flags"])
+    assert rows[0]["extraction_quality"] >= .9
+    assert rows[1]["code_blocks"] == ["def square(x):\n    return x * x"]
+    assert all(not rows[i]["code_blocks"] for i in (0, 2, 3))
+    assert rows[2]["extraction_quality"] == 0 and "no_text" in rows[2]["flags"]
+    assert "sparse" in rows[3]["flags"]
+    queue = json.loads((target / "review_queue.json").read_text())
+    assert [r["page"] for r in queue] == [3, 4]
+    assert all(set(r) == {"page", "label", "extraction_quality", "flags"} for r in queue)
+    assert meta == json.loads((target / "meta.json").read_text())
+    assert meta["toc"] == [[1, "Functions", 1]]
+    assert meta["quality"]["low_pages"] == 2
+    extract(pdf, "book", out, expected_sha256=sha256_file(pdf))
+    assert (target / "pages.jsonl").read_bytes() == original
+
+
+def test_hash_before_open(pdf, tmp_path, monkeypatch):
+    def fail(*args, **kwargs):
+        pytest.fail("PDF opened before hash was verified")
+    monkeypatch.setattr(pymupdf, "open", fail)
+    with pytest.raises(IngestError, match="SHA256 mismatch"):
+        extract(pdf, "book", tmp_path / "out", expected_sha256="0" * 64)
+    assert not (tmp_path / "out").exists()
+
+
+def test_scores():
+    assert score_page(" \n", True) == (0.0, ["image_only", "no_text"])
+    assert score_page("", False) == (0.0, ["no_text"])
+    score, flags = score_page("1234" * 20, False)
+    assert score <= .5 and "low_alpha" in flags
+    score, flags = score_page("a" * 80 + "\ufffd" * 20, False)
+    assert score == .8 and flags == ["replacement_chars"]
+
+
+def test_manifest_and_cli(pdf, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    cleared = cleared_source(pdf)
+    manifest.write_text(json.dumps({"sources": [cleared,
+        dict(cleared, source_id="denied", allowed_for_internal_extraction=False),
+        dict(cleared, source_id="missing", downloaded=False)]}))
+    out = tmp_path / "out"
+    assert len(extract_from_manifest(manifest, out, repo_root=tmp_path)) == 1
+    assert {p.name for p in out.iterdir()} == {"book"}
+    for only in ("denied", "missing", "unknown"):
+        with pytest.raises(IngestError):
+            extract_from_manifest(manifest, out, only=only, repo_root=tmp_path)
+    manifest.write_text(json.dumps({"sources": [cleared]}))
+    command = [sys.executable, "-m", "ingest", "--manifest", str(manifest), "--out", str(out), "--repo-root", str(tmp_path)]
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(command, cwd=root, text=True, capture_output=True)
+    assert result.returncode == 0 and "book: 4 pages" in result.stdout
+    result = subprocess.run(command + ["--only", "unknown"], cwd=root, text=True, capture_output=True)
+    assert result.returncode == 1 and "unknown" in result.stderr
+
+
+def test_bad_inputs(tmp_path):
+    bad = tmp_path / "bad.pdf"
+    bad.write_bytes(b"not a PDF")
+    with pytest.raises(IngestError):
+        extract(bad, "book", tmp_path / "out", expected_sha256=sha256_file(bad))
+    assert not (tmp_path / "out").exists()
+    with pytest.raises(IngestError):
+        extract(bad, "../escape", tmp_path, expected_sha256=sha256_file(bad))
+    manifest = tmp_path / "bad.json"
+    manifest.write_text("{broken")
+    with pytest.raises(IngestError, match="Invalid manifest"):
+        extract_from_manifest(manifest, tmp_path)
+
+
+def cleared_source(pdf, **overrides):
+    return dict(dict(source_id="book", local_path=pdf.name, sha256=sha256_file(pdf),
+                     repo="fixture/repo", path="books/fixture.pdf", commit_sha="a" * 40,
+                     git_blob_sha1="b" * 40, size_bytes=pdf.stat().st_size,
+                     rights_status="permitted", rights_verified=True, allowed_to_publish=False,
+                     decision=dict(by="Owner", date="2026-11-08", basis="Synthetic test fixture"),
+                     allowed_for_internal_extraction=True, downloaded=True), **overrides)
+
+
+@pytest.mark.parametrize("change,match", [
+    ({"rights_verified": False}, "rights_verified"),
+    ({"decision": None}, "decision"),
+    ({"local_path": "/fixture.pdf"}, "local_path"),
+    ({"local_path": "../fixture.pdf"}, "local_path"),
+])
+def test_manifest_rejects_unsafe_source(pdf, tmp_path, change, match):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"sources": [cleared_source(pdf, **change)]}))
+    with pytest.raises(IngestError, match=match):
+        extract_from_manifest(manifest, tmp_path / "out", repo_root=tmp_path)
+    assert not (tmp_path / "out").exists()
+
+
+def test_duplicate_source(pdf, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"sources": [cleared_source(pdf)] * 2}))
+    with pytest.raises(IngestError, match="duplicate source_id"):
+        extract_from_manifest(manifest, tmp_path / "out", only="book", repo_root=tmp_path)
+
+
+def test_parse_hashed_bytes(pdf, tmp_path, monkeypatch):
+    original = pymupdf.open
+    data = pdf.read_bytes()
+    def check(*args, **kwargs):
+        assert not args
+        assert kwargs == dict(stream=data, filetype="pdf")
+        pdf.write_bytes(b"replaced after reading")
+        return original(**kwargs)
+    monkeypatch.setattr(pymupdf, "open", check)
+    assert extract(pdf, "book", tmp_path / "out", expected_sha256=sha256_file(pdf))["page_count"] == 4
+
+
+def test_listing_across_pdf_blocks(tmp_path):
+    path = tmp_path / "listing.pdf"
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_text((50, 50), "def square(x):", fontname="cour")
+        page.insert_text((50, 90), "    return x * x", fontname="cour")
+        assert len(page.get_text("dict")["blocks"]) == 2
+        doc.save(path)
+    extract(path, "listing", tmp_path / "out", expected_sha256=sha256_file(path))
+    row = json.loads((tmp_path / "out/listing/pages.jsonl").read_text())
+    assert row["code_blocks"] == ["def square(x):\n    return x * x"]
+
+
+def test_whitespace_code_lines():
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            return {"blocks": [{"lines": [
+                {"spans": [{"text": text, "flags": flags}]} for text, flags in
+                [("x = 1", 8), ("   ", 8), ("y = 2", 8), ("prose", 0), ("z = 3", 8)]
+            ]}]}
+    assert _code_blocks(Page()) == ["x = 1\ny = 2", "z = 3"]
+
+
+def test_cli_reports_before_later_failure(pdf, tmp_path, capsys):
+    from ingest.__main__ import main
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"sources": [cleared_source(pdf),
+        cleared_source(pdf, source_id="bad", sha256="0" * 64)]}))
+    assert main(["--manifest", str(manifest), "--repo-root", str(tmp_path)]) == 1
+    captured = capsys.readouterr()
+    assert "book: 4 pages" in captured.out
+    assert "SHA256 mismatch for bad" in captured.err
+    assert (tmp_path / "sources/extracts/book/meta.json").exists()
+
+
+def test_git_output_guard(tmp_path):
+    from ingest.__main__ import _check_output
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    (tmp_path / ".gitignore").write_text("sources/\n")
+    _check_output(tmp_path / "sources/extracts")
+    with pytest.raises(IngestError, match="ignored by git"):
+        _check_output(tmp_path / "extracted")
+
+
+def test_output_outside_repo_and_without_git(tmp_path, monkeypatch):
+    from ingest.__main__ import _check_output
+    _check_output(tmp_path / "external")
+    def unavailable(*args, **kwargs):
+        raise FileNotFoundError("git unavailable")
+    monkeypatch.setattr(subprocess, "run", unavailable)
+    _check_output(tmp_path / "output")
