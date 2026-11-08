@@ -47,3 +47,34 @@ def test_catalog_lists_web_sources_with_section_anchors():
     cat = json.loads((ROOT / "content" / "sources.json").read_text())["sources"]
     docs = cat["pydocs-312-stdtypes"]
     assert docs["kind"] == "web" and docs["anchors"]["30"] == "mapping-types-dict"
+
+
+def test_parent_text_after_a_nested_section_stays_with_the_parent():
+    html = """<div role="main"><section id="a"><h2>A</h2><p>before</p>
+    <section id="b"><h3>B</h3><p>inner</p></section>
+    <p>after the child</p></section></div>"""
+    records, toc = fw.to_records(html, "d", "0" * 64)
+    assert toc == [[1, "A", 1], [2, "B", 2]]
+    assert "after the child" in records[0]["text"] and "after the child" not in records[1]["text"]
+    assert records[1]["text"] == "inner"
+
+
+def test_sections_and_headings_inside_skipped_subtrees_are_ignored():
+    html = """<div role="main"><section id="a"><h2>A</h2><p>real</p>
+    <nav><section id="fake"><h2>Fake</h2><p>menu</p></section></nav><p>tail</p></section></div>"""
+    records, toc = fw.to_records(html, "d", "0" * 64)
+    assert toc == [[1, "A", 1]]
+    assert "menu" not in records[0]["text"] and "tail" in records[0]["text"]
+
+
+vspec = importlib.util.spec_from_file_location("validate_content", ROOT / "scripts" / "validate_content.py")
+vc = importlib.util.module_from_spec(vspec)
+vspec.loader.exec_module(vc)
+
+
+def test_catalog_must_match_the_registry_approved_sha():
+    cat = {"docs": {"sha256": "aa" * 32}, "book": {"sha256": "bb" * 32}}
+    assert vc.check_catalog_bindings(cat, {"docs": "aa" * 32, "book": "bb" * 32}) == []
+    errs = vc.check_catalog_bindings(cat, {"docs": "cc" * 32, "book": "bb" * 32})   # registry re-approved a new page
+    assert len(errs) == 1 and errs[0].startswith("docs: content/sources.json sha256")
+    assert "no approved sha256" in vc.check_catalog_bindings(cat, {"book": "bb" * 32})[0]

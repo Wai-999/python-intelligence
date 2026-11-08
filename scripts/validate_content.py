@@ -88,6 +88,19 @@ def check_index_coverage(index, catalog: dict) -> list[str]:
     return errs
 
 
+def check_catalog_bindings(catalog: dict, approved_shas: dict[str, str]) -> list[str]:
+    """Every catalogued source must be the exact file/page its rights registry approved (by sha256)."""
+    errs = []
+    for sid, cat in catalog.items():
+        want = approved_shas.get(sid)
+        if not want:
+            errs.append(f"{sid}: in content/sources.json but has no approved sha256 in a rights registry")
+        elif cat.get("sha256") != want:
+            errs.append(f"{sid}: content/sources.json sha256 {str(cat.get('sha256'))[:12]} != approved {want[:12]}; "
+                        "re-extract and rebuild the catalog")
+    return errs
+
+
 def check_provenance(lesson: dict, cleared: set[str], catalog: dict) -> list[str]:
     """Citation rules. `catalog` is content/sources.json["sources"]."""
     errs: list[str] = []
@@ -242,16 +255,20 @@ def main() -> int:
             errs.append(f"{f.name}: file name must equal lesson id {l.get('id')!r}")
     manifest = json.loads(MANIFEST.read_text())
     cleared = {s["source_id"] for s in manifest["sources"] if s.get("allowed_for_internal_extraction")}
+    approved = {s["source_id"]: s.get("sha256") for s in manifest["sources"] if s.get("allowed_for_internal_extraction")}
     web = ROOT / "docs" / "audit" / "web_sources.json"
     if web.is_file():  # official documentation pages, cleared in their own registry
-        cleared |= {s["source_id"] for s in json.loads(web.read_text())["sources"]
-                    if s.get("allowed_for_internal_extraction") and s.get("rights_verified") and s.get("decision")}
+        for s in json.loads(web.read_text())["sources"]:
+            if s.get("allowed_for_internal_extraction") and s.get("rights_verified") and s.get("decision"):
+                cleared.add(s["source_id"])
+                approved[s["source_id"]] = s.get("sha256")
     ids = [l.get("id") for l in lessons]
     if len(set(ids)) != len(ids):
         errs.append("duplicate lesson ids")
     catalog = json.loads(CATALOG.read_text())["sources"] if CATALOG.is_file() else {}
     secs = json.loads(SECTIONS.read_text())["sections"] if SECTIONS.is_file() else {}
     catalog = {sid: {**c, "sections": secs.get(sid, [])} for sid, c in catalog.items()}
+    errs += check_catalog_bindings(catalog, approved)
     for l in lessons:
         errs += check_lesson(l, cleared, set(ids), catalog)
     index = load_index()

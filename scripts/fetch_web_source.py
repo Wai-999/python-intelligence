@@ -28,59 +28,64 @@ HEADINGS = {"h1": 1, "h2": 2, "h3": 3, "h4": 4}
 
 
 class SectionParser(HTMLParser):
-    """Splits a Sphinx page into sections: (level, title, anchor, own text)."""
+    """Splits a Sphinx page into sections: (level, title, anchor, own text).
+
+    A stack of open <section>s means text after a nested section closes goes back to its parent. Everything
+    inside skipped subtrees (script/style/nav/header/footer) is ignored, including section and heading tags.
+    """
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.sections: list[dict] = []
-        self.depth = 0          # <section> nesting depth
-        self.skip = 0           # inside script/style/nav...
+        self.stack: list[dict] = []   # open sections, innermost last
+        self.skip = 0                 # depth inside skipped subtrees
         self.heading: str | None = None
         self.in_headerlink = False
-        self.main = False       # inside the document body (div role=main)
-        self.main_depth = 0
-
-    def _cur(self):
-        return self.sections[-1] if self.sections else None
+        self.main_depth = 0           # >0 while inside <div role="main">
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
-        if tag == "div" and a.get("role") == "main":
-            self.main, self.main_depth = True, 0
-        if self.main and tag == "div":
-            self.main_depth += 1
-        if not self.main:
+        if self.main_depth == 0:
+            if tag == "div" and a.get("role") == "main":
+                self.main_depth = 1
             return
-        if tag in SKIP_TAGS:
-            self.skip += 1
-        elif tag == "section":
-            self.depth += 1
-            self.sections.append({"level": self.depth, "anchor": a.get("id", ""), "title": "", "text": []})
-        elif tag in HEADINGS and self._cur() is not None and not self._cur()["title"]:
+        if tag == "div":
+            self.main_depth += 1
+        if self.skip or tag in SKIP_TAGS:
+            if tag in SKIP_TAGS:
+                self.skip += 1
+            return
+        if tag == "section":
+            sec = {"level": len(self.stack) + 1, "anchor": a.get("id", ""), "title": "", "text": []}
+            self.sections.append(sec)
+            self.stack.append(sec)
+        elif tag in HEADINGS and self.stack and not self.stack[-1]["title"]:
             self.heading = tag
         elif tag == "a" and "headerlink" in (a.get("class") or ""):
             self.in_headerlink = True
 
     def handle_endtag(self, tag):
-        if not self.main:
+        if self.main_depth == 0:
             return
         if tag == "div":
             self.main_depth -= 1
-            if self.main_depth <= 0:
-                self.main = False
-        elif tag in SKIP_TAGS and self.skip:
+            return
+        if tag in SKIP_TAGS and self.skip:
             self.skip -= 1
-        elif tag == "section":
-            self.depth -= 1
+            return
+        if self.skip:
+            return
+        if tag == "section" and self.stack:
+            self.stack.pop()
         elif tag == self.heading:
             self.heading = None
         elif tag == "a":
             self.in_headerlink = False
 
     def handle_data(self, data):
-        cur = self._cur()
-        if not self.main or self.skip or cur is None or self.in_headerlink:
+        if self.main_depth == 0 or self.skip or not self.stack or self.in_headerlink:
             return
+        cur = self.stack[-1]
         if self.heading:
             cur["title"] += data
         else:
