@@ -72,10 +72,13 @@ def unstage_all(wt) -> None:
     git(wt, "reset", "-q", check=False)
 
 
+ORCH_IDENT = ("pi-orchestrator", "orchestrator@python-intelligence.local")
+
+
 def commit(wt, agent: str, message: str) -> str:
     name, email = AGENT_IDENT[agent]
     env = {"GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email,
-           "GIT_COMMITTER_NAME": "pi-orchestrator", "GIT_COMMITTER_EMAIL": "orchestrator@python-intelligence.local"}
+           "GIT_COMMITTER_NAME": ORCH_IDENT[0], "GIT_COMMITTER_EMAIL": ORCH_IDENT[1]}
     git(wt, "-c", "commit.gpgsign=false", "commit", "-q", "-m", message, env=env)
     return git(wt, "rev-parse", "HEAD")
 
@@ -90,8 +93,13 @@ def merge(repo, branch: str, message: str) -> str:
         raise GitError("main repo must have 'main' checked out to merge")
     if not is_clean(repo):
         raise GitError("main repo has uncommitted changes; refusing to merge")
+    # The orchestrator commits the merge; the local git identity (the approving human) is the author when one is
+    # configured. Never depend on a global identity existing (CI runners and fresh machines have none).
+    env = {**os.environ, "GIT_COMMITTER_NAME": ORCH_IDENT[0], "GIT_COMMITTER_EMAIL": ORCH_IDENT[1]}
+    if not git(repo, "config", "user.name", check=False):
+        env.update(GIT_AUTHOR_NAME=ORCH_IDENT[0], GIT_AUTHOR_EMAIL=ORCH_IDENT[1])
     p = subprocess.run(["git", "-C", str(repo), "-c", "commit.gpgsign=false", "merge", "--no-ff", "-m", message, branch],
-                       capture_output=True, text=True, stdin=subprocess.DEVNULL)
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, env=env)
     if p.returncode != 0:
         git(repo, "merge", "--abort", check=False)
         raise GitError(f"merge conflict or failure: {p.stdout.strip()} {p.stderr.strip()}")
