@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 // E2E against the PRODUCTION build served under a sub-path, like GitHub Pages (/<repo>/).
 // Needs network: Pyodide loads from the pinned jsDelivr CDN.
 const BASE_PATH = "/python-intelligence/";
+// PI_E2E_PORT lets two runs (e.g. the orchestrator's acceptance tests and a local run) coexist.
+const PORT = Number(process.env.PI_E2E_PORT ?? 4173);
 
 export default defineConfig({
   testDir: "e2e",
@@ -11,15 +13,15 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL: `http://127.0.0.1:4173${BASE_PATH}`, trace: "retain-on-failure" },
+  use: { baseURL: `http://127.0.0.1:${PORT}${BASE_PATH}`, trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /smoke/ },
   ],
   webServer: {
     // Serve dist/ under the sub-path to prove the relative base works without knowing the repo name.
-    command: `node e2e/serve.mjs ${BASE_PATH} 4173`,
-    url: `http://127.0.0.1:4173${BASE_PATH}`,
+    command: `node e2e/serve.mjs ${BASE_PATH} ${PORT}`,
+    url: `http://127.0.0.1:${PORT}${BASE_PATH}`,
     reuseExistingServer: false,
     timeout: 30_000,
   },
