@@ -75,7 +75,7 @@ Core Python path → NumPy/pandas → probability and statistics → linear alge
 | ID | Owner → Reviewer | Task | Status |
 |---|---|---|---|
 | P4-1 | Claude → Codex | Core path: `py-strings`, `py-lists`, `py-dicts` (book-grounded, 9-step arc); lists now requires strings; map order continues the current chain | ✅ Codex review: 6 medium (3 factual: string-method returns, `pop` return, hashable keys; 2 weak tests; dict order not in cited books) all fixed |
-| P4-2 | Claude | Allow citing official Python documentation (URL + section, PSF licence) alongside PDFs, so modern-Python facts (e.g. dict insertion order, 3.7+) are cited, not just flagged | open |
+| P4-2 | Claude → Codex | Cite official Python docs: `docs/audit/web_sources.json` registry (PSF licence, pinned 3.12 URL, sha256), `scripts/fetch_web_source.py` (Sphinx sections → numbered pages in the extract format, so range/section/copy checks and the hashed index work unchanged), section deep links in the UI. Cited: dict order + hashable keys, int→str digit limit, truth-value testing | ✅ (Codex review pending) |
 | P4-3 | Claude → Codex | Core path continued: tuples, comprehensions, files, exceptions, modules | open |
 | P4-4 ⛔ | Owner | Choose licensed sources for NumPy/pandas, statistics and ML (P0-5 style decision) | open |
 

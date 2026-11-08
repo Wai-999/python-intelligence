@@ -108,8 +108,11 @@ test("book-grounded lessons show their sources; original lessons don't", async (
   await expect(page.getByRole("heading", { name: "What you can do now" })).toBeVisible();
   await expect(page.locator(".step-sources")).toHaveCount(0);
   const reading = page.getByRole("region", { name: "Further reading" });
-  await expect(reading.getByRole("listitem")).toHaveCount(3); // one entry per book, not per citation
+  await expect(reading.getByRole("listitem")).toHaveCount(4); // one entry per source, not per citation
   await expect(reading).toContainText("Automate the Boring Stuff");
+  // Official docs: cited by section, deep-linked to the pinned 3.12 page, no page numbers.
+  await expect(reading.getByRole("link", { name: "“Truth Value Testing”" }))
+    .toHaveAttribute("href", "https://docs.python.org/3.12/library/stdtypes.html#truth-value-testing");
   await expect(reading.getByRole("link", { name: /Think Python/ }).first()).toHaveAttribute("href", "https://greenteapress.com/wp/think-python-2e/");
   await expect(reading.getByRole("link", { name: "CC BY-SA 3.0" }).first()).toBeVisible();
   await expect(reading).toContainText("original writing that points to it");

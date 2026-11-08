@@ -28,6 +28,7 @@ starter is executed with the same `src/py/harness.py` that the browser runs in P
 ```bash
 python3 -m venv .venv && .venv/bin/pip install "pytest>=8" "pymupdf==1.28.2"
 .venv/bin/python -m ingest --manifest docs/audit/source_manifest.json   # -> sources/extracts/ (gitignored)
+python3 scripts/fetch_web_source.py       # official docs in docs/audit/web_sources.json -> sources/extracts/
 python3 scripts/build_source_catalog.py   # -> content/sources.json (+ source_sections.json): facts only
 ```
 

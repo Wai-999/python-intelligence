@@ -16,7 +16,9 @@ MAX_ATTEMPTS = 1 + MAX_RETRIES
 ALWAYS_DENIED = (".git/**", ".env", ".env.*", "sources/**", ".github/workflows/**", ".orchestrator/**", "worktrees/**",
                  # Provenance evidence is generated from the owner's book extracts; an agent must not be able to
                  # weaken the copy check or forge the catalogue that citations are validated against.
-                 "content/provenance/**", "content/sources.json", "content/source_sections.json")
+                 "content/provenance/**", "content/sources.json", "content/source_sections.json",
+                 # Rights registries record owner decisions; only a human edits them.
+                 "docs/audit/source_manifest.json", "docs/audit/web_sources.json")
 
 
 class SpecError(ValueError):

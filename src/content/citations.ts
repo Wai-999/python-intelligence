@@ -27,15 +27,20 @@ export interface Citation {
   license: string;
   licenseUrl: string;
   url: string;
+  /** Deep link to the cited section, for web sources. */
+  sectionUrl?: string;
   adapted: boolean;
 }
 
 export function cite(ref: SourceRef, catalog: Record<string, CatalogSource> = CATALOG): Citation | null {
   const src = catalog[ref.source_id];
   if (!src) return null; // the build gate rejects this; never crash the page over it
+  const web = src.kind === "web";
+  const anchor = web ? src.anchors?.[String(ref.pages[0])] : undefined;
   return {
     id: ref.id, book: src.short, title: src.title, authors: src.authors.join(", "), section: ref.section,
-    pages: pageRange(src, ref.pages), license: src.license, licenseUrl: src.license_url, url: src.official_url,
+    pages: web ? "online" : pageRange(src, ref.pages), license: src.license, licenseUrl: src.license_url,
+    url: src.official_url, sectionUrl: anchor ? `${src.official_url}#${anchor}` : undefined,
     adapted: ref.use === "adapted",
   };
 }

@@ -53,6 +53,7 @@ def test_scope_check():
 @pytest.mark.parametrize("path", [".env", ".env.local", ".git/config", "sources/x.pdf",
                                   ".github/workflows/deploy.yml", ".orchestrator/state.sqlite3",
                                   "content/provenance/shingles.bin", "content/provenance/index.json",
-                                  "content/sources.json", "content/source_sections.json"])
+                                  "content/sources.json", "content/source_sections.json",
+                                  "docs/audit/source_manifest.json", "docs/audit/web_sources.json"])
 def test_always_denied_beats_allowlist(path):
     assert check_scope([path], ("**",)) == [path]

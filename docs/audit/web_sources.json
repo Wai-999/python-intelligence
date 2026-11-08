@@ -1,0 +1,25 @@
+{
+ "_note": "Owner-cleared web sources (official documentation). Fetched by scripts/fetch_web_source.py into sources/extracts/ (internal). Lessons cite them as references; nothing is republished.",
+ "sources": [
+  {
+   "source_id": "pydocs-312-stdtypes",
+   "title": "The Python Standard Library 3.12: Built-in Types",
+   "short": "Python 3.12 docs, Built-in Types",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/stdtypes.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "0b10fb9e7e5b8db1d1283835b98b6a9c167871bf6475937aa5d0e1467956a352"
+  }
+ ]
+}

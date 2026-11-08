@@ -75,6 +75,16 @@
       ],
       "section": "None In A Boolean Context",
       "use": "reference"
+    },
+    {
+      "id": "docs-truth",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Truth Value Testing",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -185,7 +195,8 @@
         "tp-if",
         "dip-truth",
         "atbs-truthy",
-        "dip-none"
+        "dip-none",
+        "docs-truth"
       ]
     },
     {

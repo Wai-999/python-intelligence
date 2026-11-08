@@ -53,6 +53,16 @@
       ],
       "section": "The Dictionary Data Type",
       "use": "reference"
+    },
+    {
+      "id": "docs-dict",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        30,
+        30
+      ],
+      "section": "Mapping Types — dict",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -184,7 +194,8 @@
         "tp-dict",
         "tp-count",
         "dip-dict",
-        "atbs-dict"
+        "atbs-dict",
+        "docs-dict"
       ]
     },
     {

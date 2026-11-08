@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "audit" / "source_manifest.json"
+WEB = ROOT / "docs" / "audit" / "web_sources.json"
 EXTRACTS = ROOT / "sources" / "extracts"
 OUT = ROOT / "content" / "sources.json"            # bundled into the site: bibliographic facts only
 SECTIONS_OUT = ROOT / "content" / "source_sections.json"  # build-time only: headings + pages for citation checks
@@ -86,6 +87,22 @@ def build() -> tuple[dict, dict]:
             "page_label_from": first,
         }
         sections[sid] = [[lvl, title.strip(), page] for lvl, title, page in meta["toc"] if lvl <= 4]
+    # Official documentation pages (scripts/fetch_web_source.py): "pages" are numbered sections.
+    for src in json.loads(WEB.read_text())["sources"] if WEB.is_file() else []:
+        sid = src["source_id"]
+        meta_p = EXTRACTS / sid / "meta.json"
+        if not src.get("allowed_for_internal_extraction"):
+            continue
+        if not meta_p.is_file():
+            print(f"· {sid}: not fetched yet, skipped (run: python scripts/fetch_web_source.py --only {sid})")
+            continue
+        meta = json.loads(meta_p.read_text())
+        if meta["sha256"] != src["sha256"]:
+            raise SystemExit(f"✗ {sid}: fetched page sha256 does not match docs/audit/web_sources.json")
+        catalog[sid] = {k: src[k] for k in ("title", "short", "authors", "license", "license_url")} | {
+            "official_url": src["url"], "kind": "web", "sha256": src["sha256"], "page_count": meta["page_count"],
+            "page_label_offset": None, "page_label_from": None, "anchors": meta["anchors"]}
+        sections[sid] = meta["toc"]
     return catalog, sections
 
 

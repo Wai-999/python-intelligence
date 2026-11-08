@@ -54,6 +54,16 @@
       ],
       "section": "for Loops and the range() Function",
       "use": "reference"
+    },
+    {
+      "id": "docs-intlimit",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        50,
+        50
+      ],
+      "section": "Integer string conversion length limitation",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -292,7 +302,10 @@
           "concept": "while-loops"
         }
       ],
-      "solution": "def count_digits(n):\n    if n == 0:\n        return 1\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count"
+      "solution": "def count_digits(n):\n    if n == 0:\n        return 1\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count",
+      "cites": [
+        "docs-intlimit"
+      ]
     },
     {
       "id": "check",

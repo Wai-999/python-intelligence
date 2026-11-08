@@ -26,4 +26,12 @@ describe("citations", () => {
     expect(cite(ref, { a: numbered })).toMatchObject({ book: "A", authors: "X, Y", pages: "pp. 40–42", adapted: false });
     expect(cite({ ...ref, source_id: "zzz" }, { a: numbered })).toBeNull();
   });
+
+  it("links web sources to the cited section instead of page numbers", () => {
+    const docs: CatalogSource = { ...unnumbered, short: "Docs", kind: "web", anchors: { "30": "mapping-types-dict" },
+      official_url: "https://docs.python.org/3.12/library/stdtypes.html" };
+    const ref = { id: "d", source_id: "d", pages: [30, 30] as [number, number], section: "Mapping Types — dict", use: "reference" as const };
+    expect(cite(ref, { d: docs })).toMatchObject({
+      pages: "online", sectionUrl: "https://docs.python.org/3.12/library/stdtypes.html#mapping-types-dict" });
+  });
 });

@@ -49,6 +49,10 @@ export interface CatalogSource {
   /** printed page = physical page - offset, from page_label_from onward; null if the book has no printed numbers. */
   page_label_offset: number | null;
   page_label_from: number | null;
+  /** "web" for official documentation pages: "pages" are numbered sections, linked via `anchors`. */
+  kind?: "pdf" | "web";
+  /** Section number (as a string) -> HTML id on the page, for web sources. */
+  anchors?: Record<string, string>;
 }
 
 export interface Socratic {

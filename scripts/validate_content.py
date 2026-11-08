@@ -242,6 +242,10 @@ def main() -> int:
             errs.append(f"{f.name}: file name must equal lesson id {l.get('id')!r}")
     manifest = json.loads(MANIFEST.read_text())
     cleared = {s["source_id"] for s in manifest["sources"] if s.get("allowed_for_internal_extraction")}
+    web = ROOT / "docs" / "audit" / "web_sources.json"
+    if web.is_file():  # official documentation pages, cleared in their own registry
+        cleared |= {s["source_id"] for s in json.loads(web.read_text())["sources"]
+                    if s.get("allowed_for_internal_extraction") and s.get("rights_verified") and s.get("decision")}
     ids = [l.get("id") for l in lessons]
     if len(set(ids)) != len(ids):
         errs.append("duplicate lesson ids")
