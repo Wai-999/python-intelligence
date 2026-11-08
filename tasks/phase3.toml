@@ -104,3 +104,41 @@ a failure injected after the first file is written (monkeypatch) leaves the prev
 and no temp directory behind; case-colliding and control-character ids are rejected.
 Run with: "/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package/.venv/bin/python" -m pytest tests/test_ingest.py -q
 """
+
+[[task]]
+id = "P3-6"
+title = "Extractor follow-ups: indentation edge cases, column listings, Automate code detection"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P3-4"]
+allowed_paths = ["ingest/**", "tests/test_ingest.py"]
+acceptance = ["python -m pytest tests/test_ingest.py -q"]
+risk = "medium"
+max_attempts = 3
+brief = """
+Follow-ups from the P3-4 review, in ingest/extract.py. Keep file formats and the public API unchanged.
+
+1. Lines without glyph metrics must not use origin 0 in the same coordinate space as measured lines (it drags
+   the run's baseline to 0 and adds spurious indentation). Keep their literal leading whitespace instead and
+   exclude them from the baseline.
+2. Start a new code block when the next code line is ABOVE the previous one or overlaps it vertically
+   (a new column or side-by-side listings), not only on a large downward gap.
+3. Blank-line gaps inside one listing: two blank lines (PEP 8 between top-level definitions) at normal line
+   pitch must NOT split the listing. Use a threshold of more than 3.5 line pitches (measure the pitch from
+   consecutive lines in the run when possible; fall back to 1.2 x font size).
+4. Monospace detection: some PDFs (e.g. Automate the Boring Stuff) set code in a monospaced font whose
+   span["flags"] lacks bit 8. Also treat a span as monospaced when its font name matches (case-insensitive)
+   one of: mono, courier, consol, menlo, inconsolata, sourcecodepro, dejavusansmono, lucidaconsole, andale,
+   firacode, liberationmono, ubuntumono, roboto mono, or when pymupdf.Font(fontname).is_monospaced is true
+   (guard errors: unknown fonts are simply not monospaced by that test).
+5. Strip Dive Into Python 3 style callout markers (circled digits U+2460-U+2473 and U+2776-U+277F, plus a
+   single preceding space) from the END of code-block lines only; never from page text.
+6. Cleanup errors after a successful publish must not abort a batch: log a warning to stderr and continue;
+   workspaces lacking target.json that are older than 1 hour are removed during leftover recovery.
+
+Tests (fixture PDFs built with pymupdf, never sources/): items 1-6 each with a regression test; a listing with
+two blank lines between two functions stays ONE block and compile()s; two listings side by side (right column
+starting higher on the page) give two blocks with correct indentation; a span in a font named e.g.
+"SomeMono-Regular" without flag 8 counts as code; callout markers are stripped from code_blocks but kept in text.
+Run: "/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package/.venv/bin/python" -m pytest tests/test_ingest.py -q
+"""
