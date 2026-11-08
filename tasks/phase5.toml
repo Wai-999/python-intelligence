@@ -1,0 +1,45 @@
+# Phase 5 (release quality). P5-1 accessibility and P5-3 live smoke are Claude's (CI files are agent-denied).
+
+[[task]]
+id = "P5-2"
+title = "Offline support: service worker caching the app and the pinned Pyodide runtime"
+owner = "codex"
+reviewer = "claude"
+depends_on = []
+allowed_paths = ["public/sw.js", "src/sw-register.ts", "src/sw-register.test.ts", "src/main.tsx", "e2e/offline.spec.ts"]
+acceptance = ["npm run build", "npx playwright test e2e/offline.spec.ts --reporter=line"]
+risk = "medium"
+max_attempts = 3
+brief = """
+Make the learning site work offline after one online visit. It is a Vite + React static site deployed to GitHub
+Pages under a sub-path (vite base './', hash routing). Python runs in a module Web Worker that loads Pyodide from
+the pinned CDN prefix in src/py/protocol.ts: https://cdn.jsdelivr.net/pyodide/v0.27.8/full/ (read it; do not edit).
+
+1. public/sw.js (plain JS, copied verbatim into dist/ by Vite; no build step, no dependencies):
+   - CACHE = "pi-v1" (a constant at the top). install: cache "./" and "./index.html", then skipWaiting().
+     activate: delete caches whose name starts with "pi-" and isn't CACHE; clients.claim().
+   - fetch (GET only; ignore everything else):
+     * navigations (request.mode === "navigate"): NETWORK-FIRST, store the fresh copy, fall back to the cached
+       page (any cached "./index.html") when offline, so a new deploy is never hidden behind a stale cache.
+     * same-origin non-navigation requests under the SW scope: CACHE-FIRST, filling the cache on a miss
+       (Vite asset names are content-hashed, so cached copies never go stale).
+     * requests whose URL starts with the pinned Pyodide prefix: CACHE-FIRST (the URL is versioned), filling on
+       a miss; only cache responses with ok === true.
+     * everything else: do not call respondWith (let the browser handle it).
+   - Never cache non-OK responses. Scope paths must be relative to the SW location (works under any sub-path).
+2. src/sw-register.ts: export function registerServiceWorker(nav = navigator, prod = import.meta.env.PROD):
+   registers "./sw.js" (relative, so it works under the Pages sub-path) only when prod is true and
+   "serviceWorker" in nav; returns the registration promise or null; registration errors are caught and logged
+   with console.warn, never thrown. Call it from src/main.tsx after rendering.
+   src/sw-register.test.ts (vitest): registers in prod with "./sw.js"; not in dev; not when unsupported;
+   a rejected register() resolves to null without throwing.
+3. e2e/offline.spec.ts (Playwright, desktop project, against the production build served by playwright.config.ts):
+   open ./#/lesson/py-files/4, wait for navigator.serviceWorker.ready, reload so the page is controlled, click
+   "▶ Run" and expect ".console pre" to have text "20\\nno such file\\n" (this downloads Pyodide through the SW);
+   then context.setOffline(true), reload, expect the heading "Run it: a tiny score file" to be visible, click
+   "▶ Run" again and expect the same output (Pyodide from the cache). Use generous timeouts (90 s) for Python.
+
+Your sandbox has NO network: you can run `npm run build` and `node node_modules/vitest/vitest.mjs run src/sw-register`,
+but not the Playwright test (it needs the Pyodide CDN). The controller runs the acceptance commands with network.
+Do not add npm dependencies. Do not edit any other file.
+"""
