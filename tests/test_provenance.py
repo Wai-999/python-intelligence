@@ -63,7 +63,7 @@ def test_original_lessons_still_pass_without_sources():
     (lambda l: kind(l, "formal").pop("cites"), "uncited claim"),
     (lambda l: kind(l, "intuition").__setitem__("cites", ["zzz"]), "cites unknown source"),
     (lambda l: kind(l, "formal").__setitem__("cites", ["a"]), "source b: listed but never cited"),
-    (lambda l: l["sources"][0].__setitem__("section", "Loops"), "is not a heading of Book A within pages"),
+    (lambda l: l["sources"][0].__setitem__("section", "Loops"), "is not a heading of Book A overlapping pages"),
     (lambda l: l["sources"][0].__setitem__("pages", [90, 120]), "beyond the end of Book A"),
     (lambda l: l["sources"][0].__setitem__("pages", [14, 10]), "valid [start, end] page range"),
     (lambda l: l["sources"][0].__setitem__("source_id", "book-x"), "not cleared"),
@@ -153,3 +153,49 @@ def test_dist_gate_blocks_extract_files(tmp_path, index, name):
     d = make_dist(tmp_path, "")
     (d / name).write_text("{}")
     assert check_dist.main(str(d), index) == 1
+
+
+# --- review follow-ups (Codex cross-review of 57fbba8) ---------------------------------------------------
+def test_section_may_start_before_the_cited_pages():
+    # "Functions" (level 1) starts on p.10 and runs until "Loops" on p.30, so pp. 20-21 lie inside it.
+    assert errs(lambda l: l["sources"][0].update(pages=[20, 21], section="Functions")) == []
+    # "Parameters" (level 2) runs 12..29 too, but "Loops" (p.30..100) does not overlap pp. 10-14.
+    assert any("overlapping pages" in e for e in errs(lambda l: l["sources"][0].update(section="Loops")))
+
+
+def test_section_spans():
+    spans = vc.section_spans([[1, "A", 10], [2, "A.1", 12], [2, "A.2", 15], [1, "B", 30]], 100)
+    assert spans == [("A", 10, 29), ("A.1", 12, 14), ("A.2", 15, 29), ("B", 30, 100)]
+
+
+def test_dist_gate_sees_through_js_string_escapes(tmp_path, index):
+    js = r'const s="a function is a named\nsequence of statements that performs a computation and you can call it"'
+    assert check_dist.main(str(make_dist(tmp_path, js)), index) == 1
+
+
+@pytest.fixture
+def lesson_files(tmp_path):
+    d = tmp_path / "lessons"
+    d.mkdir()
+    (d / "one.json").write_text('{"id": "one"}')
+    (d / "two.json").write_text('{"id": "two"}')
+    return sorted(d.glob("*.json"))
+
+
+def test_attestation_round_trip_and_change_detection(lesson_files, index):
+    index.shas = {"book-a": "aa" * 32}
+    cat = {"book-a": {"sha256": "aa" * 32}}
+    att = vc.make_attestation(lesson_files, index)
+    assert vc.check_attestation(lesson_files, att, cat) == []
+    lesson_files[1].write_text('{"id": "two", "body": "edited"}')
+    e = vc.check_attestation(lesson_files, att, cat)
+    assert len(e) == 1 and e[0].startswith("two: changed since its last copy check"), e
+
+
+def test_attestation_must_cover_every_catalogued_book_and_exist(lesson_files, index):
+    index.shas = {"book-a": "aa" * 32}
+    att = vc.make_attestation(lesson_files, index)
+    cat = {"book-a": {"sha256": "aa" * 32}, "book-b": {"sha256": "bb" * 32}}
+    assert any("does not cover book-b" in e for e in vc.check_attestation(lesson_files, att, cat))
+    assert any("re-run the copy check" in e for e in vc.check_attestation(lesson_files, att, {"book-a": {"sha256": "cc" * 32}}))
+    assert "no provenance_attestation.json" in vc.check_attestation(lesson_files, None, cat)[0]

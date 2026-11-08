@@ -43,13 +43,25 @@ create a GitHub remote) remains open.
 | P2-5 | Claude | 3-node prerequisite graph + next-lesson recommendation + remediation rule | Unit tests on graph; broken edge blocks build |
 | P2-6 ⛔ | Owner | Phase 2 review; decide whether to create GitHub remote | — |
 
-## Phase 3 — Ingest MVP (≈ 5–7 days, P0-5 done)
+## Phase 3 — Ingest MVP ✅ core done 2026-11-08 (P0-5 done)
 
-Use two owner-approved, openly licensed books fetched from **official sources**. The current candidates are *Think Python 2e* (CC BY-NC 3.0) and *Dive Into Python 3* (CC BY-SA 3.0). Their licenses can't be combined in one lesson, so lesson licensing is tracked separately.
+Status: 3 cleared books extracted (1,236 pages, 7 s); provenance gate and citation UI live; 2 book-grounded
+lessons (*Decisions*, *Repetition*) cite Think Python 2e and Dive Into Python 3 as references (original prose).
 
-- PyMuPDF extraction with `source_id, sha256, page_start/end, extraction_quality`. A low-confidence page goes to a human review queue.
-- Provenance gate: every book-grounded lesson cites `source_id` + page range, and an uncited claim fails the build.
-- `dist/` license gate: the build fails if any PDF or extract with `allowed_to_publish: false` is reachable.
+| ID | Owner → Reviewer | Task | Acceptance | Status |
+|---|---|---|---|---|
+| P3-1 | Codex → Claude | `ingest/`: PyMuPDF page extraction (sha-checked bytes, page labels, quality score, code blocks), review queue, manifest-validated CLI that refuses uncleared sources and non-ignored output dirs | `tests/test_ingest.py` | ✅ merged on attempt 2 (attempt 1 rejected: manifest-validator bypass, path escape, TOCTOU) |
+| P3-2 | Claude → Codex | Provenance gate: cleared + catalogued source, page range, section heading in range, every claim step cites, every source cited, adapted-licence rule; 12-word verbatim check of lessons and `dist/` against local extracts | `tests/test_provenance.py`; build | ✅ |
+| P3-3 | Claude → Codex | Lessons `py-conditionals`, `py-loops`; per-step source line with printed page numbers; Further reading per book | content gate; e2e citation test | ✅ |
+| P3-4 | Codex → Claude | Extractor follow-ups from review: directory-level atomic swap of the three artifacts; code-block detection that preserves **indentation** (span x-offsets) and tolerates mixed fonts; case-insensitive source_id collisions; fsync + temp cleanup | tests | open |
+| P3-5 ⛔ | Owner | Educational review of the two new lessons; human pass over each `review_queue.json` | — | open |
+
+The copy check needs local extracts, so it runs on the owner's machine (`npm run build`). A passing run records
+each lesson's sha256 in `content/provenance_attestation.json`; CI (no extracts) fails if any lesson differs from that
+record or a catalogued book is not covered, so an unchecked lesson cannot auto-deploy. Page ranges, sections and
+licences are checked everywhere via `content/sources.json`. Codex cross-review of P3-2/P3-3 (1 high, 5 medium) was
+addressed in the follow-up commit: attestation, JS-escape decoding in the dist gate, section-overlap citations,
+added sources for truthiness/None/range claims, qualified `while` rule, arithmetic-only digits check enforced.
 
 ## Phase 4 — Curriculum graph (≈ 3–5 weeks)
 

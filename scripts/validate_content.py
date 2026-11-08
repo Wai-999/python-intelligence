@@ -16,17 +16,19 @@ for version-specific behaviour; lessons should stay within the common subset.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from provenance import ExtractIndex, strings_in  # noqa: E402
+from provenance import SHINGLE, ExtractIndex, strings_in  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "content" / "sources.json"
 SECTIONS = ROOT / "content" / "source_sections.json"
+ATTEST = ROOT / "content" / "provenance_attestation.json"
 CLAIM_KINDS = {"intuition", "formal"}  # steps that state facts and so must cite, in a book-grounded lesson
 USES = {"reference", "adapted"}
 HARNESS = ROOT / "src" / "py" / "harness.py"
@@ -66,6 +68,44 @@ def run_snippet(code: str, tests: list | None = None, timeout: float = 10) -> di
     return json.loads(p.stdout)
 
 
+def section_spans(sections: list, page_count: int) -> list[tuple[str, int, int]]:
+    """(title, first page, last page) per heading; a section runs until the next heading of the same or higher level."""
+    out = []
+    for i, (lvl, title, page) in enumerate(sections):
+        nxt = next((p for l2, _, p in sections[i + 1:] if l2 <= lvl), page_count + 1)
+        out.append((title, page, max(page, nxt - 1) if nxt > page else page))
+    return out
+
+
+def lesson_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def make_attestation(files: list[Path], index: ExtractIndex) -> dict:
+    """Record that these exact lesson files passed the copy check against these exact extracts."""
+    return {"_note": "Written by validate_content.py after a passing copy check against local extracts. CI, which has "
+                     "no extracts, requires every lesson to match this record.",
+            "shingle_words": SHINGLE,
+            "extracts": dict(sorted(index.shas.items())),
+            "lessons": {f.stem: lesson_digest(f) for f in sorted(files)}}
+
+
+def check_attestation(files: list[Path], attestation: dict | None, catalog: dict) -> list[str]:
+    """Used where extracts are absent: every lesson must have passed the copy check, unchanged since."""
+    if attestation is None:
+        return [f"no {ATTEST.name}: run the build where book extracts exist (python -m ingest) to copy-check lessons"]
+    errs = []
+    if attestation.get("shingle_words") != SHINGLE:
+        errs.append(f"{ATTEST.name} was made with a different shingle size; re-run the copy check")
+    for sid, cat in catalog.items():
+        if attestation.get("extracts", {}).get(sid) != cat.get("sha256"):
+            errs.append(f"{ATTEST.name} does not cover {sid} at sha256 {str(cat.get('sha256'))[:12]}; re-run the copy check")
+    for f in files:
+        if attestation.get("lessons", {}).get(f.stem) != lesson_digest(f):
+            errs.append(f"{f.stem}: changed since its last copy check against the book extracts; run the build where extracts exist")
+    return errs
+
+
 def check_provenance(lesson: dict, cleared: set[str], catalog: dict) -> list[str]:
     """Citation rules. `catalog` is content/sources.json["sources"]."""
     errs: list[str] = []
@@ -95,8 +135,9 @@ def check_provenance(lesson: dict, cleared: set[str], catalog: dict) -> list[str
             continue
         if pages and pages[1] > cat["page_count"]:
             errs.append(f"{tag}: pages {pages} beyond the end of {cat['short']} ({cat['page_count']} pages)")
-        elif pages and not any(t == s.get("section") and pages[0] <= p <= pages[1] for _, t, p in cat["sections"]):
-            errs.append(f"{tag}: section {s.get('section')!r} is not a heading of {cat['short']} within pages {pages}")
+        elif pages and not any(t == s.get("section") and p <= pages[1] and end >= pages[0]
+                               for t, p, end in section_spans(cat["sections"], cat["page_count"])):
+            errs.append(f"{tag}: section {s.get('section')!r} is not a heading of {cat['short']} overlapping pages {pages}")
     cited: set[str] = set()
     for st in lesson["steps"]:
         c = st.get("cites", [])
@@ -228,8 +269,18 @@ def main() -> int:
     for l in lessons:
         errs += check_lesson(l, cleared, set(ids), catalog)
     index = ExtractIndex()
-    for l in lessons:
-        errs += check_verbatim(l, index)
+    if index.available:
+        missing = sorted(set(catalog) - set(index.shas))
+        if missing:
+            errs.append(f"local extracts are incomplete (missing {missing}); run python -m ingest")
+        for sid in set(catalog) & set(index.shas):
+            if index.shas[sid] != catalog[sid].get("sha256"):
+                errs.append(f"extract of {sid} is from a different file than content/sources.json; re-extract")
+        for l in lessons:
+            errs += check_verbatim(l, index)
+    else:
+        attestation = json.loads(ATTEST.read_text()) if ATTEST.is_file() else None
+        errs += check_attestation(files, attestation, catalog)
 
     # Graph-level: cycles and concept ownership; every concept referenced by tests/quizzes must be taught somewhere.
     taught: dict[str, str] = {}
@@ -262,9 +313,14 @@ def main() -> int:
     print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness")
     n_cited = sum(1 for l in lessons if l["sources"])
     if index.available:
+        att = make_attestation(files, index)
+        if not ATTEST.is_file() or json.loads(ATTEST.read_text()) != att:
+            ATTEST.write_text(json.dumps(att, indent=1) + "\n")
+            print(f"✓ updated {ATTEST.relative_to(ROOT)} (commit it with the lessons)")
         print(f"✓ provenance: {n_cited} book-grounded lesson(s); no verbatim copying from {len(index.sources)} local extract(s)")
     else:
-        print(f"· provenance: {n_cited} book-grounded lesson(s) cite-checked; verbatim check SKIPPED (no local extracts here)")
+        print(f"✓ provenance: {n_cited} book-grounded lesson(s) cite-checked; every lesson matches {ATTEST.name} "
+              f"(copy-checked where extracts exist)")
     return 0
 
 

@@ -5,13 +5,77 @@
   "track": "python-core",
   "level": 1,
   "estimated_minutes": 25,
-  "prerequisites": ["py-functions"],
-  "concepts": ["booleans", "comparisons", "logical-operators", "if-statements", "truthiness"],
+  "prerequisites": [
+    "py-functions"
+  ],
+  "concepts": [
+    "booleans",
+    "comparisons",
+    "logical-operators",
+    "if-statements",
+    "truthiness"
+  ],
   "sources": [
-    {"id": "tp-bool", "source_id": "pch-think-python-2nd", "pages": [62, 63], "section": "Boolean expressions", "use": "reference"},
-    {"id": "tp-if", "source_id": "pch-think-python-2nd", "pages": [63, 64], "section": "Conditional execution", "use": "reference"},
-    {"id": "dip-bool", "source_id": "pch-diveintopython3", "pages": [54, 55], "section": "Booleans", "use": "reference"},
-    {"id": "dip-truth", "source_id": "pch-diveintopython3", "pages": [60, 61], "section": "Numbers In A Boolean Context", "use": "reference"}
+    {
+      "id": "tp-bool",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        62,
+        63
+      ],
+      "section": "Boolean expressions",
+      "use": "reference"
+    },
+    {
+      "id": "tp-if",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        63,
+        64
+      ],
+      "section": "Conditional execution",
+      "use": "reference"
+    },
+    {
+      "id": "dip-bool",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        54,
+        55
+      ],
+      "section": "Booleans",
+      "use": "reference"
+    },
+    {
+      "id": "dip-truth",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        60,
+        61
+      ],
+      "section": "Numbers In A Boolean Context",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-truthy",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        77,
+        77
+      ],
+      "section": "Chapter 2: Flow Control",
+      "use": "reference"
+    },
+    {
+      "id": "dip-none",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        90,
+        90
+      ],
+      "section": "None In A Boolean Context",
+      "use": "reference"
+    }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
   "steps": [
@@ -26,7 +90,10 @@
       "kind": "intuition",
       "title": "A comparison is a question",
       "body": "Writing `temp < 10` doesn't *do* anything to `temp`. It **asks** \"is temp less than 10?\" and Python\nanswers with one of exactly two values: `True` or `False`. These two values have their own type, `bool`\n(short for *boolean*). They are not the text \"True\" and \"False\"; they're values, like `7` is a value.\n\nAn `if` statement is a fork in the road. Python evaluates the question once, and the answer decides which path\nthe program takes. The path that isn't taken is skipped entirely, as if those lines weren't there.",
-      "cites": ["tp-bool", "dip-bool"],
+      "cites": [
+        "tp-bool",
+        "dip-bool"
+      ],
       "socratic": {
         "questions": [
           "What do you think `print(3 > 2)` shows? Is it text, a number, or something else?",
@@ -43,12 +110,68 @@
         "type": "call-trace",
         "code": "def describe(temp):\n    if temp < 10:\n        return \"cold\"\n    elif temp < 25:\n        return \"mild\"\n    else:\n        return \"hot\"\n\nprint(describe(18))",
         "frames": [
-          {"line": 1, "stack": ["<module>"], "locals": {}, "note": "The `def` stores the function. Nothing inside it runs yet."},
-          {"line": 9, "stack": ["<module>"], "locals": {"describe": "<function describe>"}, "note": "To print, Python first needs the value of `describe(18)`, so it makes the call."},
-          {"line": 2, "stack": ["<module>", "describe(18)"], "locals": {"temp": "18"}, "note": "First question: is `18 < 10`? The answer is `False`, so the `return \"cold\"` line is skipped."},
-          {"line": 4, "stack": ["<module>", "describe(18)"], "locals": {"temp": "18"}, "note": "`elif` asks the next question only because the first answer was False: is `18 < 25`? `True`."},
-          {"line": 5, "stack": ["<module>", "describe(18)"], "locals": {"temp": "18"}, "note": "This branch runs and returns \"mild\". The `else` branch is never looked at."},
-          {"line": 9, "stack": ["<module>"], "locals": {"describe": "<function describe>"}, "note": "The call is over and `print` shows the returned text.", "output": "mild"}
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "The `def` stores the function. Nothing inside it runs yet."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "describe": "<function describe>"
+            },
+            "note": "To print, Python first needs the value of `describe(18)`, so it makes the call."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "describe(18)"
+            ],
+            "locals": {
+              "temp": "18"
+            },
+            "note": "First question: is `18 < 10`? The answer is `False`, so the `return \"cold\"` line is skipped."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "describe(18)"
+            ],
+            "locals": {
+              "temp": "18"
+            },
+            "note": "`elif` asks the next question only because the first answer was False: is `18 < 25`? `True`."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "describe(18)"
+            ],
+            "locals": {
+              "temp": "18"
+            },
+            "note": "This branch runs and returns \"mild\". The `else` branch is never looked at."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "describe": "<function describe>"
+            },
+            "note": "The call is over and `print` shows the returned text.",
+            "output": "mild"
+          }
         ]
       }
     },
@@ -57,7 +180,13 @@
       "kind": "formal",
       "title": "The precise rules",
       "body": "**Comparisons** produce a `bool`: `==` equal, `!=` not equal, `<`, `<=`, `>`, `>=`.\nNote the doubled `==`. A single `=` *assigns* a name, so `if x = 5:` is a `SyntaxError`.\n\n**Logical operators** combine bools: `a and b` is True only when both are; `a or b` is True when at\nleast one is; `not a` flips it.\n\n```python\nif condition:\n    ...            # runs when condition is true\nelif other_condition:\n    ...            # checked only if everything above was false\nelse:\n    ...            # runs when nothing above was true\n```\n\n1. The conditions are checked **in order**, and the **first** true one wins. Its block runs, and the whole\n   statement ends. Later conditions are not checked, even if they would also be true.\n2. `elif` and `else` are optional. There may be any number of `elif`s, and `else` must come last.\n3. A block is the indented lines under its header, exactly as in a `def`.\n4. **Truthiness:** any value can be a condition. `0`, `0.0`, `\"\"` (empty text) and `None` count as\n   false; other numbers and non-empty text count as true. Prefer an explicit comparison such as\n   `if count == 0:` when it states your intent more clearly.",
-      "cites": ["tp-bool", "tp-if", "dip-truth"]
+      "cites": [
+        "tp-bool",
+        "tp-if",
+        "dip-truth",
+        "atbs-truthy",
+        "dip-none"
+      ]
     },
     {
       "id": "tickets",
@@ -79,10 +208,26 @@
         "def parity(n):\n    if n % 2 == 0:\n        return \"even\"\n    else:\n        return \"odd\""
       ],
       "tests": [
-        {"name": "4 is even", "code": "assert parity(4) == 'even', f'parity(4) returned {parity(4)!r}'", "concept": "if-statements"},
-        {"name": "7 is odd", "code": "assert parity(7) == 'odd', f'parity(7) returned {parity(7)!r}'", "concept": "if-statements"},
-        {"name": "0 is even", "code": "assert parity(0) == 'even', f'parity(0) returned {parity(0)!r}; 0 divides by 2 with no remainder'", "concept": "comparisons"},
-        {"name": "negative odd numbers", "code": "assert parity(-3) == 'odd', f'parity(-3) returned {parity(-3)!r}'", "concept": "comparisons"}
+        {
+          "name": "4 is even",
+          "code": "assert parity(4) == 'even', f'parity(4) returned {parity(4)!r}'",
+          "concept": "if-statements"
+        },
+        {
+          "name": "7 is odd",
+          "code": "assert parity(7) == 'odd', f'parity(7) returned {parity(7)!r}'",
+          "concept": "if-statements"
+        },
+        {
+          "name": "0 is even",
+          "code": "assert parity(0) == 'even', f'parity(0) returned {parity(0)!r}; 0 divides by 2 with no remainder'",
+          "concept": "comparisons"
+        },
+        {
+          "name": "negative odd numbers",
+          "code": "assert parity(-3) == 'odd', f'parity(-3) returned {parity(-3)!r}'",
+          "concept": "comparisons"
+        }
       ],
       "solution": "def parity(n):\n    if n % 2 == 0:\n        return \"even\"\n    else:\n        return \"odd\""
     },
@@ -99,11 +244,31 @@
         "def is_leap(year):\n    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)"
       ],
       "tests": [
-        {"name": "ordinary leap year", "code": "assert is_leap(2024) is True, f'is_leap(2024) returned {is_leap(2024)!r}'", "concept": "if-statements"},
-        {"name": "ordinary year", "code": "assert is_leap(2023) is False, f'is_leap(2023) returned {is_leap(2023)!r}'", "concept": "if-statements"},
-        {"name": "century, not leap", "code": "assert is_leap(1900) is False, f'is_leap(1900) returned {is_leap(1900)!r}: centuries need to divide by 400'", "concept": "logical-operators"},
-        {"name": "divisible by 400", "code": "assert is_leap(2000) is True, f'is_leap(2000) returned {is_leap(2000)!r}'", "concept": "logical-operators"},
-        {"name": "returns a bool", "code": "assert type(is_leap(1996)) is bool, 'Return True or False, not text or a number'", "concept": "booleans"}
+        {
+          "name": "ordinary leap year",
+          "code": "assert is_leap(2024) is True, f'is_leap(2024) returned {is_leap(2024)!r}'",
+          "concept": "if-statements"
+        },
+        {
+          "name": "ordinary year",
+          "code": "assert is_leap(2023) is False, f'is_leap(2023) returned {is_leap(2023)!r}'",
+          "concept": "if-statements"
+        },
+        {
+          "name": "century, not leap",
+          "code": "assert is_leap(1900) is False, f'is_leap(1900) returned {is_leap(1900)!r}: centuries need to divide by 400'",
+          "concept": "logical-operators"
+        },
+        {
+          "name": "divisible by 400",
+          "code": "assert is_leap(2000) is True, f'is_leap(2000) returned {is_leap(2000)!r}'",
+          "concept": "logical-operators"
+        },
+        {
+          "name": "returns a bool",
+          "code": "assert type(is_leap(1996)) is bool, 'Return True or False, not text or a number'",
+          "concept": "booleans"
+        }
       ],
       "solution": "def is_leap(year):\n    if year % 400 == 0:\n        return True\n    elif year % 100 == 0:\n        return False\n    else:\n        return year % 4 == 0"
     },
@@ -118,7 +283,12 @@
           "id": "q1",
           "prompt": "What does this print?",
           "code": "x = 15\nif x > 10:\n    print(\"A\")\nelif x > 5:\n    print(\"B\")\nelse:\n    print(\"C\")",
-          "choices": ["A", "B", "A then B", "C"],
+          "choices": [
+            "A",
+            "B",
+            "A then B",
+            "C"
+          ],
           "answer": 0,
           "explanation": "Both `x > 10` and `x > 5` are true, but only the first true branch runs; then the statement ends.",
           "concept": "if-statements"
@@ -127,7 +297,12 @@
           "id": "q2",
           "prompt": "What does this print?",
           "code": "amount = 0.0\nif amount:\n    print(\"yes\")\nelse:\n    print(\"no\")",
-          "choices": ["yes", "no", "0.0", "An error"],
+          "choices": [
+            "yes",
+            "no",
+            "0.0",
+            "An error"
+          ],
           "answer": 1,
           "explanation": "Zero (including `0.0`) counts as false in a condition, so the `else` branch runs.",
           "concept": "truthiness"
@@ -135,7 +310,12 @@
         {
           "id": "q3",
           "prompt": "What happens when Python reads `if score = 100:`?",
-          "choices": ["It checks whether score is 100", "It sets score to 100, then runs the block", "A SyntaxError", "It always runs the block"],
+          "choices": [
+            "It checks whether score is 100",
+            "It sets score to 100, then runs the block",
+            "A SyntaxError",
+            "It always runs the block"
+          ],
           "answer": 2,
           "explanation": "`=` assigns and `==` compares. Python refuses an assignment where a condition belongs.",
           "concept": "comparisons"
@@ -143,7 +323,12 @@
         {
           "id": "q4",
           "prompt": "What is the value of `not (3 > 2 and 2 > 5)`?",
-          "choices": ["True", "False", "None", "An error"],
+          "choices": [
+            "True",
+            "False",
+            "None",
+            "An error"
+          ],
           "answer": 0,
           "explanation": "`3 > 2` is True and `2 > 5` is False, so the `and` is False, and `not False` is True.",
           "concept": "logical-operators"

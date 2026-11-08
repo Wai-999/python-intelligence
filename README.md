@@ -23,6 +23,19 @@ npm run test:e2e       # Playwright against dist/ served under /python-intellige
 Lessons are JSON in `content/lessons/`, validated by `scripts/validate_content.py`. Every example, solution and
 starter is executed with the same `src/py/harness.py` that the browser runs in Pyodide.
 
+## Book sources (internal only, never published)
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install "pytest>=8" "pymupdf==1.28.2"
+.venv/bin/python -m ingest --manifest docs/audit/source_manifest.json   # -> sources/extracts/ (gitignored)
+python3 scripts/build_source_catalog.py   # -> content/sources.json (+ source_sections.json): facts only
+```
+
+Only sources the rights manifest clears are extracted. Book-grounded lessons cite `sources[]` by PDF page range and
+section heading; the build fails on a false citation, an uncited claim step, or 12+ words copied from an extract.
+A passing local build updates `content/provenance_attestation.json`; commit it with lesson changes, because CI
+(which has no extracts) rejects any lesson that differs from it.
+
 ## Orchestrator quick start
 
 ```bash

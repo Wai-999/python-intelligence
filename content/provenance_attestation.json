@@ -1,0 +1,16 @@
+{
+ "_note": "Written by validate_content.py after a passing copy check against local extracts. CI, which has no extracts, requires every lesson to match this record.",
+ "shingle_words": 12,
+ "extracts": {
+  "pch-automate-the-boring-stuff-with-python": "ba5e3306438c985c969a159092957d039efa606f3a679292ed44e1015e697200",
+  "pch-diveintopython3": "5394901a2d48d77a2525ca95fcffadceedb31c34c6f0340d37c78c1296c4f118",
+  "pch-think-python-2nd": "6033000bac3f9268ad75ee041bf8e5d9a3bc8a33bb156399cbd014918cb59f94"
+ },
+ "lessons": {
+  "py-conditionals": "803b6e434c915bf87aadafe1c42ed741a1d2dbc903118dab4f6c1b1feaff7d7d",
+  "py-functions": "b544da916a772ff50bf047494f56d7470062bd2088d38936b302aa5a43b0edb7",
+  "py-loops": "fb4e5c5186468820eda426d3031c6601e8f511c0bdd66cd5468a2f4e963fb565",
+  "py-scope-defaults": "07806151e3ddc5d0b8093349e8015fe0ac38d5f88ccea24eaf66b6e8d5e9bf56",
+  "py-values-names": "cd8a13d3f30c1c59168350ad4713d0c5a5860016c3f7ba8ca5d2db60cfcfc9bd"
+ }
+}

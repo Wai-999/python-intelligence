@@ -85,7 +85,7 @@ def build() -> tuple[dict, dict]:
             "page_label_offset": k,
             "page_label_from": first,
         }
-        sections[sid] = [[lvl, title.strip(), page] for lvl, title, page in meta["toc"] if lvl <= 3]
+        sections[sid] = [[lvl, title.strip(), page] for lvl, title, page in meta["toc"] if lvl <= 4]
     return catalog, sections
 
 

@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from orchestrator.redact import _PATTERNS  # noqa: E402
-from provenance import ExtractIndex  # noqa: E402
+from provenance import ExtractIndex, unescape_js  # noqa: E402
 
 FORBIDDEN_SUFFIXES = {".pdf", ".epub", ".mobi", ".djvu", ".sqlite3", ".log"}
 FORBIDDEN_PARTS = {"sources", "extracts", ".orchestrator", "logs", "worktrees"}
@@ -43,7 +43,7 @@ def main(dist: str, index: ExtractIndex | None = None) -> int:
                 errs.append(f"credential-shaped string in {rel}")
             if "/sources/" in text or "PythonCentralHub/books" in text:
                 errs.append(f"reference to restricted source material in {rel}")
-            for m in index.find(text, limit=1):
+            for m in index.find(unescape_js(text), limit=1):
                 errs.append(f"{rel} contains text copied from {m.source_id} page {m.page}: \"{m.phrase}…\"")
     if total > BUDGET_BYTES:
         errs.append(f"dist is {total:,} bytes, over budget {BUDGET_BYTES:,}")
