@@ -24,7 +24,22 @@ def test_claude_isolated_from_user_settings():
     argv = agents.build("claude", "implement", prompt="p", cwd="/w", out_dir="/o", binary="claude").argv
     i = argv.index("--setting-sources")
     assert argv[i + 1] == "project,local"
+    assert "--strict-mcp-config" in argv and "--disable-slash-commands" in argv
     assert "--bare" not in argv  # would break subscription auth
+
+
+def test_codex_gets_isolated_home(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    home = agents.ensure_codex_home(tmp_path / "ch")
+    assert (tmp_path / "ch" / "auth.json").is_symlink()
+    inv = agents.build("codex", "implement", prompt="p", cwd="/w", out_dir="/o", binary="codex", codex_home=home)
+    assert dict(inv.env) == {"CODEX_HOME": home}
+
+
+def test_codex_home_refuses_to_overwrite_real_file(tmp_path):
+    (tmp_path / "ch").mkdir(); (tmp_path / "ch" / "auth.json").write_text("{}")
+    with pytest.raises(agents.UnsafeCommandError):
+        agents.ensure_codex_home(tmp_path / "ch")
 
 
 def test_codex_review_is_read_only_with_schema():

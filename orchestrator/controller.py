@@ -22,9 +22,11 @@ class LiveExecutionDisabled(RuntimeError):
 
 
 class Controller:
+    live_capable = False  # only orchestrator.live.LiveController sets this
+
     def __init__(self, conn: sqlite3.Connection, repo: str | Path, *, dry_run: bool = True,
                  concurrency: int = MAX_CONCURRENCY):
-        if not dry_run:
+        if not dry_run and not self.live_capable:
             raise LiveExecutionDisabled(
                 "Live execution is not implemented in this prototype and requires owner approval "
                 "(see docs/TASKS.md P1-7).")
@@ -68,7 +70,9 @@ class Controller:
 
         snapshot = db.tasks_in(self.conn, S.REVIEW, S.TESTING, S.IMPLEMENTED, S.RUNNING, S.REPAIR)
         for row in snapshot:
-            log.append(self._advance(row))
+            line = self._advance(row)
+            if line:
+                log.append(line)
 
         busy = self._busy_agents()
         active = len(db.tasks_in(self.conn, *IN_FLIGHT))
@@ -77,7 +81,9 @@ class Controller:
                 break
             if row["owner"] in busy:
                 continue
-            log.append(self._dispatch(row))
+            line = self._dispatch(row)
+            if line:
+                log.append(line)
             busy.add(row["owner"])
             active += 1
         return log

@@ -69,7 +69,8 @@ class Invocation:
     role: str  # "implement" | "review"
     argv: tuple[str, ...]
     cwd: str
-    stdin_devnull: bool = True  # codex appends piped stdin to the prompt
+    env: tuple[tuple[str, str], ...] = ()  # extra env vars (e.g. isolated CODEX_HOME)
+    stdin_devnull: bool = True  # codex appends piped stdin to the prompt; claude waits 3 s for it
 
 
 def _guard(argv: list[str]) -> tuple[str, ...]:
@@ -79,15 +80,21 @@ def _guard(argv: list[str]) -> tuple[str, ...]:
     return tuple(argv)
 
 
-def build(agent: str, role: str, *, prompt: str, cwd: str, out_dir: str, binary: str | None = None) -> Invocation:
+# Verified in docs/audit/01-cli-contract.md: these stop user-global hooks/MCP/skills leaking in
+# and cut per-call context from ~390k to ~3k tokens, while still loading the project CLAUDE.md.
+CLAUDE_ISOLATION = ("--setting-sources", "project,local", "--strict-mcp-config", "--disable-slash-commands")
+
+
+def build(agent: str, role: str, *, prompt: str, cwd: str, out_dir: str, binary: str | None = None,
+          codex_home: str | None = None, extra_tools: tuple[str, ...] = ()) -> Invocation:
     if role not in ("implement", "review"):
         raise ValueError(role)
     exe = binary or resolve_binary(agent) or agent
     if agent == "claude":
         argv = [exe, "-p", prompt, "--output-format", "json", "--no-session-persistence",
-                "--permission-mode", "dontAsk", "--setting-sources", "project,local"]
+                "--permission-mode", "dontAsk", *CLAUDE_ISOLATION]
         if role == "implement":
-            argv += ["--allowedTools", *CLAUDE_IMPLEMENT_TOOLS]
+            argv += ["--allowedTools", *CLAUDE_IMPLEMENT_TOOLS, *extra_tools]
         else:
             argv += ["--tools", ",".join(CLAUDE_REVIEW_TOOLS),
                      "--json-schema", json.dumps(FINDINGS_SCHEMA, separators=(",", ":"))]
@@ -100,14 +107,34 @@ def build(agent: str, role: str, *, prompt: str, cwd: str, out_dir: str, binary:
         argv.append(prompt)
     else:
         raise ValueError(agent)
-    return Invocation(agent=agent, role=role, argv=_guard(argv), cwd=cwd)
+    # --ignore-user-config alone does NOT stop ~/.codex/AGENTS.md; a dedicated CODEX_HOME does.
+    env = (("CODEX_HOME", codex_home),) if agent == "codex" and codex_home else ()
+    return Invocation(agent=agent, role=role, argv=_guard(argv), cwd=cwd, env=env)
 
 
-def implement_prompt(spec) -> str:
-    return (f"Task {spec.id}: {spec.title}\n"
-            f"Follow AGENTS.md and MASTER_ARCHITECTURE.md. Modify ONLY these paths: {list(spec.allowed_paths)}.\n"
-            f"The controller will run these acceptance commands itself: {list(spec.acceptance)}.\n"
-            "Commit your work on the current branch. Report changed files, commands run, results, risks.")
+def ensure_codex_home(path: str | Path) -> str:
+    """Isolated CODEX_HOME whose auth.json is a symlink (credentials are never copied)."""
+    home = Path(path)
+    home.mkdir(parents=True, exist_ok=True)
+    link, real = home / "auth.json", Path.home() / ".codex" / "auth.json"
+    if not link.is_symlink():
+        if link.exists():
+            raise UnsafeCommandError(f"{link} exists and is not a symlink; refusing to touch credentials")
+        link.symlink_to(real)
+    return str(home)
+
+
+def implement_prompt(spec, feedback: str | None = None) -> str:
+    brief = spec.extra.get("brief", "")
+    text = (f"Task {spec.id}: {spec.title}\n"
+            f"{brief}\n\n"
+            f"Follow AGENTS.md and MASTER_ARCHITECTURE.md. Create or modify ONLY these paths: {list(spec.allowed_paths)}.\n"
+            f"After you finish, the controller will itself run: {list(spec.acceptance)}.\n"
+            "Do NOT run git add/commit: the controller commits your working-tree changes. "
+            "You have no network access. End with a short report: changed files, checks run, results, risks.")
+    if feedback:
+        text += f"\n\nThis is a retry. The previous attempt was rejected. Fix these problems:\n{feedback}"
+    return text
 
 
 def review_prompt(spec, commit_sha: str) -> str:

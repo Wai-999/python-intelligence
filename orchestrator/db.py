@@ -64,7 +64,9 @@ CREATE TABLE IF NOT EXISTS runs (
     started_at  TEXT NOT NULL,
     finished_at TEXT,
     exit_code   INTEGER,
-    dry_run     INTEGER NOT NULL
+    dry_run     INTEGER NOT NULL,
+    pgid        INTEGER,
+    log_path    TEXT
 );
 """
 
@@ -212,12 +214,32 @@ def transition(conn, task_id: str, to: Status, *, actor: str, expect: Status | N
 
 
 def record_run(conn, task_id: str, attempt: int, role: str, agent: str | None, argv: list[str],
-               cwd: str, dry_run: bool) -> int:
+               cwd: str, dry_run: bool, *, pgid: int | None = None, log_path: str | None = None,
+               exit_code: int | None = None) -> int:
+    finished = dry_run or exit_code is not None
     with tx(conn):
         cur = conn.execute(
-            "INSERT INTO runs (task_id, attempt, role, agent, argv_json, cwd, started_at, finished_at, exit_code, dry_run)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO runs (task_id, attempt, role, agent, argv_json, cwd, started_at, finished_at, exit_code,"
+            " dry_run, pgid, log_path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (task_id, attempt, role, agent, json.dumps(redact_obj(argv)), cwd, now(),
-             now() if dry_run else None, 0 if dry_run else None, int(dry_run)),
+             now() if finished else None, (0 if dry_run else exit_code), int(dry_run), pgid, log_path),
         )
         return cur.lastrowid
+
+
+def finish_run(conn, run_id: int, exit_code: int) -> None:
+    with tx(conn):
+        conn.execute("UPDATE runs SET finished_at = ?, exit_code = ? WHERE id = ?", (now(), exit_code, run_id))
+
+
+def unfinished_live_runs(conn) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM runs WHERE dry_run = 0 AND finished_at IS NULL").fetchall()
+
+
+def last_repair_feedback(conn, task_id: str) -> str | None:
+    row = conn.execute("SELECT detail_json FROM events WHERE task_id = ? AND to_status = 'repair'"
+                       " ORDER BY id DESC LIMIT 1", (task_id,)).fetchone()
+    if not row:
+        return None
+    d = json.loads(row["detail_json"])
+    return d.get("feedback") or d.get("reason")
