@@ -1,42 +1,22 @@
-/* Bump this revision when changing the shell or cache policy. Runtime files are
- * cached on use: offline Python needs one successful online run first. */
-const REVISION = "v1";
-const PREFIX = `python-intelligence:${self.registration.scope}:`;
-const SHELL = `${PREFIX}shell:${REVISION}`;
-const RUNTIME = `${PREFIX}pyodide:0.27.8:${REVISION}`;
+// Shell revisions may change without discarding the version-pinned runtime.
+const SHELL = "pi-v1";
+const RUNTIME = "pi-pyodide-0.27.8";
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.27.8/full/";
 const base = new URL(self.registration.scope);
-
-// Discover Vite's hashed entry, styles and worker from the built shell. This
-// avoids root-relative URLs and does not require a generated build manifest.
-async function cacheShell() {
-  const cache = await caches.open(SHELL);
-  const visited = new Set();
-  async function visit(url) {
-    if (visited.has(url)) return;
-    visited.add(url);
-    const response = await fetch(url, { cache: "reload" });
-    if (!response.ok) throw new Error(`Cannot cache ${url}: ${response.status}`);
-    await cache.put(url, response.clone());
-    if (!/text\/html|javascript|text\/css/.test(response.headers.get("content-type") || "")) return;
-    const source = await response.text();
-    const refs = [...source.matchAll(/["'`]([^"'`\s]+\.(?:js|css))["'`]/g)];
-    await Promise.all(refs.map(async ([, path]) => {
-      const asset = new URL(path, url);
-      if (asset.origin === base.origin && asset.pathname.startsWith(`${base.pathname}assets/`) && /-[\w-]+\.(?:js|css)$/.test(asset.pathname)) await visit(asset.href);
-    }));
-  }
-  await visit(base.href);
-}
+const index = new URL("./index.html", base).href;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(cacheShell());
-  // Let existing tabs finish with their current worker during an update.
+  event.waitUntil((async () => {
+    const cache = await caches.open(SHELL);
+    await cache.addAll([base.href, index]);
+    await self.skipWaiting();
+  })());
 });
+
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const names = await caches.keys();
-    await Promise.all(names.filter((name) => name.startsWith(PREFIX) && name !== SHELL && name !== RUNTIME)
+    await Promise.all(names.filter((name) => name.startsWith("pi-") && name !== SHELL && name !== RUNTIME)
       .map((name) => caches.delete(name)));
     await self.clients.claim();
   })());
@@ -46,21 +26,32 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
-  const runtime = url.href.startsWith(PYODIDE);
   const local = url.origin === base.origin && url.pathname.startsWith(base.pathname);
-  if (!runtime && !local) return;
-  // Never cache opaque CDN failures, other runtime versions, or arbitrary APIs.
-  if (!runtime && request.mode !== "navigate" && !url.pathname.startsWith(`${base.pathname}assets/`)) return;
+  const navigation = local && request.mode === "navigate";
+  const runtime = url.href.startsWith(PYODIDE);
+  const asset = local && url.pathname.startsWith(`${base.pathname}assets/`) && /-[\w-]+\.[\w.]+$/.test(url.pathname);
+  if (!navigation && !runtime && !asset) return;
+
   event.respondWith((async () => {
     const cache = await caches.open(runtime ? RUNTIME : SHELL);
-    const key = request.mode === "navigate" ? base.href : request;
-    const cached = await cache.match(key);
-    if (cached) return cached;
-    const response = await fetch(request);
-    if (response.ok && response.type !== "opaque") {
-      // A quota/storage failure must not prevent a successful online response.
-      await cache.put(key, response.clone()).catch(() => {});
+    // Keep writes alive without delaying delivery or WASM streaming compilation.
+    const remember = (key, response) => {
+      if (response.ok && response.type !== "opaque") {
+        event.waitUntil(cache.put(key, response.clone()).catch(() => {}));
+      }
+      return response;
+    };
+    if (navigation) {
+      try {
+        return remember(base.href, await fetch(request));
+      } catch (error) {
+        const cached = await cache.match(base.href) || await cache.match(index);
+        if (cached) return cached;
+        throw error;
+      }
     }
-    return response;
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return remember(request, await fetch(request));
   })());
 });

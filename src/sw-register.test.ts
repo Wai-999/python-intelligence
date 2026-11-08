@@ -1,29 +1,28 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerServiceWorker } from "./sw-register";
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+const navigatorWith = (register: ReturnType<typeof vi.fn>) =>
+  ({ serviceWorker: { register } }) as unknown as Navigator;
+
+afterEach(() => { vi.restoreAllMocks(); });
 
 describe("service worker registration", () => {
-  it("registers below the deployment base, bypassing HTTP cache for updates", async () => {
+  it("registers the relative worker and returns its registration", async () => {
     const registration = {} as ServiceWorkerRegistration;
     const register = vi.fn().mockResolvedValue(registration);
-    vi.stubGlobal("navigator", { serviceWorker: { register } });
-    expect(await registerServiceWorker("/python-intelligence/", true)).toBe(registration);
-    const scope = new URL("/python-intelligence/", document.baseURI).href;
-    expect(register).toHaveBeenCalledWith(`${scope}sw.js`, { scope, updateViaCache: "none" });
+    expect(await registerServiceWorker(navigatorWith(register), true)).toBe(registration);
+    expect(register).toHaveBeenCalledWith("./sw.js");
   });
-  it("does not register in development or unsupported browsers", async () => {
+  it("returns null in development or unsupported browsers", async () => {
     const register = vi.fn();
-    vi.stubGlobal("navigator", { serviceWorker: { register } });
-    await registerServiceWorker("./", false);
+    expect(await registerServiceWorker(navigatorWith(register), false)).toBeNull();
     expect(register).not.toHaveBeenCalled();
-    vi.stubGlobal("navigator", {});
-    expect(await registerServiceWorker("./", true)).toBeUndefined();
+    expect(await registerServiceWorker({} as Navigator, true)).toBeNull();
   });
-  it("handles denied registration without breaking startup", async () => {
-    vi.stubGlobal("navigator", { serviceWorker: { register: vi.fn().mockRejectedValue(new Error("denied")) } });
+  it("returns null on denied registration without breaking startup", async () => {
+    const register = vi.fn().mockRejectedValue(new Error("denied"));
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(await registerServiceWorker("./", true)).toBeUndefined();
+    expect(await registerServiceWorker(navigatorWith(register), true)).toBeNull();
     expect(warn).toHaveBeenCalledOnce();
   });
 });
