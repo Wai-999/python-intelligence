@@ -248,7 +248,7 @@
       "id": "digits",
       "kind": "challenge",
       "title": "Challenge: count the digits",
-      "body": "Write `count_digits(n)` that returns how many digits a whole number `n >= 0` has, using arithmetic\nrather than converting to text. `count_digits(42)` is 2 and `count_digits(1000)` is 4.\n\nIdea: `n // 10` drops the last digit. Careful with one special case: what should `count_digits(0)` be?\n\nThe checks look inside `count_digits` for text conversion (`str`, `format`, f-strings, `len`), and also\ntry a 5,001-digit number, which by default Python 3.12 won't turn into text (the default limit is 4,300\ndigits). A loop with `//` handles it easily.",
+      "body": "Write `count_digits(n)` that returns how many digits a whole number `n >= 0` has. `count_digits(42)` is 2\nand `count_digits(1000)` is 4.\n\nThis challenge is practice for `while` and `//`, so count with arithmetic rather than converting `n` to\ntext. Idea: `n // 10` drops the last digit. Careful with one special case: what should `count_digits(0)` be?\n\nThe checks include a 5,001-digit number (by default Python 3.12 won't turn integers that long into text)\nand spot common shortcuts such as `str`, f-strings and `log10`. They can't rule out every shortcut,\nthough, so whether you practise the loop is up to you.",
       "starter": "def count_digits(n):\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count",
       "hints": [
         "The starter is nearly right. Try it on 0: does the loop body ever run?",
@@ -287,8 +287,8 @@
           "concept": "while-loops"
         },
         {
-          "name": "counts with arithmetic, not text",
-          "code": "import dis\n_ops = {i.opname for i in dis.get_instructions(count_digits)}\n_used = sorted(set(count_digits.__code__.co_names) & {'str', 'repr', 'format', 'len', 'ascii', 'log10', 'log', 'set_int_max_str_digits'})\n_fmt = sorted(_ops & {'FORMAT_VALUE', 'FORMAT_SIMPLE', 'FORMAT_WITH_SPEC', 'CONVERT_VALUE', 'BUILD_STRING'})\nassert not _used and not _fmt, f'count_digits should count with // in a loop, not text conversion (found: {_used or _fmt})'",
+          "name": "no common text-conversion shortcut",
+          "code": "import dis\n_ops = {i.opname for i in dis.get_instructions(count_digits)}\n_used = sorted(set(count_digits.__code__.co_names) & {'str', 'repr', 'format', 'len', 'ascii', 'log10', 'log', 'set_int_max_str_digits'})\n_fmt = sorted(_ops & {'FORMAT_VALUE', 'FORMAT_SIMPLE', 'FORMAT_WITH_SPEC', 'CONVERT_VALUE', 'BUILD_STRING'})\nassert not _used and not _fmt, f'count_digits is meant to count with // in a loop; it uses a text shortcut (found: {_used or _fmt})'",
           "concept": "while-loops"
         }
       ],

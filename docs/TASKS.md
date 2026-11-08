@@ -63,7 +63,8 @@ fails if it is missing, tampered with, or does not cover every catalogued book. 
 `content/provenance/**`, `content/sources.json` or `content/source_sections.json` (orchestrator deny list).
 Codex cross-review of P3-2/P3-3: round 1 (1 high, 5 medium) and round 2 (1 high, 2 medium) all addressed; the
 round-1 lesson-only "attestation" was replaced by the hashed index because it covered neither the deployed artifact
-nor tampering.
+nor tampering. Round 3 confirmed both fixed; its remaining point (a blocklist can't fully enforce the
+arithmetic-only digits exercise) was resolved by wording the exercise honestly instead of claiming enforcement.
 
 ## Phase 4 — Curriculum graph (≈ 3–5 weeks)
 
