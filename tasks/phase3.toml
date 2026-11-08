@@ -1,0 +1,67 @@
+# Phase 3 tasks dispatched through the orchestrator. The provenance gate and book-grounded lessons are
+# Claude's (content provenance is Claude-owned per CLAUDE.md) and are reviewed by Codex.
+
+[[task]]
+id = "P3-1"
+title = "PyMuPDF page extractor with quality scoring and review queue"
+owner = "codex"
+reviewer = "claude"
+depends_on = []
+allowed_paths = ["ingest/**", "tests/test_ingest.py"]
+acceptance = ["python -m pytest tests/test_ingest.py -q"]
+risk = "medium"
+max_attempts = 3
+brief = """
+Create a stdlib + PyMuPDF package `ingest/` (files: ingest/__init__.py, ingest/extract.py, ingest/__main__.py)
+and tests in tests/test_ingest.py. PyMuPDF 1.28.2 is installed; import it as `import pymupdf`.
+No other new dependencies. You have no network.
+
+Public API in ingest/extract.py:
+  QUALITY_THRESHOLD = 0.6
+  class IngestError(Exception)
+  def sha256_file(path) -> str                      # lowercase hex
+  def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict
+      - Raise IngestError if the file's sha256 != expected_sha256 (check BEFORE opening it with pymupdf).
+      - Write into out_dir/<source_id>/ exactly three files:
+        pages.jsonl  one JSON object per physical page, in order, keys exactly:
+            source_id, sha256, page (1-based physical index), label (page.get_label() or null if empty),
+            text (page.get_text("text"), normalised: "\\r\\n"/"\\r" -> "\\n", trailing whitespace on each line
+            stripped, NUL removed), chars (len of text), extraction_quality (float 0..1, rounded to 3 places),
+            flags (sorted list of strings), code_blocks (list of strings: consecutive lines whose spans are all
+            in a monospaced font, i.e. span["flags"] & 8, joined with "\\n"; use page.get_text("dict")).
+            NO timestamps in pages.jsonl, so re-extracting the same PDF gives byte-identical output.
+        meta.json    {source_id, sha256, page_count, extractor: "pymupdf " + pymupdf.__version__,
+            toc: doc.get_toc() as a list of [level, title, page], quality: {mean, low_pages (count)},
+            review_threshold: QUALITY_THRESHOLD}
+        review_queue.json  list of {page, label, extraction_quality, flags} for every page whose
+            extraction_quality < QUALITY_THRESHOLD, in page order.
+      - Write each file atomically (write to a temp file in the same directory, then os.replace).
+      - Return the meta dict.
+  def score_page(text: str, has_images: bool) -> tuple[float, list[str]]
+      Deterministic heuristic, documented in its docstring. At minimum these flags:
+        "no_text"     stripped text empty -> quality 0.0 (add "image_only" too if has_images: likely scanned)
+        "sparse"      fewer than 40 non-space chars (quality capped at 0.5)
+        "replacement_chars"  any U+FFFD; quality reduced in proportion to their share
+        "low_alpha"   share of letters among non-space chars < 0.5 (quality capped at 0.5)
+      Normal prose pages must score >= 0.9.
+
+  def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, repo_root=".") -> list[dict]
+      For each source in the manifest JSON (key "sources"), or just the one whose source_id == only:
+      skip (do not touch) sources unless allowed_for_internal_extraction is true AND downloaded is true;
+      otherwise call extract(repo_root/local_path, source_id, out_root, expected_sha256=source["sha256"]).
+      If `only` names a source that is not cleared, raise IngestError saying why.
+
+ingest/__main__.py: `python -m ingest --manifest PATH --out DIR [--only SOURCE_ID]` prints one summary line per
+source (id, pages, mean quality, pages queued for review) and exits 0; IngestError -> message on stderr, exit 1.
+
+tests/test_ingest.py (pytest, use tmp_path; build fixture PDFs in the test with pymupdf, never read sources/):
+  page 1 normal prose (several sentences), page 2 prose plus a code listing inserted with fontname="cour"
+  (Courier is monospaced), page 3 blank, page 4 a few characters only; set page labels so get_label works.
+  Cover: schema and key set of every pages.jsonl record; code_blocks found on page 2 only; blank page has
+  quality 0.0 and flag no_text and is in review_queue.json; sparse page flagged and queued; prose page >= 0.9;
+  sha mismatch raises IngestError and writes nothing; re-running gives byte-identical pages.jsonl;
+  extract_from_manifest skips uncleared/not-downloaded sources and raises for `only` on an uncleared one;
+  CLI exit codes 0 and 1 (run it with subprocess and sys.executable, cwd = the repo root).
+Run the tests with the venv interpreter, which has pymupdf:
+  "/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package/.venv/bin/python" -m pytest tests/test_ingest.py -q
+"""
