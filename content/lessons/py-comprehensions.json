@@ -42,6 +42,26 @@
       ],
       "section": "List comprehensions",
       "use": "reference"
+    },
+    {
+      "id": "docs-displays",
+      "source_id": "pydocs-312-expressions",
+      "pages": [
+        8,
+        8
+      ],
+      "section": "6.2.4. Displays for lists, sets and dictionaries",
+      "use": "reference"
+    },
+    {
+      "id": "docs-dictdisp",
+      "source_id": "pydocs-312-expressions",
+      "pages": [
+        11,
+        11
+      ],
+      "section": "6.2.7. Dictionary displays",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -168,11 +188,13 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "```python\n[expression for name in iterable]              # a new list\n[expression for name in iterable if condition] # only items passing the test\n{key: value for name in iterable}              # a new dictionary\n{expression for name in iterable}              # a new set (no duplicates)\n```\n\n1. The result is always a **new** collection; the iterable is not changed.\n2. Items are visited in order; `expression` is evaluated once for each item that passes `condition`.\n3. In a dict comprehension, a repeated key keeps the **last** value produced for it.\n4. The loop name (`name`) belongs to the comprehension and does not leak out into your code.\n5. Keep them short. If you need several steps, `print`s or `try`, write an ordinary loop.",
+      "body": "```python\n[expression for name in iterable]              # a new list\n[expression for name in iterable if condition] # only items passing the test\n{key: value for name in iterable}              # a new dictionary\n{expression for name in iterable}              # a new set (no duplicates)\n```\n\n1. The result is always a **new** collection. Building it doesn't change the iterable, though an\n   expression or condition that calls a mutating method (e.g. `x.append(...)`) still can, so keep them pure.\n2. Items are visited in order; `expression` is evaluated once for each item that passes `condition`.\n3. In a dict comprehension, a repeated key keeps the **last** value produced for it.\n4. The loop name (`name`) belongs to the comprehension and does not leak out into your code.\n5. Keep them short. If you need several steps, `print`s or `try`, write an ordinary loop.",
       "cites": [
         "dip-listcomp",
         "dip-dictcomp",
-        "tp-listcomp"
+        "tp-listcomp",
+        "docs-displays",
+        "docs-dictdisp"
       ]
     },
     {
@@ -187,7 +209,7 @@
       "id": "positives",
       "kind": "guided",
       "title": "Your turn: tidy the readings",
-      "body": "Complete `positive_rounded(readings)` with a **single list comprehension** that keeps only readings\nabove 0 and rounds each to a whole number with `round(r)`. The input list must not change.",
+      "body": "Complete `positive_rounded(readings)` with a **single list comprehension** (a check looks for exactly one\ncomprehension loop and no `.append`) that keeps only readings\nabove 0 and rounds each to a whole number with `round(r)`. The input list must not change.",
       "starter": "def positive_rounded(readings):\n    return [r for r in readings]",
       "hints": [
         "Add an `if` part to filter: only readings where `r > 0`.",
@@ -209,6 +231,11 @@
           "name": "input unchanged",
           "code": "_data = [2.2, -1.0]\npositive_rounded(_data)\nassert _data == [2.2, -1.0], 'do not change the input'",
           "concept": "list-comprehensions"
+        },
+        {
+          "name": "uses one list comprehension",
+          "code": "import dis\n_ops, _names, _todo = [], set(), [positive_rounded.__code__]\nwhile _todo:\n    _c = _todo.pop()\n    _ops += [i.opname for i in dis.get_instructions(_c)]\n    _names |= set(_c.co_names)\n    _todo += [k for k in _c.co_consts if hasattr(k, 'co_code')]\nassert 'LIST_APPEND' in _ops and 'append' not in _names and _ops.count('FOR_ITER') == 1, 'write it as one list comprehension, [... for r in readings if ...], not a loop with append'",
+          "concept": "list-comprehensions"
         }
       ],
       "solution": "def positive_rounded(readings):\n    return [round(r) for r in readings if r > 0]"
@@ -217,7 +244,7 @@
       "id": "index",
       "kind": "challenge",
       "title": "Challenge: an index of word lengths",
-      "body": "Write `length_index(words)` returning a dictionary that maps each **lower-case** word to its length,\nbut only for words of at least 3 letters: `length_index([\"Hi\", \"Owl\", \"swan\"])` is\n`{\"owl\": 3, \"swan\": 4}`. Use a dictionary comprehension.",
+      "body": "Write `length_index(words)` returning a dictionary that maps each **lower-case** word to its length,\nbut only for words of at least 3 letters: `length_index([\"Hi\", \"Owl\", \"swan\"])` is\n`{\"owl\": 3, \"swan\": 4}`. Use a dictionary comprehension (a check looks for one).",
       "starter": "def length_index(words):\n    return {w: len(w) for w in words}",
       "hints": [
         "Two things are missing: lower-casing the key, and the length filter.",
@@ -238,6 +265,11 @@
         {
           "name": "nothing qualifies",
           "code": "assert length_index(['a', 'to']) == {}, 'no word has 3 or more letters'",
+          "concept": "dict-comprehensions"
+        },
+        {
+          "name": "uses a dict comprehension",
+          "code": "import dis\n_ops, _names, _todo = [], set(), [length_index.__code__]\nwhile _todo:\n    _c = _todo.pop()\n    _ops += [i.opname for i in dis.get_instructions(_c)]\n    _names |= set(_c.co_names)\n    _todo += [k for k in _c.co_consts if hasattr(k, 'co_code')]\nassert 'MAP_ADD' in _ops and _ops.count('FOR_ITER') == 1, 'build the result with one dictionary comprehension, {key: value for w in words if ...}'",
           "concept": "dict-comprehensions"
         }
       ],

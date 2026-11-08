@@ -112,6 +112,90 @@
     "52": "configuring-the-limit",
     "53": "recommended-configuration"
    }
+  },
+  "pydocs-312-errors": {
+   "title": "The Python Tutorial 3.12: Errors and Exceptions",
+   "short": "Python 3.12 tutorial, Errors and Exceptions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/tutorial/errors.html",
+   "kind": "web",
+   "sha256": "f9a32af10feb2cc14ee68b193c7cecdbbf8e67a5d7267e97f7b8a857c44c4101",
+   "page_count": 11,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "errors-and-exceptions",
+    "2": "syntax-errors",
+    "3": "exceptions",
+    "4": "handling-exceptions",
+    "5": "raising-exceptions",
+    "6": "exception-chaining",
+    "7": "user-defined-exceptions",
+    "8": "defining-clean-up-actions",
+    "9": "predefined-clean-up-actions",
+    "10": "raising-and-handling-multiple-unrelated-exceptions",
+    "11": "enriching-exceptions-with-notes"
+   }
+  },
+  "pydocs-312-expressions": {
+   "title": "The Python Language Reference 3.12: Expressions",
+   "short": "Python 3.12 reference, Expressions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/reference/expressions.html",
+   "kind": "web",
+   "sha256": "56c73f1feb16c3e223e9a52f5a9810e67858ce59692e9afad7e2e12a019605d0",
+   "page_count": 39,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "expressions",
+    "2": "arithmetic-conversions",
+    "3": "atoms",
+    "4": "atom-identifiers",
+    "5": "index-5",
+    "6": "literals",
+    "7": "parenthesized-forms",
+    "8": "displays-for-lists-sets-and-dictionaries",
+    "9": "list-displays",
+    "10": "set-displays",
+    "11": "dictionary-displays",
+    "12": "generator-expressions",
+    "13": "yield-expressions",
+    "14": "generator-iterator-methods",
+    "15": "examples",
+    "16": "asynchronous-generator-functions",
+    "17": "asynchronous-generator-iterator-methods",
+    "18": "primaries",
+    "19": "attribute-references",
+    "20": "subscriptions",
+    "21": "slicings",
+    "22": "calls",
+    "23": "await-expression",
+    "24": "the-power-operator",
+    "25": "unary-arithmetic-and-bitwise-operations",
+    "26": "binary-arithmetic-operations",
+    "27": "shifting-operations",
+    "28": "binary-bitwise-operations",
+    "29": "comparisons",
+    "30": "value-comparisons",
+    "31": "membership-test-operations",
+    "32": "is-not",
+    "33": "boolean-operations",
+    "34": "assignment-expressions",
+    "35": "conditional-expressions",
+    "36": "lambda",
+    "37": "expression-lists",
+    "38": "evaluation-order",
+    "39": "operator-precedence"
+   }
   }
  }
 }

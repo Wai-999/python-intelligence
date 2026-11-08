@@ -63,6 +63,26 @@
       ],
       "section": "Raising Exceptions",
       "use": "reference"
+    },
+    {
+      "id": "docs-handling",
+      "source_id": "pydocs-312-errors",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "8.3. Handling Exceptions",
+      "use": "reference"
+    },
+    {
+      "id": "docs-cleanup",
+      "source_id": "pydocs-312-errors",
+      "pages": [
+        8,
+        8
+      ],
+      "section": "8.7. Defining Clean-up Actions",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -175,7 +195,9 @@
         "tp-catch",
         "dip-exc",
         "atbs-handle",
-        "atbs-raise"
+        "atbs-raise",
+        "docs-handling",
+        "docs-cleanup"
       ]
     },
     {

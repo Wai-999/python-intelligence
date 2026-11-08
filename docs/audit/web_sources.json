@@ -20,6 +20,46 @@
     "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
    },
    "sha256": "0b10fb9e7e5b8db1d1283835b98b6a9c167871bf6475937aa5d0e1467956a352"
+  },
+  {
+   "source_id": "pydocs-312-errors",
+   "title": "The Python Tutorial 3.12: Errors and Exceptions",
+   "short": "Python 3.12 tutorial, Errors and Exceptions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/errors.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "f9a32af10feb2cc14ee68b193c7cecdbbf8e67a5d7267e97f7b8a857c44c4101"
+  },
+  {
+   "source_id": "pydocs-312-expressions",
+   "title": "The Python Language Reference 3.12: Expressions",
+   "short": "Python 3.12 reference, Expressions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/reference/expressions.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "56c73f1feb16c3e223e9a52f5a9810e67858ce59692e9afad7e2e12a019605d0"
   }
  ]
 }

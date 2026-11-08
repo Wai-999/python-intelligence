@@ -62,6 +62,16 @@
       ],
       "section": "Tuples",
       "use": "reference"
+    },
+    {
+      "id": "docs-immutable",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "Immutable Sequence Types",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -181,7 +191,8 @@
         "tp-return",
         "dip-multi",
         "atbs-multi",
-        "docs-tuples"
+        "docs-tuples",
+        "docs-immutable"
       ]
     },
     {
