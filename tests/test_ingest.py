@@ -652,3 +652,114 @@ def test_stale_unmarked_backup_is_preserved(tmp_path):
     os.utime(leftover, (time.time()-7200, time.time()-7200))
     _publish(tmp_path / 'book', {'pages.jsonl': 'complete'})
     assert (leftover / 'old/marker').read_text() == 'previous'
+
+
+@pytest.mark.parametrize('gap,fragment', [(2, 'n == 1:'), (18, '# alternative')])
+def test_same_baseline_listing_fragments(gap, fragment):
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_text((50, 50), 'if n == 0:', fontname='cour', fontsize=10)
+        page.insert_text((74, 65), 'value = 0', fontname='cour', fontsize=10)
+        page.insert_text((50, 80), 'elif' if gap == 2 else 'else:',
+                         fontname='cour', fontsize=10)
+        prefix = 'elif' if gap == 2 else 'else:'
+        page.insert_text((50 + (len(prefix) + gap) * 6, 80), fragment,
+                         fontname='cour', fontsize=10)
+        page.insert_text((74, 95), 'value = 1', fontname='cour', fontsize=10)
+        code, = _code_blocks(page)
+    assert prefix + ' ' * gap + fragment in code
+    compile(code, '<fragments>', 'exec')
+
+
+def test_large_first_gap_splits():
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for y, text in [(50, 'standalone = 0'), (180, 'def f():'),
+                        (195, '    return 1'), (210, 'value = f()')]:
+            page.insert_text((50, y), text, fontname='cour', fontsize=11)
+        blocks = _code_blocks(page)
+    assert blocks == ['standalone = 0', 'def f():\n    return 1\nvalue = f()']
+    for code in blocks:
+        compile(code, '<gap>', 'exec')
+
+
+@pytest.mark.parametrize('offset', [1, 6, 12])
+@pytest.mark.parametrize('geometry', ['rect', 'mediabox'])
+def test_column_jump_below_previous_line(offset, geometry):
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [
+                {'bbox': (x, y, x+100, y+12),
+                 'spans': [dict(text=t, flags=8, size=10)]}
+                for x, y, t in [(50, 50, 'left = 1'), (50, 65, 'left += 1'),
+                                (350, 65+offset, 'right = 2'),
+                                (350, 80+offset, 'right += 1')]]}]}
+    page = Page()
+    setattr(page, geometry, pymupdf.Rect(0, 0, 600, 800))
+    assert _code_blocks(page) == ['left = 1\nleft += 1', 'right = 2\nright += 1']
+
+
+def _fixture_span(text, x, y, width=6, height=12, size=10):
+    return dict(flags=8, size=size, bbox=(x, y, x+len(text)*width, y+height),
+                chars=[dict(c=c, bbox=(x+i*width, y, x+(i+1)*width, y+height))
+                       for i, c in enumerate(text)])
+
+
+def _fixture_page(lines):
+    class Page:
+        mediabox = pymupdf.Rect(0, 0, 600, 800)
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [dict(bbox=spans[0]['bbox'], spans=spans)
+                                         for spans in lines]}]}
+    return Page()
+
+
+@pytest.mark.parametrize('reverse,small,trailing', [(False, False, True),
+                                                   (False, True, False),
+                                                   (True, False, False)])
+def test_visual_fragments(reverse, small, trailing):
+    from ingest.extract import _code_blocks
+    left = [_fixture_span('if True:', 50, 50)]
+    a = [_fixture_span('value ' if trailing else 'value', 74, 65)]
+    b = [_fixture_span('= 1', 110, 68 if small else 65,
+                       height=8 if small else 12)]
+    code, = _code_blocks(_fixture_page([left] + ([b, a] if reverse else [a, b])))
+    assert code == 'if True:\n    value = 1'
+    compile(code, '<visual>', 'exec')
+
+
+def test_callout_does_not_set_indent_or_pitch():
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('def f():', 50, 50)],
+        [_fixture_span('①', 74, 65, width=30, size=50),
+         _fixture_span('return 1', 74, 65)],
+        [_fixture_span('value = 2', 50, 200)],
+    ])
+    # Leading callouts remain annotations in the text; only their metrics are ignored.
+    assert _code_blocks(page) == ['def f():\n    ①return 1', 'value = 2']
+
+
+@pytest.mark.parametrize('suffix', ['    ①', '   ①    ②  ', '\t❶   ⑳'])
+def test_aligned_trailing_callouts_leave_no_whitespace(suffix):
+    from ingest.extract import _code_blocks
+    assert _code_blocks(_fixture_page([[_fixture_span('value = 1'+suffix, 50, 50)]])) == ['value = 1']
+
+
+def test_new_listing_first_gap_uses_fallback_pitch():
+    from ingest.extract import _code_blocks
+    lines = [[_fixture_span(text, 50, y)] for y, text in
+             [(50, 'a = 1'), (56, 'b = 2'), (180, 'c = 3'),
+              (220, 'd = 4'), (232, 'e = 5')]]
+    assert _code_blocks(_fixture_page(lines)) == ['a = 1\nb = 2', 'c = 3\nd = 4\ne = 5']
+
+
+def test_bullet_list_is_not_a_python_listing():
+    from ingest.extract import _code_blocks
+    assert _code_blocks(_fixture_page([
+        [_fixture_span('•', 50, 50)], [_fixture_span("'Hello world!'", 74, 50)],
+        [_fixture_span('•', 50, 65)], [_fixture_span("'Hello'", 74, 65)],
+    ])) == []

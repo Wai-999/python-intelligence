@@ -79,11 +79,66 @@ def _is_mono(span):
     return bool(span.get("flags", 0) & 8) or _mono_font(span.get("font", ""))
 
 
+def _visual_lines(lines):
+    """Reassemble nearby raw fragments by vertical overlap, then x position."""
+    groups = []
+    for raw in lines:
+        line = dict(raw)
+        line["spans"] = [dict(s, text="".join(c["c"] for c in s["chars"]))
+                         if "chars" in s else dict(s) for s in raw.get("spans", [])]
+        box = line.get("bbox")
+        group = next((g for g in groups if box and g[0].get("bbox") and
+                      min(box[3], g[0]["bbox"][3]) - max(box[1], g[0]["bbox"][1]) >
+                      .5 * min(box[3] - box[1], g[0]["bbox"][3] - g[0]["bbox"][1])), None)
+        if group is None:
+            groups.append([line])
+        else:
+            group.append(line)
+    for group in groups:
+        group.sort(key=lambda line: line.get("bbox", (0,))[0])
+        merged = None
+        edge = None
+        for line in group:
+            spans = line["spans"]
+            box = line.get("bbox")
+            text = "".join(s.get("text", "") for s in spans)
+            glyphs = [c for s in spans for c in s.get("chars", [])
+                      if not c["c"].isspace() and not CALLOUTS.fullmatch(c["c"])]
+            widths = sorted(c["bbox"][2] - c["bbox"][0] for c in glyphs
+                            if c["bbox"][2] > c["bbox"][0])
+            width = widths[len(widths)//2] if widths else next(
+                (.6 * s["size"] for s in spans if s.get("size")), 1)
+            gap = box[0] - edge if box and edge is not None else None
+            limit = 24 if text.lstrip().startswith("#") else 10
+            if merged is not None and gap is not None and -.1 <= gap <= limit * width:
+                # Raw bboxes include trailing spaces; use the last ink glyph.
+                for span in reversed(merged["spans"]):
+                    span["text"] = span.get("text", "").rstrip()
+                    if "chars" in span:
+                        while span["chars"] and span["chars"][-1]["c"].isspace():
+                            span["chars"].pop()
+                    if span["text"]:
+                        break
+                spaces = max(0, round(gap / width))
+                merged["spans"].append(dict(text=" " * spaces, flags=8))
+                merged["spans"].extend(spans)
+                old = merged["bbox"]
+                merged["bbox"] = (old[0], min(old[1], box[1]), box[2], max(old[3], box[3]))
+            else:
+                if merged is not None:
+                    yield merged
+                merged = line
+            edge = max((c["bbox"][2] for c in glyphs), default=box[2] if box else None)
+        if merged is not None:
+            yield merged
+
+
 def _code_blocks(page):
     blocks, current, pitches = [], [], []
     previous = None
 
     def flush():
+        nonlocal previous
         if current:
             measured = [origin for _, origin, _ in current if origin is not None]
             baseline = min(measured) if measured else 0
@@ -93,10 +148,11 @@ def _code_blocks(page):
                 for text, origin, width in current))
             current.clear()
         pitches.clear()
+        previous = None
 
     layout = page.get_text("rawdict")
     for block in layout["blocks"]:
-        for line in block.get("lines", []):
+        for line in _visual_lines(block.get("lines", [])):
             spans = [dict(span) for span in line.get("spans", [])]
             for span in spans:
                 if "chars" in span:
@@ -106,28 +162,50 @@ def _code_blocks(page):
                 continue
             total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)
             mono = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans if _is_mono(s))
-            if total and mono / total >= 0.8:
+            if total and mono / total >= 0.8 and not text.lstrip().startswith("•"):
                 bbox = line.get("bbox")
-                first = next(s for s in spans if _is_mono(s) and s["text"].strip())
-                if previous and bbox:
-                    delta = bbox[1] - previous[1]
-                    fallback = max(previous[3] - previous[1], 1.2 * first.get("size", 0))
-                    pitch = sorted(pitches)[len(pitches) // 2] if pitches else fallback
-                    # Full font bboxes can overlap even on consecutive baselines.
-                    # Without a measured pitch, a first gap may be two blank lines.
-                    if delta <= 0.01 or (pitches and delta > 3.5 * pitch):
-                        flush()
-                    elif delta <= 1.5 * fallback:
-                        pitches.append(delta)
+                first = next((s for s in spans if _is_mono(s) and any(
+                    c.isascii() and not c.isspace() for c in CALLOUTS.sub("", s["text"]))),
+                    next(s for s in spans if _is_mono(s) and s["text"].strip()))
                 widths = [c["bbox"][2] - c["bbox"][0]
                           for c in first.get("chars", [])
                           if not c["c"].isspace() and c["bbox"][2] > c["bbox"][0]]
                 width = sorted(widths)[len(widths) // 2] if widths else 0
                 origin = spans[0].get("bbox", (None,))[0] if width else None
                 # Callouts are editorial annotations, retained in page text.
-                text = re.sub(r"(?: ?[\u2460-\u2473\u2776-\u277f])+$", "", text)
+                text = re.sub(r"(?:\s*[①-⑳❶-❿])+\s*$", "", text).rstrip()
                 if not text.strip():
                     continue
+                # MuPDF can also place adjacent fragments in separate blocks.
+                if previous and bbox and current and width:
+                    overlap = min(previous[3], bbox[3]) - max(previous[1], bbox[1])
+                    gap = bbox[0] - previous[2]
+                    limit = 24 if text.lstrip().startswith("#") else 10
+                    if (overlap > .5 * min(previous[3] - previous[1], bbox[3] - bbox[1])
+                            and -.1 <= gap <= limit * width):
+                        old_text, old_origin, old_width = current[-1]
+                        spaces = max(0, round(gap / width))
+                        if old_text[-1:].isidentifier() and text[:1].isidentifier():
+                            spaces = max(1, spaces)
+                        current[-1] = (old_text + " " * spaces + text, old_origin, old_width)
+                        previous = (previous[0], min(previous[1], bbox[1]), bbox[2],
+                                    max(previous[3], bbox[3]))
+                        continue
+                page_box = getattr(page, "rect", None) or getattr(page, "mediabox", None)
+                page_width = (page_box.width if hasattr(page_box, "width") else
+                              page_box[2] - page_box[0] if page_box else 612)
+                if previous and bbox and abs(bbox[0] - previous[0]) > .4 * page_width:
+                    flush()
+                if previous and bbox:
+                    delta = bbox[1] - previous[1]
+                    fallback = max(previous[3] - previous[1], 1.2 * first.get("size", 0))
+                    pitch = sorted(pitches)[len(pitches) // 2] if pitches else fallback
+                    # Full font bboxes can overlap even on consecutive baselines.
+                    # Without a measured pitch, a first gap may be two blank lines.
+                    if delta <= 0.01 or delta > (3.5 * pitch if pitches else 4.5 * fallback):
+                        flush()
+                    elif delta <= 1.5 * fallback:
+                        pitches.append(delta)
                 current.append((text, origin, width or 1))
                 previous = bbox
             else:
