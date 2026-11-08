@@ -11,10 +11,10 @@ Machine-readable specs for Phase 1 are in [`tasks/phase1.toml`](../tasks/phase1.
 | P0-1 | Environment + CLI audit | Versions, auth, headless smoke tests recorded with commands | ✅ `docs/audit/00-repository-audit.md` |
 | P0-2 | Source inventory | Pinned SHA, 15 PDFs with blob SHA/size/presumed rights; no PDF bytes retained | ✅ `docs/audit/source_manifest.json` |
 | P0-3 | ADR + risk register | Design covers state machine, isolation, gates, recovery | ✅ `docs/adr/0001…`, `docs/RISK_REGISTER.md` |
-| P0-4 | Dry-run controller prototype + tests | `pytest` green; no live execution path | ✅ except recovery policy (owner contribution) |
-| P0-5 ⛔ | **Owner rights decisions** | For each source: use / don't use / fetch official copy; recorded in manifest | Waiting on owner |
+| P0-4 | Dry-run controller prototype + tests | `pytest` green | ✅ (recovery policy implemented 2026-11-08) |
+| P0-5 ⛔ | **Owner rights decisions** | For each source: use / don't use / fetch official copy; recorded in manifest | **Still waiting on owner.** Default applied: no PDFs used; all lessons are original |
 
-## Phase 1 — Controller MVP (≈ 5–7 days)
+## Phase 1 — Controller MVP ✅ (completed 2026-11-08)
 
 | ID | Owner → Reviewer | Task | Acceptance criteria | Est. |
 |---|---|---|---|---|
@@ -26,7 +26,13 @@ Machine-readable specs for Phase 1 are in [`tasks/phase1.toml`](../tasks/phase1.
 | P1-6 | Claude → Codex | Structured cross-review: shared findings JSON Schema, prompt templates, findings persisted | Both CLIs return schema-valid findings on a seeded-bug fixture; findings visible via `events` | 1 d |
 | P1-7 ⛔ | Owner | **First supervised live run**: one Claude task + one Codex review on a toy task | Owner watches; run logs, review findings, approval record inspected; no merge without `approve` | 0.5 d |
 
-## Phase 2 — One vertical lesson: *Functions* (≈ 7–10 days)
+## Phase 2 — One vertical lesson: *Functions* ✅ (completed 2026-11-08, not deployed)
+
+Status: Vite/React/TS app; Pyodide 0.27.8 worker with timeout-by-termination; 3 original lessons (Functions has the
+full 9-stage arc); prerequisite graph, recommendation and remediation; IndexedDB progress with export/import
+(implemented by Codex via the orchestrator over 3 attempts, reviewed by Claude); content gate, dist gate, and
+6 Playwright e2e tests against the production build served under a sub-path, all passing. P2-6 (owner review,
+create a GitHub remote) remains open.
 
 | ID | Owner | Task | Acceptance |
 |---|---|---|---|

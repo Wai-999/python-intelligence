@@ -2,9 +2,11 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const [base = "/python-intelligence/", port = "4173"] = process.argv.slice(2);
-const root = new URL("../dist/", import.meta.url).pathname;
+// fileURLToPath, not .pathname: the repo path contains a space ("My Porfolio") that .pathname leaves as %20.
+const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
   ".svg": "image/svg+xml", ".wasm": "application/wasm", ".py": "text/plain" };
 

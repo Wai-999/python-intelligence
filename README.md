@@ -10,6 +10,19 @@ A static GitHub Pages learning platform for Python, data science, statistics and
 | `docs/TASKS.md` | Phased plan and status |
 | `docs/RISK_REGISTER.md` | Open risks |
 
+## Learning site quick start
+
+```bash
+npm ci
+npm run dev            # http://localhost:5173
+npm test               # unit tests (vitest)
+npm run build          # content gate -> typecheck -> vite build -> dist gate
+npm run test:e2e       # Playwright against dist/ served under /python-intelligence/
+```
+
+Lessons are JSON in `content/lessons/`, validated by `scripts/validate_content.py`. Every example, solution and
+starter is executed with the same `src/py/harness.py` that the browser runs in Pyodide.
+
 ## Orchestrator quick start
 
 ```bash
@@ -20,6 +33,8 @@ python3 -m orchestrator tick -n 5                  # dry-run: plans and records 
 python3 -m orchestrator status
 python3 -m orchestrator approve P1-1 --by <you>    # human gate: required before any merge
 python3 -m orchestrator events --task P1-1         # audit trail
+python3 -m orchestrator run --live                 # REALLY run claude/codex until a human gate
+python3 -m orchestrator reject P2-4 --by <you> --with-findings --feedback "..."  # send back
 ```
 
 State lives in `.orchestrator/state.sqlite3` (gitignored). The orchestrator is local-only and is never deployed.

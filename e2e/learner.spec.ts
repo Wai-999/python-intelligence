@@ -79,7 +79,7 @@ test("export, reset, and import restore progress", async ({ page }) => {
   await expect(page.getByText("Progress reset.")).toBeVisible();
   await page.locator("input[type=file]").setInputFiles(path!);
   await expect(page.getByText("Progress imported.")).toBeVisible();
-  await page.goto("./#/lesson/py-values-names/4");
+  await page.reload(); // re-read everything from IndexedDB, not from in-memory UI state
   await expect(page.getByText(/Passed earlier/)).toBeVisible();
 });
 
@@ -89,6 +89,6 @@ test("a corrupt import is rejected and leaves progress unchanged", async ({ page
   await page.getByRole("button", { name: "Progress" }).click();
   await page.locator("input[type=file]").setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from('{"format":"nope"}') });
   await expect(page.getByText(/Import failed, and your current progress was left unchanged/)).toBeVisible();
-  await page.goto("./#/lesson/py-values-names/4");
+  await page.reload(); // re-read everything from IndexedDB, not from in-memory UI state
   await expect(page.getByText(/Passed earlier/)).toBeVisible();
 });

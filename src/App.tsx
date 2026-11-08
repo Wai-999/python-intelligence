@@ -3,7 +3,7 @@ import { CurriculumMap } from "./components/CurriculumMap";
 import { LessonView } from "./components/LessonView";
 import { ProgressPanel } from "./components/ProgressPanel";
 import { LESSONS } from "./content/lessons";
-import { buildGraph, recommendNext, type ProgressMap } from "./curriculum/graph";
+import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
 import { getRunner } from "./py/runner";
 import { applyOutcome, visitStep } from "./progress/logic";
 import { openProgressStore } from "./progress/store";
@@ -98,7 +98,7 @@ export function App() {
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
       {panel && store && <ProgressPanel store={store} onChanged={() => void reload(store)} onClose={() => setPanel(false)} />}
 
-      <div className={`layout ${route.view}`}>
+      <div className={`layout layout--${route.view}`}>
         {route.view === "lesson" && (
           <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} /></aside>
         )}
@@ -123,6 +123,7 @@ export function App() {
               progress={progress.get(route.lessonId)}
               drafts={drafts[route.lessonId] ?? {}}
               recommendation={rec}
+              unlocked={isUnlocked(graph, route.lessonId, progress)}
               titleOf={titleOf}
               go={go}
               onDraft={(sid, code) => {

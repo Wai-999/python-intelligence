@@ -126,7 +126,12 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       };
       request.onsuccess = () => {
         const connection = request.result;
-        if (closed || blocked) { connection.close(); return; }
+        if (closed || blocked) {
+          connection.close();
+          // Settle the pending open so callers awaiting connect() never hang (review finding, P2-4 d3).
+          if (closed) reject(new Error("Progress store is closed"));
+          return;
+        }
         db = connection;
         connection.onversionchange = () => {
           stale = true;
@@ -149,7 +154,8 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       const tx = connection.transaction(names, mode);
       let value: T;
       tx.oncomplete = () => resolve(value);
-      tx.onerror = () => reject(tx.error ?? new Error("Progress transaction failed"));
+      // Request errors bubble to the transaction before tx.error is set; keep the real DOMException.
+      tx.onerror = (ev) => reject((ev.target as IDBRequest | null)?.error ?? tx.error ?? new Error("Progress transaction failed"));
       tx.onabort = () => reject(tx.error ?? new Error("Progress transaction aborted"));
       try { work(tx, (next) => { value = next; }); }
       catch (error) { tx.abort(); reject(error); }

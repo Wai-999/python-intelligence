@@ -19,6 +19,8 @@ interface Props {
   progress: LessonProgress | undefined;
   drafts: Record<string, string>;
   recommendation: Recommendation;
+  /** Prerequisites done? Learners may still browse ahead; we just say so. */
+  unlocked: boolean;
   titleOf: (id: string) => string;
   go: (lessonId: string, step: number) => void;
   onExercise: (stepId: string, passed: boolean, failedConcepts: string[]) => void;
@@ -59,6 +61,11 @@ export function LessonView(p: Props) {
         </nav>
       </header>
 
+      {!p.unlocked && (
+        <p className="pill warn">You're looking ahead. It's best to finish{" "}
+          {lesson.prerequisites.map((id, k) => <span key={id}>{k > 0 && ", "}<a href={`#/lesson/${id}/0`}>{p.titleOf(id)}</a></span>)}{" "}
+          first. Progress here still counts.</p>
+      )}
       <p className="kind">{KIND_LABEL[step.kind]} · step {stepIndex + 1} of {lesson.steps.length}</p>
       <h2 id="step-title" ref={heading} tabIndex={-1}>{step.title}</h2>
       <Prose text={step.body} />
