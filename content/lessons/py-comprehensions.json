@@ -1,0 +1,317 @@
+{
+  "id": "py-comprehensions",
+  "title": "Shortcuts: comprehensions",
+  "summary": "Build lists, sets and dictionaries from other collections in one readable line.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 25,
+  "prerequisites": [
+    "py-tuples"
+  ],
+  "concepts": [
+    "list-comprehensions",
+    "dict-comprehensions"
+  ],
+  "sources": [
+    {
+      "id": "dip-listcomp",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        99,
+        101
+      ],
+      "section": "List Comprehensions",
+      "use": "reference"
+    },
+    {
+      "id": "dip-dictcomp",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        102,
+        104
+      ],
+      "section": "Dictionary Comprehensions",
+      "use": "reference"
+    },
+    {
+      "id": "tp-listcomp",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        206,
+        206
+      ],
+      "section": "List comprehensions",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "The same three lines, again and again",
+      "body": "You've written this pattern many times: start an empty list, loop, maybe test, append. It works, but\nthe *point* of the code (\"the squares of the even numbers\") is spread over three or four lines.\nA **comprehension** says the same thing in one line that reads almost like the sentence."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Describe the result, not the steps",
+      "body": "Read `[n * n for n in numbers if n % 2 == 0]` from the inside out: *for each `n` in `numbers`, if it\nis even, put `n * n` in the new list.* It is exactly the build-a-list loop, folded into one\nexpression that **produces a new list** and leaves `numbers` untouched.\n\nThe same shape with braces builds a dictionary (`{key: value for ...}`) or a set (`{x for ...}`).",
+      "cites": [
+        "dip-listcomp",
+        "tp-listcomp"
+      ],
+      "socratic": {
+        "questions": [
+          "Rewrite `[w.upper() for w in words]` as a loop in your head. What does each part become?",
+          "When would a normal loop be clearer than a comprehension?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "A comprehension unrolled",
+      "body": "This loop does exactly what `[n * n for n in nums if n % 2 == 0]` does. Watch the result grow.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def even_squares(nums):\n    result = []\n    for n in nums:\n        if n % 2 == 0:\n            result.append(n * n)\n    return result\n\nprint(even_squares([1, 2, 3, 4]))",
+        "frames": [
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "even_squares": "<function even_squares>"
+            },
+            "note": "Call with [1, 2, 3, 4]."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "even_squares([1, 2, 3, 4])"
+            ],
+            "locals": {
+              "nums": "[1, 2, 3, 4]"
+            },
+            "note": "The comprehension's brackets: a new, empty list."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "even_squares([1, 2, 3, 4])"
+            ],
+            "locals": {
+              "nums": "[1, 2, 3, 4]",
+              "result": "[]",
+              "n": "1"
+            },
+            "note": "The `if` part: 1 is odd, so nothing is added."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "even_squares([1, 2, 3, 4])"
+            ],
+            "locals": {
+              "nums": "[1, 2, 3, 4]",
+              "result": "[4]",
+              "n": "2"
+            },
+            "note": "2 passes the test; the expression part `n * n` adds 4."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "even_squares([1, 2, 3, 4])"
+            ],
+            "locals": {
+              "nums": "[1, 2, 3, 4]",
+              "result": "[4, 16]",
+              "n": "4"
+            },
+            "note": "3 is skipped; 4 adds 16."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>",
+              "even_squares([1, 2, 3, 4])"
+            ],
+            "locals": {
+              "nums": "[1, 2, 3, 4]",
+              "result": "[4, 16]",
+              "n": "4"
+            },
+            "note": "The finished new list. `nums` was never changed."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "even_squares": "<function even_squares>"
+            },
+            "note": "Same result as the one-line comprehension.",
+            "output": "[4, 16]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "```python\n[expression for name in iterable]              # a new list\n[expression for name in iterable if condition] # only items passing the test\n{key: value for name in iterable}              # a new dictionary\n{expression for name in iterable}              # a new set (no duplicates)\n```\n\n1. The result is always a **new** collection; the iterable is not changed.\n2. Items are visited in order; `expression` is evaluated once for each item that passes `condition`.\n3. In a dict comprehension, a repeated key keeps the **last** value produced for it.\n4. The loop name (`name`) belongs to the comprehension and does not leak out into your code.\n5. Keep them short. If you need several steps, `print`s or `try`, write an ordinary loop.",
+      "cites": [
+        "dip-listcomp",
+        "dip-dictcomp",
+        "tp-listcomp"
+      ]
+    },
+    {
+      "id": "examples",
+      "kind": "example",
+      "title": "Run it: three comprehensions",
+      "body": "Predict each line, including what the set comprehension does with the duplicate.",
+      "code": "words = [\"apple\", \"Bob\", \"cat\", \"apple\"]\nprint([w.upper() for w in words if len(w) > 3])\nprint({w: len(w) for w in words})\nprint(sorted({w[0].lower() for w in words}))",
+      "expected_output": "['APPLE', 'APPLE']\n{'apple': 5, 'Bob': 3, 'cat': 3}\n['a', 'b', 'c']\n"
+    },
+    {
+      "id": "positives",
+      "kind": "guided",
+      "title": "Your turn: tidy the readings",
+      "body": "Complete `positive_rounded(readings)` with a **single list comprehension** that keeps only readings\nabove 0 and rounds each to a whole number with `round(r)`. The input list must not change.",
+      "starter": "def positive_rounded(readings):\n    return [r for r in readings]",
+      "hints": [
+        "Add an `if` part to filter: only readings where `r > 0`.",
+        "Change the expression part from `r` to `round(r)`.",
+        "def positive_rounded(readings):\n    return [round(r) for r in readings if r > 0]"
+      ],
+      "tests": [
+        {
+          "name": "filters and rounds",
+          "code": "assert positive_rounded([1.4, -2.0, 3.6, 0]) == [1, 4], f'got {positive_rounded([1.4, -2.0, 3.6, 0])!r}'",
+          "concept": "list-comprehensions"
+        },
+        {
+          "name": "empty",
+          "code": "assert positive_rounded([]) == [], 'an empty list gives an empty list'",
+          "concept": "list-comprehensions"
+        },
+        {
+          "name": "input unchanged",
+          "code": "_data = [2.2, -1.0]\npositive_rounded(_data)\nassert _data == [2.2, -1.0], 'do not change the input'",
+          "concept": "list-comprehensions"
+        }
+      ],
+      "solution": "def positive_rounded(readings):\n    return [round(r) for r in readings if r > 0]"
+    },
+    {
+      "id": "index",
+      "kind": "challenge",
+      "title": "Challenge: an index of word lengths",
+      "body": "Write `length_index(words)` returning a dictionary that maps each **lower-case** word to its length,\nbut only for words of at least 3 letters: `length_index([\"Hi\", \"Owl\", \"swan\"])` is\n`{\"owl\": 3, \"swan\": 4}`. Use a dictionary comprehension.",
+      "starter": "def length_index(words):\n    return {w: len(w) for w in words}",
+      "hints": [
+        "Two things are missing: lower-casing the key, and the length filter.",
+        "The key expression can be `w.lower()`; the filter is `if len(w) >= 3`.",
+        "def length_index(words):\n    return {w.lower(): len(w) for w in words if len(w) >= 3}"
+      ],
+      "tests": [
+        {
+          "name": "filters and lower-cases",
+          "code": "assert length_index(['Hi', 'Owl', 'swan']) == {'owl': 3, 'swan': 4}, f\"got {length_index(['Hi', 'Owl', 'swan'])!r}\"",
+          "concept": "dict-comprehensions"
+        },
+        {
+          "name": "duplicate words collapse",
+          "code": "assert length_index(['Cat', 'cat']) == {'cat': 3}, f\"got {length_index(['Cat', 'cat'])!r}\"",
+          "concept": "dict-comprehensions"
+        },
+        {
+          "name": "nothing qualifies",
+          "code": "assert length_index(['a', 'to']) == {}, 'no word has 3 or more letters'",
+          "concept": "dict-comprehensions"
+        }
+      ],
+      "solution": "def length_index(words):\n    return {w.lower(): len(w) for w in words if len(w) >= 3}"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Work them out first.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is the result?",
+          "code": "[x * x for x in range(3)]",
+          "choices": [
+            "[0, 1, 4]",
+            "[1, 4, 9]",
+            "[0, 1, 2]",
+            "[0, 2, 4]"
+          ],
+          "answer": 0,
+          "explanation": "`range(3)` is 0, 1, 2 and each is squared.",
+          "concept": "list-comprehensions"
+        },
+        {
+          "id": "q2",
+          "prompt": "What is the result?",
+          "code": "[x for x in [1, 2, 3, 4] if x % 2 == 0]",
+          "choices": [
+            "[1, 2, 3, 4]",
+            "[2, 4]",
+            "[1, 3]",
+            "[4, 16]"
+          ],
+          "answer": 1,
+          "explanation": "Only items passing the `if` test are kept; the expression is just `x`.",
+          "concept": "list-comprehensions"
+        },
+        {
+          "id": "q3",
+          "prompt": "What is the result?",
+          "code": "{k: v for k, v in [(\"a\", 1), (\"a\", 2)]}",
+          "choices": [
+            "{'a': 1}",
+            "{'a': 2}",
+            "{'a': [1, 2]}",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "A repeated key keeps the last value produced for it.",
+          "concept": "dict-comprehensions"
+        },
+        {
+          "id": "q4",
+          "prompt": "After `nums = [1, 2]` and `[n * 10 for n in nums]`, what is `nums`?",
+          "choices": [
+            "[10, 20]",
+            "[1, 2]",
+            "[]",
+            "None"
+          ],
+          "answer": 1,
+          "explanation": "A comprehension builds a new list; the original is unchanged (and the result here was not stored).",
+          "concept": "list-comprehensions"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Turn a build-a-list loop into `[expression for name in iterable if condition]`.\n- Build dictionaries and sets the same way, knowing repeated keys keep the last value.\n- Choose a plain loop when the logic needs more than one simple step."
+    }
+  ]
+}

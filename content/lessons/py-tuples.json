@@ -1,0 +1,330 @@
+{
+  "id": "py-tuples",
+  "title": "Records: tuples and unpacking",
+  "summary": "Group a few values into one fixed record, and unpack them into names in one step.",
+  "track": "python-core",
+  "level": 2,
+  "estimated_minutes": 25,
+  "prerequisites": [
+    "py-dicts"
+  ],
+  "concepts": [
+    "tuples",
+    "unpacking"
+  ],
+  "sources": [
+    {
+      "id": "tp-tuples",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        137,
+        139
+      ],
+      "section": "Tuples are immutable",
+      "use": "reference"
+    },
+    {
+      "id": "tp-return",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        139,
+        139
+      ],
+      "section": "Tuples as return values",
+      "use": "reference"
+    },
+    {
+      "id": "dip-multi",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        75,
+        75
+      ],
+      "section": "Assigning Multiple Values At Once",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-multi",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        111,
+        111
+      ],
+      "section": "The Multiple Assignment Trick",
+      "use": "reference"
+    },
+    {
+      "id": "docs-tuples",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        18,
+        18
+      ],
+      "section": "Tuples",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Values that travel together",
+      "body": "A point on a map is a latitude *and* a longitude. A date is a year, a month and a day. These values make\nsense only together, and you rarely want to change one without the others. A **tuple** bundles them\ninto one fixed record, and **unpacking** splits a record back into well-named pieces."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A sealed envelope of values",
+      "body": "Think of a tuple as a sealed envelope holding a few values in a fixed order. You can pass the envelope\naround, look inside, and compare envelopes, but you can't swap what's inside: tuples are immutable.\n\n**Unpacking** opens the envelope straight into names: `lat, lon = point` puts the first value in\n`lat` and the second in `lon`. It is also how a function can hand back several results at once.",
+      "cites": [
+        "tp-tuples",
+        "dip-multi"
+      ],
+      "socratic": {
+        "questions": [
+          "Why might it help that a tuple can't change after it is made?",
+          "What should happen if you unpack three values into two names?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a function return two values",
+      "body": "One `return`, two results: the function returns a tuple, and the caller unpacks it.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def min_max(numbers):\n    low = min(numbers)\n    high = max(numbers)\n    return low, high\n\nsmallest, largest = min_max([4, 9, 2])\nprint(smallest, largest)",
+        "frames": [
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "min_max": "<function min_max>"
+            },
+            "note": "The right-hand side runs first: a call to `min_max`."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "min_max([4, 9, 2])"
+            ],
+            "locals": {
+              "numbers": "[4, 9, 2]"
+            },
+            "note": "`min` finds the smallest item: 2."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "min_max([4, 9, 2])"
+            ],
+            "locals": {
+              "numbers": "[4, 9, 2]",
+              "low": "2"
+            },
+            "note": "`max` finds the largest: 9."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "min_max([4, 9, 2])"
+            ],
+            "locals": {
+              "numbers": "[4, 9, 2]",
+              "low": "2",
+              "high": "9"
+            },
+            "note": "`low, high` builds ONE tuple, (2, 9), and returns it."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "min_max": "<function min_max>",
+              "smallest": "2",
+              "largest": "9"
+            },
+            "note": "Unpacking puts the first item in `smallest` and the second in `largest`."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "min_max": "<function min_max>",
+              "smallest": "2",
+              "largest": "9"
+            },
+            "note": "Two names, printed together.",
+            "output": "2 9"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Create:** the **comma** makes a tuple: `point = 3, 4` and `point = (3, 4)` are the same. One item\nneeds a trailing comma, `(5,)`, because `(5)` is just the number 5. `()` is the empty tuple.\n\n**Use:** indexing, slicing, `len`, `in` and `for` work as for lists. Assigning to an item is a\n`TypeError`, and there are no methods that change a tuple.\n\n**Unpack:** `a, b = pair` needs exactly as many names as items, otherwise `ValueError`. The right\nside is evaluated completely first, which is why `a, b = b, a` swaps two names.\n\n**Return several values:** `return low, high` returns one tuple; unpack it at the call.\n\n**As keys:** a tuple can be a dictionary key when all its items are hashable, e.g. `(row, col)`.",
+      "cites": [
+        "tp-tuples",
+        "tp-return",
+        "dip-multi",
+        "atbs-multi",
+        "docs-tuples"
+      ]
+    },
+    {
+      "id": "swap",
+      "kind": "example",
+      "title": "Run it: swaps and grid keys",
+      "body": "Predict each line. The last part uses tuples as dictionary keys for a tiny grid.",
+      "code": "a, b = 1, 2\na, b = b, a\nprint(a, b)\n\nsingle = (5,)\nprint(len(single), type((5)).__name__)\n\ngrid = {(0, 0): \"start\", (2, 1): \"treasure\"}\nprint(grid[(2, 1)])\nfor (row, col), label in grid.items():\n    print(row, col, label)",
+      "expected_output": "2 1\n1 int\ntreasure\n0 0 start\n2 1 treasure\n"
+    },
+    {
+      "id": "stats",
+      "kind": "guided",
+      "title": "Your turn: total and count",
+      "body": "Complete `total_and_count(numbers)` so it returns **two values**: the sum of the numbers and how many\nthere are. `total_and_count([2, 4, 6])` returns `(12, 3)`.",
+      "starter": "def total_and_count(numbers):\n    total = 0\n    for n in numbers:\n        total = total + n\n    return total",
+      "hints": [
+        "The starter returns only the total. What else does the task ask for?",
+        "`len(numbers)` is the count; return both, separated by a comma.",
+        "def total_and_count(numbers):\n    total = 0\n    for n in numbers:\n        total = total + n\n    return total, len(numbers)"
+      ],
+      "tests": [
+        {
+          "name": "returns a pair",
+          "code": "_r = total_and_count([2, 4, 6])\nassert _r == (12, 3), f'total_and_count([2, 4, 6]) returned {_r!r}, expected (12, 3)'",
+          "concept": "tuples"
+        },
+        {
+          "name": "unpacks at the call",
+          "code": "t, c = total_and_count([5])\nassert (t, c) == (5, 1), f'got {(t, c)!r}'",
+          "concept": "unpacking"
+        },
+        {
+          "name": "empty list",
+          "code": "assert total_and_count([]) == (0, 0), f'got {total_and_count([])!r}'",
+          "concept": "tuples"
+        }
+      ],
+      "solution": "def total_and_count(numbers):\n    total = 0\n    for n in numbers:\n        total = total + n\n    return total, len(numbers)"
+    },
+    {
+      "id": "closest",
+      "kind": "challenge",
+      "title": "Challenge: the closest point",
+      "body": "Points are `(x, y)` tuples. Write `closest(points)` that returns the point nearest the origin `(0, 0)`.\nCompare **squared** distances, `x * x + y * y` (no square roots needed). If two are equally close,\nreturn the one that comes first. Unpack each point in your loop.",
+      "starter": "def closest(points):\n    return points[0]",
+      "hints": [
+        "Loop with `for x, y in points:` and compute `x * x + y * y`.",
+        "Keep the best point and its distance so far; replace them only when you find a strictly smaller one.",
+        "def closest(points):\n    best = points[0]\n    bx, by = best\n    best_d = bx * bx + by * by\n    for x, y in points:\n        d = x * x + y * y\n        if d < best_d:\n            best, best_d = (x, y), d\n    return best"
+      ],
+      "tests": [
+        {
+          "name": "nearest wins",
+          "code": "assert closest([(3, 4), (1, 1), (0, 5)]) == (1, 1), f'got {closest([(3, 4), (1, 1), (0, 5)])!r}'",
+          "concept": "unpacking"
+        },
+        {
+          "name": "negative coordinates",
+          "code": "assert closest([(5, 5), (-1, 0)]) == (-1, 0), f'got {closest([(5, 5), (-1, 0)])!r}'",
+          "concept": "unpacking"
+        },
+        {
+          "name": "ties keep the first",
+          "code": "assert closest([(2, 0), (0, 2), (0, -2)]) == (2, 0), f'got {closest([(2, 0), (0, 2), (0, -2)])!r}'",
+          "concept": "tuples"
+        },
+        {
+          "name": "returns a tuple",
+          "code": "assert type(closest([(1, 2)])) is tuple, 'return the (x, y) tuple itself'",
+          "concept": "tuples"
+        }
+      ],
+      "solution": "def closest(points):\n    best = points[0]\n    bx, by = best\n    best_d = bx * bx + by * by\n    for x, y in points:\n        d = x * x + y * y\n        if d < best_d:\n            best, best_d = (x, y), d\n    return best"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Answer each before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is `type((7))`?",
+          "choices": [
+            "tuple",
+            "int",
+            "list",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "Parentheses alone just group; a one-item tuple needs a comma: `(7,)`.",
+          "concept": "tuples"
+        },
+        {
+          "id": "q2",
+          "prompt": "What happens?",
+          "code": "x, y = (1, 2, 3)",
+          "choices": [
+            "x=1, y=2",
+            "x=(1, 2), y=3",
+            "A ValueError",
+            "x=1, y=(2, 3)"
+          ],
+          "answer": 2,
+          "explanation": "Unpacking needs exactly as many names as items: three items, two names.",
+          "concept": "unpacking"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "a, b = 1, 2\na, b = b, a\nprint(a, b)",
+          "choices": [
+            "1 2",
+            "2 1",
+            "2 2",
+            "1 1"
+          ],
+          "answer": 1,
+          "explanation": "The right side `(b, a)` is built first, then unpacked, so the values swap.",
+          "concept": "unpacking"
+        },
+        {
+          "id": "q4",
+          "prompt": "Which can be a dictionary key?",
+          "choices": [
+            "[1, 2]",
+            "(1, 2)",
+            "(1, [2])",
+            "{1: 2}"
+          ],
+          "answer": 1,
+          "explanation": "A tuple of hashable items is hashable; a list, a dict, or a tuple containing a list is not.",
+          "concept": "tuples"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Build tuples with commas (and `(x,)` for one item), and use them as fixed records.\n- Unpack into names, swap values, and loop with `for a, b in pairs:`.\n- Return several values from a function and unpack them at the call.\n- Use tuples of hashable items as dictionary keys."
+    }
+  ]
+}

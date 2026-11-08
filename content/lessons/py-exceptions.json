@@ -1,0 +1,329 @@
+{
+  "id": "py-exceptions",
+  "title": "When things go wrong: exceptions",
+  "summary": "Read error messages, handle expected failures with try/except, and raise your own errors.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 30,
+  "prerequisites": [
+    "py-dicts"
+  ],
+  "concepts": [
+    "exceptions",
+    "try-except",
+    "raising"
+  ],
+  "sources": [
+    {
+      "id": "tp-runtime",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        217,
+        219
+      ],
+      "section": "Runtime errors",
+      "use": "reference"
+    },
+    {
+      "id": "tp-catch",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        162,
+        162
+      ],
+      "section": "Catching exceptions",
+      "use": "reference"
+    },
+    {
+      "id": "dip-exc",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        46,
+        48
+      ],
+      "section": "Exceptions",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-handle",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        96,
+        97
+      ],
+      "section": "Exception Handling",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-raise",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        240,
+        241
+      ],
+      "section": "Raising Exceptions",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Errors are information",
+      "body": "Every program meets bad input sooner or later: a typo where a number should be, a missing dictionary\nkey, a division by zero. Python reports these as **exceptions**: named, catchable events with a\nmessage. Learning to read them makes debugging fast, and learning to catch them lets a program\nrecover instead of crashing."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "An alarm that travels up the call stack",
+      "body": "When something goes wrong, Python stops the current line and raises an alarm with a **type** (such as\n`ValueError`) and a message. If the current function doesn't deal with it, the alarm passes to the\nfunction that called it, then to *its* caller, and so on. If nobody handles it, the program stops\nand prints a **traceback**: the path the alarm took, with the most important line at the bottom.\n\nA `try` block says \"I expect this might go wrong\"; its `except` clause is where you handle that\nparticular alarm and carry on.",
+      "cites": [
+        "tp-runtime",
+        "dip-exc"
+      ],
+      "socratic": {
+        "questions": [
+          "Why is the last line of a traceback usually the most useful one?",
+          "Should you catch every possible error, or only the ones you know how to handle?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch an exception get caught",
+      "body": "`int(\"abc\")` raises a `ValueError` deep inside a call; the caller catches it.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def parse_age(text):\n    return int(text)\n\ntry:\n    age = parse_age(\"abc\")\nexcept ValueError:\n    age = 0\nprint(age)",
+        "frames": [
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "parse_age": "<function parse_age>"
+            },
+            "note": "Entering a `try` block: Python will watch for exceptions."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "parse_age": "<function parse_age>"
+            },
+            "note": "Call `parse_age(\"abc\")`."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "parse_age(\"abc\")"
+            ],
+            "locals": {
+              "text": "'abc'"
+            },
+            "note": "`int(\"abc\")` can't make a number from 'abc', so it raises ValueError. `return` never happens."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "parse_age": "<function parse_age>"
+            },
+            "note": "The function has no handler, so the exception travels up to the caller, whose `except ValueError` matches."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "parse_age": "<function parse_age>",
+              "age": "0"
+            },
+            "note": "The handler runs and sets a fallback. The program carries on normally."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "parse_age": "<function parse_age>",
+              "age": "0"
+            },
+            "note": "No crash, and no traceback.",
+            "output": "0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Common types:** `ValueError` (right type, bad value: `int(\"abc\")`), `TypeError` (wrong type:\n`\"a\" + 1`), `KeyError`, `IndexError`, `ZeroDivisionError`, `NameError` (unknown name).\n\n```python\ntry:\n    risky()\nexcept ValueError as err:   # runs only if a ValueError was raised inside try\n    handle(err)\nelse:\n    ...                    # runs only if nothing was raised\nfinally:\n    ...                    # always runs, raised or not\n```\n\n1. Python runs the `try` body; at the first exception it jumps to the first matching `except`.\n2. An exception with no matching handler travels up to the caller, and so on; unhandled, it stops the\n   program with a traceback whose **last line** names the type and message.\n3. Catch **specific** types you can actually handle. A bare `except:` also hides bugs you didn't expect.\n4. `raise ValueError(\"message\")` signals a problem from your own code, for example invalid input.",
+      "cites": [
+        "tp-runtime",
+        "tp-catch",
+        "dip-exc",
+        "atbs-handle",
+        "atbs-raise"
+      ]
+    },
+    {
+      "id": "safe",
+      "kind": "example",
+      "title": "Run it: a safe division table",
+      "body": "Predict all four lines. Which branch runs for each pair?",
+      "code": "def safe_divide(a, b):\n    try:\n        result = a / b\n    except ZeroDivisionError:\n        return \"undefined\"\n    else:\n        return round(result, 2)\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\ntry:\n    print(safe_divide(\"10\", 2))\nexcept TypeError as err:\n    print(\"TypeError:\", type(err).__name__)\nprint(\"done\")",
+      "expected_output": "2.5\nundefined\nTypeError: TypeError\ndone\n"
+    },
+    {
+      "id": "toint",
+      "kind": "guided",
+      "title": "Your turn: read a number safely",
+      "body": "Complete `to_int(text, default)` so it returns `int(text)` when that works, and `default` when the text\nisn't a whole number. Catch only `ValueError`.",
+      "starter": "def to_int(text, default):\n    return int(text)",
+      "hints": [
+        "Put the conversion inside a `try` block.",
+        "In `except ValueError:` return `default`.",
+        "def to_int(text, default):\n    try:\n        return int(text)\n    except ValueError:\n        return default"
+      ],
+      "tests": [
+        {
+          "name": "a number",
+          "code": "assert to_int('42', 0) == 42, f\"to_int('42', 0) returned {to_int('42', 0)!r}\"",
+          "concept": "try-except"
+        },
+        {
+          "name": "not a number",
+          "code": "assert to_int('abc', -1) == -1, f\"to_int('abc', -1) returned {to_int('abc', -1)!r}\"",
+          "concept": "try-except"
+        },
+        {
+          "name": "spaces are fine",
+          "code": "assert to_int(' 7 ', 0) == 7, 'int() ignores surrounding spaces'",
+          "concept": "exceptions"
+        },
+        {
+          "name": "other errors are not swallowed",
+          "code": "try:\n    to_int(None, 0)\nexcept TypeError:\n    pass\nelse:\n    assert False, 'to_int(None, 0) should still raise TypeError: catch only ValueError'",
+          "concept": "try-except"
+        }
+      ],
+      "solution": "def to_int(text, default):\n    try:\n        return int(text)\n    except ValueError:\n        return default"
+    },
+    {
+      "id": "withdraw",
+      "kind": "challenge",
+      "title": "Challenge: refuse a bad withdrawal",
+      "body": "Write `withdraw(balance, amount)` that returns the new balance, but **raises** `ValueError` with a\nhelpful message if `amount` is not positive or is more than `balance`. Validate before changing\nanything.",
+      "starter": "def withdraw(balance, amount):\n    return balance - amount",
+      "hints": [
+        "Check the two bad cases first with `if` statements.",
+        "Use `raise ValueError(\"amount must be positive\")` and a similar message for overdrawing.",
+        "def withdraw(balance, amount):\n    if amount <= 0:\n        raise ValueError(\"amount must be positive\")\n    if amount > balance:\n        raise ValueError(\"insufficient funds\")\n    return balance - amount"
+      ],
+      "tests": [
+        {
+          "name": "normal withdrawal",
+          "code": "assert withdraw(100, 30) == 70, f'withdraw(100, 30) returned {withdraw(100, 30)!r}'",
+          "concept": "raising"
+        },
+        {
+          "name": "exact balance",
+          "code": "assert withdraw(50, 50) == 0, 'withdrawing everything is allowed'",
+          "concept": "raising"
+        },
+        {
+          "name": "overdraw raises",
+          "code": "try:\n    withdraw(10, 20)\nexcept ValueError:\n    pass\nelse:\n    assert False, 'withdraw(10, 20) should raise ValueError'",
+          "concept": "raising"
+        },
+        {
+          "name": "non-positive raises",
+          "code": "for _bad in (0, -5):\n    try:\n        withdraw(10, _bad)\n    except ValueError:\n        pass\n    else:\n        assert False, f'withdraw(10, {_bad}) should raise ValueError'",
+          "concept": "raising"
+        }
+      ],
+      "solution": "def withdraw(balance, amount):\n    if amount <= 0:\n        raise ValueError(\"amount must be positive\")\n    if amount > balance:\n        raise ValueError(\"insufficient funds\")\n    return balance - amount"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Decide before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Which exception does `int(\"3.5\")` raise?",
+          "choices": [
+            "TypeError",
+            "ValueError",
+            "NameError",
+            "None, it returns 3"
+          ],
+          "answer": 1,
+          "explanation": "The argument is a string (right type) whose value isn't a whole number.",
+          "concept": "exceptions"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does this print?",
+          "code": "try:\n    x = 1 / 1\nexcept ZeroDivisionError:\n    print(\"A\")\nelse:\n    print(\"B\")",
+          "choices": [
+            "A",
+            "B",
+            "A then B",
+            "Nothing; it crashes"
+          ],
+          "answer": 1,
+          "explanation": "The `else` block runs only when the `try` body raised nothing.",
+          "concept": "try-except"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "try:\n    [][0]\nexcept IndexError:\n    print(\"caught\")\nfinally:\n    print(\"done\")",
+          "choices": [
+            "caught",
+            "done",
+            "caught then done",
+            "A traceback"
+          ],
+          "answer": 2,
+          "explanation": "`finally` always runs, after the handler.",
+          "concept": "try-except"
+        },
+        {
+          "id": "q4",
+          "prompt": "Where should you look first in a traceback?",
+          "choices": [
+            "The first line",
+            "The last line",
+            "The middle",
+            "It doesn't matter"
+          ],
+          "answer": 1,
+          "explanation": "The last line names the exception type and message; the lines above show how execution got there.",
+          "concept": "exceptions"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Read a traceback from the bottom: exception type, message, then where it happened.\n- Handle expected failures with `try` / `except SpecificError`, plus `else` and `finally`.\n- Signal bad input from your own functions with `raise ValueError(...)`.\n- Avoid catching errors you can't handle, so real bugs stay visible."
+    }
+  ]
+}
