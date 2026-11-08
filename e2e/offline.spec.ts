@@ -1,5 +1,20 @@
 import { expect, test } from "@playwright/test";
 
+test("offline after a single visit", async ({ page, context }) => {
+  // Disable Chromium's HTTP cache so only service-worker storage can satisfy reload.
+  const session = await context.newCDPSession(page);
+  await session.send("Network.enable");
+  await session.send("Network.setCacheDisabled", { cacheDisabled: true });
+  await page.goto("./");
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Learn Python by running it." })).toBeVisible();
+  await page.locator(".recommend").getByRole("button").click();
+  await expect(page.locator("#step-title")).toBeVisible();
+});
+
 test("Python runs offline after one online visit under the deployment sub-path", async ({ page, context }) => {
   test.setTimeout(240_000);
   await page.goto("./#/lesson/py-files/4");
