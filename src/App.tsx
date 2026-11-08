@@ -5,6 +5,7 @@ import { ProgressPanel } from "./components/ProgressPanel";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
 import { getRunner } from "./py/runner";
+import { waitForController } from "./sw-register";
 import { applyOutcome, visitStep } from "./progress/logic";
 import { openProgressStore } from "./progress/store";
 import type { LessonProgress, ProgressStore } from "./progress/types";
@@ -73,7 +74,9 @@ export function App() {
     const prev = progress.get(route.lessonId);
     const next = visitStep(lesson, prev, route.step);
     if (!prev || next.furthestStep !== prev.furthestStep) void save(next);
-    if (lesson.steps.some((s) => s.kind === "example" || s.kind === "guided" || s.kind === "challenge")) void getRunner().warm().catch(() => {});
+    // Warm Python once the service worker controls the page, so a first visit also caches Pyodide for offline use.
+    if (lesson.steps.some((s) => s.kind === "example" || s.kind === "guided" || s.kind === "challenge"))
+      void waitForController().then(() => getRunner().warm()).catch(() => {});
   }, [route, store]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };

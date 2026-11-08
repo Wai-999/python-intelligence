@@ -39,3 +39,24 @@ test("Python runs offline after one online visit under the deployment sub-path",
   await page.getByRole("button", { name: "▶ Run", exact: true }).click();
   await expect(page.locator(".console pre").first()).toHaveText("20\nno such file\n", { timeout: 90_000 });
 });
+
+test("Python runs offline after a FIRST visit that lands directly on a lesson (no reload)", async ({ page, context }) => {
+  test.setTimeout(240_000);
+  // Only service-worker storage may satisfy the offline run: the HTTP cache is disabled.
+  const session = await context.newCDPSession(page);
+  await session.send("Network.enable");
+  await session.send("Network.setCacheDisabled", { cacheDisabled: true });
+  await page.goto("./#/lesson/py-files/4"); // first visit, deep link; the app warms Python on this route
+  await expect(page.getByRole("heading", { name: "Run it: a tiny score file" })).toBeVisible();
+  await page.getByRole("button", { name: "▶ Run", exact: true }).click();
+  await expect(page.locator(".console pre").first()).toHaveText("20\nno such file\n", { timeout: 90_000 });
+  await expect.poll(() => page.evaluate(async () => {
+    const urls = (await (await caches.open("pi-pyodide-0.27.8")).keys()).map((r) => r.url);
+    return ["pyodide.asm.wasm", "python_stdlib.zip"].every((f) => urls.some((u) => u.endsWith(f)));
+  }), { timeout: 60_000 }).toBe(true);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Run it: a tiny score file" })).toBeVisible();
+  await page.getByRole("button", { name: "▶ Run", exact: true }).click();
+  await expect(page.locator(".console pre").first()).toHaveText("20\nno such file\n", { timeout: 90_000 });
+});
