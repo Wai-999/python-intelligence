@@ -203,3 +203,65 @@ def test_output_outside_repo_and_without_git(tmp_path, monkeypatch):
         raise FileNotFoundError("git unavailable")
     monkeypatch.setattr(subprocess, "run", unavailable)
     _check_output(tmp_path / "output")
+
+
+def test_positioned_indentation(tmp_path):
+    path = tmp_path / "positioned.pdf"
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for x, y, text in [(50, 50, 'def square(x):'),
+                           (76.4, 65, 'if x:'),
+                           (102.8, 80, 'return x * x')]:
+            page.insert_text((x, y), text, fontname='cour', fontsize=11)
+        doc.save(path)
+    extract(path, 'book', tmp_path / 'out', expected_sha256=sha256_file(path))
+    row = json.loads((tmp_path / 'out/book/pages.jsonl').read_text())
+    code = row['code_blocks'][0]
+    assert code == 'def square(x):\n    if x:\n        return x * x'
+    compile(code, '<extracted>', 'exec')
+
+
+@pytest.mark.parametrize('existing', [False, True])
+@pytest.mark.parametrize('failure', ['write', 'publish'])
+def test_directory_failure_preserves_output(pdf, tmp_path, monkeypatch, existing, failure):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    out = tmp_path / 'out'
+    target = out / 'book'
+    if existing:
+        extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+        (target / 'old-marker').write_text('previous generation')
+    before = {p.name: p.read_bytes() for p in target.iterdir()} if existing else None
+    original_write = Path.write_text
+    original_replace = module.os.replace
+
+    def write(path, *args, **kwargs):
+        if path.name == 'meta.json':
+            raise OSError('injected write failure')
+        return original_write(path, *args, **kwargs)
+
+    def replace(source, dest):
+        if Path(source).name == 'new':
+            assert {p.name for p in Path(source).iterdir()} == {'pages.jsonl', 'meta.json', 'review_queue.json'}
+            raise OSError('injected publish failure')
+        return original_replace(source, dest)
+
+    if failure == 'write':
+        monkeypatch.setattr(Path, 'write_text', write)
+    else:
+        monkeypatch.setattr(module.os, 'replace', replace)
+    with pytest.raises(IngestError, match='injected'):
+        extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+    if existing:
+        assert {p.name: p.read_bytes() for p in target.iterdir()} == before
+    else:
+        assert not target.exists()
+    assert {p.name for p in out.iterdir()} == ({'book'} if existing else set())
+
+
+def test_directory_replacement_removes_stale_artifacts(pdf, tmp_path):
+    out = tmp_path / 'out'
+    extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+    (out / 'book/stale').write_text('old')
+    extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+    assert {p.name for p in (out / 'book').iterdir()} == {'pages.jsonl', 'meta.json', 'review_queue.json'}

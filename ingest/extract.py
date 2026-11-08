@@ -57,7 +57,19 @@ def _code_blocks(page):
 
     def flush():
         if current:
-            blocks.append("\n".join(current))
+            positioned = [(text, spans) for text, spans in current if text.strip()]
+            origins = [spans[0]["bbox"][0] for _, spans in positioned if "bbox" in spans[0]]
+            baseline = min(origins) if origins else 0
+            lines = []
+            for text, spans in positioned:
+                first = spans[0]
+                bbox = first.get("bbox")
+                # A monospaced span's measured advance includes literal spaces.
+                # Add only the indentation encoded by its position on the page.
+                width = ((bbox[2] - bbox[0]) / len(first["text"])) if bbox and first["text"] else 0
+                indent = max(0, round((bbox[0] - baseline) / width)) if width > 0 else 0
+                lines.append(" " * indent + text)
+            blocks.append("\n".join(lines))
             current.clear()
 
     for block in page.get_text("dict")["blocks"]:
@@ -67,28 +79,48 @@ def _code_blocks(page):
             if not text.strip():
                 continue
             if spans and all(span["flags"] & 8 for span in spans):
-                current.append(text)
+                current.append((text, spans))
             else:
                 flush()
     flush()
     return blocks
 
 
-def _atomic_write(path, text):
-    temporary = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n",
-                                         dir=path.parent, delete=False) as stream:
-            temporary = stream.name
-            stream.write(text)
-        os.replace(temporary, path)
-    finally:
-        if temporary and os.path.exists(temporary):
-            os.unlink(temporary)
+def _publish(target, artifacts):
+    """Stage a complete sibling directory; restore the old output on failure.
+
+    Existing directories require two renames on portable Python: readers may
+    briefly see a missing target, but never a partially written generation.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as workspace:
+        workspace = Path(workspace)
+        staged = workspace / "new"
+        backup = workspace / "old"
+        staged.mkdir()
+        for name, text in artifacts.items():
+            (staged / name).write_text(text, encoding="utf-8", newline="\n")
+        if target.is_symlink() or (target.exists() and not target.is_dir()):
+            raise IngestError(f"Output target must be a directory, not a file or symlink: {target}")
+        had_target = target.exists()
+        if had_target:
+            os.replace(target, backup)
+        try:
+            os.replace(staged, target)
+        except BaseException:
+            if had_target:
+                # Keep the backup if rollback itself fails, so recovery is possible.
+                try:
+                    os.replace(backup, target)
+                except OSError as rollback_error:
+                    recovery = target.parent / (Path(workspace).name + "-recovery")
+                    os.replace(backup, recovery)
+                    raise IngestError(f"Output rollback failed; previous output saved at {recovery}") from rollback_error
+            raise
 
 
 def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
-    """Hash before opening; write three internal artifacts, atomically per file."""
+    """Hash before opening; publish a complete directory of internal artifacts."""
     if not isinstance(source_id, str) or not source_id or source_id in {".", ".."} or "/" in source_id or "\\" in source_id:
         raise IngestError("source_id must be a nonempty single directory name")
     try:
@@ -117,10 +149,10 @@ def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
                                      if records else 0.0, low_pages=len(queue)),
                         review_threshold=QUALITY_THRESHOLD)
         target = Path(out_dir) / source_id
-        target.mkdir(parents=True, exist_ok=True)
-        _atomic_write(target / "pages.jsonl", "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records))
+        artifacts = {"pages.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records)}
         for name, value in (("meta.json", meta), ("review_queue.json", queue)):
-            _atomic_write(target / name, json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+            artifacts[name] = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+        _publish(target, artifacts)
         return meta
     except IngestError:
         raise
