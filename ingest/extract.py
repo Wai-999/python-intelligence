@@ -7,6 +7,9 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import shutil
+import unicodedata
+import errno
 
 import pymupdf
 
@@ -54,22 +57,14 @@ def _normalize(text):
 
 def _code_blocks(page):
     blocks, current = [], []
+    previous = None
 
     def flush():
         if current:
-            positioned = [(text, spans) for text, spans in current if text.strip()]
-            origins = [spans[0]["bbox"][0] for _, spans in positioned if "bbox" in spans[0]]
-            baseline = min(origins) if origins else 0
-            lines = []
-            for text, spans in positioned:
-                first = spans[0]
-                bbox = first.get("bbox")
-                # A monospaced span's measured advance includes literal spaces.
-                # Add only the indentation encoded by its position on the page.
-                width = ((bbox[2] - bbox[0]) / len(first["text"])) if bbox and first["text"] else 0
-                indent = max(0, round((bbox[0] - baseline) / width)) if width > 0 else 0
-                lines.append(" " * indent + text)
-            blocks.append("\n".join(lines))
+            baseline = min(item[1] for item in current)
+            blocks.append("\n".join(
+                " " * max(0, round((origin - baseline) / width)) + text
+                for text, origin, width in current))
             current.clear()
 
     for block in page.get_text("dict")["blocks"]:
@@ -78,50 +73,96 @@ def _code_blocks(page):
             text = _normalize("".join(span["text"] for span in spans))
             if not text.strip():
                 continue
-            if spans and all(span["flags"] & 8 for span in spans):
-                current.append((text, spans))
+            total = sum(len(s["text"].replace(" ", "")) for s in spans)
+            mono = sum(len(s["text"].replace(" ", "")) for s in spans if s["flags"] & 8)
+            if total and mono / total >= 0.8:
+                bbox = line.get("bbox")
+                if previous and bbox and bbox[1] - previous[3] > 1.8 * (previous[3] - previous[1]):
+                    flush()
+                first = next(s for s in spans if s["flags"] & 8 and s["text"].strip())
+                # Use the font advance rather than bbox / text length: tabs and
+                # literal leading spaces must not distort the positional indent.
+                width = pymupdf.Font("cour").text_length(" ", fontsize=first.get("size", 11))
+                origin = first.get("bbox", (0,))[0]
+                current.append((text, origin, width))
+                previous = bbox
             else:
                 flush()
+                previous = None
     flush()
     return blocks
 
 
-def _publish(target, artifacts):
-    """Stage a complete sibling directory; restore the old output on failure.
+def _fsync_directory(path):
+    """Directory syncing is unavailable on some operating systems/filesystems."""
+    try:
+        fd = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError as exc:
+        if exc.errno not in {errno.EINVAL, errno.ENOTSUP, errno.EBADF, errno.EACCES}:
+            raise
 
-    Existing directories require two renames on portable Python: readers may
-    briefly see a missing target, but never a partially written generation.
+
+def _publish(target, artifacts):
+    """Publish complete generations; retain a nested backup if rollback fails.
+
+    The two portable renames briefly hide the target. Interrupted swaps are
+    recovered on the next publication. Backups never expose pages.jsonl as a
+    direct child of the output root, where provenance consumers discover books.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f".{target.name}-", dir=target.parent) as workspace:
-        workspace = Path(workspace)
-        staged = workspace / "new"
-        backup = workspace / "old"
+    if target.is_symlink() or (target.exists() and not target.is_dir()):
+        raise IngestError(f"Output target must be a directory, not a file or symlink: {target}")
+    prefix = f".{target.name}.tmp-"
+    for leftover in sorted(target.parent.iterdir()):
+        if not leftover.name.startswith(prefix) or not leftover.is_dir() or leftover.is_symlink():
+            continue
+        backup = leftover / "old"
+        if backup.exists() and not target.exists():
+            os.replace(backup, target)
+            _fsync_directory(target.parent)
+        shutil.rmtree(leftover)
+    workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=target.parent))
+    staged, backup = workspace / "new", workspace / "old"
+    preserve = False
+    try:
         staged.mkdir()
         for name, text in artifacts.items():
-            (staged / name).write_text(text, encoding="utf-8", newline="\n")
-        if target.is_symlink() or (target.exists() and not target.is_dir()):
-            raise IngestError(f"Output target must be a directory, not a file or symlink: {target}")
+            with open(staged / name, "w", encoding="utf-8", newline="\n") as stream:
+                stream.write(text)
+                stream.flush()
+                os.fsync(stream.fileno())
+        _fsync_directory(staged)
         had_target = target.exists()
         if had_target:
             os.replace(target, backup)
+            _fsync_directory(workspace)
         try:
             os.replace(staged, target)
         except BaseException:
             if had_target:
-                # Keep the backup if rollback itself fails, so recovery is possible.
                 try:
                     os.replace(backup, target)
+                    _fsync_directory(target.parent)
                 except OSError as rollback_error:
-                    recovery = target.parent / (Path(workspace).name + "-recovery")
-                    os.replace(backup, recovery)
-                    raise IngestError(f"Output rollback failed; previous output saved at {recovery}") from rollback_error
+                    preserve = True
+                    raise IngestError(f"Output rollback failed; previous output saved at {backup}") from rollback_error
             raise
+        _fsync_directory(target.parent)
+    finally:
+        if backup.exists() and not target.exists():
+            preserve = True
+        if not preserve:
+            shutil.rmtree(workspace)
+            _fsync_directory(target.parent)
 
 
 def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
     """Hash before opening; publish a complete directory of internal artifacts."""
-    if not isinstance(source_id, str) or not source_id or source_id in {".", ".."} or "/" in source_id or "\\" in source_id:
+    if not isinstance(source_id, str) or not source_id or source_id in {".", ".."} or "/" in source_id or "\\" in source_id or source_id.startswith(".") or any(unicodedata.category(c).startswith("C") for c in source_id):
         raise IngestError("source_id must be a nonempty single directory name")
     try:
         data = Path(pdf_path).read_bytes()
@@ -185,6 +226,14 @@ def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, r
         selected = sources if only is None else [s for s in sources if s.get("source_id") == only]
         if only is not None and len(selected) != 1:
             raise IngestError(f"Source {only!r} must occur exactly once in manifest")
+        cleared = [s for s in selected if all(s.get(field) is True for field in
+                   ("allowed_for_internal_extraction", "downloaded"))]
+        seen = set()
+        for source in cleared:
+            folded = source["source_id"].casefold()
+            if folded in seen:
+                raise IngestError("Case-colliding source_ids in selected cleared sources")
+            seen.add(folded)
         results = []
         for source in selected:
             reasons = [field + " is not true" for field in ("allowed_for_internal_extraction", "downloaded")
