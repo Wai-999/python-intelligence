@@ -1,0 +1,320 @@
+{
+  "id": "py-lists",
+  "title": "Collections: lists",
+  "summary": "Keep many values in order, change them in place, and know when two names share one list.",
+  "track": "python-core",
+  "level": 2,
+  "estimated_minutes": 30,
+  "prerequisites": [
+    "py-strings"
+  ],
+  "concepts": [
+    "lists",
+    "list-methods",
+    "mutability",
+    "aliasing"
+  ],
+  "sources": [
+    {
+      "id": "tp-list",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        111,
+        113
+      ],
+      "section": "A list is a sequence",
+      "use": "reference"
+    },
+    {
+      "id": "tp-lmethods",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        114,
+        114
+      ],
+      "section": "List methods",
+      "use": "reference"
+    },
+    {
+      "id": "tp-alias",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        118,
+        119
+      ],
+      "section": "Aliasing",
+      "use": "reference"
+    },
+    {
+      "id": "dip-lists",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        62,
+        66
+      ],
+      "section": "Lists",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-refs",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        121,
+        124
+      ],
+      "section": "References",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Many values, one name",
+      "body": "A week of temperatures, the songs in a playlist, the scores in a game: often you have many values that\nbelong together, in order. Giving each its own name (`temp1`, `temp2`, ...) doesn't scale. A **list**\nholds them all under one name, and a loop can work through every one."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Slots you can change, and shared lists",
+      "body": "A list is like a string's row of numbered boxes, with one big difference: the boxes are **open**. You\ncan replace an item, add items to the end, or take items out, and it is still the *same* list.\n\nThat makes names matter more. A name is a label attached to a list. `b = a` doesn't copy anything:\nit attaches a second label to the **same** list. Change the list through either name and both see\nthe change. Functions work the same way: a function given a list can change the caller's list.",
+      "cites": [
+        "tp-list",
+        "tp-alias"
+      ],
+      "socratic": {
+        "questions": [
+          "After `b = a` and `b.append(1)`, how many lists exist?",
+          "Why can a function change a list it was given, but not a string?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a function change the caller's list",
+      "body": "Watch `scores` and `mine`: two names, one list.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def add_bonus(scores):\n    scores.append(10)\n\nmine = [7, 9]\nadd_bonus(mine)\nprint(mine)",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "The `def` stores the function."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "add_bonus": "<function add_bonus>",
+              "mine": "[7, 9]"
+            },
+            "note": "A new list is created and the name `mine` is attached to it."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "add_bonus(mine)"
+            ],
+            "locals": {
+              "scores": "[7, 9]  (the same list as mine)"
+            },
+            "note": "The parameter `scores` is attached to the very same list. Nothing is copied."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "add_bonus(mine)"
+            ],
+            "locals": {
+              "scores": "[7, 9, 10]  (the same list as mine)"
+            },
+            "note": "`append` changes the list in place."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "add_bonus": "<function add_bonus>",
+              "mine": "[7, 9, 10]"
+            },
+            "note": "The call is over, but the change stays: `mine` was never a separate copy.",
+            "output": "[7, 9, 10]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Create:** `[]` is empty; `[3, \"hi\", 2.5]` may mix types. `len`, indexing, negative indexes,\nslicing, `in` and `for` loops all work exactly as with strings.\n\n**Change in place:** `lst[i] = x` replaces an item. `lst.append(x)` adds to the end,\n`lst.insert(i, x)` adds at position `i`, `lst.pop()` removes and returns the last item,\n`lst.remove(x)` removes the first `x`, and `lst.sort()` sorts. These methods change the list and\nreturn `None`, so `lst = lst.sort()` loses your list.\n\n**Aliasing:** `b = a` makes a second name for the same list. A slice makes a **new** list, so\n`b = a[:]` (or `list(a)`) is a copy. A list passed to a function is the caller's list; to leave the\ncaller's list alone, build and return a new one.",
+      "cites": [
+        "tp-list",
+        "tp-lmethods",
+        "tp-alias",
+        "dip-lists",
+        "atbs-refs"
+      ]
+    },
+    {
+      "id": "temps",
+      "kind": "example",
+      "title": "Run it: a week of temperatures",
+      "body": "Predict the last line carefully before you press **Run**.",
+      "code": "temps = [18, 21, 17, 24]\ntemps.append(20)\ntemps.sort()\nprint(temps)\nprint(temps[0], temps[-1])\nbackup = temps\nbackup.append(99)\nprint(temps)",
+      "expected_output": "[17, 18, 20, 21, 24]\n17 24\n[17, 18, 20, 21, 24, 99]\n"
+    },
+    {
+      "id": "evens",
+      "kind": "guided",
+      "title": "Your turn: keep the even numbers",
+      "body": "Complete `evens(numbers)` so it returns a **new** list containing only the even numbers, in their\noriginal order. The list you were given must not change.",
+      "starter": "def evens(numbers):\n    return numbers",
+      "hints": [
+        "Start with an empty list, `result = []`, and return it at the end.",
+        "Loop over `numbers` and `append` each `n` where `n % 2 == 0`.",
+        "def evens(numbers):\n    result = []\n    for n in numbers:\n        if n % 2 == 0:\n            result.append(n)\n    return result"
+      ],
+      "tests": [
+        {
+          "name": "mixed",
+          "code": "assert evens([1, 2, 3, 4]) == [2, 4], f'evens([1, 2, 3, 4]) returned {evens([1, 2, 3, 4])!r}'",
+          "concept": "lists"
+        },
+        {
+          "name": "empty",
+          "code": "assert evens([]) == [], f'evens([]) returned {evens([])!r}'",
+          "concept": "lists"
+        },
+        {
+          "name": "negatives and zero",
+          "code": "assert evens([-2, 0, 5]) == [-2, 0], f'evens([-2, 0, 5]) returned {evens([-2, 0, 5])!r}'",
+          "concept": "list-methods"
+        },
+        {
+          "name": "input unchanged",
+          "code": "_data = [1, 2, 3]\n_out = evens(_data)\nassert _data == [1, 2, 3] and _out is not _data, 'Return a new list; do not change (or return) the one you were given'",
+          "concept": "aliasing"
+        }
+      ],
+      "solution": "def evens(numbers):\n    result = []\n    for n in numbers:\n        if n % 2 == 0:\n            result.append(n)\n    return result"
+    },
+    {
+      "id": "dedupe",
+      "kind": "challenge",
+      "title": "Challenge: remove duplicates",
+      "body": "Write `remove_duplicates(items)` that returns a new list with each item kept only the **first** time it\nappears, in the original order: `[3, 1, 3, 2, 1]` becomes `[3, 1, 2]`. Don't change `items`.",
+      "starter": "def remove_duplicates(items):\n    result = []\n    for x in items:\n        result.append(x)\n    return result",
+      "hints": [
+        "The starter copies everything. Before appending `x`, ask whether it is already in `result`.",
+        "`x not in result` is True when `x` hasn't been kept yet.",
+        "def remove_duplicates(items):\n    result = []\n    for x in items:\n        if x not in result:\n            result.append(x)\n    return result"
+      ],
+      "tests": [
+        {
+          "name": "numbers",
+          "code": "assert remove_duplicates([3, 1, 3, 2, 1]) == [3, 1, 2], f'got {remove_duplicates([3, 1, 3, 2, 1])!r}'",
+          "concept": "lists"
+        },
+        {
+          "name": "strings",
+          "code": "assert remove_duplicates(['a', 'b', 'a']) == ['a', 'b'], f\"got {remove_duplicates(['a', 'b', 'a'])!r}\"",
+          "concept": "lists"
+        },
+        {
+          "name": "empty",
+          "code": "assert remove_duplicates([]) == [], 'an empty list stays empty'",
+          "concept": "lists"
+        },
+        {
+          "name": "input unchanged",
+          "code": "_data = [1, 1]\nremove_duplicates(_data)\nassert _data == [1, 1], 'Do not change the list you were given'",
+          "concept": "aliasing"
+        }
+      ],
+      "solution": "def remove_duplicates(items):\n    result = []\n    for x in items:\n        if x not in result:\n            result.append(x)\n    return result"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Trace each one in your head first.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?",
+          "code": "x = [1, 2]\ny = x\ny.append(3)\nprint(x)",
+          "choices": [
+            "[1, 2, 3]",
+            "[1, 2]",
+            "[3]",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "`y = x` makes a second name for the same list, so appending through `y` changes `x` too.",
+          "concept": "aliasing"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does this print?",
+          "code": "print([3, 1, 2].sort())",
+          "choices": [
+            "[1, 2, 3]",
+            "[3, 1, 2]",
+            "None",
+            "An error"
+          ],
+          "answer": 2,
+          "explanation": "`sort()` sorts in place and returns `None`; `sorted(...)` would return a new list.",
+          "concept": "list-methods"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "a = [1, 2]\nb = a[:]\nb.append(3)\nprint(a)",
+          "choices": [
+            "[1, 2]",
+            "[1, 2, 3]",
+            "[3]",
+            "None"
+          ],
+          "answer": 0,
+          "explanation": "`a[:]` is a slice, which is a new list, so `b` is a separate copy.",
+          "concept": "aliasing"
+        },
+        {
+          "id": "q4",
+          "prompt": "What is `[10, 20, 30][1:]`?",
+          "choices": [
+            "[20, 30]",
+            "[10, 20]",
+            "20",
+            "[10]"
+          ],
+          "answer": 0,
+          "explanation": "A slice from position 1 to the end.",
+          "concept": "lists"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Create lists, read items by position, and loop over them.\n- Change a list in place with assignment and methods, remembering that those methods return `None`.\n- Predict when two names share one list, and make a real copy with a slice when you need one.\n- Write functions that build and return new lists instead of changing their input.\n\nNext: dictionaries, which find values by a **key** instead of by position."
+    }
+  ]
+}

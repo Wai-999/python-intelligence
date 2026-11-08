@@ -1,0 +1,356 @@
+{
+  "id": "py-strings",
+  "title": "Text: strings, indexing and methods",
+  "summary": "Pick characters out of text, cut slices, and clean text up with string methods.",
+  "track": "python-core",
+  "level": 2,
+  "estimated_minutes": 30,
+  "prerequisites": [
+    "py-loops"
+  ],
+  "concepts": [
+    "strings",
+    "indexing",
+    "slicing",
+    "string-methods",
+    "immutability"
+  ],
+  "sources": [
+    {
+      "id": "tp-seq",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        93,
+        94
+      ],
+      "section": "A string is a sequence",
+      "use": "reference"
+    },
+    {
+      "id": "tp-slice",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        95,
+        96
+      ],
+      "section": "String slices",
+      "use": "reference"
+    },
+    {
+      "id": "tp-methods",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        97,
+        98
+      ],
+      "section": "String methods",
+      "use": "reference"
+    },
+    {
+      "id": "dip-methods",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        118,
+        120
+      ],
+      "section": "Other Common String Methods",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-methods",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        151,
+        153
+      ],
+      "section": "Useful String Methods",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Text is everywhere",
+      "body": "Names, email addresses, messages, file contents and web pages are all text. Real text is messy: extra\nspaces, mixed capitals, the part you want buried in the middle. This lesson gives you the tools to\nreach inside a piece of text, take exactly the part you need, and tidy it up."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A row of numbered boxes",
+      "body": "Think of a string as a row of boxes with one character in each. The boxes are numbered from **0**, so\nin `\"code\"` the `c` is in box 0 and the `e` is in box 3. You can also count from the right with\nnegative numbers: box `-1` is the last character.\n\nA **slice** cuts the row between boxes. `word[1:3]` means \"start cutting before box 1 and stop before\nbox 3\", which gives the characters in boxes 1 and 2. The boxes themselves are sealed: you can read\nthem and make new strings from them, but you can't change a character in place.",
+      "cites": [
+        "tp-seq",
+        "tp-slice"
+      ],
+      "socratic": {
+        "questions": [
+          "If a string has 5 characters, what is the number of its last box when counting from 0?",
+          "Why might it be useful that a slice stops *before* its end number?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a new string being built",
+      "body": "Strings can't be changed, so this function builds a **new** string one character at a time.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def shout(word):\n    result = \"\"\n    for ch in word:\n        result = result + ch.upper()\n    return result + \"!\"\n\nprint(shout(\"hi\"))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "shout": "<function shout>"
+            },
+            "note": "The call `shout(\"hi\")` starts."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "shout(\"hi\")"
+            ],
+            "locals": {
+              "word": "'hi'"
+            },
+            "note": "Start with an empty string: the accumulator."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "shout(\"hi\")"
+            ],
+            "locals": {
+              "word": "'hi'",
+              "result": "''",
+              "ch": "'h'"
+            },
+            "note": "A `for` loop over a string visits each character in turn. First: 'h'."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "shout(\"hi\")"
+            ],
+            "locals": {
+              "word": "'hi'",
+              "result": "'H'",
+              "ch": "'h'"
+            },
+            "note": "`ch.upper()` gives a new string 'H'; joining makes a new `result`."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "shout(\"hi\")"
+            ],
+            "locals": {
+              "word": "'hi'",
+              "result": "'HI'",
+              "ch": "'i'"
+            },
+            "note": "Second pass: 'i' becomes 'I', and `result` is now 'HI'. `word` itself never changed."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "shout(\"hi\")"
+            ],
+            "locals": {
+              "word": "'hi'",
+              "result": "'HI'",
+              "ch": "'i'"
+            },
+            "note": "Return one more new string: 'HI!'."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "shout": "<function shout>"
+            },
+            "note": "`print` shows the returned text.",
+            "output": "HI!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Indexing:** `s[i]` is the character at position `i`, counting from 0; `s[-1]` is the last one.\nAn index past the end raises `IndexError`. `len(s)` is the number of characters.\n\n**Slicing:** `s[a:b]` gives the characters from position `a` up to but **not including** `b`.\nLeave out `a` to start at the beginning, or `b` to go to the end: `s[:3]`, `s[3:]`. A slice never\nraises `IndexError`; out-of-range ends are simply clipped. A third number is a step, so `s[::-1]`\nis the string reversed.\n\n**Immutability:** `s[0] = \"x\"` is a `TypeError`. Every string method returns a **new** string and\nleaves the original alone, so keep the result: `name = name.strip()`.\n\n**Common methods:** `upper()`, `lower()`, `strip()` (remove surrounding spaces), `replace(old, new)`,\n`split()` (break into a list of words), `startswith(prefix)`, `find(sub)` (position, or `-1` if\nabsent), `isalpha()`. The operator `sub in s` asks whether `sub` appears anywhere in `s`.",
+      "cites": [
+        "tp-seq",
+        "tp-slice",
+        "tp-methods",
+        "dip-methods",
+        "atbs-methods"
+      ]
+    },
+    {
+      "id": "email",
+      "kind": "example",
+      "title": "Run it: tidy an email address",
+      "body": "Predict each printed line, then **Run**. Notice that every step makes a new string.",
+      "code": "email = \"  Ada.Lovelace@Example.com \"\nclean = email.strip().lower()\nprint(clean)\nprint(clean[0])\nprint(clean[-3:])\nuser = clean[:clean.find(\"@\")]\nprint(user)\nprint(\"@\" in clean)",
+      "expected_output": "ada.lovelace@example.com\na\ncom\nada.lovelace\nTrue\n"
+    },
+    {
+      "id": "initials",
+      "kind": "guided",
+      "title": "Your turn: initials",
+      "body": "Complete `initials(full_name)` so it returns the capital first letter of every word:\n`initials(\"ada lovelace\")` is `\"AL\"`. Extra spaces between or around words must not matter.\n\n`full_name.split()` gives you the words as a list you can loop over.",
+      "starter": "def initials(full_name):\n    result = \"\"\n    # add the first letter of each word\n    return result",
+      "hints": [
+        "Loop over `full_name.split()`; each item is one word.",
+        "The first letter of `word` is `word[0]`; make it a capital with `.upper()`.",
+        "def initials(full_name):\n    result = \"\"\n    for word in full_name.split():\n        result = result + word[0].upper()\n    return result"
+      ],
+      "tests": [
+        {
+          "name": "two words",
+          "code": "assert initials('ada lovelace') == 'AL', f\"initials('ada lovelace') returned {initials('ada lovelace')!r}\"",
+          "concept": "string-methods"
+        },
+        {
+          "name": "three words",
+          "code": "assert initials('Grace Brewster Hopper') == 'GBH', f\"got {initials('Grace Brewster Hopper')!r}\"",
+          "concept": "indexing"
+        },
+        {
+          "name": "messy spacing",
+          "code": "assert initials('  alan   turing ') == 'AT', f\"got {initials('  alan   turing ')!r}; split() with no argument ignores extra spaces\"",
+          "concept": "string-methods"
+        },
+        {
+          "name": "one word",
+          "code": "assert initials('x') == 'X', f\"got {initials('x')!r}\"",
+          "concept": "indexing"
+        }
+      ],
+      "solution": "def initials(full_name):\n    result = \"\"\n    for word in full_name.split():\n        result = result + word[0].upper()\n    return result"
+    },
+    {
+      "id": "palindrome",
+      "kind": "challenge",
+      "title": "Challenge: palindromes",
+      "body": "A palindrome reads the same backwards. Write `is_palindrome(text)` that returns `True` or `False`,\n**ignoring capitals and anything that isn't a letter**, so `\"Never odd or even\"` counts.\n\nBuild a cleaned-up string first, then compare it with its reverse.",
+      "starter": "def is_palindrome(text):\n    return text == text[::-1]",
+      "hints": [
+        "The starter fails on capitals and spaces. Which characters should you keep?",
+        "Loop over `text`, keep only characters where `ch.isalpha()` is true, and lower-case them.",
+        "def is_palindrome(text):\n    letters = \"\"\n    for ch in text:\n        if ch.isalpha():\n            letters = letters + ch.lower()\n    return letters == letters[::-1]"
+      ],
+      "tests": [
+        {
+          "name": "simple",
+          "code": "assert is_palindrome('level') is True, 'level is a palindrome'",
+          "concept": "slicing"
+        },
+        {
+          "name": "not a palindrome",
+          "code": "assert is_palindrome('python') is False, 'python is not a palindrome'",
+          "concept": "slicing"
+        },
+        {
+          "name": "ignores case and spaces",
+          "code": "assert is_palindrome('Never odd or even') is True, 'ignore capitals and spaces'",
+          "concept": "string-methods"
+        },
+        {
+          "name": "ignores punctuation",
+          "code": "assert is_palindrome('A man, a plan, a canal: Panama!') is True, 'ignore punctuation too'",
+          "concept": "string-methods"
+        },
+        {
+          "name": "empty text",
+          "code": "assert is_palindrome('') is True, 'an empty string reads the same both ways'",
+          "concept": "slicing"
+        }
+      ],
+      "solution": "def is_palindrome(text):\n    letters = \"\"\n    for ch in text:\n        if ch.isalpha():\n            letters = letters + ch.lower()\n    return letters == letters[::-1]"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Work each one out before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?",
+          "code": "print(\"python\"[1:4])",
+          "choices": [
+            "yth",
+            "pyth",
+            "ytho",
+            "yt"
+          ],
+          "answer": 0,
+          "explanation": "Positions 1, 2 and 3 are y, t, h; the slice stops before 4.",
+          "concept": "slicing"
+        },
+        {
+          "id": "q2",
+          "prompt": "What happens?",
+          "code": "s = \"cat\"\ns[0] = \"b\"",
+          "choices": [
+            "s becomes \"bat\"",
+            "A TypeError",
+            "An IndexError",
+            "Nothing changes, silently"
+          ],
+          "answer": 1,
+          "explanation": "Strings are immutable; build a new one instead, e.g. `\"b\" + s[1:]`.",
+          "concept": "immutability"
+        },
+        {
+          "id": "q3",
+          "prompt": "What is `\"banana\".find(\"n\")`?",
+          "choices": [
+            "1",
+            "2",
+            "3",
+            "-1"
+          ],
+          "answer": 1,
+          "explanation": "Counting from 0: b=0, a=1, n=2. `find` returns the first position.",
+          "concept": "indexing"
+        },
+        {
+          "id": "q4",
+          "prompt": "After `name = \"  Bo \"` and `name.strip()`, what is `name`?",
+          "choices": [
+            "\"Bo\"",
+            "\"  Bo \"",
+            "\"Bo \"",
+            "None"
+          ],
+          "answer": 1,
+          "explanation": "`strip()` returns a new string; without `name = name.strip()` the original is unchanged.",
+          "concept": "immutability"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Pick out characters by position, counting from 0 or from the end with negative numbers.\n- Cut slices, knowing the end position is excluded and that out-of-range slices are safe.\n- Use string methods, and keep their result, because strings never change in place.\n- Loop over the characters or words of a text.\n\nNext: lists, which look like strings but *can* change, and that changes everything."
+    }
+  ]
+}

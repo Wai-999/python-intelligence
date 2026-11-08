@@ -1,0 +1,328 @@
+{
+  "id": "py-dicts",
+  "title": "Lookups: dictionaries",
+  "summary": "Store values under meaningful keys, look them up instantly, and count things.",
+  "track": "python-core",
+  "level": 2,
+  "estimated_minutes": 30,
+  "prerequisites": [
+    "py-lists"
+  ],
+  "concepts": [
+    "dictionaries",
+    "key-lookup",
+    "counting"
+  ],
+  "sources": [
+    {
+      "id": "tp-dict",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        125,
+        126
+      ],
+      "section": "A dictionary is a mapping",
+      "use": "reference"
+    },
+    {
+      "id": "tp-count",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        126,
+        128
+      ],
+      "section": "Dictionary as a collection of counters",
+      "use": "reference"
+    },
+    {
+      "id": "dip-dict",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        85,
+        87
+      ],
+      "section": "Dictionaries",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-dict",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        129,
+        134
+      ],
+      "section": "The Dictionary Data Type",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Find it by name, not by position",
+      "body": "A list is great when order matters. But to find a friend's phone number you don't want to remember that\nthey are entry number 47; you want to look them up **by name**. Prices by product, scores by player,\ncounts by word: whenever you think \"the X for this Y\", you want a dictionary."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Labelled drawers",
+      "body": "Picture a cabinet of drawers, each with a label on the front. The label is the **key** and what's inside\nis the **value**. To get a value you name its key, and Python goes straight to that drawer; it doesn't\nsearch through the others.\n\nEach label appears once: putting something under an existing key replaces what was there. Asking for a\nlabel that doesn't exist is an error, unless you ask politely for a default.",
+      "cites": [
+        "tp-dict",
+        "dip-dict"
+      ],
+      "socratic": {
+        "questions": [
+          "If you store a second value under the same key, how many entries does the dictionary have?",
+          "Why would looking up by key be faster than searching a list for a matching item?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a dictionary count letters",
+      "body": "A dictionary of counters: one key per letter seen, with how often it appeared.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def count_letters(word):\n    counts = {}\n    for ch in word:\n        counts[ch] = counts.get(ch, 0) + 1\n    return counts\n\nprint(count_letters(\"aba\"))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count_letters": "<function count_letters>"
+            },
+            "note": "The call starts."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "count_letters(\"aba\")"
+            ],
+            "locals": {
+              "word": "'aba'"
+            },
+            "note": "An empty dictionary: no keys yet."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "count_letters(\"aba\")"
+            ],
+            "locals": {
+              "word": "'aba'",
+              "ch": "'a'",
+              "counts": "{'a': 1}"
+            },
+            "note": "'a' isn't a key yet, so `get` returns the default 0; we store 0 + 1."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "count_letters(\"aba\")"
+            ],
+            "locals": {
+              "word": "'aba'",
+              "ch": "'b'",
+              "counts": "{'a': 1, 'b': 1}"
+            },
+            "note": "'b' is new too: a second key."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "count_letters(\"aba\")"
+            ],
+            "locals": {
+              "word": "'aba'",
+              "ch": "'a'",
+              "counts": "{'a': 2, 'b': 1}"
+            },
+            "note": "'a' exists now, so `get` returns 1 and the count becomes 2."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "count_letters(\"aba\")"
+            ],
+            "locals": {
+              "word": "'aba'",
+              "ch": "'a'",
+              "counts": "{'a': 2, 'b': 1}"
+            },
+            "note": "Return the finished dictionary."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count_letters": "<function count_letters>"
+            },
+            "note": "Keys appear in the order they were first added.",
+            "output": "{'a': 2, 'b': 1}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Create:** `{}` is empty; `{\"apples\": 5, \"pears\": 0}` maps keys to values.\n\n**Look up:** `d[key]` gives the value, and raises `KeyError` if the key is missing.\n`d.get(key, default)` returns `default` instead (or `None` if you give no default).\n`key in d` asks whether the key exists. It checks keys, not values.\n\n**Change:** `d[key] = value` adds a new key or replaces the value of an existing one; keys are\nunique. `del d[key]` removes one. `len(d)` counts the keys.\n\n**Loop:** `for key in d:` visits the keys, in the order they were added. `for key, value in\nd.items():` gives both at once.\n\n**Keys** must be values that can't change, such as strings, numbers or tuples. A list can't be a key.",
+      "cites": [
+        "tp-dict",
+        "tp-count",
+        "dip-dict",
+        "atbs-dict"
+      ]
+    },
+    {
+      "id": "stock",
+      "kind": "example",
+      "title": "Run it: a fruit stall",
+      "body": "Predict each line, then **Run**. Which fruit doesn't get printed by the loop, and why?",
+      "code": "stock = {\"apples\": 5, \"pears\": 0}\nstock[\"plums\"] = 12\nstock[\"apples\"] = stock[\"apples\"] - 2\nprint(stock)\nprint(\"pears\" in stock, \"kiwis\" in stock)\nprint(stock.get(\"kiwis\", 0))\nfor fruit, count in stock.items():\n    if count > 0:\n        print(fruit, count)",
+      "expected_output": "{'apples': 3, 'pears': 0, 'plums': 12}\nTrue False\n0\napples 3\nplums 12\n"
+    },
+    {
+      "id": "words",
+      "kind": "guided",
+      "title": "Your turn: count words",
+      "body": "Complete `word_counts(text)` so it returns a dictionary mapping each word to how many times it appears.\nTreat capitals as the same word: `word_counts(\"The cat the\")` is `{\"the\": 2, \"cat\": 1}`.",
+      "starter": "def word_counts(text):\n    counts = {}\n    # count each word in text.lower().split()\n    return counts",
+      "hints": [
+        "Loop over `text.lower().split()`.",
+        "Use the counter pattern from the trace: `counts[w] = counts.get(w, 0) + 1`.",
+        "def word_counts(text):\n    counts = {}\n    for w in text.lower().split():\n        counts[w] = counts.get(w, 0) + 1\n    return counts"
+      ],
+      "tests": [
+        {
+          "name": "repeated word",
+          "code": "assert word_counts('the cat the hat') == {'the': 2, 'cat': 1, 'hat': 1}, f\"got {word_counts('the cat the hat')!r}\"",
+          "concept": "counting"
+        },
+        {
+          "name": "ignores capitals",
+          "code": "assert word_counts('A a A') == {'a': 3}, f\"got {word_counts('A a A')!r}\"",
+          "concept": "counting"
+        },
+        {
+          "name": "empty text",
+          "code": "assert word_counts('') == {}, f\"got {word_counts('')!r}\"",
+          "concept": "dictionaries"
+        }
+      ],
+      "solution": "def word_counts(text):\n    counts = {}\n    for w in text.lower().split():\n        counts[w] = counts.get(w, 0) + 1\n    return counts"
+    },
+    {
+      "id": "invert",
+      "kind": "challenge",
+      "title": "Challenge: group by value",
+      "body": "Given favourite colours by person, `{\"ann\": \"red\", \"bo\": \"blue\", \"cy\": \"red\"}`, write\n`group_by_value(d)` returning who likes each colour: `{\"red\": [\"ann\", \"cy\"], \"blue\": [\"bo\"]}`.\nKeep the people in the order they appear in `d`.",
+      "starter": "def group_by_value(d):\n    result = {}\n    for key, value in d.items():\n        result[value] = key\n    return result",
+      "hints": [
+        "The starter overwrites: 'cy' replaces 'ann' under 'red'. Each value needs a *list* of keys.",
+        "If `value` isn't a key of `result` yet, start it with an empty list; then append `key`.",
+        "def group_by_value(d):\n    result = {}\n    for key, value in d.items():\n        if value not in result:\n            result[value] = []\n        result[value].append(key)\n    return result"
+      ],
+      "tests": [
+        {
+          "name": "groups",
+          "code": "assert group_by_value({'ann': 'red', 'bo': 'blue', 'cy': 'red'}) == {'red': ['ann', 'cy'], 'blue': ['bo']}, f\"got {group_by_value({'ann': 'red', 'bo': 'blue', 'cy': 'red'})!r}\"",
+          "concept": "dictionaries"
+        },
+        {
+          "name": "one each",
+          "code": "assert group_by_value({'x': 1, 'y': 2}) == {1: ['x'], 2: ['y']}, 'every value maps to a list, even with one key'",
+          "concept": "key-lookup"
+        },
+        {
+          "name": "empty",
+          "code": "assert group_by_value({}) == {}, 'an empty dictionary gives an empty result'",
+          "concept": "dictionaries"
+        }
+      ],
+      "solution": "def group_by_value(d):\n    result = {}\n    for key, value in d.items():\n        if value not in result:\n            result[value] = []\n        result[value].append(key)\n    return result"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Answer before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What happens?",
+          "code": "d = {\"a\": 1}\nprint(d[\"b\"])",
+          "choices": [
+            "Prints None",
+            "Prints 0",
+            "A KeyError",
+            "Prints b"
+          ],
+          "answer": 2,
+          "explanation": "Square brackets require the key to exist; `d.get(\"b\")` would give None instead.",
+          "concept": "key-lookup"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does this print?",
+          "code": "d = {\"x\": 1}\nd[\"x\"] = 5\nprint(len(d))",
+          "choices": [
+            "1",
+            "2",
+            "5",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "Assigning to an existing key replaces its value; keys are unique.",
+          "concept": "dictionaries"
+        },
+        {
+          "id": "q3",
+          "prompt": "Which of these can NOT be a dictionary key?",
+          "choices": [
+            "\"name\"",
+            "42",
+            "(1, 2)",
+            "[1, 2]"
+          ],
+          "answer": 3,
+          "explanation": "Keys must be unchangeable values; a list can change, so it can't be a key.",
+          "concept": "dictionaries"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does `{\"a\": 1}.get(\"z\", 7)` give?",
+          "choices": [
+            "7",
+            "None",
+            "1",
+            "A KeyError"
+          ],
+          "answer": 0,
+          "explanation": "`get` returns the default when the key is missing.",
+          "concept": "key-lookup"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Store values under keys, and look them up with `d[key]` or safely with `d.get(key, default)`.\n- Add, replace and remove entries; test for keys with `in`.\n- Loop over keys or over `items()` pairs.\n- Count things with the `get(key, 0) + 1` pattern, and group values into lists.\n\nWith strings, lists and dictionaries you can now model most everyday data."
+    }
+  ]
+}

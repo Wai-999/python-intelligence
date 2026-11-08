@@ -37,26 +37,32 @@ function rank(l: Lesson): [number, number, string] {
   return [TRACKS.indexOf(l.track), l.level, l.id];
 }
 
-function cmp(a: Lesson, b: Lesson): number {
+/** Among ready lessons: track order, then level, then continue the most recent chain, then id. */
+function cmp(a: Lesson, b: Lesson, recency: (l: Lesson) => number = () => 0): number {
   const [x, y] = [rank(a), rank(b)];
-  return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]);
+  return x[0] - y[0] || x[1] - y[1] || recency(b) - recency(a) || x[2].localeCompare(y[2]);
 }
 
 function topo(lessons: Lesson[]): string[] {
   const indeg = new Map(lessons.map((l) => [l.id, l.prerequisites.length]));
   const kids = new Map<string, Lesson[]>(lessons.map((l) => [l.id, []]));
   for (const l of lessons) for (const p of l.prerequisites) kids.get(p)?.push(l);
-  const ready = lessons.filter((l) => l.prerequisites.length === 0).sort(cmp);
   const out: string[] = [];
+  const placed = new Map<string, number>();
+  // Position of the most recently placed prerequisite: keeps a chain together (loops -> strings -> lists).
+  const recency = (l: Lesson) => Math.max(-1, ...l.prerequisites.map((p) => placed.get(p) ?? -1));
+  const byRank = (a: Lesson, b: Lesson) => cmp(a, b, recency);
+  const ready = lessons.filter((l) => l.prerequisites.length === 0).sort(byRank);
   while (ready.length) {
     const l = ready.shift()!;
+    placed.set(l.id, out.length);
     out.push(l.id);
     for (const k of kids.get(l.id) ?? []) {
       const n = (indeg.get(k.id) ?? 0) - 1;
       indeg.set(k.id, n);
       if (n === 0) {
         ready.push(k);
-        ready.sort(cmp);
+        ready.sort(byRank);
       }
     }
   }

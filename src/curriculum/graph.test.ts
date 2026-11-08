@@ -28,6 +28,19 @@ describe("graph validation", () => {
     const g = buildGraph([L("c", ["a", "b"]), L("b", [], [], 2), L("a")]);
     expect(g.order).toEqual(["a", "b", "c"]);
   });
+  it("continues the most recent chain before switching branches (ties at the same level)", () => {
+    // root -> fn -> {side, loops}; loops -> strings. Alphabetically "side" < "strings", but strings continues the chain.
+    const g = buildGraph([L("root"), L("fn", ["root"]), L("side", ["fn"], [], 2), L("loops", ["fn"]),
+                          L("strings", ["loops"], [], 2)]);
+    expect(g.order).toEqual(["root", "fn", "loops", "strings", "side"]);
+  });
+  it("puts the real core path in teaching order", () => {
+    const order = buildGraph(LESSONS).order;
+    const at = (id: string) => order.indexOf(id);
+    expect(at("py-loops")).toBeLessThan(at("py-strings"));
+    expect(at("py-strings")).toBeLessThan(at("py-lists"));
+    expect(at("py-lists")).toBeLessThan(at("py-dicts"));
+  });
 });
 
 describe("recommendation", () => {
