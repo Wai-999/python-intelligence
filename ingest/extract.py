@@ -79,8 +79,35 @@ def _is_mono(span):
     return bool(span.get("flags", 0) & 8) or _mono_font(span.get("font", ""))
 
 
+def _baseline(line):
+    origins = [s["origin"][1] for s in line.get("spans", []) if s.get("origin")]
+    return sorted(origins)[len(origins) // 2] if origins else line["bbox"][3]
+
+
+def _ink_box(line):
+    box = line.get("bbox")
+    glyphs = [c for s in line.get("spans", []) for c in s.get("chars", [])
+              if not c["c"].isspace() and not CALLOUTS.fullmatch(c["c"])]
+    return (box[0], box[1], max(c["bbox"][2] for c in glyphs), box[3]) if box and glyphs else box
+
+
+def _trim_fragment(spans):
+    # Remove editorial suffixes before a following fragment makes them interior.
+    text = "".join(s.get("text", "") for s in spans)
+    trimmed = re.sub(r"(?:\s*[①-⑳❶-❿])+\s*$", "", text).rstrip()
+    had_callout = bool(CALLOUTS.search(text[len(trimmed):]))
+    remaining = len(trimmed)
+    for span in spans:
+        original = span.get("text", "")
+        span["text"] = original[:remaining]
+        if "chars" in span:
+            span["chars"] = span["chars"][:remaining]
+        remaining = max(0, remaining - len(original))
+    return had_callout
+
+
 def _visual_lines(lines):
-    """Reassemble nearby raw fragments by vertical overlap, then x position."""
+    """Reassemble raw fragments by baseline proximity, then x position."""
     groups = []
     for raw in lines:
         line = dict(raw)
@@ -88,7 +115,7 @@ def _visual_lines(lines):
                          if "chars" in s else dict(s) for s in raw.get("spans", [])]
         box = line.get("bbox")
         group = next((g for g in groups if box and g[0].get("bbox") and
-                      min(box[3], g[0]["bbox"][3]) - max(box[1], g[0]["bbox"][1]) >
+                      abs(_baseline(line) - _baseline(g[0])) <
                       .5 * min(box[3] - box[1], g[0]["bbox"][3] - g[0]["bbox"][1])), None)
         if group is None:
             groups.append([line])
@@ -111,15 +138,8 @@ def _visual_lines(lines):
             gap = box[0] - edge if box and edge is not None else None
             limit = 24 if text.lstrip().startswith("#") else 10
             if merged is not None and gap is not None and -.1 <= gap <= limit * width:
-                # Raw bboxes include trailing spaces; use the last ink glyph.
-                for span in reversed(merged["spans"]):
-                    span["text"] = span.get("text", "").rstrip()
-                    if "chars" in span:
-                        while span["chars"] and span["chars"][-1]["c"].isspace():
-                            span["chars"].pop()
-                    if span["text"]:
-                        break
-                spaces = max(0, round(gap / width))
+                had_callout = _trim_fragment(merged["spans"])
+                spaces = 1 if had_callout else max(0, round(gap / width))
                 merged["spans"].append(dict(text=" " * spaces, flags=8))
                 merged["spans"].extend(spans)
                 old = merged["bbox"]
@@ -136,9 +156,10 @@ def _visual_lines(lines):
 def _code_blocks(page):
     blocks, current, pitches = [], [], []
     previous = None
+    previous_callout = False
 
     def flush():
-        nonlocal previous
+        nonlocal previous, previous_callout
         if current:
             measured = [origin for _, origin, _ in current if origin is not None]
             baseline = min(measured) if measured else 0
@@ -149,8 +170,13 @@ def _code_blocks(page):
             current.clear()
         pitches.clear()
         previous = None
+        previous_callout = False
 
     layout = page.get_text("rawdict")
+    lines = [line for block in layout["blocks"] for line in block.get("lines", [])]
+    bullets = [line for line in lines if "".join(
+        "".join(c["c"] for c in s["chars"]) if "chars" in s else s.get("text", "")
+        for s in line.get("spans", [])).strip() in {"•", "◦", "▪", "–"}]
     for block in layout["blocks"]:
         for line in _visual_lines(block.get("lines", [])):
             spans = [dict(span) for span in line.get("spans", [])]
@@ -162,7 +188,12 @@ def _code_blocks(page):
                 continue
             total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)
             mono = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans if _is_mono(s))
-            if total and mono / total >= 0.8 and not text.lstrip().startswith("•"):
+            bbox = line.get("bbox")
+            bullet_line = any(bbox and b.get("bbox") and b["bbox"][0] <= bbox[0]
+                              and abs(_baseline(b) - _baseline(line)) <
+                              .5 * min(b["bbox"][3] - b["bbox"][1], bbox[3] - bbox[1])
+                              for b in bullets)
+            if total and mono / total >= 0.8 and not bullet_line and not text.lstrip().startswith(("•", "◦", "▪", "–")):
                 bbox = line.get("bbox")
                 first = next((s for s in spans if _is_mono(s) and any(
                     c.isascii() and not c.isspace() for c in CALLOUTS.sub("", s["text"]))),
@@ -171,9 +202,16 @@ def _code_blocks(page):
                           for c in first.get("chars", [])
                           if not c["c"].isspace() and c["bbox"][2] > c["bbox"][0]]
                 width = sorted(widths)[len(widths) // 2] if widths else 0
-                origin = spans[0].get("bbox", (None,))[0] if width else None
+                origin = first.get("bbox", (None,))[0] if width else None
+                if origin is not None:
+                    # Prefix text is already present literally; do not count its
+                    # width again as positioned indentation. Ignore annotations.
+                    prefix = spans[:next(i for i, s in enumerate(spans) if s is first)]
+                    origin -= sum(len(CALLOUTS.sub("", s["text"])) for s in prefix) * width
                 # Callouts are editorial annotations, retained in page text.
-                text = re.sub(r"(?:\s*[①-⑳❶-❿])+\s*$", "", text).rstrip()
+                trimmed = re.sub(r"(?:\s*[①-⑳❶-❿])+\s*$", "", text).rstrip()
+                trailing_callout = bool(CALLOUTS.search(text[len(trimmed):]))
+                text = trimmed
                 if not text.strip():
                     continue
                 # MuPDF can also place adjacent fragments in separate blocks.
@@ -184,12 +222,13 @@ def _code_blocks(page):
                     if (overlap > .5 * min(previous[3] - previous[1], bbox[3] - bbox[1])
                             and -.1 <= gap <= limit * width):
                         old_text, old_origin, old_width = current[-1]
-                        spaces = max(0, round(gap / width))
+                        spaces = 1 if previous_callout else max(0, round(gap / width))
                         if old_text[-1:].isidentifier() and text[:1].isidentifier():
                             spaces = max(1, spaces)
                         current[-1] = (old_text + " " * spaces + text, old_origin, old_width)
-                        previous = (previous[0], min(previous[1], bbox[1]), bbox[2],
+                        previous = (previous[0], min(previous[1], bbox[1]), _ink_box(line)[2],
                                     max(previous[3], bbox[3]))
+                        previous_callout = trailing_callout
                         continue
                 page_box = getattr(page, "rect", None) or getattr(page, "mediabox", None)
                 page_width = (page_box.width if hasattr(page_box, "width") else
@@ -207,7 +246,8 @@ def _code_blocks(page):
                     elif delta <= 1.5 * fallback:
                         pitches.append(delta)
                 current.append((text, origin, width or 1))
-                previous = bbox
+                previous = _ink_box(line)
+                previous_callout = trailing_callout
             else:
                 flush()
                 previous = None

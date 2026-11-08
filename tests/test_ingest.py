@@ -763,3 +763,68 @@ def test_bullet_list_is_not_a_python_listing():
         [_fixture_span('•', 50, 50)], [_fixture_span("'Hello world!'", 74, 50)],
         [_fixture_span('•', 50, 65)], [_fixture_span("'Hello'", 74, 65)],
     ])) == []
+
+
+def _separate_blocks(page):
+    layout = page.get_text('rawdict')
+    lines = [line for block in layout['blocks'] for line in block['lines']]
+    class Page:
+        mediabox = pymupdf.Rect(0, 0, 600, 800)
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [line]} for line in lines]}
+    return Page()
+
+
+def test_cross_block_gap_ignores_trailing_spaces():
+    from ingest.extract import _code_blocks
+    page = _separate_blocks(_fixture_page([
+        [_fixture_span('value     ', 50, 50)],
+        [_fixture_span('= 1', 86, 50)],
+    ]))
+    assert _code_blocks(page) == ['value = 1']
+
+
+@pytest.mark.parametrize('bullet', ['•', '◦', '▪', '–'])
+def test_bullet_in_separate_block(bullet):
+    from ingest.extract import _code_blocks
+    page = _separate_blocks(_fixture_page([
+        [_fixture_span('before = 1', 50, 30)],
+        [_fixture_span(bullet, 50, 50)],
+        [_fixture_span("'Hello world!'", 74, 50)],
+        [_fixture_span('after = 2', 50, 70)],
+    ]))
+    assert _code_blocks(page) == ['before = 1', 'after = 2']
+
+
+@pytest.mark.parametrize('separate', [False, True])
+@pytest.mark.parametrize('marker', ['①', '⑳', '❶', '❿'])
+def test_callout_at_fragment_join(separate, marker):
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('value = 1  '+marker, 50, 50)],
+        [_fixture_span('+ 2', 140, 50)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    code, = _code_blocks(page)
+    assert marker not in code
+    assert code == 'value = 1 + 2'
+    compile(code, '<callout-join>', 'exec')
+
+
+def test_tall_glyph_does_not_merge_neighboring_baselines():
+    from ingest.extract import _code_blocks
+    tall = _fixture_span('a = 1', 50, 30, height=40)
+    tall['origin'] = (50, 50)
+    short = _fixture_span('b = 2', 50, 47, height=12)
+    short['origin'] = (50, 58)
+    assert _code_blocks(_fixture_page([[tall], [short]])) == ['a = 1\nb = 2']
+
+
+def test_indent_origin_ignores_leading_callout_span():
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('def f():', 50, 50)],
+        [_fixture_span('①', 20, 65), _fixture_span('return 1', 74, 65)],
+    ])
+    assert _code_blocks(page) == ['def f():\n    ①return 1']
