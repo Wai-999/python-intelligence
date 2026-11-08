@@ -3,16 +3,26 @@ import {
   type LessonProgress, type Position, type ProgressExport, type ProgressStore,
 } from "./types";
 
+const DB_VERSION = 1;
+const RELOAD_MESSAGE = "database upgraded in another tab; reload the page";
+
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
 const stores = ["lessons", "drafts", "meta"];
 
 type Obj = Record<string, unknown>;
 function object(value: unknown, path: string): asserts value is Obj {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new ImportError(`${path} must be an object`);
+    throw new ValidationError(`${path} must be an object`);
   }
 }
 function check(valid: boolean, message: string): asserts valid {
-  if (!valid) throw new ImportError(message);
+  if (!valid) throw new ValidationError(message);
 }
 function timestamp(value: unknown, path: string) {
   check(typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value)), `${path} must be an ISO timestamp`);
@@ -60,7 +70,7 @@ function validatePosition(value: unknown): Position {
   return { lessonId, stepIndex, updatedAt } as Position;
 }
 function validateDraft(key: string, code: unknown): string {
-  check(/^[^:]+:.+$/.test(key), `drafts.${key} key must be lessonId:stepId`);
+  check(/^[^:]+:[\s\S]+$/.test(key), `drafts.${key} key must be lessonId:stepId`);
   check(typeof code === "string", `drafts.${key} must be a string`);
   return code;
 }
@@ -88,13 +98,14 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
   let db: IDBDatabase | undefined;
   let opening: Promise<IDBDatabase> | undefined;
   let closed = false;
+  let stale = false;
   function connect(): Promise<IDBDatabase> {
+    if (stale) return Promise.reject(new Error(RELOAD_MESSAGE));
     if (closed) return Promise.reject(new Error("Progress store is closed"));
     if (db) return Promise.resolve(db);
     if (opening) return opening;
     opening = new Promise<IDBDatabase>((resolve, reject) => {
-      // Opening without a version reconnects to an upgraded database in another tab.
-      const request = indexedDB.open(dbName);
+      const request = indexedDB.open(dbName, DB_VERSION);
       request.onupgradeneeded = () => {
         for (const name of stores) {
           if (!request.result.objectStoreNames.contains(name)) {
@@ -102,16 +113,27 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
           }
         }
       };
-      request.onblocked = () => reject(new Error("Progress database opening is blocked; close other tabs and retry"));
-      request.onerror = () => reject(request.error);
       let blocked = false;
-      request.addEventListener("blocked", () => { blocked = true; });
+      request.onblocked = () => {
+        blocked = true;
+        reject(new Error("Progress database opening is blocked; close other tabs and retry"));
+      };
+      request.onerror = () => {
+        if (request.error?.name === "VersionError") {
+          stale = true;
+          reject(new Error(RELOAD_MESSAGE));
+        } else reject(request.error);
+      };
       request.onsuccess = () => {
         const connection = request.result;
         if (closed || blocked) { connection.close(); return; }
         db = connection;
         connection.onversionchange = () => {
+          stale = true;
           connection.close();
+          if (db === connection) db = undefined;
+        };
+        connection.onclose = () => {
           if (db === connection) db = undefined;
         };
         resolve(connection);
@@ -174,7 +196,12 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       result(output);
     }),
     importAll: async (data) => {
-      const normalized = validate(data);
+      let normalized: ProgressExport;
+      try { normalized = validate(data); }
+      catch (error) {
+        if (error instanceof ValidationError) throw new ImportError(error.message);
+        throw error;
+      }
       await transact<void>(stores, "readwrite", (tx) => {
         for (const name of stores) tx.objectStore(name).clear();
         for (const lesson of normalized.lessons) tx.objectStore("lessons").put(lesson);

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openProgressStore } from "./store";
+import { openProgressStore, ValidationError } from "./store";
 import { ImportError, type LessonProgress } from "./types";
 
 const lesson: LessonProgress = {
@@ -122,7 +122,7 @@ describe("IndexedDB progress store", () => {
     for (const patch of [{ mastery: 2 }, { mastery: NaN }, { furthestStep: -1 },
       { completed: "yes" }, { steps: { bad: { passed: true, attempts: -1, updatedAt: "bad" } } },
       { struggles: { calls: -1 } }, { completedAt: "bad" }, { lessonId: "" }]) {
-      await expect(store.putLesson({ ...lesson, ...patch } as LessonProgress)).rejects.toThrow(Error);
+      await expect(store.putLesson({ ...lesson, ...patch } as LessonProgress)).rejects.toThrow(ValidationError);
     }
     await expect(store.setPosition("functions", -1)).rejects.toThrow("stepIndex");
     await expect(store.setPosition("", 0)).rejects.toThrow("lessonId");
@@ -177,7 +177,7 @@ describe("IndexedDB progress store", () => {
     await store.importAll(await store.exportAll());
   });
 
-  it("reopens after another connection upgrades the database", async () => {
+  it("rejects stale operations and opening a newer schema with a reload error", async () => {
     const name = `upgrade-${Date.now()}-${serial++}`;
     const store = await open(name);
     await seed(store);
@@ -187,12 +187,54 @@ describe("IndexedDB progress store", () => {
       request.onerror = () => reject(request.error);
     });
     try {
-      await store.putDraft("functions", "exercise", "after upgrade");
-      await store.putLesson({ ...lesson, mastery: 1 });
-      expect(await store.getDraft("functions", "exercise")).toBe("after upgrade");
-      expect((await store.getLesson("functions"))!.mastery).toBe(1);
-      await store.importAll(await store.exportAll());
+      for (const operation of [() => store.allLessons(),
+        () => store.putDraft("functions", "exercise", "after upgrade"),
+        () => store.putLesson(lesson), () => store.exportAll()]) {
+        await expect(operation()).rejects.toThrow("database upgraded in another tab; reload the page");
+      }
+      await expect(openProgressStore(name)).rejects.toThrow("database upgraded in another tab; reload the page");
     } finally { upgraded.close(); }
+  });
+
+  it("reopens once after the browser closes its connection", async () => {
+    const spy = vi.spyOn(indexedDB, "open");
+    try {
+      const store = await open();
+      await seed(store);
+      expect(spy.mock.calls[0]![1]).toBe(1);
+      const connection = spy.mock.results[0]!.value.result as IDBDatabase;
+      connection.close();
+      connection.onclose!(new Event("close"));
+      const [lessons, position] = await Promise.all([store.allLessons(), store.getPosition()]);
+      expect(lessons).toEqual([lesson]);
+      expect(position?.stepIndex).toBe(3);
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally { spy.mockRestore(); }
+  });
+
+  it("round-trips draft step ids containing line terminators", async () => {
+    const store = await open();
+    for (const step of ["\n", "first\r\nsecond:third", "\u2028\u2029"]) {
+      await store.putDraft("functions", step, "code");
+      const saved = JSON.parse(JSON.stringify(await store.exportAll()));
+      await store.clear();
+      await store.importAll(saved);
+      expect(await store.getDraft("functions", step)).toBe("code");
+    }
+  });
+
+  it("distinguishes direct validation errors from import errors", async () => {
+    const store = await open();
+    for (const operation of [() => store.putLesson({ ...lesson, mastery: 2 }),
+      () => store.putDraft("", "step", "code"),
+      () => store.putDraft("lesson", "step", 42 as unknown as string),
+      () => store.setPosition("lesson", -1)]) {
+      await expect(operation()).rejects.toBeInstanceOf(ValidationError);
+      await expect(operation()).rejects.not.toBeInstanceOf(ImportError);
+    }
+    const saved = await store.exportAll();
+    await expect(store.importAll({ ...saved, lessons: [{ ...lesson, mastery: 2 }] })).rejects.toBeInstanceOf(ImportError);
+    await expect(store.importAll({ ...saved, drafts: { bad: "code" } })).rejects.not.toBeInstanceOf(ValidationError);
   });
 
   it("reports a blocked open and closes a late connection", async () => {
@@ -203,7 +245,6 @@ describe("IndexedDB progress store", () => {
     try {
       const pending = openProgressStore("blocked-test");
       request.onblocked!(new Event("blocked") as IDBVersionChangeEvent);
-      request.dispatchEvent(new Event("blocked"));
       await expect(pending).rejects.toThrow("blocked");
       request.onsuccess!(new Event("success"));
       expect(lateConnection.close).toHaveBeenCalledOnce();
