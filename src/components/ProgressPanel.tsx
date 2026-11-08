@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProgressStore } from "../progress/types";
 
 /** Export/import/reset. Progress lives only in this browser; export is the only way to move or back it up. */
@@ -6,6 +6,14 @@ export function ProgressPanel({ store, onChanged, onClose }: { store: ProgressSt
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const file = useRef<HTMLInputElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  // Keyboard users land in the panel when it opens and return to whatever opened it when it closes.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    heading.current?.focus();
+    return () => { if (opener && document.contains(opener)) opener.focus(); };
+  }, []);
 
   const doExport = async () => {
     const data = await store.exportAll();
@@ -29,8 +37,9 @@ export function ProgressPanel({ store, onChanged, onClose }: { store: ProgressSt
   };
 
   return (
-    <div className="panel" role="dialog" aria-modal="false" aria-labelledby="pp-title">
-      <h2 id="pp-title">Your progress</h2>
+    <div className="panel" role="dialog" aria-modal="false" aria-labelledby="pp-title"
+         onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
+      <h2 id="pp-title" ref={heading} tabIndex={-1}>Your progress</h2>
       <p>Your progress is saved in <strong>this browser only</strong>. Nothing is sent to a server. To move it to another
          device, or to back it up, export it to a file and import that file elsewhere.</p>
       <div className="run-bar">

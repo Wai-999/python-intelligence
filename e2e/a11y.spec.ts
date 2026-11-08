@@ -37,8 +37,17 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.getByRole("region", { name: "Further reading" })).toBeVisible();
       await scan(page, "recap with further reading");
 
-      await page.getByRole("button", { name: "Progress" }).click();
+      const trigger = page.getByRole("button", { name: "Progress" });
+      await trigger.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("heading", { name: "Your progress" })).toBeFocused();
       await scan(page, "progress panel");
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+      await trigger.press("Enter");
+      await page.getByRole("button", { name: "Close" }).click();
+      await expect(trigger).toBeFocused();
     });
 
     test(`example output and failed checks with the tutor note have no violations (${scheme})`, async ({ page }) => {

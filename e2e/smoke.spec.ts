@@ -6,6 +6,10 @@ test("loads under the sub-path, fits the viewport, and is keyboard reachable", a
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  // Post-deploy: prove we are testing the build that was just deployed, not a cached older one.
+  if (process.env.PI_EXPECT_BUILD) {
+    await expect(page.locator('meta[name="pi-build"]')).toHaveAttribute("content", process.env.PI_EXPECT_BUILD);
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
   await page.keyboard.press("Tab");
