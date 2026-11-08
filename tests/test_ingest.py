@@ -323,6 +323,7 @@ def test_publish_recovers_interrupted_swap(tmp_path):
     workspace = tmp_path / ".book.tmp-crashed"
     (workspace / "old").mkdir(parents=True)
     (workspace / "old/marker").write_text("previous")
+    (workspace / "target.json").write_text(json.dumps("book"))
     # Fail staging after recovery; the restored generation must remain usable.
     with pytest.raises(TypeError):
         _publish(target, {"pages.jsonl": None})
@@ -353,17 +354,40 @@ def test_failed_rollback_retains_nested_backup(tmp_path, monkeypatch):
     assert sorted(p.name for p in tmp_path.iterdir()) == ["book"]
 
 
+@pytest.mark.parametrize("advance", [5.5, 6.05, 6.6])
+@pytest.mark.parametrize("prefix", ["", "    ", "1 "])
+def test_raw_glyph_indentation(advance, prefix):
+    from ingest.extract import _code_blocks
+    def span(text, x, flags=8):
+        return dict(flags=flags, bbox=(x, 0, x + len(text) * advance, 12),
+                    chars=[dict(c=c, bbox=(x+i*advance, 0, x+(i+1)*advance, 12))
+                           for i, c in enumerate(text)])
+    class Page:
+        def get_text(self, kind):
+            assert kind == "rawdict"
+            return {"blocks": [{"lines": [
+                {"spans": [span("def f():", 50)]},
+                {"spans": ([span(prefix, 50, 0)] if prefix else []) +
+                    [span("return 123456789", 50 + len(prefix)*advance)]},
+                {"spans": [span("value = 1", 50 + 4*advance)]},
+            ]}]}
+    assert _code_blocks(Page()) == ["def f():\n" + prefix + "return 123456789\n    value = 1"]
+
+
 def test_tab_does_not_distort_positioned_indent():
     from ingest.extract import _code_blocks
     class Page:
         def get_text(self, kind):
-            return {'blocks': [{'lines': [
-                {'bbox': (50, 40, 150, 52), 'spans': [
-                    {'text': '\tvalue = 1', 'flags': 8, 'size': 11, 'bbox': (50, 40, 150, 52)}]},
-                {'bbox': (76.4, 55, 140, 67), 'spans': [
-                    {'text': 'other = 2', 'flags': 8, 'size': 11, 'bbox': (76.4, 55, 140, 67)}]},
+            def span(text, x):
+                return dict(flags=8, bbox=(x, 0, x+100, 12), chars=[
+                    dict(c=c, bbox=(x+i*5.5, 0, x+(i+1)*5.5, 12))
+                    for i, c in enumerate(text)])
+            return {"blocks": [{"lines": [
+                {"spans": [span("\tvalue = 1", 50)]},
+                {"spans": [span("other = 2", 72)]},
+                {"spans": [dict(text="\t\u00a0", flags=8), dict(text="!", flags=0)]},
             ]}]}
-    assert _code_blocks(Page()) == ['\tvalue = 1\n    other = 2']
+    assert _code_blocks(Page()) == ["\tvalue = 1\n    other = 2"]
 
 
 def test_publish_syncs_files_and_directories(tmp_path, monkeypatch):
@@ -379,3 +403,56 @@ def test_publish_syncs_files_and_directories(tmp_path, monkeypatch):
     module._publish(tmp_path / 'book', {'pages.jsonl': 'page\n', 'meta.json': '{}\n'})
     assert synced.count(False) == 2
     assert synced.count(True) >= 2
+
+@pytest.mark.parametrize('names', [('book', 'BOOK'), ('caf\u00e9', 'cafe\u0301')])
+def test_collision_with_only(pdf, tmp_path, names):
+    manifest = tmp_path / 'manifest.json'
+    manifest.write_text(json.dumps({'sources': [cleared_source(pdf, source_id=n) for n in names]}))
+    with pytest.raises(IngestError, match='Case-colliding'):
+        extract_from_manifest(manifest, tmp_path / 'out', only=names[1], repo_root=tmp_path)
+    assert not (tmp_path / 'out').exists()
+
+
+def test_workspace_prefix_cannot_claim_other_backup(tmp_path):
+    from ingest.extract import _publish
+    workspace = tmp_path / '.book.tmp-a.tmp-crashed'
+    (workspace / 'old').mkdir(parents=True)
+    (workspace / 'target.json').write_text(json.dumps('book.tmp-a'))
+    (workspace / 'old/marker').write_text('preserved')
+    _publish(tmp_path / 'book', {'pages.jsonl': 'new'})
+    assert (workspace / 'old/marker').read_text() == 'preserved'
+    assert not (tmp_path / 'book/marker').exists()
+
+
+@pytest.mark.parametrize('cleanup', ['remove', 'sync'])
+def test_cleanup_preserves_primary_failure(tmp_path, monkeypatch, cleanup):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    if cleanup == 'remove':
+        def fail(*args):
+            raise OSError('cleanup remove failed')
+        monkeypatch.setattr(module.shutil, 'rmtree', fail)
+    else:
+        def fail(*args):
+            raise OSError('cleanup sync failed')
+        monkeypatch.setattr(module, '_fsync_directory', fail)
+    with pytest.raises(TypeError) as error:
+        module._publish(tmp_path / 'book', {'pages.jsonl': None})
+    assert any('cleanup failed' in note for note in error.value.__notes__)
+
+
+def test_cleanup_preserves_rollback_error(tmp_path, monkeypatch):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    target = tmp_path / 'book'
+    target.mkdir()
+    (target / 'marker').write_text('previous')
+    original = module.os.replace
+    def fail(source, dest):
+        if Path(source).name in {'new', 'old'}:
+            raise OSError('rename failed')
+        return original(source, dest)
+    monkeypatch.setattr(module.os, 'replace', fail)
+    with pytest.raises(IngestError, match='rollback failed'):
+        module._publish(target, {'pages.jsonl': 'new'})
+    assert len(list(tmp_path.glob('.book.tmp-*/old/marker'))) == 1

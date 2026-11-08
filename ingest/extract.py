@@ -10,6 +10,7 @@ import tempfile
 import shutil
 import unicodedata
 import errno
+import sys
 
 import pymupdf
 
@@ -67,23 +68,33 @@ def _code_blocks(page):
                 for text, origin, width in current))
             current.clear()
 
-    for block in page.get_text("dict")["blocks"]:
+    layout = page.get_text("rawdict")
+    for block in layout["blocks"]:
         for line in block.get("lines", []):
             spans = line.get("spans", [])
+            for span in spans:
+                if "chars" in span:
+                    span["text"] = "".join(c["c"] for c in span["chars"])
             text = _normalize("".join(span["text"] for span in spans))
             if not text.strip():
                 continue
-            total = sum(len(s["text"].replace(" ", "")) for s in spans)
-            mono = sum(len(s["text"].replace(" ", "")) for s in spans if s["flags"] & 8)
+            total = sum(sum(not c.isspace() for c in s["text"]) for s in spans)
+            mono = sum(sum(not c.isspace() for c in s["text"]) for s in spans if s["flags"] & 8)
             if total and mono / total >= 0.8:
                 bbox = line.get("bbox")
                 if previous and bbox and bbox[1] - previous[3] > 1.8 * (previous[3] - previous[1]):
                     flush()
                 first = next(s for s in spans if s["flags"] & 8 and s["text"].strip())
-                # Use the font advance rather than bbox / text length: tabs and
-                # literal leading spaces must not distort the positional indent.
-                width = pymupdf.Font("cour").text_length(" ", fontsize=first.get("size", 11))
-                origin = first.get("bbox", (0,))[0]
+                # Raw glyph boxes use this span's actual font metrics. Exclude
+                # tabs and whitespace, whose boxes may have unusual advances.
+                widths = [c["bbox"][2] - c["bbox"][0]
+                          for c in first.get("chars", [])
+                          if not c["c"].isspace() and c["bbox"][2] > c["bbox"][0]]
+                width = sorted(widths)[len(widths) // 2] if widths else 0
+                # Include leading spans in both the literal text and its origin.
+                # Without glyph metrics, retain literal indentation only.
+                origin = spans[0].get("bbox", (0,))[0] if width else 0
+                width = width or 1
                 current.append((text, origin, width))
                 previous = bbox
             else:
@@ -120,6 +131,12 @@ def _publish(target, artifacts):
     for leftover in sorted(target.parent.iterdir()):
         if not leftover.name.startswith(prefix) or not leftover.is_dir() or leftover.is_symlink():
             continue
+        marker = leftover / "target.json"
+        try:
+            if json.loads(marker.read_text(encoding="utf-8")) != target.name:
+                continue
+        except (OSError, ValueError):
+            continue
         backup = leftover / "old"
         if backup.exists() and not target.exists():
             os.replace(backup, target)
@@ -129,6 +146,7 @@ def _publish(target, artifacts):
     staged, backup = workspace / "new", workspace / "old"
     preserve = False
     try:
+        (workspace / "target.json").write_text(json.dumps(target.name), encoding="utf-8")
         staged.mkdir()
         for name, text in artifacts.items():
             with open(staged / name, "w", encoding="utf-8", newline="\n") as stream:
@@ -155,9 +173,15 @@ def _publish(target, artifacts):
     finally:
         if backup.exists() and not target.exists():
             preserve = True
+        primary = sys.exception()
         if not preserve:
-            shutil.rmtree(workspace)
-            _fsync_directory(target.parent)
+            try:
+                shutil.rmtree(workspace)
+                _fsync_directory(target.parent)
+            except Exception as cleanup_error:
+                if primary is None:
+                    raise
+                primary.add_note(f"Output cleanup failed at {workspace}: {cleanup_error}")
 
 
 def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
@@ -226,13 +250,11 @@ def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, r
         selected = sources if only is None else [s for s in sources if s.get("source_id") == only]
         if only is not None and len(selected) != 1:
             raise IngestError(f"Source {only!r} must occur exactly once in manifest")
-        cleared = [s for s in selected if all(s.get(field) is True for field in
-                   ("allowed_for_internal_extraction", "downloaded"))]
         seen = set()
-        for source in cleared:
-            folded = source["source_id"].casefold()
+        for source in sources:
+            folded = unicodedata.normalize("NFC", source["source_id"]).casefold()
             if folded in seen:
-                raise IngestError("Case-colliding source_ids in selected cleared sources")
+                raise IngestError("Case-colliding source_ids in manifest")
             seen.add(folded)
         results = []
         for source in selected:
