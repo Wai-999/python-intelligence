@@ -64,11 +64,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-      - name: Smoke-test the live site
+      - name: Wait for the live site
         run: |
           url="${{ steps.deployment.outputs.page_url }}"
           for i in 1 2 3 4 5 6; do
             code=$(curl -s -o page.html -w '%{http_code}' "$url") && [ "$code" = 200 ] && grep -q 'Python Intelligence' page.html && exit 0
             sleep 10
           done
-          echo "live smoke test failed for $url"; exit 1
+          echo "live site not reachable at $url"; exit 1
+      # Real browsers against the deployed URL: base path, mobile layout, keyboard, and Python running in Pyodide.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci && npx playwright install --with-deps chromium
+      - name: Browser smoke test on the live URL
+        env:
+          PI_BASE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: npx playwright test e2e/smoke.spec.ts e2e/learner.spec.ts --grep "loads under the sub-path|file I/O works" --reporter=line

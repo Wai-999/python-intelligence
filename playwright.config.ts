@@ -5,6 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 const BASE_PATH = "/python-intelligence/";
 // PI_E2E_PORT lets two runs (e.g. the orchestrator's acceptance tests and a local run) coexist.
 const PORT = Number(process.env.PI_E2E_PORT ?? 4173);
+// PI_BASE_URL runs the suite against an already-deployed site (CI's post-deploy check) instead of local dist/.
+const LIVE = process.env.PI_BASE_URL;
 
 export default defineConfig({
   testDir: "e2e",
@@ -13,12 +15,12 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL: `http://127.0.0.1:${PORT}${BASE_PATH}`, trace: "retain-on-failure" },
+  use: { baseURL: LIVE ?? `http://127.0.0.1:${PORT}${BASE_PATH}`, trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /smoke/ },
   ],
-  webServer: {
+  webServer: LIVE ? undefined : {
     // Serve dist/ under the sub-path to prove the relative base works without knowing the repo name.
     command: `node e2e/serve.mjs ${BASE_PATH} ${PORT}`,
     url: `http://127.0.0.1:${PORT}${BASE_PATH}`,
