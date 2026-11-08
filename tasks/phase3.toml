@@ -176,3 +176,31 @@ Known causes from the P3-6 review, in ingest/extract.py:
 5. After stripping a callout marker, also strip the trailing spaces before it.
 Add a regression test for each item. Do not change file formats or the public API.
 """
+
+[[task]]
+id = "P3-8"
+title = "Extractor: remaining edge cases from the P3-7 review"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P3-7"]
+allowed_paths = ["ingest/**", "tests/test_ingest.py"]
+acceptance = [
+  "python -m pytest tests/test_ingest.py -q",
+  "python scripts/bench_code_blocks.py --pdf-root '/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package' --min pch-think-python-2nd=79 --min pch-diveintopython3=36 --min pch-automate-the-boring-stuff-with-python=36",
+]
+risk = "low"
+max_attempts = 3
+brief = """
+Edge cases from the P3-7 review, in ingest/extract.py. Keep formats/API unchanged; the benchmark floors (the
+current results) must not regress.
+1. When joining same-baseline fragments from different MuPDF blocks, measure the horizontal gap from the last
+   NON-SPACE glyph of the previous fragment (as the per-block path already does), not its raw bbox edge.
+2. A bullet glyph ('•', '◦', '▪', '–' used as a bullet) that MuPDF places in its own block must still mark that
+   visual line as a list item (not code), the same as when it shares the line.
+3. Callout markers (U+2460-U+2473, U+2776-U+277F) that end up mid-line after fragments merge must be removed
+   (with their adjacent spaces collapsed to one), not only at the end of a line.
+4. Visual-line grouping: group by baseline proximity (|baseline difference| < 0.5 x line height) rather than
+   overlap with the first line only, so a tall glyph can't pull neighbouring lines into one visual line.
+5. The indentation origin must come from the first ASCII-bearing monospace span (as the reference span does).
+Add a regression test for each. Run tests and the benchmark with the venv interpreter as in P3-7.
+"""
