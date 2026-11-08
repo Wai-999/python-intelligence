@@ -33,8 +33,8 @@ python3 scripts/build_source_catalog.py   # -> content/sources.json (+ source_se
 
 Only sources the rights manifest clears are extracted. Book-grounded lessons cite `sources[]` by PDF page range and
 section heading; the build fails on a false citation, an uncited claim step, or 12+ words copied from an extract.
-A passing local build updates `content/provenance_attestation.json`; commit it with lesson changes, because CI
-(which has no extracts) rejects any lesson that differs from it.
+A local build with extracts also regenerates `content/provenance/` (hashes of every 12-word run in the books, no
+text); commit it when sources change. CI scans lessons and the deployed bundle against it.
 
 ## Orchestrator quick start
 

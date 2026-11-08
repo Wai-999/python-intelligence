@@ -23,12 +23,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from provenance import SHINGLE, ExtractIndex, strings_in  # noqa: E402
+from provenance import ExtractIndex, HashedIndex, load_index, strings_in, write_hashed_index  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "content" / "sources.json"
 SECTIONS = ROOT / "content" / "source_sections.json"
-ATTEST = ROOT / "content" / "provenance_attestation.json"
 CLAIM_KINDS = {"intuition", "formal"}  # steps that state facts and so must cite, in a book-grounded lesson
 USES = {"reference", "adapted"}
 HARNESS = ROOT / "src" / "py" / "harness.py"
@@ -77,32 +76,15 @@ def section_spans(sections: list, page_count: int) -> list[tuple[str, int, int]]
     return out
 
 
-def lesson_digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def make_attestation(files: list[Path], index: ExtractIndex) -> dict:
-    """Record that these exact lesson files passed the copy check against these exact extracts."""
-    return {"_note": "Written by validate_content.py after a passing copy check against local extracts. CI, which has "
-                     "no extracts, requires every lesson to match this record.",
-            "shingle_words": SHINGLE,
-            "extracts": dict(sorted(index.shas.items())),
-            "lessons": {f.stem: lesson_digest(f) for f in sorted(files)}}
-
-
-def check_attestation(files: list[Path], attestation: dict | None, catalog: dict) -> list[str]:
-    """Used where extracts are absent: every lesson must have passed the copy check, unchanged since."""
-    if attestation is None:
-        return [f"no {ATTEST.name}: run the build where book extracts exist (python -m ingest) to copy-check lessons"]
+def check_index_coverage(index, catalog: dict) -> list[str]:
+    """The copy index (extracts or hashed) must cover every catalogued book at the catalogued sha256."""
+    if not index.available:
+        return [f"copy index unavailable ({getattr(index, 'error', None) or 'no extracts'}); "
+                "run the build where extracts exist to regenerate content/provenance/"]
     errs = []
-    if attestation.get("shingle_words") != SHINGLE:
-        errs.append(f"{ATTEST.name} was made with a different shingle size; re-run the copy check")
     for sid, cat in catalog.items():
-        if attestation.get("extracts", {}).get(sid) != cat.get("sha256"):
-            errs.append(f"{ATTEST.name} does not cover {sid} at sha256 {str(cat.get('sha256'))[:12]}; re-run the copy check")
-    for f in files:
-        if attestation.get("lessons", {}).get(f.stem) != lesson_digest(f):
-            errs.append(f"{f.stem}: changed since its last copy check against the book extracts; run the build where extracts exist")
+        if index.shas.get(sid) != cat.get("sha256"):
+            errs.append(f"copy index does not cover {sid} at sha256 {str(cat.get('sha256'))[:12]}; re-extract and rebuild")
     return errs
 
 
@@ -161,11 +143,11 @@ def check_provenance(lesson: dict, cleared: set[str], catalog: dict) -> list[str
     return errs
 
 
-def check_verbatim(lesson: dict, index: ExtractIndex) -> list[str]:
+def check_verbatim(lesson: dict, index: ExtractIndex | HashedIndex) -> list[str]:
     errs = []
     for text in strings_in({k: v for k, v in lesson.items() if k != "sources"}):
         for m in index.find(text, limit=1):
-            errs.append(f"{lesson.get('id')}: copies text from {m.source_id} page {m.page}: \"{m.phrase}…\"")
+            errs.append(f"{lesson.get('id')}: copies text from {m.where()}: \"{m.phrase}…\"")
     return errs
 
 
@@ -268,19 +250,10 @@ def main() -> int:
     catalog = {sid: {**c, "sections": secs.get(sid, [])} for sid, c in catalog.items()}
     for l in lessons:
         errs += check_lesson(l, cleared, set(ids), catalog)
-    index = ExtractIndex()
-    if index.available:
-        missing = sorted(set(catalog) - set(index.shas))
-        if missing:
-            errs.append(f"local extracts are incomplete (missing {missing}); run python -m ingest")
-        for sid in set(catalog) & set(index.shas):
-            if index.shas[sid] != catalog[sid].get("sha256"):
-                errs.append(f"extract of {sid} is from a different file than content/sources.json; re-extract")
-        for l in lessons:
-            errs += check_verbatim(l, index)
-    else:
-        attestation = json.loads(ATTEST.read_text()) if ATTEST.is_file() else None
-        errs += check_attestation(files, attestation, catalog)
+    index = load_index()
+    errs += check_index_coverage(index, catalog)
+    for l in lessons:
+        errs += check_verbatim(l, index)
 
     # Graph-level: cycles and concept ownership; every concept referenced by tests/quizzes must be taught somewhere.
     taught: dict[str, str] = {}
@@ -312,15 +285,12 @@ def main() -> int:
     n_exec = sum(1 for l in lessons for s in l["steps"] if s["kind"] in ("example", "guided", "challenge", "visual"))
     print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness")
     n_cited = sum(1 for l in lessons if l["sources"])
-    if index.available:
-        att = make_attestation(files, index)
-        if not ATTEST.is_file() or json.loads(ATTEST.read_text()) != att:
-            ATTEST.write_text(json.dumps(att, indent=1) + "\n")
-            print(f"✓ updated {ATTEST.relative_to(ROOT)} (commit it with the lessons)")
-        print(f"✓ provenance: {n_cited} book-grounded lesson(s); no verbatim copying from {len(index.sources)} local extract(s)")
+    if isinstance(index, ExtractIndex):
+        if write_hashed_index(index):
+            print("✓ regenerated content/provenance/ hashed copy index (commit it)")
+        print(f"✓ provenance: {n_cited} book-grounded lesson(s); no copying from {len(index.sources)} local extract(s)")
     else:
-        print(f"✓ provenance: {n_cited} book-grounded lesson(s) cite-checked; every lesson matches {ATTEST.name} "
-              f"(copy-checked where extracts exist)")
+        print(f"✓ provenance: {n_cited} book-grounded lesson(s); no copying (hashed index of {len(index.sources)} book(s))")
     return 0
 
 

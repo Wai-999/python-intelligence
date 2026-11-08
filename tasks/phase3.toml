@@ -65,3 +65,42 @@ tests/test_ingest.py (pytest, use tmp_path; build fixture PDFs in the test with 
 Run the tests with the venv interpreter, which has pymupdf:
   "/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package/.venv/bin/python" -m pytest tests/test_ingest.py -q
 """
+
+[[task]]
+id = "P3-4"
+title = "Extractor hardening: indentation-preserving code blocks, atomic output directory"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P3-1"]
+allowed_paths = ["ingest/**", "tests/test_ingest.py"]
+acceptance = ["python -m pytest tests/test_ingest.py -q"]
+risk = "medium"
+max_attempts = 3
+brief = """
+Follow-ups from the P3-1 review, in ingest/extract.py (keep the public API and file formats unchanged unless stated).
+
+1. Code blocks must preserve Python indentation. Today page.get_text("dict") lines lose leading whitespace, so
+   extracted listings are not valid Python (e.g. a `while` body comes out flush-left). Within a run of code lines,
+   compute each line's indent from its first non-space span's bbox x0 relative to the smallest x0 in that run,
+   divided by the monospaced character width (span size * 0.6 for Courier-like fonts; or better, measure it with
+   pymupdf.Font(...).text_length(" ", fontsize=size) when the font is available), rounded to the nearest whole
+   number of spaces. Emit that many leading spaces.
+2. A line counts as code when at least 80% of its non-space characters are in monospaced spans (span["flags"] & 8),
+   not only when every span is monospaced (real PDFs draw some punctuation in other fonts).
+3. A code block ends at a non-code line OR when the vertical gap to the previous code line is more than 1.8x that
+   line's height (two listings in a row must stay separate). PyMuPDF block boundaries alone must not split a listing.
+4. Output directory swap is atomic as a set: write all three files into a fresh sibling temp directory
+   (out_dir/.<source_id>.tmp-<random>), fsync each file, then swap it into place (rename the old directory aside,
+   rename the new one in, delete the old). On any failure remove the temp directory and leave the previous
+   output untouched. Never leave temp files or directories behind.
+5. extract_from_manifest: reject source_ids containing control characters, and reject two cleared sources whose
+   ids are equal ignoring case (case-insensitive filesystems would make them overwrite each other).
+
+Tests (build fixture PDFs with pymupdf in the test; never read sources/): a listing inserted line by line with
+fontname="cour" at increasing x offsets must come back with 4-space indentation and must compile() as Python;
+two listings separated by a large vertical gap give two blocks; one listing inserted as several insert_text calls
+with normal line spacing gives ONE block; a code line whose colon is drawn in Helvetica still counts as code;
+a failure injected after the first file is written (monkeypatch) leaves the previous output directory byte-identical
+and no temp directory behind; case-colliding and control-character ids are rejected.
+Run with: "/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package/.venv/bin/python" -m pytest tests/test_ingest.py -q
+"""

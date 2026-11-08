@@ -56,12 +56,14 @@ lessons (*Decisions*, *Repetition*) cite Think Python 2e and Dive Into Python 3 
 | P3-4 | Codex → Claude | Extractor follow-ups from review: directory-level atomic swap of the three artifacts; code-block detection that preserves **indentation** (span x-offsets) and tolerates mixed fonts; case-insensitive source_id collisions; fsync + temp cleanup | tests | open |
 | P3-5 ⛔ | Owner | Educational review of the two new lessons; human pass over each `review_queue.json` | — | open |
 
-The copy check needs local extracts, so it runs on the owner's machine (`npm run build`). A passing run records
-each lesson's sha256 in `content/provenance_attestation.json`; CI (no extracts) fails if any lesson differs from that
-record or a catalogued book is not covered, so an unchecked lesson cannot auto-deploy. Page ranges, sections and
-licences are checked everywhere via `content/sources.json`. Codex cross-review of P3-2/P3-3 (1 high, 5 medium) was
-addressed in the follow-up commit: attestation, JS-escape decoding in the dist gate, section-overlap citations,
-added sources for truthiness/None/range claims, qualified `while` rule, arithmetic-only digits check enforced.
+Copy check: the owner's build compares lessons and `dist/` with the local extracts and regenerates
+`content/provenance/` (index.json + shingles.bin: 317k 48-bit BLAKE2b hashes of every 12-word run in the cleared books;
+no book text). CI, which has no extracts, scans lessons AND the exact deployed bundle against that hashed index, and
+fails if it is missing, tampered with, or does not cover every catalogued book. Agents can never edit
+`content/provenance/**`, `content/sources.json` or `content/source_sections.json` (orchestrator deny list).
+Codex cross-review of P3-2/P3-3: round 1 (1 high, 5 medium) and round 2 (1 high, 2 medium) all addressed; the
+round-1 lesson-only "attestation" was replaced by the hashed index because it covered neither the deployed artifact
+nor tampering.
 
 ## Phase 4 — Curriculum graph (≈ 3–5 weeks)
 

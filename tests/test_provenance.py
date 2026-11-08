@@ -173,29 +173,46 @@ def test_dist_gate_sees_through_js_string_escapes(tmp_path, index):
     assert check_dist.main(str(make_dist(tmp_path, js)), index) == 1
 
 
-@pytest.fixture
-def lesson_files(tmp_path):
-    d = tmp_path / "lessons"
-    d.mkdir()
-    (d / "one.json").write_text('{"id": "one"}')
-    (d / "two.json").write_text('{"id": "two"}')
-    return sorted(d.glob("*.json"))
+def test_unescape_handles_fixed_width_escapes_followed_by_hex_letters():
+    u = provenance.unescape_js
+    assert u(r"\u00e9abc") == "éabc"           # exactly 4 digits for \uXXXX
+    assert u(r"\u{1F600}x") == "\U0001F600x"   # braced form, up to 6
+    assert u(r"\x41BC") == "ABC"
+    assert u(r"a\nb\"c\\d") == 'a b"c\\d'
 
 
-def test_attestation_round_trip_and_change_detection(lesson_files, index):
+def test_hashed_index_detects_copies_without_book_text(tmp_path, index):
     index.shas = {"book-a": "aa" * 32}
-    cat = {"book-a": {"sha256": "aa" * 32}}
-    att = vc.make_attestation(lesson_files, index)
-    assert vc.check_attestation(lesson_files, att, cat) == []
-    lesson_files[1].write_text('{"id": "two", "body": "edited"}')
-    e = vc.check_attestation(lesson_files, att, cat)
-    assert len(e) == 1 and e[0].startswith("two: changed since its last copy check"), e
+    out = tmp_path / "prov"
+    assert provenance.write_hashed_index(index, out) is True
+    assert provenance.write_hashed_index(index, out) is False      # deterministic: no churn
+    blob = (out / "shingles.bin").read_bytes()
+    assert b"function" not in blob and len(blob) % provenance.HASH_BYTES == 0
+    h = provenance.HashedIndex(out)
+    assert h.available and h.shas == {"book-a": "aa" * 32}
+    copied = "As noted, a function is a named sequence of statements that performs a computation and you can"
+    assert h.find(copied) and h.find(copied)[0].where() == "a cited book (hashed index)"
+    assert h.find("Functions run when you call them, and give back a value with return.") == []
+    l = grounded()
+    kind(l, "intuition")["body"] = copied
+    assert vc.check_verbatim(l, h)
 
 
-def test_attestation_must_cover_every_catalogued_book_and_exist(lesson_files, index):
+def test_tampered_or_missing_hashed_index_is_unavailable_and_blocks(tmp_path, index):
+    out = tmp_path / "prov"
+    provenance.write_hashed_index(index, out)
+    (out / "shingles.bin").write_bytes(b"\x00" * 12)               # e.g. an attempt to empty the index
+    h = provenance.HashedIndex(out)
+    assert not h.available and "blob_sha256" in h.error
+    assert vc.check_index_coverage(h, {})[0].startswith("copy index unavailable")
+    missing = provenance.HashedIndex(tmp_path / "nowhere")
+    assert check_dist.main(str(make_dist(tmp_path, "const s='hi'")), missing) == 1   # never a silent pass
+
+
+def test_index_must_cover_every_catalogued_book(index):
     index.shas = {"book-a": "aa" * 32}
-    att = vc.make_attestation(lesson_files, index)
     cat = {"book-a": {"sha256": "aa" * 32}, "book-b": {"sha256": "bb" * 32}}
-    assert any("does not cover book-b" in e for e in vc.check_attestation(lesson_files, att, cat))
-    assert any("re-run the copy check" in e for e in vc.check_attestation(lesson_files, att, {"book-a": {"sha256": "cc" * 32}}))
-    assert "no provenance_attestation.json" in vc.check_attestation(lesson_files, None, cat)[0]
+    assert vc.check_index_coverage(index, {"book-a": cat["book-a"]}) == []
+    e = vc.check_index_coverage(index, cat)
+    assert len(e) == 1 and "does not cover book-b" in e[0]
+    assert "does not cover book-a" in vc.check_index_coverage(index, {"book-a": {"sha256": "cc" * 32}})[0]

@@ -13,7 +13,10 @@ MAX_RETRIES = 2  # architecture: retry cap = 2  ->  at most 1 + 2 attempts
 MAX_ATTEMPTS = 1 + MAX_RETRIES
 
 # Never writable by an agent task, regardless of allowed_paths.
-ALWAYS_DENIED = (".git/**", ".env", ".env.*", "sources/**", ".github/workflows/**", ".orchestrator/**", "worktrees/**")
+ALWAYS_DENIED = (".git/**", ".env", ".env.*", "sources/**", ".github/workflows/**", ".orchestrator/**", "worktrees/**",
+                 # Provenance evidence is generated from the owner's book extracts; an agent must not be able to
+                 # weaken the copy check or forge the catalogue that citations are validated against.
+                 "content/provenance/**", "content/sources.json", "content/source_sections.json")
 
 
 class SpecError(ValueError):
