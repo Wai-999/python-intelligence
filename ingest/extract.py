@@ -11,10 +11,14 @@ import shutil
 import unicodedata
 import errno
 import sys
+import re
+import time
+from functools import lru_cache
 
 import pymupdf
 
 QUALITY_THRESHOLD = 0.6
+CALLOUTS = re.compile(r"[\u2460-\u2473\u2776-\u277f]")
 
 
 class IngestError(Exception):
@@ -56,46 +60,75 @@ def _normalize(text):
     return "\n".join(line.rstrip() for line in text.replace("\x00", "").replace("\r\n", "\n").replace("\r", "\n").split("\n"))
 
 
+@lru_cache(maxsize=256)
+def _mono_font(name):
+    lowered = name.casefold()
+    if any(token in lowered for token in (
+        "mono", "courier", "consol", "menlo", "inconsolata", "sourcecodepro",
+        "dejavusansmono", "lucidaconsole", "andale", "firacode",
+        "liberationmono", "ubuntumono", "roboto mono",
+    )):
+        return True
+    try:
+        return bool(pymupdf.Font(name).is_monospaced)
+    except Exception:
+        return False
+
+
+def _is_mono(span):
+    return bool(span.get("flags", 0) & 8) or _mono_font(span.get("font", ""))
+
+
 def _code_blocks(page):
-    blocks, current = [], []
+    blocks, current, pitches = [], [], []
     previous = None
 
     def flush():
         if current:
-            baseline = min(item[1] for item in current)
+            measured = [origin for _, origin, _ in current if origin is not None]
+            baseline = min(measured) if measured else 0
             blocks.append("\n".join(
-                " " * max(0, round((origin - baseline) / width)) + text
+                " " * (max(0, round((origin - baseline) / width))
+                       if origin is not None else 0) + text
                 for text, origin, width in current))
             current.clear()
+        pitches.clear()
 
     layout = page.get_text("rawdict")
     for block in layout["blocks"]:
         for line in block.get("lines", []):
-            spans = line.get("spans", [])
+            spans = [dict(span) for span in line.get("spans", [])]
             for span in spans:
                 if "chars" in span:
                     span["text"] = "".join(c["c"] for c in span["chars"])
-            text = _normalize("".join(span["text"] for span in spans))
-            if not text.strip():
+            text = _normalize("".join(span.get("text", "") for span in spans))
+            if not CALLOUTS.sub("", text).strip():
                 continue
-            total = sum(sum(not c.isspace() for c in s["text"]) for s in spans)
-            mono = sum(sum(not c.isspace() for c in s["text"]) for s in spans if s["flags"] & 8)
+            total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)
+            mono = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans if _is_mono(s))
             if total and mono / total >= 0.8:
                 bbox = line.get("bbox")
-                if previous and bbox and bbox[1] - previous[3] > 1.8 * (previous[3] - previous[1]):
-                    flush()
-                first = next(s for s in spans if s["flags"] & 8 and s["text"].strip())
-                # Raw glyph boxes use this span's actual font metrics. Exclude
-                # tabs and whitespace, whose boxes may have unusual advances.
+                first = next(s for s in spans if _is_mono(s) and s["text"].strip())
+                if previous and bbox:
+                    delta = bbox[1] - previous[1]
+                    fallback = max(previous[3] - previous[1], 1.2 * first.get("size", 0))
+                    pitch = sorted(pitches)[len(pitches) // 2] if pitches else fallback
+                    # Full font bboxes can overlap even on consecutive baselines.
+                    # Without a measured pitch, a first gap may be two blank lines.
+                    if delta <= 0.01 or (pitches and delta > 3.5 * pitch):
+                        flush()
+                    elif delta <= 1.5 * fallback:
+                        pitches.append(delta)
                 widths = [c["bbox"][2] - c["bbox"][0]
                           for c in first.get("chars", [])
                           if not c["c"].isspace() and c["bbox"][2] > c["bbox"][0]]
                 width = sorted(widths)[len(widths) // 2] if widths else 0
-                # Include leading spans in both the literal text and its origin.
-                # Without glyph metrics, retain literal indentation only.
-                origin = spans[0].get("bbox", (0,))[0] if width else 0
-                width = width or 1
-                current.append((text, origin, width))
+                origin = spans[0].get("bbox", (None,))[0] if width else None
+                # Callouts are editorial annotations, retained in page text.
+                text = re.sub(r"(?: ?[\u2460-\u2473\u2776-\u277f])+$", "", text)
+                if not text.strip():
+                    continue
+                current.append((text, origin, width or 1))
                 previous = bbox
             else:
                 flush()
@@ -133,15 +166,23 @@ def _publish(target, artifacts):
             continue
         marker = leftover / "target.json"
         try:
-            if json.loads(marker.read_text(encoding="utf-8")) != target.name:
+            try:
+                if json.loads(marker.read_text(encoding="utf-8")) != target.name:
+                    continue
+            except (OSError, ValueError):
+                # An older unmarked workspace may hold the only previous output.
+                if (leftover / "old").exists() and not target.exists():
+                    continue
+                if not marker.exists() and time.time() - leftover.stat().st_mtime > 3600:
+                    shutil.rmtree(leftover)
                 continue
-        except (OSError, ValueError):
-            continue
-        backup = leftover / "old"
-        if backup.exists() and not target.exists():
-            os.replace(backup, target)
-            _fsync_directory(target.parent)
-        shutil.rmtree(leftover)
+            backup = leftover / "old"
+            if backup.exists() and not target.exists():
+                os.replace(backup, target)
+                _fsync_directory(target.parent)
+            shutil.rmtree(leftover)
+        except OSError as cleanup_error:
+            print(f"Warning: output cleanup failed at {leftover}: {cleanup_error}", file=sys.stderr)
     workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=target.parent))
     staged, backup = workspace / "new", workspace / "old"
     preserve = False
@@ -180,8 +221,9 @@ def _publish(target, artifacts):
                 _fsync_directory(target.parent)
             except Exception as cleanup_error:
                 if primary is None:
-                    raise
-                primary.add_note(f"Output cleanup failed at {workspace}: {cleanup_error}")
+                    print(f"Warning: output cleanup failed at {workspace}: {cleanup_error}", file=sys.stderr)
+                else:
+                    primary.add_note(f"Output cleanup failed at {workspace}: {cleanup_error}")
 
 
 def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
