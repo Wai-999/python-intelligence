@@ -1,0 +1,247 @@
+{
+  "id": "py-scope-defaults",
+  "title": "Scope, defaults and keyword arguments",
+  "summary": "Understand which names a function can see, and make functions convenient to call.",
+  "track": "python-core",
+  "level": 2,
+  "estimated_minutes": 25,
+  "prerequisites": [
+    "py-functions"
+  ],
+  "concepts": [
+    "scope",
+    "default-arguments",
+    "keyword-arguments"
+  ],
+  "sources": [],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Two puzzles",
+      "body": "**Puzzle 1.** A function changes a variable called `count`, but after the call, `count` outside the function\nis unchanged. Is that a bug?\n\n**Puzzle 2.** Nine out of ten callers of `greet(name, greeting)` pass `\"Hello\"`. Do they all have to type\nit?\n\nBoth answers come from rules about **scope** (which names a function can see) and **arguments** (how\nvalues get in)."
+    },
+    {
+      "id": "pages",
+      "kind": "intuition",
+      "title": "Every call gets a fresh notebook page",
+      "body": "Picture each function call writing on its own new page. Names created on that page, including the\nparameters, are **local**. When the call ends, the page is torn out.\n\nThe function can still *read* names written on the program's main page (the **globals**). But as soon as it\n*assigns* to a name, that name lives on its own page, even if the main page has a name spelled the same way."
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Same name, different frames",
+      "body": "Step through and compare the two `count`s.",
+      "visual": {
+        "type": "call-trace",
+        "code": "count = 10\n\ndef bump(count):\n    count = count + 1\n    return count\n\nnew = bump(count)\nprint(count, new)",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count": "10"
+            },
+            "note": "A global `count` is attached to 10."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count": "10",
+              "bump": "<function bump>"
+            },
+            "note": "Calling `bump(count)` passes the value 10."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "bump(10)"
+            ],
+            "locals": {
+              "count": "10"
+            },
+            "note": "Inside the call, the parameter `count` is a separate, local label, also attached to 10."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "bump(10)"
+            ],
+            "locals": {
+              "count": "11"
+            },
+            "note": "The local label moves to 11. The global `count` is untouched."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count": "10",
+              "bump": "<function bump>",
+              "new": "11"
+            },
+            "note": "The frame is gone. The global is still 10, and `new` received the returned 11.",
+            "output": "10 11"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Name lookup (simplified LEGB).** When Python meets a name inside a function, it looks in the\n**L**ocal frame, then any **E**nclosing function, then the module's **G**lobals, then **B**uilt-ins\nlike `print`.\n\n**Assignment makes a name local.** If a function assigns to `x` anywhere in its body, `x` is local for the\n*whole* body. Reading it before that assignment raises `UnboundLocalError`.\n\n**Default arguments.** `def greet(name, greeting=\"Hello\")` lets callers omit `greeting`. Parameters with\ndefaults must come after those without. Default values are evaluated **once**, when `def` runs.\n\n**Keyword arguments.** `greet(name=\"Ada\", greeting=\"Hi\")` matches arguments by name, so the order doesn't\nmatter. Positional arguments must come before keyword ones in a call.\n\n**Prefer `return` over `global`.** A function that reads inputs and returns outputs is easier to test and\nreason about than one that reaches out and changes globals."
+    },
+    {
+      "id": "greet",
+      "kind": "example",
+      "title": "Run it: defaults and keywords",
+      "body": "`f\"...\"` is an *f-string*: Python replaces `{name}` with the value of `name`.",
+      "code": "def greet(name, greeting=\"Hello\"):\n    return f\"{greeting}, {name}!\"\n\nprint(greet(\"Ada\"))\nprint(greet(\"Alan\", greeting=\"Hi\"))\nprint(greet(greeting=\"Welcome\", name=\"Grace\"))",
+      "expected_output": "Hello, Ada!\nHi, Alan!\nWelcome, Grace!\n"
+    },
+    {
+      "id": "discount",
+      "kind": "guided",
+      "title": "Guided practice: a default discount",
+      "body": "Write `apply_discount(price, percent=10)`. It returns the price after taking off `percent` percent,\nrounded to 2 decimal places with `round(value, 2)`.",
+      "starter": "def apply_discount(price):\n    pass",
+      "hints": [
+        "Add the second parameter with its default: `def apply_discount(price, percent=10):`",
+        "The discounted price is `price * (1 - percent / 100)`.",
+        "return round(price * (1 - percent / 100), 2)"
+      ],
+      "tests": [
+        {
+          "name": "default is 10%",
+          "code": "assert apply_discount(200) == 180.0, f'apply_discount(200) returned {apply_discount(200)!r}'",
+          "concept": "default-arguments"
+        },
+        {
+          "name": "explicit percent",
+          "code": "assert apply_discount(200, 25) == 150.0, f'apply_discount(200, 25) returned {apply_discount(200, 25)!r}'",
+          "concept": "default-arguments"
+        },
+        {
+          "name": "keyword arguments",
+          "code": "assert apply_discount(percent=0, price=50) == 50.0, 'apply_discount(percent=0, price=50) should be 50.0'",
+          "concept": "keyword-arguments"
+        },
+        {
+          "name": "rounds to cents",
+          "code": "assert apply_discount(19.99, 15) == 16.99, f'got {apply_discount(19.99, 15)!r}, expected 16.99'",
+          "concept": "return"
+        }
+      ],
+      "solution": "def apply_discount(price, percent=10):\n    return round(price * (1 - percent / 100), 2)"
+    },
+    {
+      "id": "points",
+      "kind": "challenge",
+      "title": "Challenge: replace a global with a return",
+      "body": "This scoring function tries to change a global `score`, which crashes with `UnboundLocalError`. Rewrite it\nas `add_points(score, points)`, so that it **returns** the new score and the caller decides what to do with\nit. Don't use the `global` keyword.",
+      "starter": "score = 0\n\ndef add_points(points):\n    score = score + points",
+      "hints": [
+        "Give the function both values it needs as parameters: `def add_points(score, points):`",
+        "Return the sum. The caller writes `score = add_points(score, 5)`."
+      ],
+      "tests": [
+        {
+          "name": "adds points",
+          "code": "assert add_points(0, 5) == 5, f'add_points(0, 5) returned {add_points(0, 5)!r}'",
+          "concept": "return"
+        },
+        {
+          "name": "handles penalties",
+          "code": "assert add_points(10, -3) == 7, f'add_points(10, -3) returned {add_points(10, -3)!r}'",
+          "concept": "parameters"
+        },
+        {
+          "name": "no global state",
+          "code": "assert 'score' not in add_points.__code__.co_names, 'add_points should take score as a parameter, not read or write the global'",
+          "concept": "scope"
+        }
+      ],
+      "solution": "score = 0\n\ndef add_points(score, points):\n    return score + points\n\nscore = add_points(score, 5)"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict, then choose.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?",
+          "code": "x = 1\ndef f():\n    x = 2\n    return x\nf()\nprint(x)",
+          "choices": [
+            "1",
+            "2",
+            "None",
+            "UnboundLocalError"
+          ],
+          "answer": 0,
+          "explanation": "Assigning inside `f` creates a local `x`. The global `x` stays 1.",
+          "concept": "scope"
+        },
+        {
+          "id": "q2",
+          "prompt": "Which definition is valid Python?",
+          "choices": [
+            "def f(a=1, b):",
+            "def f(a, b=1):",
+            "def f(=1 a, b):",
+            "def f(a, b=):"
+          ],
+          "answer": 1,
+          "explanation": "Parameters with defaults must come after parameters without them.",
+          "concept": "default-arguments"
+        },
+        {
+          "id": "q3",
+          "prompt": "Which call is NOT allowed for `def area(width, height)`?",
+          "choices": [
+            "area(2, 3)",
+            "area(width=2, height=3)",
+            "area(height=3, width=2)",
+            "area(width=2, 3)"
+          ],
+          "answer": 3,
+          "explanation": "A positional argument can't follow a keyword argument in a call.",
+          "concept": "keyword-arguments"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does this program do?",
+          "code": "total = 0\ndef add(n):\n    total = total + n\nadd(5)",
+          "choices": [
+            "sets total to 5",
+            "nothing",
+            "raises UnboundLocalError",
+            "raises NameError: add"
+          ],
+          "answer": 2,
+          "explanation": "`total` is assigned inside `add`, so it's local for the whole body. Reading it on the right-hand side before it has a value raises UnboundLocalError.",
+          "concept": "scope"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Predict which name a function sees, using the LEGB lookup order.\n- Explain why assigning to a name inside a function makes it local.\n- Use default and keyword arguments to make functions pleasant to call.\n- Prefer inputs and return values over changing globals."
+    }
+  ]
+}

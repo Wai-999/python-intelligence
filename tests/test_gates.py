@@ -118,3 +118,13 @@ def test_state_survives_reopen(tmp_path):
     c2 = db.connect(p)
     assert db.get_task(c2, "A")["status"] == S.REVIEW
     assert c2.execute("SELECT COUNT(*) FROM events WHERE task_id='A'").fetchone()[0] >= 5
+
+
+def test_human_reject_sends_back_with_feedback(ctl):
+    ctl.load([make_spec("A")])
+    run_until(ctl, "A", S.AWAITING_APPROVAL)
+    with pytest.raises(db.GateError):
+        ctl.reject("A", "controller", "nope")
+    ctl.reject("A", "human:owner", "validate on write")
+    assert db.get_task(ctl.conn, "A")["status"] == S.REPAIR
+    assert db.last_repair_feedback(ctl.conn, "A") == "validate on write"

@@ -151,6 +151,15 @@ class Controller:
         db.transition(self.conn, task_id, gate, actor=approver, detail={"dry_run": True})
         return f"{task_id}: -> {gate} (approved by {approver}; dry-run, nothing merged)"
 
+    def reject(self, task_id: str, actor: str, feedback: str) -> str:
+        """Human sends work at the approval gate back for another attempt, with feedback for the agent."""
+        from .states import is_human
+        if not is_human(actor):
+            raise db.GateError("only a human may reject at the approval gate")
+        db.transition(self.conn, task_id, S.REPAIR, actor=actor, expect=S.AWAITING_APPROVAL,
+                      detail={"reason": "changes requested by human at approval gate", "feedback": feedback})
+        return f"{task_id}: awaiting_approval -> repair (rejected by {actor})"
+
     def unblock(self, task_id: str, actor: str, reason: str) -> str:
         db.transition(self.conn, task_id, S.READY, actor=actor, expect=S.BLOCKED, detail={"reason": reason})
         return f"{task_id}: blocked -> ready (by {actor})"

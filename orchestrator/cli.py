@@ -86,6 +86,20 @@ def cmd_approve(args) -> int:
     return 0
 
 
+def cmd_reject(args) -> int:
+    fb = args.feedback
+    if args.with_findings:
+        conn = db.connect(args.db)
+        row = conn.execute("SELECT detail_json FROM events WHERE task_id=? AND to_status='awaiting_approval'"
+                           " ORDER BY id DESC LIMIT 1", (args.task,)).fetchone()
+        if row:
+            fs = json.loads(row["detail_json"]).get("findings", [])
+            fb += "\n\nAddress these reviewer findings:\n" + "\n".join(
+                f"- [{f['severity']}] {f['file']}:{f['line']}: {f['summary']} Fix: {f['proposed_fix']}" for f in fs)
+    print(_controller(args).reject(args.task, f"human:{args.by}", fb))
+    return 0
+
+
 def cmd_unblock(args) -> int:
     print(_controller(args).unblock(args.task, f"human:{args.by}", args.reason))
     return 0
@@ -117,6 +131,10 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("approve"); s.add_argument("task"); s.add_argument("--by", required=True)
     s.add_argument("--live", action="store_true", help="really merge the branch into main")
     s.add_argument("--gate", default="merged", choices=["merged", "released"]); s.set_defaults(fn=cmd_approve)
+    s = sub.add_parser("reject", help="send work at the approval gate back with feedback")
+    s.add_argument("task"); s.add_argument("--by", required=True); s.add_argument("--feedback", required=True)
+    s.add_argument("--with-findings", action="store_true", help="append the latest review findings")
+    s.set_defaults(fn=cmd_reject)
     s = sub.add_parser("unblock"); s.add_argument("task"); s.add_argument("--by", required=True)
     s.add_argument("--reason", required=True); s.set_defaults(fn=cmd_unblock)
     s = sub.add_parser("events"); s.add_argument("--task"); s.set_defaults(fn=cmd_events)

@@ -1,0 +1,271 @@
+{
+  "id": "py-functions",
+  "title": "Functions: naming a computation",
+  "summary": "Define a calculation once, then reuse it with different inputs.",
+  "track": "python-core",
+  "level": 1,
+  "estimated_minutes": 30,
+  "prerequisites": [
+    "py-values-names"
+  ],
+  "concepts": [
+    "functions",
+    "parameters",
+    "return"
+  ],
+  "sources": [],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "The copy-paste trap",
+      "body": "A café owner adds 8% sales tax to every order. Their first script looks like this:\n\n```python\nprint(4.50 * 1.08)\nprint(12.00 * 1.08)\nprint(7.25 * 1.80)\n```\n\nLook closely at the third line: `1.80` instead of `1.08`. Copying code multiplies typos. When the tax rate\nchanges, every copy must be found and edited.\n\nIn this lesson you'll write the calculation **once**, give it a name, and reuse it. Fix it in one place,\nand it's fixed everywhere."
+    },
+    {
+      "id": "recipe",
+      "kind": "intuition",
+      "title": "A function is a recipe card",
+      "body": "Think of a recipe card titled *Pancakes (serves n)*.\n\n- The card lists **inputs** it needs: here, `n`. These are the function's **parameters**.\n- It lists **steps** that use those inputs. That's the function **body**.\n- It produces a **result** you can hand to someone. That's the **return value**.\n\nWriting the card is **defining** the function. Nothing gets cooked yet. Cooking from the card with a real\nnumber, like `pancakes(4)`, is **calling** it. You can call it again with `pancakes(10)` without rewriting it.",
+      "socratic": {
+        "questions": [
+          "When you write the `def` line, does any of the body run?",
+          "What is the difference between the parameter `n` and the argument `4`?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a call happen",
+      "body": "Step through the program and watch the **call stack** and the **local names**. Notice what disappears when the function returns.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def area(width, height):\n    result = width * height\n    return result\n\nroom = area(3, 4)\nprint(room)",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "Python reads the `def` and stores the function under the name `area`. The body does not run yet."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "area": "<function area>"
+            },
+            "note": "Before `room` can be assigned, Python must evaluate `area(3, 4)`, which is a call."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "area(3, 4)"
+            ],
+            "locals": {
+              "width": "3",
+              "height": "4"
+            },
+            "note": "A new frame opens. The arguments bind to the parameters in order: width = 3, height = 4."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "area(3, 4)"
+            ],
+            "locals": {
+              "width": "3",
+              "height": "4",
+              "result": "12"
+            },
+            "note": "`result` is a local name. It exists only inside this frame."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "area": "<function area>",
+              "room": "12"
+            },
+            "note": "`return` hands 12 back and the frame is discarded. `width`, `height` and `result` are gone, and `room` holds 12."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "area": "<function area>",
+              "room": "12"
+            },
+            "note": "`print` shows the value attached to `room`.",
+            "output": "12"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "```python\ndef name(param1, param2):\n    body\n    return expression\n```\n\n1. `def` creates a function object and binds it to `name`. The body runs only when the function is called.\n2. The body is the block indented under the `def` line. The convention is 4 spaces.\n3. A call `name(a, b)` first evaluates the **arguments** `a` and `b`. It then binds them to the parameters\n   **by position**, and runs the body in a fresh **local** frame.\n4. `return expression` ends the call immediately and gives back the value of `expression`.\n5. A function that finishes without `return` gives back the special value `None`.\n6. The number of arguments must match the parameters. Otherwise Python raises `TypeError`.\n\n**`print` vs `return`:** `print` shows text to a human. `return` gives a value back to the code that made the\ncall. Only a returned value can be stored, compared or passed to another function."
+    },
+    {
+      "id": "tax",
+      "kind": "example",
+      "title": "Run it: the café, fixed",
+      "body": "One definition, many calls. Try changing the rate in **one** place and run it again.",
+      "code": "def price_with_tax(price, rate):\n    return round(price * (1 + rate), 2)\n\nprint(price_with_tax(4.50, 0.08))\nprint(price_with_tax(12.00, 0.08))\nprint(price_with_tax(7.25, 0.08))",
+      "expected_output": "4.86\n12.96\n7.83\n"
+    },
+    {
+      "id": "temps",
+      "kind": "guided",
+      "title": "Guided practice: convert temperatures",
+      "body": "Write `celsius_to_fahrenheit(c)` so it **returns** the temperature in Fahrenheit, using **F = C × 9/5 + 32**.\nThe checks call your function with several values.",
+      "socratic": {
+        "questions": [
+          "What should `celsius_to_fahrenheit(0)` give back?",
+          "Will `print` inside the function let the checks see the result?"
+        ]
+      },
+      "starter": "def celsius_to_fahrenheit(c):\n    # replace `pass` with a return statement\n    pass",
+      "hints": [
+        "The formula is F = C × 9 / 5 + 32. Write it with the parameter `c`.",
+        "Use `return`, not `print`. The checks look at the value the function gives back.",
+        "return c * 9 / 5 + 32"
+      ],
+      "tests": [
+        {
+          "name": "water freezes at 32°F",
+          "code": "assert celsius_to_fahrenheit(0) == 32, f'celsius_to_fahrenheit(0) returned {celsius_to_fahrenheit(0)!r}, expected 32'",
+          "concept": "return"
+        },
+        {
+          "name": "water boils at 212°F",
+          "code": "assert celsius_to_fahrenheit(100) == 212, f'got {celsius_to_fahrenheit(100)!r}, expected 212'",
+          "concept": "return"
+        },
+        {
+          "name": "body temperature",
+          "code": "assert abs(celsius_to_fahrenheit(37) - 98.6) < 1e-9, f'got {celsius_to_fahrenheit(37)!r}, expected 98.6'",
+          "concept": "parameters"
+        },
+        {
+          "name": "-40 is the same in both",
+          "code": "assert celsius_to_fahrenheit(-40) == -40, f'got {celsius_to_fahrenheit(-40)!r}'",
+          "concept": "parameters"
+        }
+      ],
+      "solution": "def celsius_to_fahrenheit(c):\n    return c * 9 / 5 + 32"
+    },
+    {
+      "id": "triangle",
+      "kind": "challenge",
+      "title": "Challenge: functions that use functions",
+      "body": "A right triangle with legs `a` and `b` has hypotenuse √(a² + b²). In Python, `x ** 0.5` is the square root\nof `x`.\n\n1. Write `hypotenuse(a, b)`.\n2. Write `perimeter_right_triangle(a, b)`, which returns a + b + the hypotenuse. **Call your `hypotenuse`\n   function** instead of repeating the formula.",
+      "starter": "def hypotenuse(a, b):\n    pass\n\n\ndef perimeter_right_triangle(a, b):\n    pass",
+      "hints": [
+        "hypotenuse: `return (a ** 2 + b ** 2) ** 0.5`",
+        "Inside perimeter_right_triangle, `hypotenuse(a, b)` is just a value you can add to the others."
+      ],
+      "tests": [
+        {
+          "name": "3-4-5 triangle",
+          "code": "assert hypotenuse(3, 4) == 5.0, f'hypotenuse(3, 4) returned {hypotenuse(3, 4)!r}'",
+          "concept": "return"
+        },
+        {
+          "name": "perimeter of 3-4-5",
+          "code": "assert perimeter_right_triangle(3, 4) == 12.0, f'got {perimeter_right_triangle(3, 4)!r}, expected 12.0'",
+          "concept": "functions"
+        },
+        {
+          "name": "reuses hypotenuse",
+          "code": "_original = hypotenuse\n_calls = []\ndef hypotenuse(a, b):\n    _calls.append((a, b))\n    return _original(a, b)\nperimeter_right_triangle(5, 12)\nhypotenuse = _original\nassert _calls == [(5, 12)], 'perimeter_right_triangle should call hypotenuse(a, b) instead of repeating the formula'",
+          "concept": "functions"
+        }
+      ],
+      "solution": "def hypotenuse(a, b):\n    return (a ** 2 + b ** 2) ** 0.5\n\n\ndef perimeter_right_triangle(a, b):\n    return a + b + hypotenuse(a, b)"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Four questions. Read each code sample carefully, since each one tests one rule from this lesson.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?",
+          "code": "def double(x):\n    x * 2\n\nprint(double(5))",
+          "choices": [
+            "10",
+            "None",
+            "x * 2",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "The body computes `x * 2` but never returns it. A function without `return` gives back `None`.",
+          "concept": "return"
+        },
+        {
+          "id": "q2",
+          "prompt": "How many times does the body of `greet` run in this program?",
+          "code": "def greet(name):\n    return 'Hi ' + name",
+          "choices": [
+            "0",
+            "1",
+            "2",
+            "It depends on the name"
+          ],
+          "answer": 0,
+          "explanation": "Defining a function doesn't run it. The body runs once per call, and there are no calls here.",
+          "concept": "functions"
+        },
+        {
+          "id": "q3",
+          "prompt": "What happens on the last line?",
+          "code": "def area(w, h):\n    r = w * h\n    return r\n\narea(2, 3)\nprint(r)",
+          "choices": [
+            "prints 6",
+            "prints None",
+            "NameError",
+            "prints r"
+          ],
+          "answer": 2,
+          "explanation": "`r` is local to the call's frame, which is discarded when the call returns. Outside the function, `r` doesn't exist.",
+          "concept": "functions"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does `add(1)` do?",
+          "code": "def add(a, b):\n    return a + b",
+          "choices": [
+            "returns 1",
+            "returns None",
+            "TypeError: missing an argument",
+            "returns 1 + b"
+          ],
+          "answer": 2,
+          "explanation": "Two parameters need two arguments. Python raises `TypeError: add() missing 1 required positional argument: 'b'`.",
+          "concept": "parameters"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- **Define** a function with `def`, and **call** it with arguments.\n- Explain how arguments bind to parameters in a fresh local frame, and why locals vanish after `return`.\n- Choose `return` over `print` when other code needs the result.\n- Build bigger functions out of smaller ones.\n\nNext: what happens when a function and the rest of the program use the *same* name, and how default\narguments make functions easier to call."
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "id": "py-values-names",
+  "title": "Values, names and expressions",
+  "summary": "Compute with Python, and give results names you can reuse.",
+  "track": "python-core",
+  "level": 1,
+  "estimated_minutes": 15,
+  "prerequisites": [],
+  "concepts": [
+    "values",
+    "names",
+    "expressions",
+    "print"
+  ],
+  "sources": [],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "From calculator to program",
+      "body": "You already know how to work things out on a calculator. The trouble starts when the answer to one\ncalculation feeds the next, and the next. You write numbers on scraps of paper, retype them, and sooner or\nlater you copy one wrong.\n\nA program fixes this by letting you **name** intermediate results. You then refer to the name instead of\nretyping the number. That small step is where every larger program begins."
+    },
+    {
+      "id": "labels",
+      "kind": "intuition",
+      "title": "Names are labels, not boxes",
+      "body": "Picture each value (a number, or a piece of text) as an object on a table. A **name** is a sticky label\nattached to one of those objects.\n\n- `hours = 38` creates the value `38` and attaches the label `hours` to it.\n- Writing `hours` later means \"the value this label is attached to right now\".\n- `hours = 40` *moves* the label to a new value. Anything you computed from the old value earlier is **not**\n  recalculated.\n\nKeep that last point in mind. It explains the most common surprise in this lesson.",
+      "socratic": {
+        "questions": [
+          "If `pay` was computed from `hours`, and then `hours` changes, what should happen to `pay`? What actually happens?"
+        ]
+      }
+    },
+    {
+      "id": "pay",
+      "kind": "example",
+      "title": "Run it: a weekly wage",
+      "body": "Press **Run**. Predict both printed lines *before* you look at the output.",
+      "code": "hours = 38\nrate = 21.5\npay = hours * rate\nprint(pay)\n\nhours = 40\nprint(pay)",
+      "expected_output": "817.0\n817.0\n"
+    },
+    {
+      "id": "circle",
+      "kind": "guided",
+      "title": "Your turn: the area of a circle",
+      "body": "The area of a circle is π × r². The starter code defines `radius` and `pi`. Create a name `area` that holds\nthe area of the circle. In Python, `**` means \"to the power of\", so `r ** 2` is r².",
+      "starter": "radius = 3\npi = 3.14159\n# create `area` on the next line",
+      "hints": [
+        "You need a new line that starts with `area =`.",
+        "The expression is pi times radius squared. Squaring uses `** 2`.",
+        "area = pi * radius ** 2"
+      ],
+      "tests": [
+        {
+          "name": "area exists",
+          "code": "assert 'area' in dir(), 'Create a name called area'",
+          "concept": "names"
+        },
+        {
+          "name": "area is correct",
+          "code": "assert abs(area - 28.27431) < 1e-6, f'area should be about 28.274, got {area!r}'",
+          "concept": "expressions"
+        },
+        {
+          "name": "radius unchanged",
+          "code": "assert radius == 3, 'Keep radius = 3'",
+          "concept": "names"
+        }
+      ],
+      "solution": "radius = 3\npi = 3.14159\narea = pi * radius ** 2"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Answer these without running anything first, then check yourself.",
+      "pass_mark": 0.66,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?",
+          "code": "x = 5\ny = x\nx = 7\nprint(y)",
+          "choices": [
+            "5",
+            "7",
+            "x",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "`y = x` attaches `y` to the value 5. Moving the label `x` to 7 afterwards doesn't affect `y`.",
+          "concept": "names"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does `print(7 // 2)` show?",
+          "choices": [
+            "3.5",
+            "3",
+            "4",
+            "1"
+          ],
+          "answer": 1,
+          "explanation": "`//` is floor division: divide, then round down to a whole number. `7 / 2` would give 3.5.",
+          "concept": "expressions"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does `print(\"3\" + \"4\")` show?",
+          "choices": [
+            "7",
+            "34",
+            "\"3\" + \"4\"",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "In quotes, \"3\" and \"4\" are text (strings), and `+` joins strings together. The type of a value decides what an operator does.",
+          "concept": "values"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Write **expressions** like `hours * rate` that Python evaluates to a value.\n- Attach **names** to values with `=`, and reuse them.\n- Remember that a name refers to a value at one moment. Changing an input does not recompute results.\n\nNext, you'll package a whole calculation under one name, so it **does** recompute for any input you give it.\nThat's a *function*."
+    }
+  ]
+}
