@@ -7,6 +7,10 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import shutil
+import unicodedata
+import errno
+import sys
 
 import pymupdf
 
@@ -54,42 +58,135 @@ def _normalize(text):
 
 def _code_blocks(page):
     blocks, current = [], []
+    previous = None
 
     def flush():
         if current:
-            blocks.append("\n".join(current))
+            baseline = min(item[1] for item in current)
+            blocks.append("\n".join(
+                " " * max(0, round((origin - baseline) / width)) + text
+                for text, origin, width in current))
             current.clear()
 
-    for block in page.get_text("dict")["blocks"]:
+    layout = page.get_text("rawdict")
+    for block in layout["blocks"]:
         for line in block.get("lines", []):
             spans = line.get("spans", [])
+            for span in spans:
+                if "chars" in span:
+                    span["text"] = "".join(c["c"] for c in span["chars"])
             text = _normalize("".join(span["text"] for span in spans))
             if not text.strip():
                 continue
-            if spans and all(span["flags"] & 8 for span in spans):
-                current.append(text)
+            total = sum(sum(not c.isspace() for c in s["text"]) for s in spans)
+            mono = sum(sum(not c.isspace() for c in s["text"]) for s in spans if s["flags"] & 8)
+            if total and mono / total >= 0.8:
+                bbox = line.get("bbox")
+                if previous and bbox and bbox[1] - previous[3] > 1.8 * (previous[3] - previous[1]):
+                    flush()
+                first = next(s for s in spans if s["flags"] & 8 and s["text"].strip())
+                # Raw glyph boxes use this span's actual font metrics. Exclude
+                # tabs and whitespace, whose boxes may have unusual advances.
+                widths = [c["bbox"][2] - c["bbox"][0]
+                          for c in first.get("chars", [])
+                          if not c["c"].isspace() and c["bbox"][2] > c["bbox"][0]]
+                width = sorted(widths)[len(widths) // 2] if widths else 0
+                # Include leading spans in both the literal text and its origin.
+                # Without glyph metrics, retain literal indentation only.
+                origin = spans[0].get("bbox", (0,))[0] if width else 0
+                width = width or 1
+                current.append((text, origin, width))
+                previous = bbox
             else:
                 flush()
+                previous = None
     flush()
     return blocks
 
 
-def _atomic_write(path, text):
-    temporary = None
+def _fsync_directory(path):
+    """Directory syncing is unavailable on some operating systems/filesystems."""
     try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n",
-                                         dir=path.parent, delete=False) as stream:
-            temporary = stream.name
-            stream.write(text)
-        os.replace(temporary, path)
+        fd = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError as exc:
+        if exc.errno not in {errno.EINVAL, errno.ENOTSUP, errno.EBADF, errno.EACCES}:
+            raise
+
+
+def _publish(target, artifacts):
+    """Publish complete generations; retain a nested backup if rollback fails.
+
+    The two portable renames briefly hide the target. Interrupted swaps are
+    recovered on the next publication. Backups never expose pages.jsonl as a
+    direct child of the output root, where provenance consumers discover books.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_symlink() or (target.exists() and not target.is_dir()):
+        raise IngestError(f"Output target must be a directory, not a file or symlink: {target}")
+    prefix = f".{target.name}.tmp-"
+    for leftover in sorted(target.parent.iterdir()):
+        if not leftover.name.startswith(prefix) or not leftover.is_dir() or leftover.is_symlink():
+            continue
+        marker = leftover / "target.json"
+        try:
+            if json.loads(marker.read_text(encoding="utf-8")) != target.name:
+                continue
+        except (OSError, ValueError):
+            continue
+        backup = leftover / "old"
+        if backup.exists() and not target.exists():
+            os.replace(backup, target)
+            _fsync_directory(target.parent)
+        shutil.rmtree(leftover)
+    workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=target.parent))
+    staged, backup = workspace / "new", workspace / "old"
+    preserve = False
+    try:
+        (workspace / "target.json").write_text(json.dumps(target.name), encoding="utf-8")
+        staged.mkdir()
+        for name, text in artifacts.items():
+            with open(staged / name, "w", encoding="utf-8", newline="\n") as stream:
+                stream.write(text)
+                stream.flush()
+                os.fsync(stream.fileno())
+        _fsync_directory(staged)
+        had_target = target.exists()
+        if had_target:
+            os.replace(target, backup)
+            _fsync_directory(workspace)
+        try:
+            os.replace(staged, target)
+        except BaseException:
+            if had_target:
+                try:
+                    os.replace(backup, target)
+                    _fsync_directory(target.parent)
+                except OSError as rollback_error:
+                    preserve = True
+                    raise IngestError(f"Output rollback failed; previous output saved at {backup}") from rollback_error
+            raise
+        _fsync_directory(target.parent)
     finally:
-        if temporary and os.path.exists(temporary):
-            os.unlink(temporary)
+        if backup.exists() and not target.exists():
+            preserve = True
+        primary = sys.exception()
+        if not preserve:
+            try:
+                shutil.rmtree(workspace)
+                _fsync_directory(target.parent)
+            except Exception as cleanup_error:
+                if primary is None:
+                    raise
+                primary.add_note(f"Output cleanup failed at {workspace}: {cleanup_error}")
 
 
 def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
-    """Hash before opening; write three internal artifacts, atomically per file."""
-    if not isinstance(source_id, str) or not source_id or source_id in {".", ".."} or "/" in source_id or "\\" in source_id:
+    """Hash before opening; publish a complete directory of internal artifacts."""
+    if not isinstance(source_id, str) or not source_id or source_id in {".", ".."} or "/" in source_id or "\\" in source_id or source_id.startswith(".") or any(unicodedata.category(c).startswith("C") for c in source_id):
         raise IngestError("source_id must be a nonempty single directory name")
     try:
         data = Path(pdf_path).read_bytes()
@@ -117,10 +214,10 @@ def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
                                      if records else 0.0, low_pages=len(queue)),
                         review_threshold=QUALITY_THRESHOLD)
         target = Path(out_dir) / source_id
-        target.mkdir(parents=True, exist_ok=True)
-        _atomic_write(target / "pages.jsonl", "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records))
+        artifacts = {"pages.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records)}
         for name, value in (("meta.json", meta), ("review_queue.json", queue)):
-            _atomic_write(target / name, json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+            artifacts[name] = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+        _publish(target, artifacts)
         return meta
     except IngestError:
         raise
@@ -153,6 +250,12 @@ def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, r
         selected = sources if only is None else [s for s in sources if s.get("source_id") == only]
         if only is not None and len(selected) != 1:
             raise IngestError(f"Source {only!r} must occur exactly once in manifest")
+        seen = set()
+        for source in sources:
+            folded = unicodedata.normalize("NFC", source["source_id"]).casefold()
+            if folded in seen:
+                raise IngestError("Case-colliding source_ids in manifest")
+            seen.add(folded)
         results = []
         for source in selected:
             reasons = [field + " is not true" for field in ("allowed_for_internal_extraction", "downloaded")

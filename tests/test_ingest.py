@@ -156,7 +156,7 @@ def test_listing_across_pdf_blocks(tmp_path):
     with pymupdf.open() as doc:
         page = doc.new_page()
         page.insert_text((50, 50), "def square(x):", fontname="cour")
-        page.insert_text((50, 90), "    return x * x", fontname="cour")
+        page.insert_text((50, 75), "    return x * x", fontname="cour")
         assert len(page.get_text("dict")["blocks"]) == 2
         doc.save(path)
     extract(path, "listing", tmp_path / "out", expected_sha256=sha256_file(path))
@@ -203,3 +203,256 @@ def test_output_outside_repo_and_without_git(tmp_path, monkeypatch):
         raise FileNotFoundError("git unavailable")
     monkeypatch.setattr(subprocess, "run", unavailable)
     _check_output(tmp_path / "output")
+
+
+def test_positioned_indentation(tmp_path):
+    path = tmp_path / "positioned.pdf"
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for x, y, text in [(50, 50, 'def square(x):'),
+                           (76.4, 65, 'if x:'),
+                           (102.8, 80, 'return x * x')]:
+            page.insert_text((x, y), text, fontname='cour', fontsize=11)
+        doc.save(path)
+    extract(path, 'book', tmp_path / 'out', expected_sha256=sha256_file(path))
+    row = json.loads((tmp_path / 'out/book/pages.jsonl').read_text())
+    code = row['code_blocks'][0]
+    assert code == 'def square(x):\n    if x:\n        return x * x'
+    compile(code, '<extracted>', 'exec')
+
+
+@pytest.mark.parametrize('existing', [False, True])
+@pytest.mark.parametrize('failure', ['write', 'publish'])
+def test_directory_failure_preserves_output(pdf, tmp_path, monkeypatch, existing, failure):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    out = tmp_path / 'out'
+    target = out / 'book'
+    if existing:
+        extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+        (target / 'old-marker').write_text('previous generation')
+    before = {p.name: p.read_bytes() for p in target.iterdir()} if existing else None
+    original_write = open
+    original_replace = module.os.replace
+
+    def write(path, *args, **kwargs):
+        if Path(path).name == 'meta.json':
+            raise OSError('injected write failure')
+        return original_write(path, *args, **kwargs)
+
+    def replace(source, dest):
+        if Path(source).name == 'new':
+            assert {p.name for p in Path(source).iterdir()} == {'pages.jsonl', 'meta.json', 'review_queue.json'}
+            raise OSError('injected publish failure')
+        return original_replace(source, dest)
+
+    if failure == 'write':
+        monkeypatch.setattr(module, 'open', write, raising=False)
+    else:
+        monkeypatch.setattr(module.os, 'replace', replace)
+    with pytest.raises(IngestError, match='injected'):
+        extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+    if existing:
+        assert {p.name: p.read_bytes() for p in target.iterdir()} == before
+    else:
+        assert not target.exists()
+    assert {p.name for p in out.iterdir()} == ({'book'} if existing else set())
+
+
+def test_directory_replacement_removes_stale_artifacts(pdf, tmp_path):
+    out = tmp_path / 'out'
+    extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+    (out / 'book/stale').write_text('old')
+    extract(pdf, 'book', out, expected_sha256=sha256_file(pdf))
+    assert {p.name for p in (out / 'book').iterdir()} == {'pages.jsonl', 'meta.json', 'review_queue.json'}
+
+
+@pytest.mark.parametrize("source_id", ["book\n", "book\t", "book\x00", "book\u200b"])
+def test_control_character_id(pdf, tmp_path, source_id):
+    with pytest.raises(IngestError, match="source_id"):
+        extract(pdf, source_id, tmp_path / "out", expected_sha256=sha256_file(pdf))
+    assert not (tmp_path / "out").exists()
+
+
+def test_case_collision_before_extraction(pdf, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"sources": [cleared_source(pdf), cleared_source(pdf, source_id="BOOK")]}))
+    with pytest.raises(IngestError, match="Case-colliding"):
+        extract_from_manifest(manifest, tmp_path / "out", repo_root=tmp_path)
+    assert not (tmp_path / "out").exists()
+
+
+def test_helvetica_colon(tmp_path):
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_text((50, 50), "def square(x)", fontname="cour", fontsize=11)
+        page.insert_text((50 + 13 * 6.6, 50), ":", fontname="helv", fontsize=11)
+        page.insert_text((50, 65), "    return x * x", fontname="cour", fontsize=11)
+        blocks = _code_blocks(page)
+    assert blocks == ["def square(x):\n    return x * x"]
+    compile(blocks[0], "<pdf>", "exec")
+
+
+@pytest.mark.parametrize("gap,expected", [(15, ["x = 1\ny = 2\nz = 3"]),
+                                           (80, ["x = 1\ny = 2", "z = 3"])])
+def test_listing_vertical_gap(gap, expected):
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for x, y, text in [(50, 50, "x = 1"), (50, 65, "y = 2"), (50, 65 + gap, "z = 3")]:
+            page.insert_text((x, y), text, fontname="cour", fontsize=11)
+        assert _code_blocks(page) == expected
+
+
+def test_literal_and_positioned_indentation():
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for x, y, text in [(50, 50, "def f():"), (50, 65, "    if True:"),
+                           (102.8, 80, "return 1")]:
+            page.insert_text((x, y), text, fontname="cour", fontsize=11)
+        blocks = _code_blocks(page)
+    assert blocks == ["def f():\n    if True:\n        return 1"]
+    compile(blocks[0], "<pdf>", "exec")
+
+
+def test_publish_recovers_interrupted_swap(tmp_path):
+    from ingest.extract import _publish
+    target = tmp_path / "book"
+    workspace = tmp_path / ".book.tmp-crashed"
+    (workspace / "old").mkdir(parents=True)
+    (workspace / "old/marker").write_text("previous")
+    (workspace / "target.json").write_text(json.dumps("book"))
+    # Fail staging after recovery; the restored generation must remain usable.
+    with pytest.raises(TypeError):
+        _publish(target, {"pages.jsonl": None})
+    assert (target / "marker").read_text() == "previous"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["book"]
+
+
+def test_failed_rollback_retains_nested_backup(tmp_path, monkeypatch):
+    import importlib
+    module = importlib.import_module("ingest.extract")
+    target = tmp_path / "book"
+    target.mkdir()
+    (target / "pages.jsonl").write_text("previous")
+    replace = module.os.replace
+    def fail(source, dest):
+        if Path(source).name in {"new", "old"}:
+            raise OSError("injected rename failure")
+        return replace(source, dest)
+    monkeypatch.setattr(module.os, "replace", fail)
+    with pytest.raises(IngestError, match="rollback failed"):
+        module._publish(target, {"pages.jsonl": "next"})
+    backups = list(tmp_path.glob(".book.tmp-*/old/pages.jsonl"))
+    assert len(backups) == 1 and backups[0].read_text() == "previous"
+    assert not list(tmp_path.glob("*/pages.jsonl"))
+    monkeypatch.setattr(module.os, "replace", replace)
+    module._publish(target, {"pages.jsonl": "next"})
+    assert (target / "pages.jsonl").read_text() == "next"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["book"]
+
+
+@pytest.mark.parametrize("advance", [5.5, 6.05, 6.6])
+@pytest.mark.parametrize("prefix", ["", "    ", "1 "])
+def test_raw_glyph_indentation(advance, prefix):
+    from ingest.extract import _code_blocks
+    def span(text, x, flags=8):
+        return dict(flags=flags, bbox=(x, 0, x + len(text) * advance, 12),
+                    chars=[dict(c=c, bbox=(x+i*advance, 0, x+(i+1)*advance, 12))
+                           for i, c in enumerate(text)])
+    class Page:
+        def get_text(self, kind):
+            assert kind == "rawdict"
+            return {"blocks": [{"lines": [
+                {"spans": [span("def f():", 50)]},
+                {"spans": ([span(prefix, 50, 0)] if prefix else []) +
+                    [span("return 123456789", 50 + len(prefix)*advance)]},
+                {"spans": [span("value = 1", 50 + 4*advance)]},
+            ]}]}
+    assert _code_blocks(Page()) == ["def f():\n" + prefix + "return 123456789\n    value = 1"]
+
+
+def test_tab_does_not_distort_positioned_indent():
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            def span(text, x):
+                return dict(flags=8, bbox=(x, 0, x+100, 12), chars=[
+                    dict(c=c, bbox=(x+i*5.5, 0, x+(i+1)*5.5, 12))
+                    for i, c in enumerate(text)])
+            return {"blocks": [{"lines": [
+                {"spans": [span("\tvalue = 1", 50)]},
+                {"spans": [span("other = 2", 72)]},
+                {"spans": [dict(text="\t\u00a0", flags=8), dict(text="!", flags=0)]},
+            ]}]}
+    assert _code_blocks(Page()) == ["\tvalue = 1\n    other = 2"]
+
+
+def test_publish_syncs_files_and_directories(tmp_path, monkeypatch):
+    import importlib
+    import stat
+    module = importlib.import_module('ingest.extract')
+    synced = []
+    original = module.os.fsync
+    def sync(fd):
+        synced.append(stat.S_ISDIR(module.os.fstat(fd).st_mode))
+        original(fd)
+    monkeypatch.setattr(module.os, 'fsync', sync)
+    module._publish(tmp_path / 'book', {'pages.jsonl': 'page\n', 'meta.json': '{}\n'})
+    assert synced.count(False) == 2
+    assert synced.count(True) >= 2
+
+@pytest.mark.parametrize('names', [('book', 'BOOK'), ('caf\u00e9', 'cafe\u0301')])
+def test_collision_with_only(pdf, tmp_path, names):
+    manifest = tmp_path / 'manifest.json'
+    manifest.write_text(json.dumps({'sources': [cleared_source(pdf, source_id=n) for n in names]}))
+    with pytest.raises(IngestError, match='Case-colliding'):
+        extract_from_manifest(manifest, tmp_path / 'out', only=names[1], repo_root=tmp_path)
+    assert not (tmp_path / 'out').exists()
+
+
+def test_workspace_prefix_cannot_claim_other_backup(tmp_path):
+    from ingest.extract import _publish
+    workspace = tmp_path / '.book.tmp-a.tmp-crashed'
+    (workspace / 'old').mkdir(parents=True)
+    (workspace / 'target.json').write_text(json.dumps('book.tmp-a'))
+    (workspace / 'old/marker').write_text('preserved')
+    _publish(tmp_path / 'book', {'pages.jsonl': 'new'})
+    assert (workspace / 'old/marker').read_text() == 'preserved'
+    assert not (tmp_path / 'book/marker').exists()
+
+
+@pytest.mark.parametrize('cleanup', ['remove', 'sync'])
+def test_cleanup_preserves_primary_failure(tmp_path, monkeypatch, cleanup):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    if cleanup == 'remove':
+        def fail(*args):
+            raise OSError('cleanup remove failed')
+        monkeypatch.setattr(module.shutil, 'rmtree', fail)
+    else:
+        def fail(*args):
+            raise OSError('cleanup sync failed')
+        monkeypatch.setattr(module, '_fsync_directory', fail)
+    with pytest.raises(TypeError) as error:
+        module._publish(tmp_path / 'book', {'pages.jsonl': None})
+    assert any('cleanup failed' in note for note in error.value.__notes__)
+
+
+def test_cleanup_preserves_rollback_error(tmp_path, monkeypatch):
+    import importlib
+    module = importlib.import_module('ingest.extract')
+    target = tmp_path / 'book'
+    target.mkdir()
+    (target / 'marker').write_text('previous')
+    original = module.os.replace
+    def fail(source, dest):
+        if Path(source).name in {'new', 'old'}:
+            raise OSError('rename failed')
+        return original(source, dest)
+    monkeypatch.setattr(module.os, 'replace', fail)
+    with pytest.raises(IngestError, match='rollback failed'):
+        module._publish(target, {'pages.jsonl': 'new'})
+    assert len(list(tmp_path.glob('.book.tmp-*/old/marker'))) == 1
