@@ -1,0 +1,123 @@
+import { useEffect, useRef } from "react";
+import { isGraded, type Lesson, type Step } from "../content/types";
+import type { Recommendation } from "../curriculum/graph";
+import type { LessonProgress } from "../progress/types";
+import { CodeCell } from "./CodeCell";
+import { Exercise } from "./Exercise";
+import { Prose } from "./Prose";
+import { Quiz } from "./Quiz";
+import { TraceViewer } from "./TraceViewer";
+
+const KIND_LABEL: Record<Step["kind"], string> = {
+  motivation: "Why it matters", intuition: "Intuition", visual: "See it run", formal: "The rules",
+  example: "Example", guided: "Guided practice", challenge: "Challenge", quiz: "Check", summary: "Recap",
+};
+
+interface Props {
+  lesson: Lesson;
+  stepIndex: number;
+  progress: LessonProgress | undefined;
+  drafts: Record<string, string>;
+  recommendation: Recommendation;
+  titleOf: (id: string) => string;
+  go: (lessonId: string, step: number) => void;
+  onExercise: (stepId: string, passed: boolean, failedConcepts: string[]) => void;
+  onQuiz: (stepId: string, score: number, passed: boolean, missed: string[]) => void;
+  onDraft: (stepId: string, code: string) => void;
+}
+
+export function LessonView(p: Props) {
+  const { lesson, stepIndex, progress } = p;
+  const step = lesson.steps[stepIndex]!;
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { heading.current?.focus(); }, [lesson.id, stepIndex]); // move focus for screen readers
+
+  const graded = lesson.steps.filter(isGraded);
+  const passedCount = graded.filter((s) => progress?.steps[s.id]?.passed).length;
+  const last = stepIndex === lesson.steps.length - 1;
+
+  return (
+    <article className="lesson" aria-labelledby="step-title">
+      <header className="lesson-head">
+        <p className="eyebrow">{lesson.title} · {passedCount}/{graded.length} graded steps passed
+          {progress?.completed && <> · <span className="ok">completed ✓</span></>}</p>
+        <nav aria-label="Lesson steps">
+          <ol className="stepper">
+            {lesson.steps.map((s, i) => {
+              const done = isGraded(s) ? progress?.steps[s.id]?.passed : i <= (progress?.furthestStep ?? 0);
+              return (
+                <li key={s.id}>
+                  <a href={`#/lesson/${lesson.id}/${i}`} aria-current={i === stepIndex ? "step" : undefined}
+                     className={`dot ${i === stepIndex ? "current" : ""} ${done ? "done" : ""} ${isGraded(s) ? "graded" : ""}`}
+                     title={`${i + 1}. ${KIND_LABEL[s.kind]}: ${s.title}`}>
+                    <span className="sr-only">Step {i + 1}: {s.title}{done ? " (done)" : ""}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      </header>
+
+      <p className="kind">{KIND_LABEL[step.kind]} · step {stepIndex + 1} of {lesson.steps.length}</p>
+      <h2 id="step-title" ref={heading} tabIndex={-1}>{step.title}</h2>
+      <Prose text={step.body} />
+
+      {step.kind === "visual" && <TraceViewer key={step.id} visual={step.visual} />}
+      {step.kind === "example" && <CodeCell key={step.id} id={`ex-${lesson.id}-${step.id}`} initial={step.code} />}
+      {(step.kind === "guided" || step.kind === "challenge") && (
+        <Exercise key={step.id} step={step} lessonId={lesson.id} draft={p.drafts[step.id]}
+                  record={progress?.steps[step.id]}
+                  onDraft={(c) => p.onDraft(step.id, c)}
+                  onResult={(passed, fc) => p.onExercise(step.id, passed, fc)} />
+      )}
+      {step.kind === "quiz" && (
+        <Quiz key={step.id} step={step} record={progress?.steps[step.id]}
+              onResult={(score, passed, missed) => p.onQuiz(step.id, score, passed, missed)} />
+      )}
+      {step.kind === "summary" && <NextUp {...p} />}
+
+      <nav className="pager" aria-label="Step navigation">
+        <button type="button" className="btn" disabled={stepIndex === 0} onClick={() => p.go(lesson.id, stepIndex - 1)}>← Back</button>
+        {!last && <button type="button" className="btn primary" onClick={() => p.go(lesson.id, stepIndex + 1)}>Next →</button>}
+      </nav>
+    </article>
+  );
+}
+
+function NextUp({ lesson, progress, recommendation: r, titleOf, go }: Props) {
+  const remaining = lesson.steps.map((s, i) => [s, i] as const).filter(([s]) => isGraded(s) && !progress?.steps[s.id]?.passed);
+  return (
+    <section className="next-up" aria-label="What next">
+      {progress?.completed ? (
+        <p className="pill ok">Lesson complete, with an estimated mastery of {Math.round(progress.mastery * 100)}%.</p>
+      ) : (
+        <div className="pill warn">
+          To complete this lesson, pass:{" "}
+          {remaining.map(([s, i], k) => (
+            <span key={s.id}>{k > 0 && ", "}<a href={`#/lesson/${lesson.id}/${i}`}>{s.title}</a></span>
+          ))}
+        </div>
+      )}
+      <Recommend r={r} titleOf={titleOf} go={go} currentId={lesson.id} />
+    </section>
+  );
+}
+
+export function Recommend({ r, titleOf, go, currentId }: { r: Recommendation; titleOf: (id: string) => string; go: (id: string, s: number) => void; currentId?: string }) {
+  if (r.kind === "done") return <p className="recommend">🎓 You've completed every lesson available so far. More are on the way.</p>;
+  if (r.kind === "continue" && r.lessonId === currentId) return null;
+  const label = { remediate: "Review first", continue: "Continue", next: "Next lesson" }[r.kind];
+  return (
+    <div className="recommend">
+      <p className="eyebrow">Recommended</p>
+      {r.kind === "remediate" && (
+        <p>You've had trouble with <strong>{r.concept}</strong> several times. A short review of the lesson that
+           teaches it will make the rest easier.</p>
+      )}
+      <button type="button" className="btn primary" onClick={() => go(r.lessonId, 0)}>
+        {label}: {titleOf(r.lessonId)} →
+      </button>
+    </div>
+  );
+}

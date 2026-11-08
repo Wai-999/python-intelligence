@@ -1,0 +1,74 @@
+# CI on every push/PR. Deploy ONLY on a manual "Run workflow" (workflow_dispatch) by a human,
+# through the `github-pages` environment (add required reviewers in repo Settings > Environments).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to GitHub Pages after all gates pass"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # matches Pyodide 0.27.8's CPython 3.12.7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Orchestrator + content-gate tests (no agents, no network)
+        run: python -m pip install "pytest>=8" && python -m pytest
+      - name: Secret scan (tracked files)
+        run: python scripts/secret_scan.py
+      - name: Rights manifest
+        run: python scripts/validate_manifest.py docs/audit/source_manifest.json
+      - name: Unit tests (frontend)
+        run: npm test
+      - name: Build (content gate, typecheck, vite, dist license/size gate)
+        run: npm run build
+      - name: Browser e2e (production build under a sub-path)
+        run: npx playwright install --with-deps chromium && npm run test:e2e
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'workflow_dispatch' && inputs.deploy
+        with:
+          path: dist
+
+  deploy:
+    needs: gates
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Smoke-test the live site
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o page.html -w '%{http_code}' "$url") && [ "$code" = 200 ] && grep -q 'Python Intelligence' page.html && exit 0
+            sleep 10
+          done
+          echo "live smoke test failed for $url"; exit 1
