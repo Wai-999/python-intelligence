@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -62,11 +63,14 @@ def _code_blocks(page):
     for block in page.get_text("dict")["blocks"]:
         for line in block.get("lines", []):
             spans = line.get("spans", [])
+            text = _normalize("".join(span["text"] for span in spans))
+            if not text.strip():
+                continue
             if spans and all(span["flags"] & 8 for span in spans):
-                current.append(_normalize("".join(span["text"] for span in spans)))
+                current.append(text)
             else:
                 flush()
-        flush()
+    flush()
     return blocks
 
 
@@ -87,12 +91,16 @@ def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
     """Hash before opening; write three internal artifacts, atomically per file."""
     if not isinstance(source_id, str) or not source_id or source_id in {".", ".."} or "/" in source_id or "\\" in source_id:
         raise IngestError("source_id must be a nonempty single directory name")
-    digest = sha256_file(pdf_path)
+    try:
+        data = Path(pdf_path).read_bytes()
+    except OSError as exc:
+        raise IngestError(f"Cannot read {pdf_path}: {exc}") from exc
+    digest = hashlib.sha256(data).hexdigest()
     if digest != expected_sha256:
         raise IngestError(f"SHA256 mismatch for {source_id}: expected {expected_sha256}, got {digest}")
     try:
         records = []
-        with pymupdf.open(pdf_path) as doc:
+        with pymupdf.open(stream=data, filetype="pdf") as doc:
             if not doc.is_pdf or doc.needs_pass:
                 raise IngestError(f"{source_id}: expected an unencrypted PDF")
             for index, page in enumerate(doc, 1):
@@ -120,13 +128,28 @@ def extract(pdf_path, source_id, out_dir, *, expected_sha256: str) -> dict:
         raise IngestError(f"Cannot extract {source_id}: {exc}") from exc
 
 
-def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, repo_root=".") -> list[dict]:
+def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, repo_root=".", on_result=None) -> list[dict]:
     """Extract only explicitly cleared, downloaded sources; never grant rights."""
     try:
         manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        validator_path = Path(__file__).resolve().parents[1] / "scripts" / "validate_manifest.py"
+        spec = importlib.util.spec_from_file_location("ingest_manifest_validator", validator_path)
+        validator = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(validator)
+        errors = validator.validate(manifest)
+        if errors:
+            raise IngestError("Invalid manifest:\n" + "\n".join(errors))
         sources = manifest["sources"]
-        if not isinstance(sources, list) or any(not isinstance(s, dict) for s in sources):
-            raise ValueError("sources must be a list of objects")
+        root = Path(repo_root).resolve()
+        paths = {}
+        for source in sources:
+            if "local_path" not in source:
+                continue
+            local = Path(source["local_path"])
+            resolved = (root / local).resolve()
+            if local.is_absolute() or ".." in local.parts or not resolved.is_relative_to(root):
+                raise IngestError(f"Source {source['source_id']!r}: local_path must stay under repo_root and be relative")
+            paths[source["source_id"]] = resolved
         selected = sources if only is None else [s for s in sources if s.get("source_id") == only]
         if only is not None and len(selected) != 1:
             raise IngestError(f"Source {only!r} must occur exactly once in manifest")
@@ -138,8 +161,11 @@ def extract_from_manifest(manifest_path, out_root, *, only: str | None = None, r
                 if only is not None:
                     raise IngestError(f"Source {only!r} not cleared: {', '.join(reasons)}")
                 continue
-            results.append(extract(Path(repo_root) / source["local_path"], source["source_id"],
-                                   out_root, expected_sha256=source["sha256"]))
+            meta = extract(paths[source["source_id"]], source["source_id"],
+                           out_root, expected_sha256=source["sha256"])
+            results.append(meta)
+            if on_result is not None:
+                on_result(meta)
         return results
     except IngestError:
         raise
