@@ -1,0 +1,50 @@
+# P1-7: first live run. One task per agent, each reviewed by the other.
+
+[[task]]
+id = "S1"
+title = "Rights manifest validator"
+owner = "claude"
+reviewer = "codex"
+depends_on = []
+allowed_paths = ["scripts/validate_manifest.py", "tests/test_manifest.py"]
+acceptance = ["python -m pytest -q tests/test_manifest.py", "python scripts/validate_manifest.py docs/audit/source_manifest.json"]
+risk = "low"
+max_attempts = 3
+brief = """
+Write scripts/validate_manifest.py (stdlib only, Python 3.11+) exposing validate(manifest: dict) -> list[str]
+(returns human-readable errors; empty list means valid) and a CLI: `python scripts/validate_manifest.py PATH`
+exiting 0 when valid, 1 when invalid (printing each error), 2 on unreadable/invalid JSON.
+Rules for docs/audit/source_manifest.json (read it to see the shape):
+- top-level object with a non-empty "sources" list;
+- every source has: source_id (unique, non-empty str), repo, commit_sha (40 lowercase hex), path,
+  git_blob_sha1 (40 hex), size_bytes (int > 0), rights_status (str), rights_verified (bool),
+  allowed_to_publish (bool), allowed_for_internal_extraction (bool);
+- a source may have allowed_to_publish or allowed_for_internal_extraction true ONLY IF rights_verified is
+  true AND it has a "decision" object with non-empty "by", "date" (YYYY-MM-DD) and "basis" strings;
+- if downloaded is true, sha256 must be 64 lowercase hex.
+Write tests/test_manifest.py (pytest) covering: the real manifest is valid; each rule violation is reported;
+CLI exit codes 0/1/2 (use subprocess with sys.executable). Keep tests independent of the current directory.
+"""
+
+[[task]]
+id = "S2"
+title = "Markdown status report for the orchestrator"
+owner = "codex"
+reviewer = "claude"
+depends_on = []
+allowed_paths = ["orchestrator/report.py", "tests/test_report.py"]
+acceptance = ["python -m pytest -q tests/test_report.py"]
+risk = "low"
+max_attempts = 3
+brief = """
+Create orchestrator/report.py (stdlib only) with markdown_status(conn: sqlite3.Connection) -> str.
+conn comes from orchestrator.db.connect(). Output: a heading "# Orchestrator status", then a GitHub-flavoured
+Markdown table with columns: Task | Title | Status | Owner | Reviewer | Attempts | Commit, one row per task
+ordered by id, Attempts shown as "attempts/max_attempts", Commit as the first 10 chars or "—" when null.
+Escape "|" characters in titles as "\\|". After the table add a line "Totals: " listing counts per status
+in the order of orchestrator.states.Status, omitting zero counts, e.g. "Totals: merged 2, queued 1".
+For an empty database return the heading followed by "_No tasks._".
+Write tests/test_report.py (pytest) using db.connect(tmp_path / "s.sqlite3") and db.upsert_spec with
+orchestrator.spec.TaskSpec objects, covering ordering, escaping, commit formatting, totals and the empty case.
+Do not modify any other file.
+"""
