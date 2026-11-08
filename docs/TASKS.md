@@ -81,6 +81,11 @@ Core Python path → NumPy/pandas → probability and statistics → linear alge
 | P4-5 | Claude → Codex | Core path: `py-modules`, `py-files`, `py-classes` (books + 3 tutorial pages); validator snippets now run in an isolated temp dir; e2e proves file I/O in Pyodide | ✅ Codex: 4 medium (retry failure from persistent browser FS, 2 weak tests, 'math is a .py file') fixed (fresh folder per run in the shared harness); re-review approved, 0 findings |
 | P4-4 ⛔ | Owner | Choose licensed sources for NumPy/pandas, statistics and ML (P0-5 style decision) | open |
 
-## Phase 5 — Release (≈ 1–2 weeks)
+## Phase 5 — Release ✅ core done 2026-11-08
 
-Accessibility audit, performance/size budget, offline caching, GitHub Actions deploy, base-path smoke test on the live URL. ⛔ **Owner approves every production deploy.**
+| ID | Owner → Reviewer | Task | Status |
+|---|---|---|---|
+| P5-1 | Claude → Codex | axe-core WCAG 2.1 A/AA scans of every page state in light + dark mode; keyboard focus checks for the progress panel | ✅ fixed: locked-item contrast (opacity), progress-panel focus management |
+| P5-2 | Codex → Claude | Offline: service worker (shell precached on first visit; Pyodide cached cache-first; navigations network-first) | ✅ merged on attempt 3 (rejected once: offline after ONE visit failed); Claude follow-up: warm Python after SW control |
+| P5-3 | Claude → Codex | Post-deploy check: commit-stamped build (`pi-build` meta), bounded wait until THIS build is live, desktop+mobile smoke and a real Pyodide run on the live URL | ✅ |
+| P5-4 ⛔ | Owner | Production deploys are automatic on push to main (owner decision 2026-11-08); consider branch protection | open |
