@@ -159,7 +159,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Create:** `[]` is empty; `[3, \"hi\", 2.5]` may mix types. `len`, indexing, negative indexes,\nslicing, `in` and `for` loops all work exactly as with strings.\n\n**Change in place:** `lst[i] = x` replaces an item. `lst.append(x)` adds to the end,\n`lst.insert(i, x)` adds at position `i`, `lst.pop()` removes and returns the last item,\n`lst.remove(x)` removes the first `x`, and `lst.sort()` sorts. These methods change the list and\nreturn `None`, so `lst = lst.sort()` loses your list.\n\n**Aliasing:** `b = a` makes a second name for the same list. A slice makes a **new** list, so\n`b = a[:]` (or `list(a)`) is a copy. A list passed to a function is the caller's list; to leave the\ncaller's list alone, build and return a new one.",
+      "body": "**Create:** `[]` is empty; `[3, \"hi\", 2.5]` may mix types. `len`, indexing, negative indexes,\nslicing, `in` and `for` loops all work exactly as with strings.\n\n**Change in place:** `lst[i] = x` replaces an item. `lst.append(x)` adds to the end,\n`lst.insert(i, x)` adds at position `i`, `lst.pop()` removes and returns the last item,\n`lst.remove(x)` removes the first `x`, and `lst.sort()` sorts. All of these change the list in place.\n`append`, `insert`, `remove` and `sort` return `None`, so `lst = lst.sort()` loses your list;\n`pop` is the exception and returns the item it removed.\n\n**Aliasing:** `b = a` makes a second name for the same list. A slice makes a **new** list, so\n`b = a[:]` (or `list(a)`) is a copy. A list passed to a function is the caller's list; to leave the\ncaller's list alone, build and return a new one.",
       "cites": [
         "tp-list",
         "tp-lmethods",
@@ -204,8 +204,13 @@
           "concept": "list-methods"
         },
         {
+          "name": "keeps original order",
+          "code": "assert evens([4, 1, 2, 3, 0]) == [4, 2, 0], f'evens([4, 1, 2, 3, 0]) returned {evens([4, 1, 2, 3, 0])!r}; keep the original order'",
+          "concept": "lists"
+        },
+        {
           "name": "input unchanged",
-          "code": "_data = [1, 2, 3]\n_out = evens(_data)\nassert _data == [1, 2, 3] and _out is not _data, 'Return a new list; do not change (or return) the one you were given'",
+          "code": "_data = [4, 1, 2, 3, 0]\n_out = evens(_data)\nassert _data == [4, 1, 2, 3, 0], f'the input was changed to {_data!r}; build a new list instead'\nassert _out is not _data, 'return a new list, not the one you were given'",
           "concept": "aliasing"
         }
       ],
@@ -239,8 +244,13 @@
           "concept": "lists"
         },
         {
+          "name": "already unique: still a new list",
+          "code": "_data = [1, 2]\n_out = remove_duplicates(_data)\nassert _out == [1, 2] and _out is not _data, 'return a new list even when there is nothing to remove'",
+          "concept": "aliasing"
+        },
+        {
           "name": "input unchanged",
-          "code": "_data = [1, 1]\nremove_duplicates(_data)\nassert _data == [1, 1], 'Do not change the list you were given'",
+          "code": "_data = [1, 1]\nremove_duplicates(_data)\nassert _data == [1, 1], f'the input was changed to {_data!r}'",
           "concept": "aliasing"
         }
       ],
@@ -314,7 +324,7 @@
       "id": "recap",
       "kind": "summary",
       "title": "What you can do now",
-      "body": "- Create lists, read items by position, and loop over them.\n- Change a list in place with assignment and methods, remembering that those methods return `None`.\n- Predict when two names share one list, and make a real copy with a slice when you need one.\n- Write functions that build and return new lists instead of changing their input.\n\nNext: dictionaries, which find values by a **key** instead of by position."
+      "body": "- Create lists, read items by position, and loop over them.\n- Change a list in place with assignment and methods, remembering that most of them return `None`\n  (`pop` returns the removed item).\n- Predict when two names share one list, and make a real copy with a slice when you need one.\n- Write functions that build and return new lists instead of changing their input.\n\nNext: dictionaries, which find values by a **key** instead of by position."
     }
   ]
 }

@@ -55,7 +55,8 @@ lessons (*Decisions*, *Repetition*) cite Think Python 2e and Dive Into Python 3 
 | P3-3 | Claude → Codex | Lessons `py-conditionals`, `py-loops`; per-step source line with printed page numbers; Further reading per book | content gate; e2e citation test | ✅ |
 | P3-4 | Codex → Claude | Extractor hardening: indentation-preserving code blocks (font-measured), ≥80%-monospace lines, gap-split listings, set-atomic output directory with fsync, id collision/control-char checks | `tests/test_ingest.py` (50) | ✅ merged via `accept` after 3 attempts (attempt 3: 0 blocking). Real books: parseable multi-line code 8%→79% (Think Python), 10%→29% (Dive Into Python 3) |
 | P3-5 ⛔ | Owner | Educational review of the two new lessons; human pass over each `review_queue.json` | — | open |
-| P3-6 | Codex → Claude | Extractor follow-ups from P3-4 attempt-3 review: origin=0 fallback skews indentation; column/side-by-side listings merge (negative gap); PEP 8 double blank lines split a listing; no lock for concurrent runs; cleanup errors abort a completed batch; collision check scope. Also: Automate the Boring Stuff yields 0 code blocks (its code font is not flagged monospaced); strip Dive Into Python 3 callout markers (①) | tests + real-book parse rate | open |
+| P3-6 | Codex → Claude | Extractor follow-ups from P3-4 attempt-3 review: origin=0 fallback skews indentation; column/side-by-side listings merge (negative gap); PEP 8 double blank lines split a listing; no lock for concurrent runs; cleanup errors abort a completed batch; collision check scope. Also: Automate the Boring Stuff yields 0 code blocks (its code font is not flagged monospaced); strip Dive Into Python 3 callout markers (①) | tests + real-book parse rate | open | → ✅ merged (Automate 0→36% parseable listings; Think Python 79→75%, regression tracked in P3-7)
+| P3-7 | Codex → Claude | Recover Think Python listings (same-baseline fragments), pitch fallback, column jumps, callout spacing | `tests/test_ingest.py` + `scripts/bench_code_blocks.py` floors TP≥79%, DiP3≥34%, Automate≥36% | open |
 
 Copy check: the owner's build compares lessons and `dist/` with the local extracts and regenerates
 `content/provenance/` (index.json + shingles.bin: 317k 48-bit BLAKE2b hashes of every 12-word run in the cleared books;
@@ -67,9 +68,16 @@ round-1 lesson-only "attestation" was replaced by the hashed index because it co
 nor tampering. Round 3 confirmed both fixed; its remaining point (a blocklist can't fully enforce the
 arithmetic-only digits exercise) was resolved by wording the exercise honestly instead of claiming enforcement.
 
-## Phase 4 — Curriculum graph (≈ 3–5 weeks)
+## Phase 4 — Curriculum graph (≈ 3–5 weeks) — in progress
 
-Core Python path → NumPy/pandas → probability and statistics → linear algebra/calculus for ML → supervised/unsupervised ML → evaluation → applied projects. Statistics and ML need **additional licensed sources** (to be selected in P0-5).
+Core Python path → NumPy/pandas → probability and statistics → linear algebra/calculus for ML → supervised/unsupervised ML → evaluation → applied projects. Statistics and ML need **additional licensed sources** (owner decision).
+
+| ID | Owner → Reviewer | Task | Status |
+|---|---|---|---|
+| P4-1 | Claude → Codex | Core path: `py-strings`, `py-lists`, `py-dicts` (book-grounded, 9-step arc); lists now requires strings; map order continues the current chain | ✅ Codex review: 6 medium (3 factual: string-method returns, `pop` return, hashable keys; 2 weak tests; dict order not in cited books) all fixed |
+| P4-2 | Claude | Allow citing official Python documentation (URL + section, PSF licence) alongside PDFs, so modern-Python facts (e.g. dict insertion order, 3.7+) are cited, not just flagged | open |
+| P4-3 | Claude → Codex | Core path continued: tuples, comprehensions, files, exceptions, modules | open |
+| P4-4 ⛔ | Owner | Choose licensed sources for NumPy/pandas, statistics and ML (P0-5 style decision) | open |
 
 ## Phase 5 — Release (≈ 1–2 weeks)
 

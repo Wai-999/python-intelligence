@@ -169,7 +169,7 @@
             "locals": {
               "count_letters": "<function count_letters>"
             },
-            "note": "Keys appear in the order they were first added.",
+            "note": "Keys come out in the order they were first added (guaranteed since Python 3.7).",
             "output": "{'a': 2, 'b': 1}"
           }
         ]
@@ -179,7 +179,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Create:** `{}` is empty; `{\"apples\": 5, \"pears\": 0}` maps keys to values.\n\n**Look up:** `d[key]` gives the value, and raises `KeyError` if the key is missing.\n`d.get(key, default)` returns `default` instead (or `None` if you give no default).\n`key in d` asks whether the key exists. It checks keys, not values.\n\n**Change:** `d[key] = value` adds a new key or replaces the value of an existing one; keys are\nunique. `del d[key]` removes one. `len(d)` counts the keys.\n\n**Loop:** `for key in d:` visits the keys, in the order they were added. `for key, value in\nd.items():` gives both at once.\n\n**Keys** must be values that can't change, such as strings, numbers or tuples. A list can't be a key.",
+      "body": "**Create:** `{}` is empty; `{\"apples\": 5, \"pears\": 0}` maps keys to values.\n\n**Look up:** `d[key]` gives the value, and raises `KeyError` if the key is missing.\n`d.get(key, default)` returns `default` instead (or `None` if you give no default).\n`key in d` asks whether the key exists. It checks keys, not values.\n\n**Change:** `d[key] = value` adds a new key or replaces the value of an existing one; keys are\nunique. `del d[key]` removes one. `len(d)` counts the keys.\n\n**Loop:** `for key in d:` visits the keys and `for key, value in d.items():` gives both at once. Since\nPython 3.7 the language guarantees keys come out in the order they were added. That is newer than the\nbooks cited here, some of which describe dictionaries as unordered.\n\n**Keys** must be *hashable*: strings, numbers, and tuples whose items are all hashable. Lists and\ndictionaries can change, so they are not hashable and can't be keys (and nor can a tuple containing a list).",
       "cites": [
         "tp-dict",
         "tp-count",
@@ -300,7 +300,7 @@
             "[1, 2]"
           ],
           "answer": 3,
-          "explanation": "Keys must be unchangeable values; a list can change, so it can't be a key.",
+          "explanation": "Keys must be hashable. A list can change, so it isn't hashable and can't be a key; strings, numbers and tuples of hashable items can.",
           "concept": "dictionaries"
         },
         {
