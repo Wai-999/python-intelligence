@@ -142,3 +142,37 @@ starting higher on the page) give two blocks with correct indentation; a span in
 "SomeMono-Regular" without flag 8 counts as code; callout markers are stripped from code_blocks but kept in text.
 Run: "/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package/.venv/bin/python" -m pytest tests/test_ingest.py -q
 """
+
+[[task]]
+id = "P3-7"
+title = "Extractor: recover Think Python listings and fix block-split edge cases"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P3-6"]
+allowed_paths = ["ingest/**", "tests/test_ingest.py"]
+acceptance = [
+  "python -m pytest tests/test_ingest.py -q",
+  "python scripts/bench_code_blocks.py --pdf-root '/Users/waiyan/Downloads/My Porfolio/python-intelligence/python_intelligence_cli_package' --min pch-think-python-2nd=79 --min pch-diveintopython3=34 --min pch-automate-the-boring-stuff-with-python=36",
+]
+risk = "medium"
+max_attempts = 3
+brief = """
+P3-6 made code detection work for Automate the Boring Stuff (0 -> 36% parseable listings) but Think Python fell
+from 79% to 74.9% parseable. The controller will run scripts/bench_code_blocks.py (read it; do not edit it) on
+the real books and requires at least: Think Python 79%, Dive Into Python 3 34%, Automate 36%. You can run it
+yourself with the venv interpreter and the --pdf-root shown in the acceptance command; it prints only numbers.
+
+Known causes from the P3-6 review, in ingest/extract.py:
+1. A new block starts when the next line's top is at or above the previous line's (delta <= 0.01). That splits
+   fragments that share a baseline (MuPDF emits separate `line` entries for far-apart glyph runs, e.g. aligned
+   comments) -- likely the Think Python regression. Merge lines whose vertical extents overlap by more than half
+   the smaller height into ONE visual line (ordered by x) before deciding on block boundaries; split only when a
+   line starts clearly above the previous visual line (a new column), or far below it.
+2. Before any pitch has been measured, a large downward gap never splits: apply the 1.2 x font size fallback.
+3. A line in another column starting slightly BELOW the previous line must also split: treat a large jump in x
+   (> 40% of page width) between consecutive code lines as a new block.
+4. Choose the reference span for glyph width / size from spans that contain at least one ASCII character (not a
+   lone callout marker).
+5. After stripping a callout marker, also strip the trailing spaces before it.
+Add a regression test for each item. Do not change file formats or the public API.
+"""
