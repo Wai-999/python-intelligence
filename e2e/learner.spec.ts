@@ -128,3 +128,14 @@ test("file I/O works in the browser's Python (Pyodide in-memory file system)", a
   await page.getByRole("button", { name: "▶ Run" }).click();
   await expect(page.locator(".console pre").first()).toHaveText("20\nno such file\n", { timeout: 90_000 });
 });
+
+test("a correct file exercise still passes when checked again (each run gets a fresh folder)", async ({ page }) => {
+  await page.goto("./#/lesson/py-files/6"); // "Challenge: a message log": appends to files during the checks
+  await expect(page.getByRole("heading", { name: "Challenge: a message log" })).toBeVisible();
+  await page.locator("textarea.editor-input").fill("def append_log(path, message):\n    with open(path, \"a\", encoding=\"utf-8\") as f:\n        f.write(message + \"\\n\")\n\ndef read_log(path):\n    try:\n        with open(path, encoding=\"utf-8\") as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []");
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole("button", { name: "▶ Run checks" }).click();
+    await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 90_000 });
+    await expect(page.locator(".checks li.fail")).toHaveCount(0);
+  }
+});

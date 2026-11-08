@@ -77,9 +77,10 @@
       "id": "picture",
       "kind": "intuition",
       "title": "A module is a named toolbox",
-      "body": "A **module** is a file of Python code that defines names: functions, values, classes. `import math`\nruns that file once and gives you one name, `math`, through which you reach its tools: `math.sqrt`,\n`math.pi`. Keeping each toolbox behind its own name means two modules can both have a function called\n`open` or `random` without clashing.",
+      "body": "A **module** is a named toolbox: a collection of functions, values and classes you can reuse. Some\nmodules are files of Python code (your own `.py` files are modules too); others, like `math`, are\nbuilt into the interpreter. `import math` gives you one name, `math`, through which you reach its\ntools: `math.sqrt`, `math.pi`. Keeping each toolbox behind its own name means two modules can both\nhave a function called `load` without clashing.",
       "cites": [
         "docs-modules",
+        "docs-std",
         "atbs-import"
       ],
       "socratic": {
@@ -158,7 +159,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "```python\nimport statistics                 # use as statistics.mean(...)\nfrom collections import Counter   # use as Counter(...) directly\nimport random as rnd              # an alias: rnd.randint(...)\n```\n\n1. A module's top-level code runs the **first** time it is imported in a program; later imports reuse it.\n2. `import m` adds the single name `m`; `from m import a, b` adds `a` and `b` themselves.\n3. Your own `.py` file is a module too: other files can import its functions.\n4. Every module has a `__name__`. It is `\"__main__\"` when the file is run directly, so\n   `if __name__ == \"__main__\":` marks code that should run only as a script, not on import.\n5. The standard library is large: `math`, `random`, `statistics`, `collections`, `datetime`, `json`\n   and many more are always available.",
+      "body": "```python\nimport statistics                 # use as statistics.mean(...)\nfrom collections import Counter   # use as Counter(...) directly\nimport random as rnd              # an alias: rnd.randint(...)\n```\n\n1. A module is loaded the **first** time it is imported in a program (for a `.py` module, its top-level\n   code runs then); later imports reuse the loaded module.\n2. `import m` adds the single name `m`; `from m import a, b` adds `a` and `b` themselves.\n3. Your own `.py` file is a module too: other files can import its functions.\n4. Every module has a `__name__`. It is `\"__main__\"` when the file is run directly, so\n   `if __name__ == \"__main__\":` marks code that should run only as a script, not on import.\n5. The standard library is large: `math`, `random`, `statistics`, `collections`, `datetime`, `json`\n   and many more are always available.",
       "cites": [
         "docs-modules",
         "docs-script",
@@ -195,6 +196,11 @@
         {
           "name": "rounded",
           "code": "assert average_word_length('to be or not') == 2.25, f\"got {average_word_length('to be or not')!r}\"",
+          "concept": "standard-library"
+        },
+        {
+          "name": "rounds repeating decimals",
+          "code": "assert average_word_length('a bb bb') == 1.67, f\"got {average_word_length('a bb bb')!r}; round to 2 decimal places\"",
           "concept": "standard-library"
         },
         {
