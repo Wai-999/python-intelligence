@@ -162,3 +162,12 @@ main { min-width: 0; outline: none; }
 .next-up { display: grid; gap: 12px; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+/* Citations (book-grounded lessons) */
+.step-sources { font-size: 14px; color: var(--muted); border-left: 3px solid var(--border); padding: 2px 0 2px 10px; margin: 4px 0 16px; }
+.step-sources .eyebrow { display: inline; margin: 0 4px 0 0; font-weight: 600; }
+.step-sources cite, .further-reading cite { font-style: italic; }
+.further-reading { border-top: 1px solid var(--border); padding-top: 12px; }
+.further-reading h3 { font-size: 16px; margin: 0 0 8px; }
+.further-reading ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.further-reading .muted { font-size: 14px; }

@@ -25,10 +25,30 @@ export const STEP_ORDER: readonly StepKind[] = [
 type Prose = string;
 
 export interface SourceRef {
-  /** Must match a source_id in docs/audit/source_manifest.json with internal extraction allowed. */
+  /** Short key that steps cite, e.g. "tp-ch5". */
+  id: string;
+  /** Must be cleared in docs/audit/source_manifest.json AND listed in content/sources.json. */
   source_id: string;
+  /** Physical PDF pages (1-based, inclusive) of the exact file pinned by sha256 in the catalog. */
   pages: [number, number];
-  note?: string;
+  /** A chapter/section heading of the book that starts within `pages` (checked at build time). */
+  section: string;
+  /** "reference": original prose that points to the book. "adapted": derived text; lesson takes the book's licence. */
+  use: "reference" | "adapted";
+}
+
+/** Public facts about a citable book (content/sources.json, generated; contains no book text). */
+export interface CatalogSource {
+  title: string;
+  short: string;
+  authors: string[];
+  license: string;
+  license_url: string;
+  official_url: string;
+  page_count: number;
+  /** printed page = physical page - offset, from page_label_from onward; null if the book has no printed numbers. */
+  page_label_offset: number | null;
+  page_label_from: number | null;
 }
 
 export interface Socratic {
@@ -42,6 +62,8 @@ interface BaseStep {
   title: string;
   body: Prose;
   socratic?: Socratic;
+  /** Ids of lesson sources this step's claims rest on. Required on intuition/formal steps of book-grounded lessons. */
+  cites?: string[];
 }
 
 export interface TraceFrame {

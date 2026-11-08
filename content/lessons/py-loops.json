@@ -1,0 +1,161 @@
+{
+  "id": "py-loops",
+  "title": "Repetition: while and for loops",
+  "summary": "Repeat work with loops, keep a running total, and know when a loop stops.",
+  "track": "python-core",
+  "level": 2,
+  "estimated_minutes": 30,
+  "prerequisites": ["py-conditionals"],
+  "concepts": ["while-loops", "for-loops", "accumulators", "break"],
+  "sources": [
+    {"id": "tp-while", "source_id": "pch-think-python-2nd", "pages": [86, 88], "section": "The while statement", "use": "reference"},
+    {"id": "tp-range", "source_id": "pch-think-python-2nd", "pages": [52, 53], "section": "Simple repetition", "use": "reference"},
+    {"id": "tp-traverse", "source_id": "pch-think-python-2nd", "pages": [94, 95], "section": "Traversal with a for loop", "use": "reference"}
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Doing it again, without copying",
+      "body": "Suppose you want the total of the numbers from 1 to 100. You *could* type `1 + 2 + 3 + ...` and so on,\nbut that's slow, error-prone, and useless the moment the limit changes to 1000.\n\nComputers are good at doing the same small step many times without getting bored or making slips. A\n**loop** lets you write the step once and say how often, or until when, to repeat it."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Two kinds of repetition",
+      "body": "- A **`while` loop** is an `if` that keeps coming back. Python checks the condition; if it's true it\n  runs the body, then **returns to the check**. It stops the first time the check is false. Use it when you\n  repeat *until something happens*.\n- A **`for` loop** walks through a collection of items, one at a time, giving each a name in turn. Use it\n  when you repeat *once per item*: each number in a range, or each character in some text.\n\nMany loops carry a running result, an **accumulator**, that starts empty and grows a little on every pass,\nlike a shopping-basket total.",
+      "cites": ["tp-while", "tp-range"],
+      "socratic": {
+        "questions": [
+          "A while loop's condition is checked again after every pass. What must the body change so the loop eventually ends?",
+          "If an accumulator starts at 0 and you add 5 on each of 3 passes, what does it hold at the end?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch an accumulator grow",
+      "body": "Step through and watch `k` take each value from the range while `result` builds up.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def total_up_to(n):\n    result = 0\n    for k in range(1, n + 1):\n        result = result + k\n    return result\n\nprint(total_up_to(3))",
+        "frames": [
+          {"line": 7, "stack": ["<module>"], "locals": {"total_up_to": "<function total_up_to>"}, "note": "The call `total_up_to(3)` starts."},
+          {"line": 2, "stack": ["<module>", "total_up_to(3)"], "locals": {"n": "3"}, "note": "The accumulator starts at 0, *before* the loop, so it exists when the loop first adds to it."},
+          {"line": 3, "stack": ["<module>", "total_up_to(3)"], "locals": {"n": "3", "result": "0", "k": "1"}, "note": "`range(1, 4)` gives 1, 2, 3; the stop value 4 is not included. First pass: k = 1."},
+          {"line": 4, "stack": ["<module>", "total_up_to(3)"], "locals": {"n": "3", "result": "1", "k": "1"}, "note": "Read the old result (0), add k, and store the new value: 1."},
+          {"line": 4, "stack": ["<module>", "total_up_to(3)"], "locals": {"n": "3", "result": "3", "k": "2"}, "note": "Second pass: k = 2, so result becomes 1 + 2 = 3."},
+          {"line": 4, "stack": ["<module>", "total_up_to(3)"], "locals": {"n": "3", "result": "6", "k": "3"}, "note": "Third and last pass: result becomes 3 + 3 = 6. The range has no more numbers."},
+          {"line": 5, "stack": ["<module>", "total_up_to(3)"], "locals": {"n": "3", "result": "6", "k": "3"}, "note": "The loop is done, so execution continues after it and returns 6."},
+          {"line": 7, "stack": ["<module>"], "locals": {"total_up_to": "<function total_up_to>"}, "note": "`print` shows the total.", "output": "6"}
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "```python\nwhile condition:\n    body          # repeats while condition is true\n\nfor name in collection:\n    body          # runs once per item; name holds the current item\n```\n\n1. **while**: check the condition; if false, skip past the loop; if true, run the body and check again.\n   The body must eventually make the condition false, or the loop never ends. (Here, a run that takes too\n   long is stopped for you; in a normal program you'd press Ctrl+C.)\n2. **for**: the body runs once for each item, in order, with `name` bound to that item.\n   `range(stop)` gives `0, 1, ..., stop - 1`, and `range(start, stop)` gives `start` up to\n   **but not including** `stop`. A `for` over text visits each character.\n3. **Updating** a name, as in `total = total + x`, reads the old value first. The name must already exist,\n   or Python raises `NameError`. So initialise accumulators *before* the loop.\n4. **break** leaves the innermost loop immediately; execution continues after the loop.",
+      "cites": ["tp-while", "tp-range", "tp-traverse"]
+    },
+    {
+      "id": "halve",
+      "kind": "example",
+      "title": "Run it: how many halvings?",
+      "body": "How many times can you halve a number (rounding down) before it reaches 1? We don't know in advance, so\nthis is a job for `while`. Predict the three answers, then **Run**.",
+      "code": "def halvings(n):\n    steps = 0\n    while n > 1:\n        n = n // 2\n        steps = steps + 1\n    return steps\n\nprint(halvings(1))\nprint(halvings(8))\nprint(halvings(100))",
+      "expected_output": "0\n3\n6\n"
+    },
+    {
+      "id": "threes",
+      "kind": "guided",
+      "title": "Your turn: add up the multiples of 3",
+      "body": "Complete `sum_multiples_of_3(limit)` so it returns the sum of every number from 1 to `limit` (inclusive)\nthat divides by 3. For example, `sum_multiples_of_3(10)` is 3 + 6 + 9 = 18.\n\nThe accumulator and the `return` are already there; you need the loop.",
+      "starter": "def sum_multiples_of_3(limit):\n    total = 0\n    # loop over 1..limit and add the multiples of 3\n    return total",
+      "hints": [
+        "Use a for loop over `range(1, limit + 1)` so that `limit` itself is included.",
+        "Inside the loop, only add the number when `k % 3 == 0`.",
+        "def sum_multiples_of_3(limit):\n    total = 0\n    for k in range(1, limit + 1):\n        if k % 3 == 0:\n            total = total + k\n    return total"
+      ],
+      "tests": [
+        {"name": "up to 10", "code": "assert sum_multiples_of_3(10) == 18, f'sum_multiples_of_3(10) returned {sum_multiples_of_3(10)!r}, expected 18'", "concept": "accumulators"},
+        {"name": "limit is included", "code": "assert sum_multiples_of_3(3) == 3, f'sum_multiples_of_3(3) returned {sum_multiples_of_3(3)!r}; is 3 itself included?'", "concept": "for-loops"},
+        {"name": "nothing to add", "code": "assert sum_multiples_of_3(2) == 0, f'sum_multiples_of_3(2) returned {sum_multiples_of_3(2)!r}'", "concept": "accumulators"},
+        {"name": "larger limit", "code": "assert sum_multiples_of_3(100) == 1683, f'sum_multiples_of_3(100) returned {sum_multiples_of_3(100)!r}'", "concept": "for-loops"}
+      ],
+      "solution": "def sum_multiples_of_3(limit):\n    total = 0\n    for k in range(1, limit + 1):\n        if k % 3 == 0:\n            total = total + k\n    return total"
+    },
+    {
+      "id": "digits",
+      "kind": "challenge",
+      "title": "Challenge: count the digits",
+      "body": "Write `count_digits(n)` that returns how many digits a whole number `n >= 0` has, using arithmetic\nrather than converting to text. `count_digits(42)` is 2 and `count_digits(1000)` is 4.\n\nIdea: `n // 10` drops the last digit. Careful with one special case: what should `count_digits(0)` be?",
+      "starter": "def count_digits(n):\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count",
+      "hints": [
+        "The starter is nearly right. Try it on 0: does the loop body ever run?",
+        "Zero is written with one digit. Handle it before the loop with an `if`.",
+        "def count_digits(n):\n    if n == 0:\n        return 1\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count"
+      ],
+      "tests": [
+        {"name": "one digit", "code": "assert count_digits(7) == 1, f'count_digits(7) returned {count_digits(7)!r}'", "concept": "while-loops"},
+        {"name": "several digits", "code": "assert count_digits(1000) == 4, f'count_digits(1000) returned {count_digits(1000)!r}'", "concept": "while-loops"},
+        {"name": "zero has one digit", "code": "assert count_digits(0) == 1, f'count_digits(0) returned {count_digits(0)!r}; 0 is written with one digit'", "concept": "while-loops"},
+        {"name": "big number", "code": "assert count_digits(9876543210) == 10, f'count_digits(9876543210) returned {count_digits(9876543210)!r}'", "concept": "accumulators"}
+      ],
+      "solution": "def count_digits(n):\n    if n == 0:\n        return 1\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Trace each program in your head first.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Which numbers does this print?",
+          "code": "for k in range(2, 5):\n    print(k)",
+          "choices": ["2 3 4", "2 3 4 5", "3 4 5", "0 1 2 3 4"],
+          "answer": 0,
+          "explanation": "`range(2, 5)` starts at 2 and stops *before* 5.",
+          "concept": "for-loops"
+        },
+        {
+          "id": "q2",
+          "prompt": "What happens when this runs?",
+          "code": "n = 3\nwhile n > 0:\n    print(n)",
+          "choices": ["Prints 3, 2, 1", "Prints 3 once", "Prints 3 forever", "Nothing is printed"],
+          "answer": 2,
+          "explanation": "Nothing in the body changes `n`, so `n > 0` stays true: an infinite loop.",
+          "concept": "while-loops"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "for k in range(10):\n    if k == 3:\n        break\n    print(k)\nprint(\"end\")",
+          "choices": ["0 1 2 end", "0 1 2 3 end", "0 1 2", "0 1 2 4 5 6 7 8 9 end"],
+          "answer": 0,
+          "explanation": "When k is 3, `break` leaves the loop before printing 3, and execution continues with `print(\"end\")`.",
+          "concept": "break"
+        },
+        {
+          "id": "q4",
+          "prompt": "This was meant to add 0 + 1 + 2. What does it print?",
+          "code": "for k in range(3):\n    total = 0\n    total = total + k\nprint(total)",
+          "choices": ["3", "2", "0", "A NameError"],
+          "answer": 1,
+          "explanation": "`total = 0` is inside the loop, so it is reset on every pass; only the last k (2) survives. Initialise accumulators before the loop.",
+          "concept": "accumulators"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Use `while` to repeat until a condition becomes false, and make sure the body moves toward stopping.\n- Use `for` with `range(...)` or over text to repeat once per item, remembering that the stop value is\n  excluded.\n- Keep a running result in an accumulator that is initialised **before** the loop.\n- Leave a loop early with `break`.\n\nYou now have the three building blocks of every program: sequence, decisions and repetition."
+    }
+  ]
+}

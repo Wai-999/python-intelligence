@@ -19,8 +19,10 @@ async function passQuiz(page: Page, answers: number[]) {
 test("complete lesson 1, refresh mid-lesson 2, resume exactly, get next recommendation", async ({ page }) => {
   await page.goto("./");
   await expect(page.getByRole("heading", { name: "Learn Python by running it." })).toBeVisible();
-  // Locked prerequisites are enforced in the map.
-  await expect(page.locator(".map-item.locked")).toHaveCount(2);
+  // Locked prerequisites are enforced in the map: on a fresh start only the root lesson is open.
+  const items = await page.locator(".map-item").count();
+  expect(items).toBeGreaterThanOrEqual(5);
+  await expect(page.locator(".map-item.locked")).toHaveCount(items - 1);
   await page.getByRole("button", { name: /Next lesson: Values, names and expressions/ }).click();
 
   // Run the example (real Pyodide in a worker).
@@ -91,4 +93,27 @@ test("a corrupt import is rejected and leaves progress unchanged", async ({ page
   await expect(page.getByText(/Import failed, and your current progress was left unchanged/)).toBeVisible();
   await page.reload(); // re-read everything from IndexedDB, not from in-memory UI state
   await expect(page.getByText(/Passed earlier/)).toBeVisible();
+});
+
+test("book-grounded lessons show their sources; original lessons don't", async ({ page }) => {
+  await page.goto("./#/lesson/py-conditionals/3"); // "The precise rules" (formal step)
+  await expect(page.getByRole("heading", { name: "The precise rules" })).toBeVisible();
+  const line = page.locator(".step-sources");
+  await expect(line).toContainText("Think Python 2e");
+  await expect(line).toContainText("pp. 40–41"); // printed page numbers, not PDF page numbers
+  await expect(line).toContainText("Dive Into Python 3");
+  await expect(line).toContainText("PDF pp. 60–61"); // this book prints no page numbers
+
+  await page.goto("./#/lesson/py-conditionals/8"); // recap: cites nothing itself, so no source line
+  await expect(page.getByRole("heading", { name: "What you can do now" })).toBeVisible();
+  await expect(page.locator(".step-sources")).toHaveCount(0);
+  const reading = page.getByRole("region", { name: "Further reading" });
+  await expect(reading.getByRole("listitem")).toHaveCount(2); // one entry per book, not per citation
+  await expect(reading.getByRole("link", { name: /Think Python/ }).first()).toHaveAttribute("href", "https://greenteapress.com/wp/think-python-2e/");
+  await expect(reading.getByRole("link", { name: "CC BY-SA 3.0" }).first()).toBeVisible();
+  await expect(reading).toContainText("original writing that points to it");
+
+  await page.goto("./#/lesson/py-values-names/1");
+  await expect(page.getByRole("heading", { name: "Names are labels, not boxes" })).toBeVisible();
+  await expect(page.locator(".step-sources")).toHaveCount(0);
 });

@@ -6,6 +6,7 @@ import { CodeCell } from "./CodeCell";
 import { Exercise } from "./Exercise";
 import { Prose } from "./Prose";
 import { Quiz } from "./Quiz";
+import { FurtherReading, StepSources } from "./Sources";
 import { TraceViewer } from "./TraceViewer";
 
 const KIND_LABEL: Record<Step["kind"], string> = {
@@ -69,6 +70,7 @@ export function LessonView(p: Props) {
       <p className="kind">{KIND_LABEL[step.kind]} · step {stepIndex + 1} of {lesson.steps.length}</p>
       <h2 id="step-title" ref={heading} tabIndex={-1}>{step.title}</h2>
       <Prose text={step.body} />
+      <StepSources lesson={lesson} step={step} />
 
       {step.kind === "visual" && <TraceViewer key={step.id} visual={step.visual} />}
       {step.kind === "example" && <CodeCell key={step.id} id={`ex-${lesson.id}-${step.id}`} initial={step.code} />}
@@ -107,6 +109,7 @@ function NextUp({ lesson, progress, recommendation: r, titleOf, go }: Props) {
         </div>
       )}
       <Recommend r={r} titleOf={titleOf} go={go} currentId={lesson.id} />
+      <FurtherReading lesson={lesson} />
     </section>
   );
 }
