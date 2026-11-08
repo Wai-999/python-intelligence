@@ -1,0 +1,14 @@
+[project]
+name = "python-intelligence-orchestrator"
+version = "0.1.0"
+description = "Local dual-agent (Claude Code + Codex) build orchestrator for the Python Intelligence learning platform. Never deployed."
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["live: calls the real claude/codex CLIs (opt-in: PI_LIVE=1)"]

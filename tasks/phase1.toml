@@ -1,0 +1,68 @@
+# Phase 1 task specs. Loaded by: python -m orchestrator load tasks/phase1.toml
+# Schema: see orchestrator/spec.py (TaskSpec). Owners/reviewers: "claude" | "codex".
+
+[[task]]
+id = "P1-1"
+title = "Initial commit and repo hygiene"
+owner = "claude"
+reviewer = "codex"
+depends_on = []
+allowed_paths = ["pyproject.toml", ".pre-commit-config.yaml", ".gitignore", "README.md"]
+acceptance = ["python -m pytest -q"]
+risk = "low"
+max_attempts = 3
+
+[[task]]
+id = "P1-2"
+title = "Live CLI contract tests in a disposable repo"
+owner = "claude"
+reviewer = "codex"
+depends_on = ["P1-1"]
+allowed_paths = ["tests/contract/**", "docs/audit/**"]
+acceptance = ["python -m pytest -q tests/contract"]
+risk = "medium"
+max_attempts = 3
+
+[[task]]
+id = "P1-3"
+title = "Live worktree manager"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P1-1"]
+allowed_paths = ["orchestrator/worktree.py", "tests/test_worktree*.py"]
+acceptance = ["python -m pytest -q tests/test_worktree_live.py"]
+risk = "medium"
+max_attempts = 3
+
+[[task]]
+id = "P1-4"
+title = "Subprocess runner with timeout, process group and redaction"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P1-3"]
+allowed_paths = ["orchestrator/runner.py", "orchestrator/redact.py", "tests/test_runner*.py"]
+acceptance = ["python -m pytest -q tests/test_runner.py"]
+risk = "high"
+max_attempts = 3
+
+[[task]]
+id = "P1-5"
+title = "Controller-executed test gate and scope check on real diffs"
+owner = "codex"
+reviewer = "claude"
+depends_on = ["P1-4"]
+allowed_paths = ["orchestrator/controller.py", "orchestrator/gates.py", "tests/test_gates*.py"]
+acceptance = ["python -m pytest -q tests/test_gates.py"]
+risk = "high"
+max_attempts = 3
+
+[[task]]
+id = "P1-6"
+title = "Structured cross-agent review with shared findings schema"
+owner = "claude"
+reviewer = "codex"
+depends_on = ["P1-2"]
+allowed_paths = ["orchestrator/review.py", "schemas/**", "prompts/**", "tests/test_review*.py"]
+acceptance = ["python -m pytest -q tests/test_review.py"]
+risk = "medium"
+max_attempts = 3
