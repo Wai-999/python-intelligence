@@ -128,3 +128,54 @@ def test_human_reject_sends_back_with_feedback(ctl):
     ctl.reject("A", "human:owner", "validate on write")
     assert db.get_task(ctl.conn, "A")["status"] == S.REPAIR
     assert db.last_repair_feedback(ctl.conn, "A") == "validate on write"
+
+
+# --- accept: a human may take a blocked task's TESTED commit to the gate (merge still needs approve) -------
+def _blocked_after_review(ctl, tid):
+    ctl.load([make_spec(tid)])
+    run_until(ctl, tid, S.AWAITING_APPROVAL)          # implemented -> testing ✓ -> review -> gate
+    db.transition(ctl.conn, tid, S.BLOCKED, actor="controller", expect=S.AWAITING_APPROVAL)
+
+
+def test_accept_moves_tested_blocked_work_to_the_gate_only(ctl):
+    _blocked_after_review(ctl, "A")
+    sha = db.get_task(ctl.conn, "A")["commit_sha"]
+    assert sha
+    ctl.accept("A", "human:owner", "remaining findings are follow-ups")
+    row = db.get_task(ctl.conn, "A")
+    assert row["status"] == S.AWAITING_APPROVAL and row["commit_sha"] == sha
+    with pytest.raises(db.GateError):                  # accepting is not approving
+        db.transition(ctl.conn, "A", S.MERGED, actor="human:owner")
+    ctl.approve("A", "human:owner")
+    assert db.get_task(ctl.conn, "A")["status"] == S.MERGED
+
+
+def test_accept_requires_a_human(ctl):
+    _blocked_after_review(ctl, "A")
+    with pytest.raises(db.GateError, match="only a human"):
+        ctl.accept("A", "controller", "x")
+
+
+def test_accept_refuses_work_that_did_not_pass_its_tests(ctl):
+    ctl.load([make_spec("B")])
+    run_until(ctl, "B", S.IMPLEMENTED)                 # never reached testing -> review
+    db.transition(ctl.conn, "B", S.BLOCKED, actor="controller", expect=S.IMPLEMENTED)
+    with pytest.raises(db.GateError, match="did not pass the acceptance tests"):
+        ctl.accept("B", "human:owner", "x")
+    assert db.get_task(ctl.conn, "B")["status"] == S.BLOCKED
+
+
+def test_accept_refuses_a_newer_untested_attempt(ctl):
+    _blocked_after_review(ctl, "C")
+    ctl.unblock("C", "human:owner", "retry")           # a new attempt starts...
+    run_until(ctl, "C", S.IMPLEMENTED)                 # ...and produces a commit that was never tested
+    db.transition(ctl.conn, "C", S.BLOCKED, actor="controller", expect=S.IMPLEMENTED)
+    with pytest.raises(db.GateError, match="did not pass"):
+        ctl.accept("C", "human:owner", "x")
+
+
+def test_accept_only_from_blocked(ctl):
+    ctl.load([make_spec("D")])
+    run_until(ctl, "D", S.AWAITING_APPROVAL)
+    with pytest.raises(db.TransitionError):
+        ctl.accept("D", "human:owner", "x")

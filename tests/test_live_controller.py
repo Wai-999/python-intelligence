@@ -133,6 +133,24 @@ def test_blocking_review_findings_trigger_repair(env):
     assert "returns wrong value" in fb and "[high]" in fb
 
 
+def test_request_changes_with_only_medium_findings_goes_to_human(env):
+    repo, plan, calls = env
+    med = {"verdict": "request_changes", "findings": [{"severity": "medium", "file": "src/feature.py", "line": 1,
+           "summary": "edge case", "reproduction": "f(0)", "proposed_fix": "guard 0"}]}
+    plan({"codex:review": [{"review": med}]})
+    ctl = mk(repo, make_spec("T4b", acceptance=ACCEPT))
+    assert drive(ctl, "T4b", {S.AWAITING_APPROVAL, S.REPAIR}) == S.AWAITING_APPROVAL
+    ev = ctl.conn.execute("SELECT detail_json FROM events WHERE task_id='T4b' AND to_status='awaiting_approval'").fetchone()
+    assert '"request_changes"' in ev[0] and "edge case" in ev[0]   # the human sees verdict and findings
+
+
+def test_request_changes_without_itemised_findings_repairs(env):
+    repo, plan, calls = env
+    plan({"codex:review": [{"review": {"verdict": "request_changes", "findings": []}}]})
+    ctl = mk(repo, make_spec("T4c", acceptance=ACCEPT))
+    assert drive(ctl, "T4c", {S.AWAITING_APPROVAL, S.REPAIR}) == S.REPAIR
+
+
 def test_implementer_timeout_kills_process(env):
     repo, plan, calls = env
     plan({"claude:implement": [{"do": "sleep", "seconds": 60}]})

@@ -30,7 +30,7 @@ TRANSITIONS: dict[Status, frozenset[Status]] = {
     S.MERGED: frozenset({S.RELEASED}),
     S.RELEASED: frozenset(),
     S.REPAIR: frozenset({S.READY, S.BLOCKED}),
-    S.BLOCKED: frozenset({S.READY}),
+    S.BLOCKED: frozenset({S.READY, S.AWAITING_APPROVAL}),  # the latter only via Controller.accept
 }
 
 # Entering these requires an unconsumed approval bound to the task's commit SHA.

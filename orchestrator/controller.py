@@ -160,6 +160,23 @@ class Controller:
                       detail={"reason": "changes requested by human at approval gate", "feedback": feedback})
         return f"{task_id}: awaiting_approval -> repair (rejected by {actor})"
 
+    def accept(self, task_id: str, actor: str, reason: str) -> str:
+        """Human takes a blocked task's latest commit to the approval gate as-is (merging still needs `approve`).
+
+        Allowed only when that exact commit passed the controller-run acceptance tests, i.e. the task reached
+        review after its most recent implementation. Work that failed its tests can only be retried (unblock).
+        """
+        row = db.get_task(self.conn, task_id)
+        last = lambda where: self.conn.execute(  # noqa: E731
+            f"SELECT COALESCE(MAX(id), 0) FROM events WHERE task_id = ? AND {where}", (task_id,)).fetchone()[0]
+        implemented = last("to_status = 'implemented'")
+        tested = last("from_status = 'testing' AND to_status = 'review'")
+        if not row["commit_sha"] or not implemented or tested < implemented:
+            raise db.GateError(f"{task_id}: its latest commit did not pass the acceptance tests; use unblock to retry")
+        db.transition(self.conn, task_id, S.AWAITING_APPROVAL, actor=actor, expect=S.BLOCKED,
+                      detail={"reason": reason, "accepted_commit": row["commit_sha"]})
+        return f"{task_id}: blocked -> awaiting_approval at {row['commit_sha'][:10]} (accepted by {actor}; approve to merge)"
+
     def unblock(self, task_id: str, actor: str, reason: str) -> str:
         db.transition(self.conn, task_id, S.READY, actor=actor, expect=S.BLOCKED, detail={"reason": reason})
         return f"{task_id}: blocked -> ready (by {actor})"

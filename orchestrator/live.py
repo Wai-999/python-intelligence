@@ -209,12 +209,13 @@ class LiveController(Controller):
         except (ReviewParseError, ValueError) as e:
             return self._repair(tid, S.REVIEW, f"unparseable review: {e}")
         findings = list(rev.findings)
-        if not rev.passes:
+        if rev.needs_repair:
             return self._repair(tid, S.REVIEW, f"review requested changes ({len(rev.blocking)} blocking)",
                                 feedback=rev.feedback(), verdict=rev.verdict, findings=findings)
         db.transition(self.conn, tid, S.AWAITING_APPROVAL, actor=CONTROLLER, expect=S.REVIEW,
                       detail={"verdict": rev.verdict, "findings": findings, "reviewer": spec.reviewer})
-        return f"{tid}: review -> awaiting_approval ({len(findings)} non-blocking finding(s))  ⛔ needs approve"
+        note = "" if rev.verdict == "approve" else "; reviewer requested changes, none blocking: human decides"
+        return f"{tid}: review -> awaiting_approval ({len(findings)} non-blocking finding(s){note})  ⛔ needs approve"
 
     # -- human actions -----------------------------------------------------------------
     def approve(self, task_id: str, approver: str, gate: Status = S.MERGED) -> str:

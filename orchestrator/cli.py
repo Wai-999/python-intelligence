@@ -100,6 +100,11 @@ def cmd_reject(args) -> int:
     return 0
 
 
+def cmd_accept(args) -> int:
+    print(_controller(args).accept(args.task, f"human:{args.by}", args.reason))
+    return 0
+
+
 def cmd_unblock(args) -> int:
     print(_controller(args).unblock(args.task, f"human:{args.by}", args.reason))
     return 0
@@ -137,6 +142,9 @@ def main(argv: list[str] | None = None) -> int:
     s.set_defaults(fn=cmd_reject)
     s = sub.add_parser("unblock"); s.add_argument("task"); s.add_argument("--by", required=True)
     s.add_argument("--reason", required=True); s.set_defaults(fn=cmd_unblock)
+    s = sub.add_parser("accept", help="take a blocked task's tested commit to the approval gate as-is")
+    s.add_argument("task"); s.add_argument("--by", required=True)
+    s.add_argument("--reason", required=True); s.set_defaults(fn=cmd_accept)
     s = sub.add_parser("events"); s.add_argument("--task"); s.set_defaults(fn=cmd_events)
     args = p.parse_args(argv)
     try:

@@ -27,6 +27,12 @@ class Review:
     def passes(self) -> bool:
         return self.verdict == "approve" and not self.blocking
 
+    @property
+    def needs_repair(self) -> bool:
+        """Automatic retry only for high/critical findings, or a rejection with nothing itemised to judge.
+        Otherwise (approve, or request_changes with only medium/low findings) a human decides at the gate."""
+        return bool(self.blocking) or (self.verdict == "request_changes" and not self.findings)
+
     def feedback(self) -> str:
         lines = [f"- [{f['severity']}] {f['file']}:{f['line']}: {f['summary']} | fix: {f['proposed_fix']}"
                  for f in sorted(self.findings, key=lambda f: SEVERITIES.index(f["severity"]))]
