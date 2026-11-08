@@ -1,0 +1,32 @@
+{
+  "name": "python-intelligence",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Static GitHub Pages Python, data science, statistics and ML learning platform.",
+  "scripts": {
+    "dev": "vite",
+    "validate:content": "python3 scripts/validate_content.py",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "npm run validate:content && npm run typecheck && vite build && python3 scripts/check_dist.py dist",
+    "preview": "vite preview --port 4173 --strictPort",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "19.1.10",
+    "react-dom": "19.1.10"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "fake-indexeddb": "6.2.6",
+    "jsdom": "30.1.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "4.1.12"
+  }
+}

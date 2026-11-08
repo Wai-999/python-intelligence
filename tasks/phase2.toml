@@ -1,0 +1,34 @@
+# Phase 2 tasks dispatched through the orchestrator. Other Phase 2 work (lesson content, graph,
+# UI shell) is done directly by Claude on main and reviewed by Codex; see docs/TASKS.md.
+
+[[task]]
+id = "P2-4"
+title = "IndexedDB progress store with export/import"
+owner = "codex"
+reviewer = "claude"
+depends_on = []
+allowed_paths = ["src/progress/store.ts", "src/progress/store.test.ts"]
+acceptance = ["node node_modules/vitest/vitest.mjs run src/progress"]
+risk = "medium"
+max_attempts = 3
+brief = """
+Implement src/progress/store.ts exporting `openProgressStore(dbName = "python-intelligence"): Promise<ProgressStore>`
+for the interface in src/progress/types.ts (read it first; do NOT modify it). Use the raw IndexedDB API only,
+no new npm dependencies. Database version 1 with object stores: "lessons" (keyPath "lessonId"),
+"drafts" (out-of-line keys `${lessonId}:${stepId}`), "meta" (out-of-line key "position").
+Requirements:
+- Every method resolves only after its transaction completes (listen for oncomplete), rejects on error/abort.
+- exportAll() returns { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt, lessons, drafts, position }.
+- importAll(data) validates the WHOLE payload first (format, version, types of every field, StepResult fields,
+  mastery within 0..1, furthestStep integer >= 0, drafts values strings, position null or valid) and throws
+  ImportError with a specific message if anything is wrong, leaving existing data untouched. When valid it
+  replaces all three stores in ONE readwrite transaction (clear + put), so a failure mid-way cannot leave a
+  half-imported state.
+- setPosition stores updatedAt as an ISO timestamp.
+Write src/progress/store.test.ts (vitest; fake-indexeddb is auto-loaded by src/test-setup.ts) using a unique
+dbName per test. Cover: round-trip of lessons/drafts/position, persistence across re-opening the store
+(close then open the same dbName), export -> clear -> import restores identical data, invalid imports
+(wrong format, wrong version, bad mastery, non-string draft, garbage input) are rejected and leave data unchanged.
+You have no network. Dependencies are already installed in node_modules. Run the tests with:
+node node_modules/vitest/vitest.mjs run src/progress
+"""

@@ -42,7 +42,7 @@ conn comes from orchestrator.db.connect(). Output: a heading "# Orchestrator sta
 Markdown table with columns: Task | Title | Status | Owner | Reviewer | Attempts | Commit, one row per task
 ordered by id, Attempts shown as "attempts/max_attempts", Commit as the first 10 chars or "—" when null.
 Escape "|" characters in titles as "\\|". After the table add a line "Totals: " listing counts per status
-in the order of orchestrator.states.Status, omitting zero counts, e.g. "Totals: merged 2, queued 1".
+in the order of orchestrator.states.Status, omitting zero counts, e.g. "Totals: queued 1, merged 2".
 For an empty database return the heading followed by "_No tasks._".
 Write tests/test_report.py (pytest) using db.connect(tmp_path / "s.sqlite3") and db.upsert_spec with
 orchestrator.spec.TaskSpec objects, covering ordering, escaping, commit formatting, totals and the empty case.

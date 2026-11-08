@@ -13,3 +13,6 @@ worktrees/
 # local orchestrator state (never commit)
 .orchestrator/
 .pytest_cache/
+# frontend
+test-results/
+playwright-report/
