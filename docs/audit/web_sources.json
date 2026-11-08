@@ -60,6 +60,66 @@
     "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
    },
    "sha256": "56c73f1feb16c3e223e9a52f5a9810e67858ce59692e9afad7e2e12a019605d0"
+  },
+  {
+   "source_id": "pydocs-312-inputoutput",
+   "title": "The Python Tutorial 3.12: Input and Output",
+   "short": "Python 3.12 tutorial, Input and Output",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/inputoutput.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "bd064c24cd5fdc74cc50b0d96cf4ff0bc713ac99b4e4d6a4c0cee3d7b24f92b3"
+  },
+  {
+   "source_id": "pydocs-312-modules",
+   "title": "The Python Tutorial 3.12: Modules",
+   "short": "Python 3.12 tutorial, Modules",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/modules.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "07b54eaa726c8495636b0094412545a05d4d3163290496c2bd3dcd7888ac5691"
+  },
+  {
+   "source_id": "pydocs-312-classes",
+   "title": "The Python Tutorial 3.12: Classes",
+   "short": "Python 3.12 tutorial, Classes",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/classes.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "1374b3b919fe6e635079118ce80011797f5acf942d13bf8440b90b10d0e44a78"
   }
  ]
 }

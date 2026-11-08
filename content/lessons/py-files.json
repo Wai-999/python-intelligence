@@ -1,0 +1,343 @@
+{
+  "id": "py-files",
+  "title": "Persistence: reading and writing files",
+  "summary": "Save text to files and read it back safely, so data outlives the program.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 30,
+  "prerequisites": [
+    "py-exceptions"
+  ],
+  "concepts": [
+    "files",
+    "with-statement",
+    "file-modes"
+  ],
+  "sources": [
+    {
+      "id": "tp-files",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        159,
+        160
+      ],
+      "section": "Reading and writing",
+      "use": "reference"
+    },
+    {
+      "id": "tp-paths",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        161,
+        162
+      ],
+      "section": "Filenames and paths",
+      "use": "reference"
+    },
+    {
+      "id": "dip-read",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        266,
+        269
+      ],
+      "section": "Reading Data From A Text File",
+      "use": "reference"
+    },
+    {
+      "id": "dip-auto",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        270,
+        272
+      ],
+      "section": "Closing Files Automatically",
+      "use": "reference"
+    },
+    {
+      "id": "dip-write",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        273,
+        274
+      ],
+      "section": "Writing to Text Files",
+      "use": "reference"
+    },
+    {
+      "id": "atbs-rw",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        204,
+        207
+      ],
+      "section": "The File Reading/Writing Process",
+      "use": "reference"
+    },
+    {
+      "id": "docs-files",
+      "source_id": "pydocs-312-inputoutput",
+      "pages": [
+        7,
+        8
+      ],
+      "section": "7.2. Reading and Writing Files",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Data that outlives the program",
+      "body": "Everything your programs have computed so far vanished when they finished. A to-do list, a game's high\nscore or a day's measurements are only useful if they are still there tomorrow. **Files** store text\non disk so another run, or another program, can read it back.\n\n(Here, files live in your browser's temporary memory and disappear when you leave the page.)"
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Open, work, close",
+      "body": "Working with a file is like borrowing a notebook: you **open** it for reading or for writing, read or\nwrite through a file object that keeps your place, and **close** it so the changes are saved and the\nnotebook goes back on the shelf.\n\nForgetting to close is easy, so Python offers `with`: the file is closed automatically when the\nindented block ends, even if an error happens inside it.",
+      "cites": [
+        "tp-files",
+        "dip-auto"
+      ],
+      "socratic": {
+        "questions": [
+          "Why does it matter whether a file is closed, if the program is about to finish anyway?",
+          "What should happen to a file's old contents when you open it to write?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a file being written and read",
+      "body": "Two `with` blocks: one writes two lines, the other reads them back.",
+      "visual": {
+        "type": "call-trace",
+        "code": "with open(\"todo.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"milk\\n\")\n    f.write(\"eggs\\n\")\n\nwith open(\"todo.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        print(line.strip())",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "f": "<file todo.txt, mode 'w'>"
+            },
+            "note": "Mode \"w\" creates the file (or empties an existing one) for writing."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "f": "<file todo.txt, mode 'w'>"
+            },
+            "note": "`write` adds exactly the text given. The newline is part of the string."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "f": "<file todo.txt, mode 'w'>"
+            },
+            "note": "The second line follows the first."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "f": "<file todo.txt, mode 'r'>"
+            },
+            "note": "The first block ended, so the file was closed and saved. Now it is reopened for reading (the default mode)."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "f": "<file todo.txt, mode 'r'>",
+              "line": "'milk\\n'"
+            },
+            "note": "Looping over a file gives one line at a time, newline included; `strip` removes it.",
+            "output": "milk"
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "f": "<file todo.txt, mode 'r'>",
+              "line": "'eggs\\n'"
+            },
+            "note": "The second line. After the loop, `with` closes the file.",
+            "output": "eggs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "`open(path, mode, encoding=\"utf-8\")` returns a file object. Common modes: `\"r\"` read (the\ndefault), `\"w\"` write (creates the file, or **erases** an existing one), `\"a\"` append to the end.\n\n1. Pass `encoding=\"utf-8\"` for text files: without it, the encoding depends on the platform.\n2. `f.read()` returns the whole file as one string; `f.readline()` the next line; `for line in f:`\n   visits each line in turn. Lines keep their trailing `\\n`.\n3. `f.write(text)` writes exactly `text` (no newline is added) and returns the number of characters.\n4. `with open(...) as f:` closes the file when the block ends, even if an exception is raised.\n5. Opening a missing file for reading raises `FileNotFoundError`. A relative path such as\n   `\"data.txt\"` is looked up in the current working directory.",
+      "cites": [
+        "tp-files",
+        "tp-paths",
+        "dip-read",
+        "dip-write",
+        "atbs-rw",
+        "docs-files"
+      ]
+    },
+    {
+      "id": "scores",
+      "kind": "example",
+      "title": "Run it: a tiny score file",
+      "body": "Write, append, read back, and handle a missing file. Predict both lines first.",
+      "code": "with open(\"scores.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"ana,7\\nbo,9\\n\")\nwith open(\"scores.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"cy,4\\n\")\n\ntotal = 0\nwith open(\"scores.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        name, score = line.strip().split(\",\")\n        total = total + int(score)\nprint(total)\n\ntry:\n    open(\"missing.txt\", encoding=\"utf-8\")\nexcept FileNotFoundError:\n    print(\"no such file\")",
+      "expected_output": "20\nno such file\n"
+    },
+    {
+      "id": "countlines",
+      "kind": "guided",
+      "title": "Your turn: count the non-blank lines",
+      "body": "Complete `count_lines(path)` so it returns how many lines of the file contain something other than\nspaces. Use `with` and `encoding=\"utf-8\"`. A missing file should raise `FileNotFoundError` as usual.",
+      "starter": "def count_lines(path):\n    return 0",
+      "hints": [
+        "Open the file in a `with` block and loop over its lines.",
+        "Count a line when `line.strip()` is not empty.",
+        "def count_lines(path):\n    count = 0\n    with open(path, encoding=\"utf-8\") as f:\n        for line in f:\n            if line.strip():\n                count = count + 1\n    return count"
+      ],
+      "tests": [
+        {
+          "name": "skips blank lines",
+          "code": "with open('t1.txt', 'w', encoding='utf-8') as _f:\n    _f.write('a\\n\\n  \\nb\\n')\nassert count_lines('t1.txt') == 2, f\"got {count_lines('t1.txt')!r}\"",
+          "concept": "files"
+        },
+        {
+          "name": "empty file",
+          "code": "open('t2.txt', 'w', encoding='utf-8').close()\nassert count_lines('t2.txt') == 0, f\"got {count_lines('t2.txt')!r}\"",
+          "concept": "files"
+        },
+        {
+          "name": "last line without newline",
+          "code": "with open('t3.txt', 'w', encoding='utf-8') as _f:\n    _f.write('x\\ny')\nassert count_lines('t3.txt') == 2, f\"got {count_lines('t3.txt')!r}\"",
+          "concept": "with-statement"
+        },
+        {
+          "name": "missing file raises",
+          "code": "try:\n    count_lines('nope.txt')\nexcept FileNotFoundError:\n    pass\nelse:\n    assert False, 'a missing file should raise FileNotFoundError'",
+          "concept": "files"
+        }
+      ],
+      "solution": "def count_lines(path):\n    count = 0\n    with open(path, encoding=\"utf-8\") as f:\n        for line in f:\n            if line.strip():\n                count = count + 1\n    return count"
+    },
+    {
+      "id": "log",
+      "kind": "challenge",
+      "title": "Challenge: a message log",
+      "body": "Write two functions. `append_log(path, message)` adds `message` as a new line at the **end** of the file\n(creating it if needed). `read_log(path)` returns the list of messages without newlines, or `[]` if\nthe file doesn't exist yet. The starter has two bugs; find them.",
+      "starter": "def append_log(path, message):\n    with open(path, \"w\", encoding=\"utf-8\") as f:\n        f.write(message + \"\\n\")\n\ndef read_log(path):\n    with open(path, encoding=\"utf-8\") as f:\n        return [line.strip() for line in f]",
+      "hints": [
+        "Which mode adds to the end instead of erasing the file?",
+        "What happens when `read_log` is called before anything was logged? Catch that specific error.",
+        "def append_log(path, message):\n    with open(path, \"a\", encoding=\"utf-8\") as f:\n        f.write(message + \"\\n\")\n\ndef read_log(path):\n    try:\n        with open(path, encoding=\"utf-8\") as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []"
+      ],
+      "tests": [
+        {
+          "name": "empty before logging",
+          "code": "assert read_log('log1.txt') == [], f\"got {read_log('log1.txt')!r}\"",
+          "concept": "files"
+        },
+        {
+          "name": "appends in order",
+          "code": "append_log('log2.txt', 'start')\nappend_log('log2.txt', 'stop')\nassert read_log('log2.txt') == ['start', 'stop'], f\"got {read_log('log2.txt')!r}\"",
+          "concept": "file-modes"
+        },
+        {
+          "name": "one line per message",
+          "code": "append_log('log3.txt', 'x')\nwith open('log3.txt', encoding='utf-8') as _f:\n    assert _f.read() == 'x\\n', 'each message should end with exactly one newline'",
+          "concept": "file-modes"
+        }
+      ],
+      "solution": "def append_log(path, message):\n    with open(path, \"a\", encoding=\"utf-8\") as f:\n        f.write(message + \"\\n\")\n\ndef read_log(path):\n    try:\n        with open(path, encoding=\"utf-8\") as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Decide before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "You open an existing file with mode \"w\". What happens to its contents?",
+          "choices": [
+            "They are kept; writes go at the end",
+            "They are erased",
+            "Python raises an error",
+            "Nothing until you call read()"
+          ],
+          "answer": 1,
+          "explanation": "\"w\" truncates the file; use \"a\" to append.",
+          "concept": "file-modes"
+        },
+        {
+          "id": "q2",
+          "prompt": "After `f.write(\"hi\")` and closing, what does the file contain?",
+          "choices": [
+            "hi",
+            "hi followed by a newline",
+            "\"hi\" with quotes",
+            "Nothing"
+          ],
+          "answer": 0,
+          "explanation": "`write` adds exactly the text you give it; newlines must be written explicitly.",
+          "concept": "files"
+        },
+        {
+          "id": "q3",
+          "prompt": "What is true right after a `with open(...) as f:` block ends?",
+          "choices": [
+            "The file is closed",
+            "The file is still open",
+            "The file is deleted",
+            "f is undefined"
+          ],
+          "answer": 0,
+          "explanation": "`with` closes the file at the end of the block (the name `f` still exists).",
+          "concept": "with-statement"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does each `line` contain in `for line in f:`?",
+          "choices": [
+            "The text without its newline",
+            "The text with its trailing newline (except possibly the last)",
+            "One character",
+            "One word"
+          ],
+          "answer": 1,
+          "explanation": "Lines keep their `\\n`; the last line may lack one if the file doesn't end with a newline.",
+          "concept": "files"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Open files with the right mode (\"r\", \"w\", \"a\") and `encoding=\"utf-8\"`.\n- Read a whole file, one line, or every line in a loop; write exactly the text you mean.\n- Use `with` so files are always closed, and handle `FileNotFoundError` when a file may be missing."
+    }
+  ]
+}

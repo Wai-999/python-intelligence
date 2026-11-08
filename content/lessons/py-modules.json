@@ -1,0 +1,306 @@
+{
+  "id": "py-modules",
+  "title": "Reuse: modules and the standard library",
+  "summary": "Import ready-made tools from Python's standard library and organise your own code into modules.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 25,
+  "prerequisites": [
+    "py-dicts"
+  ],
+  "concepts": [
+    "modules",
+    "imports",
+    "standard-library"
+  ],
+  "sources": [
+    {
+      "id": "atbs-import",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        81,
+        82
+      ],
+      "section": "Importing Modules",
+      "use": "reference"
+    },
+    {
+      "id": "tp-modules",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        165,
+        166
+      ],
+      "section": "Writing modules",
+      "use": "reference"
+    },
+    {
+      "id": "docs-modules",
+      "source_id": "pydocs-312-modules",
+      "pages": [
+        1,
+        2
+      ],
+      "section": "6. Modules",
+      "use": "reference"
+    },
+    {
+      "id": "docs-script",
+      "source_id": "pydocs-312-modules",
+      "pages": [
+        3,
+        3
+      ],
+      "section": "6.1.1. Executing modules as scripts",
+      "use": "reference"
+    },
+    {
+      "id": "docs-std",
+      "source_id": "pydocs-312-modules",
+      "pages": [
+        6,
+        6
+      ],
+      "section": "6.2. Standard Modules",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Don't rebuild what already exists",
+      "body": "Square roots, averages, random numbers, counting things, dates: you could write all of these yourself,\nbut Python already ships with well-tested versions in its **standard library**. Using them is a\nsingle `import` away. The same mechanism lets you split your own growing program into files."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A module is a named toolbox",
+      "body": "A **module** is a file of Python code that defines names: functions, values, classes. `import math`\nruns that file once and gives you one name, `math`, through which you reach its tools: `math.sqrt`,\n`math.pi`. Keeping each toolbox behind its own name means two modules can both have a function called\n`open` or `random` without clashing.",
+      "cites": [
+        "docs-modules",
+        "atbs-import"
+      ],
+      "socratic": {
+        "questions": [
+          "Why might `math.sqrt(x)` be clearer to a reader than just `sqrt(x)`?",
+          "If two modules both define `load`, how does importing them as modules avoid confusion?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch an import and a module call",
+      "body": "`import` binds one new name; the tools are reached through it.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import math\n\ndef hypotenuse(a, b):\n    return math.sqrt(a * a + b * b)\n\nprint(hypotenuse(3, 4))",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "`import math` loads the module and binds the name `math` to it."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "math": "<module 'math'>"
+            },
+            "note": "The `def` stores our own function."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "math": "<module 'math'>",
+              "hypotenuse": "<function hypotenuse>"
+            },
+            "note": "Call `hypotenuse(3, 4)`."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "hypotenuse(3, 4)"
+            ],
+            "locals": {
+              "a": "3",
+              "b": "4"
+            },
+            "note": "`math.sqrt` looks up `sqrt` inside the module: the square root of 25 is 5.0."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "math": "<module 'math'>",
+              "hypotenuse": "<function hypotenuse>"
+            },
+            "note": "`sqrt` always returns a float.",
+            "output": "5.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "```python\nimport statistics                 # use as statistics.mean(...)\nfrom collections import Counter   # use as Counter(...) directly\nimport random as rnd              # an alias: rnd.randint(...)\n```\n\n1. A module's top-level code runs the **first** time it is imported in a program; later imports reuse it.\n2. `import m` adds the single name `m`; `from m import a, b` adds `a` and `b` themselves.\n3. Your own `.py` file is a module too: other files can import its functions.\n4. Every module has a `__name__`. It is `\"__main__\"` when the file is run directly, so\n   `if __name__ == \"__main__\":` marks code that should run only as a script, not on import.\n5. The standard library is large: `math`, `random`, `statistics`, `collections`, `datetime`, `json`\n   and many more are always available.",
+      "cites": [
+        "docs-modules",
+        "docs-script",
+        "docs-std",
+        "atbs-import",
+        "tp-modules"
+      ]
+    },
+    {
+      "id": "tour",
+      "kind": "example",
+      "title": "Run it: a quick standard-library tour",
+      "body": "Predict each line. Seeding `random` makes its numbers repeatable.",
+      "code": "import statistics\nfrom collections import Counter\nimport random as rnd\n\nscores = [72, 90, 85, 90, 64]\nprint(statistics.mean(scores), statistics.median(scores))\nprint(Counter(scores).most_common(1))\nrnd.seed(7)\nprint(rnd.randint(1, 6) in range(1, 7))\nprint(__name__)",
+      "expected_output": "80.2 85\n[(90, 2)]\nTrue\n__main__\n"
+    },
+    {
+      "id": "avgword",
+      "kind": "guided",
+      "title": "Your turn: average word length",
+      "body": "Complete `average_word_length(text)` using `statistics.mean` on the **lengths** of the words, rounded\nto 2 decimal places. Return `0.0` when the text has no words (`mean` of an empty list is an error).",
+      "starter": "import statistics\n\ndef average_word_length(text):\n    words = text.split()\n    return statistics.mean(words)",
+      "hints": [
+        "`mean` needs numbers. Build a list of `len(w)` for each word first.",
+        "Check `if not words: return 0.0` before calling `mean`, and wrap the result in `round(..., 2)`.",
+        "import statistics\n\ndef average_word_length(text):\n    words = text.split()\n    if not words:\n        return 0.0\n    return round(statistics.mean([len(w) for w in words]), 2)"
+      ],
+      "tests": [
+        {
+          "name": "simple",
+          "code": "assert average_word_length('a bb ccc') == 2.0, f\"got {average_word_length('a bb ccc')!r}\"",
+          "concept": "standard-library"
+        },
+        {
+          "name": "rounded",
+          "code": "assert average_word_length('to be or not') == 2.25, f\"got {average_word_length('to be or not')!r}\"",
+          "concept": "standard-library"
+        },
+        {
+          "name": "no words",
+          "code": "assert average_word_length('   ') == 0.0, f\"got {average_word_length('   ')!r}\"",
+          "concept": "imports"
+        }
+      ],
+      "solution": "import statistics\n\ndef average_word_length(text):\n    words = text.split()\n    if not words:\n        return 0.0\n    return round(statistics.mean([len(w) for w in words]), 2)"
+    },
+    {
+      "id": "letters",
+      "kind": "challenge",
+      "title": "Challenge: the most common letters",
+      "body": "Write `top_letters(text, n)` that returns a list of the `n` most common **letters** in `text`, ignoring\ncase and anything that isn't a letter, most common first. Use `collections.Counter` and its\n`most_common(n)` method, which returns `(item, count)` pairs.",
+      "starter": "def top_letters(text, n):\n    return list(text[:n])",
+      "hints": [
+        "Build the letters first: `[ch.lower() for ch in text if ch.isalpha()]`.",
+        "`Counter(letters).most_common(n)` gives pairs; keep only the letter from each pair.",
+        "from collections import Counter\n\ndef top_letters(text, n):\n    letters = [ch.lower() for ch in text if ch.isalpha()]\n    return [letter for letter, count in Counter(letters).most_common(n)]"
+      ],
+      "tests": [
+        {
+          "name": "banana",
+          "code": "assert top_letters('banana', 2) == ['a', 'n'], f\"got {top_letters('banana', 2)!r}\"",
+          "concept": "standard-library"
+        },
+        {
+          "name": "ignores punctuation",
+          "code": "assert top_letters('Hello, World', 1) == ['l'], f\"got {top_letters('Hello, World', 1)!r}\"",
+          "concept": "standard-library"
+        },
+        {
+          "name": "ignores case",
+          "code": "assert top_letters('AaB!b b', 2) == ['b', 'a'], f\"got {top_letters('AaB!b b', 2)!r}\"",
+          "concept": "imports"
+        }
+      ],
+      "solution": "from collections import Counter\n\ndef top_letters(text, n):\n    letters = [ch.lower() for ch in text if ch.isalpha()]\n    return [letter for letter, count in Counter(letters).most_common(n)]"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Answer before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "After `from math import sqrt`, how do you call it?",
+          "choices": [
+            "math.sqrt(9)",
+            "sqrt(9)",
+            "math.sqrt.sqrt(9)",
+            "import sqrt(9)"
+          ],
+          "answer": 1,
+          "explanation": "`from ... import` binds the name `sqrt` itself; the name `math` is not created.",
+          "concept": "imports"
+        },
+        {
+          "id": "q2",
+          "prompt": "After `import math as m`, which works?",
+          "choices": [
+            "math.pi",
+            "m.pi",
+            "pi",
+            "m.math.pi"
+          ],
+          "answer": 1,
+          "explanation": "The module is bound only to the alias `m`.",
+          "concept": "imports"
+        },
+        {
+          "id": "q3",
+          "prompt": "What is `__name__` inside a file you run directly?",
+          "choices": [
+            "The file name",
+            "\"__main__\"",
+            "None",
+            "\"main\""
+          ],
+          "answer": 1,
+          "explanation": "Running a file directly sets its `__name__` to `\"__main__\"`; when imported, it is the module's name.",
+          "concept": "modules"
+        },
+        {
+          "id": "q4",
+          "prompt": "A module is imported in three places in one program. How many times does its top-level code run?",
+          "choices": [
+            "Once",
+            "Three times",
+            "Never",
+            "Twice"
+          ],
+          "answer": 0,
+          "explanation": "The first import runs it; later imports reuse the already-loaded module.",
+          "concept": "modules"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Import modules three ways: `import m`, `from m import name`, `import m as alias`.\n- Reach for the standard library (`math`, `statistics`, `collections`, `random`) before writing your own.\n- Explain why `if __name__ == \"__main__\":` separates script code from importable code."
+    }
+  ]
+}

@@ -121,3 +121,10 @@ test("book-grounded lessons show their sources; original lessons don't", async (
   await expect(page.getByRole("heading", { name: "Names are labels, not boxes" })).toBeVisible();
   await expect(page.locator(".step-sources")).toHaveCount(0);
 });
+
+test("file I/O works in the browser's Python (Pyodide in-memory file system)", async ({ page }) => {
+  await page.goto("./#/lesson/py-files/4"); // "Run it: a tiny score file": write, append, read, missing file
+  await expect(page.getByRole("heading", { name: "Run it: a tiny score file" })).toBeVisible();
+  await page.getByRole("button", { name: "▶ Run" }).click();
+  await expect(page.locator(".console pre").first()).toHaveText("20\nno such file\n", { timeout: 90_000 });
+});

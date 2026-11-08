@@ -20,6 +20,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -58,8 +59,12 @@ sys.__stdout__.write(json.dumps(res))
 
 def run_snippet(code: str, tests: list | None = None, timeout: float = 10) -> dict:
     try:
-        p = subprocess.run([sys.executable, "-I", "-c", RUNNER, str(HARNESS)], input=json.dumps({"code": code, "tests": tests or []}),
-                           capture_output=True, text=True, timeout=timeout)
+        # Each snippet runs in its own empty temporary directory: lessons that create files (open(..., "w"))
+        # must not write into the repository, and must not see each other's files.
+        with tempfile.TemporaryDirectory(prefix="pi-snippet-") as tmp:
+            p = subprocess.run([sys.executable, "-I", "-c", RUNNER, str(HARNESS)],
+                               input=json.dumps({"code": code, "tests": tests or []}),
+                               capture_output=True, text=True, timeout=timeout, cwd=tmp)
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": {"type": "TimeoutError", "message": f">{timeout}s"}, "tests": [], "stdout": ""}
     if p.returncode != 0:

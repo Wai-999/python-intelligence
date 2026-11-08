@@ -1,0 +1,345 @@
+{
+  "id": "py-classes",
+  "title": "Your own types: classes and objects",
+  "summary": "Bundle data with the functions that work on it, and create as many independent objects as you need.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "py-dicts",
+    "py-scope-defaults"
+  ],
+  "concepts": [
+    "classes",
+    "objects",
+    "methods"
+  ],
+  "sources": [
+    {
+      "id": "tp-classes",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        169,
+        171
+      ],
+      "section": "Classes and objects",
+      "use": "reference"
+    },
+    {
+      "id": "tp-mutable",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        173,
+        173
+      ],
+      "section": "Objects are mutable",
+      "use": "reference"
+    },
+    {
+      "id": "tp-init",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        186,
+        187
+      ],
+      "section": "The init method",
+      "use": "reference"
+    },
+    {
+      "id": "tp-str",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        187,
+        188
+      ],
+      "section": "The __str__ method",
+      "use": "reference"
+    },
+    {
+      "id": "dip-classes",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        170,
+        173
+      ],
+      "section": "Defining Classes",
+      "use": "reference"
+    },
+    {
+      "id": "docs-first",
+      "source_id": "pydocs-312-classes",
+      "pages": [
+        5,
+        9
+      ],
+      "section": "9.3. A First Look at Classes",
+      "use": "reference"
+    },
+    {
+      "id": "docs-vars",
+      "source_id": "pydocs-312-classes",
+      "pages": [
+        10,
+        10
+      ],
+      "section": "9.3.5. Class and Instance Variables",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Data and behaviour, together",
+      "body": "A bank account has an owner and a balance, and you deposit into it. With what you know so far you'd keep\na dictionary for the data and separate functions for the actions, and hope they stay in sync. A\n**class** puts the data and the actions in one place and lets you create as many accounts as you need."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A blueprint and the things built from it",
+      "body": "A class is a **blueprint**. Each object made from it (an **instance**) is a separate thing with its own\ndata, its **attributes**. The blueprint also describes what every instance can do: its **methods**,\nwhich are functions that automatically receive the particular instance they were called on as their\nfirst parameter, by convention named `self`.",
+      "cites": [
+        "tp-classes",
+        "docs-first"
+      ],
+      "socratic": {
+        "questions": [
+          "If two accounts are built from the same class, should depositing into one change the other?",
+          "In `acct.deposit(50)`, which object should `deposit` work on, and how does it know?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch an object being built and changed",
+      "body": "Follow `self`: inside the methods it *is* the object `t`.",
+      "visual": {
+        "type": "call-trace",
+        "code": "class Tally:\n    def __init__(self, start):\n        self.value = start\n\n    def tick(self):\n        self.value = self.value + 1\n\nt = Tally(5)\nt.tick()\nprint(t.value)",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "The `class` block defines the blueprint `Tally` with two methods. Nothing runs yet."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "Tally": "<class Tally>"
+            },
+            "note": "`Tally(5)` creates a new, empty object and calls `__init__` on it."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "Tally.__init__(self, 5)"
+            ],
+            "locals": {
+              "self": "<the new Tally>",
+              "start": "5"
+            },
+            "note": "`self` is the new object; `self.value = start` gives it an attribute."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "Tally": "<class Tally>",
+              "t": "<Tally value=5>"
+            },
+            "note": "`__init__` returns and the object is bound to `t`. Now call `t.tick()`."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>",
+              "Tally.tick(self)"
+            ],
+            "locals": {
+              "self": "<Tally value=6>  (the same object as t)"
+            },
+            "note": "`t.tick()` passes `t` as `self`, so the method changes `t` itself."
+          },
+          {
+            "line": 10,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "Tally": "<class Tally>",
+              "t": "<Tally value=6>"
+            },
+            "note": "The change stayed with the object.",
+            "output": "6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "```python\nclass Name:\n    shared = 0                  # class attribute: one value shared by all instances\n\n    def __init__(self, x):      # runs when Name(...) is called\n        self.x = x              # instance attribute: one per object\n\n    def method(self, y):        # obj.method(y) is Name.method(obj, y)\n        return self.x + y\n```\n\n1. Calling the class, `obj = Name(5)`, creates an object and runs `__init__` with `self` bound to it.\n2. `obj.method(a)` calls the method with `obj` as the first argument; you never pass `self` yourself.\n3. Attributes set as `self.name = ...` belong to that one object. Forgetting `self.` makes a local\n   variable that disappears when the method returns.\n4. A class attribute is shared by every instance. Putting a **mutable** value there (such as a list)\n   makes all instances share it; give each instance its own in `__init__` instead.\n5. `__str__(self)` returns the text that `print(obj)` and `str(obj)` show.\n6. Objects are mutable and names are labels, so `b = a` makes two names for the same object.",
+      "cites": [
+        "tp-init",
+        "tp-str",
+        "tp-mutable",
+        "dip-classes",
+        "docs-first",
+        "docs-vars"
+      ]
+    },
+    {
+      "id": "accounts",
+      "kind": "example",
+      "title": "Run it: two accounts",
+      "body": "Predict all four lines. Which one depends on two names sharing one object?",
+      "code": "class Account:\n    rate = 0.02\n\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance = self.balance + amount\n\n    def __str__(self):\n        return self.owner + \": \" + str(self.balance)\n\na = Account(\"Ana\", 100)\nb = Account(\"Bo\")\na.deposit(50)\nprint(a)\nprint(b)\nprint(a.rate, Account.rate)\nalias = a\nalias.deposit(1)\nprint(a.balance)",
+      "expected_output": "Ana: 150\nBo: 0\n0.02 0.02\n151\n"
+    },
+    {
+      "id": "rect",
+      "kind": "guided",
+      "title": "Your turn: rectangles",
+      "body": "Complete the class so `Rectangle(3, 4)` stores `width` and `height`, and has methods `area()` and\n`perimeter()`.",
+      "starter": "class Rectangle:\n    def __init__(self, width, height):\n        self.width = width\n\n    def area(self):\n        return 0",
+      "hints": [
+        "`__init__` must also store `height` on `self`.",
+        "`area` is `self.width * self.height`; `perimeter` is `2 * (self.width + self.height)`.",
+        "class Rectangle:\n    def __init__(self, width, height):\n        self.width = width\n        self.height = height\n\n    def area(self):\n        return self.width * self.height\n\n    def perimeter(self):\n        return 2 * (self.width + self.height)"
+      ],
+      "tests": [
+        {
+          "name": "stores both sides",
+          "code": "_r = Rectangle(3, 4)\nassert (_r.width, _r.height) == (3, 4), 'store width and height as attributes on self'",
+          "concept": "objects"
+        },
+        {
+          "name": "area",
+          "code": "assert Rectangle(3, 4).area() == 12, f'area() returned {Rectangle(3, 4).area()!r}'",
+          "concept": "methods"
+        },
+        {
+          "name": "perimeter",
+          "code": "assert Rectangle(3, 4).perimeter() == 14, 'perimeter() should be 2 * (width + height)'",
+          "concept": "methods"
+        },
+        {
+          "name": "instances are independent",
+          "code": "_a, _b = Rectangle(1, 2), Rectangle(5, 6)\nassert _a.area() == 2 and _b.area() == 30, 'each rectangle keeps its own sides'",
+          "concept": "classes"
+        }
+      ],
+      "solution": "class Rectangle:\n    def __init__(self, width, height):\n        self.width = width\n        self.height = height\n\n    def area(self):\n        return self.width * self.height\n\n    def perimeter(self):\n        return 2 * (self.width + self.height)"
+    },
+    {
+      "id": "stack",
+      "kind": "challenge",
+      "title": "Challenge: a stack that isn't shared",
+      "body": "A stack is last-in, first-out. The starter `Stack` has `push`, `pop` and `is_empty`, and *seems* to work,\nuntil you make two stacks. Fix it so every stack is independent, and make `pop` on an empty stack\nraise `IndexError(\"pop from empty stack\")`.",
+      "starter": "class Stack:\n    items = []\n\n    def push(self, x):\n        self.items.append(x)\n\n    def pop(self):\n        return self.items.pop()\n\n    def is_empty(self):\n        return len(self.items) == 0",
+      "hints": [
+        "`items = []` at class level is ONE list shared by every Stack. Where should each stack get its own?",
+        "Create `self.items = []` in an `__init__` method, and check `is_empty()` at the start of `pop`.",
+        "class Stack:\n    def __init__(self):\n        self.items = []\n\n    def push(self, x):\n        self.items.append(x)\n\n    def pop(self):\n        if self.is_empty():\n            raise IndexError(\"pop from empty stack\")\n        return self.items.pop()\n\n    def is_empty(self):\n        return len(self.items) == 0"
+      ],
+      "tests": [
+        {
+          "name": "last in, first out",
+          "code": "_s = Stack()\n_s.push(1)\n_s.push(2)\nassert _s.pop() == 2 and _s.pop() == 1 and _s.is_empty(), 'push 1, push 2: pop should give 2 then 1'",
+          "concept": "methods"
+        },
+        {
+          "name": "stacks are independent",
+          "code": "_a, _b = Stack(), Stack()\n_a.push('x')\nassert _b.is_empty(), 'pushing onto one stack must not change another: give each its own list in __init__'",
+          "concept": "classes"
+        },
+        {
+          "name": "empty pop message",
+          "code": "try:\n    Stack().pop()\nexcept IndexError as _e:\n    assert str(_e) == 'pop from empty stack', f'message was {str(_e)!r}'\nelse:\n    assert False, 'popping an empty stack should raise IndexError'",
+          "concept": "methods"
+        }
+      ],
+      "solution": "class Stack:\n    def __init__(self):\n        self.items = []\n\n    def push(self, x):\n        self.items.append(x)\n\n    def pop(self):\n        if self.is_empty():\n            raise IndexError(\"pop from empty stack\")\n        return self.items.pop()\n\n    def is_empty(self):\n        return len(self.items) == 0"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Answer before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "In `acct.deposit(10)`, what is `self` inside `deposit`?",
+          "choices": [
+            "The class Account",
+            "The object acct",
+            "The number 10",
+            "Nothing; it must be passed explicitly"
+          ],
+          "answer": 1,
+          "explanation": "Calling a method through an object passes that object as the first argument.",
+          "concept": "methods"
+        },
+        {
+          "id": "q2",
+          "prompt": "What happens?",
+          "code": "class Box:\n    def __init__(self, n):\n        n = n\n\nprint(Box(3).n)",
+          "choices": [
+            "Prints 3",
+            "Prints None",
+            "An AttributeError",
+            "Prints n"
+          ],
+          "answer": 2,
+          "explanation": "`n = n` only sets a local variable; nothing was stored on `self`, so the object has no attribute `n`.",
+          "concept": "objects"
+        },
+        {
+          "id": "q3",
+          "prompt": "Without a `__str__` method, what does `print(obj)` show?",
+          "choices": [
+            "Nothing",
+            "A default description such as <__main__.Box object at 0x...>",
+            "An error",
+            "All the attributes"
+          ],
+          "answer": 1,
+          "explanation": "Python falls back to a generic description naming the class and the object's identity.",
+          "concept": "classes"
+        },
+        {
+          "id": "q4",
+          "prompt": "Two instances both append to a list defined at class level. What happens?",
+          "choices": [
+            "Each has its own list",
+            "Both see all the appended items",
+            "An error",
+            "Only the first instance can append"
+          ],
+          "answer": 1,
+          "explanation": "A class attribute is shared by all instances; a mutable one is changed for everyone.",
+          "concept": "classes"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Define a class with `__init__`, attributes on `self`, and methods.\n- Create independent instances and call methods on them, knowing how `self` is passed.\n- Give objects a readable `__str__`, and avoid shared mutable class attributes.\n\nThat completes the core Python path: you can now read, write and organise real programs."
+    }
+  ]
+}

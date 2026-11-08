@@ -43,3 +43,12 @@ def test_real_lesson_is_clean():
 def test_broken_lessons_are_rejected(mutate, expect):
     errs = errors(mutate)
     assert any(expect in e for e in errs), errs
+
+
+def test_snippets_run_in_an_isolated_temporary_directory():
+    """Lessons that write files must not touch the repository or see each other's files."""
+    code = "import os\nwith open('probe.txt', 'w') as f:\n    f.write('x')\nprint(sorted(os.listdir('.')))"
+    first, second = vc.run_snippet(code), vc.run_snippet("import os\nprint(sorted(os.listdir('.')))")
+    assert first["stdout"].strip() == "['probe.txt']"
+    assert second["stdout"].strip() == "[]"
+    assert not (ROOT / "probe.txt").exists()

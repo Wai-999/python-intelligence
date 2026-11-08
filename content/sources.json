@@ -196,6 +196,95 @@
     "38": "evaluation-order",
     "39": "operator-precedence"
    }
+  },
+  "pydocs-312-inputoutput": {
+   "title": "The Python Tutorial 3.12: Input and Output",
+   "short": "Python 3.12 tutorial, Input and Output",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/tutorial/inputoutput.html",
+   "kind": "web",
+   "sha256": "bd064c24cd5fdc74cc50b0d96cf4ff0bc713ac99b4e4d6a4c0cee3d7b24f92b3",
+   "page_count": 9,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "input-and-output",
+    "2": "fancier-output-formatting",
+    "3": "formatted-string-literals",
+    "4": "the-string-format-method",
+    "5": "manual-string-formatting",
+    "6": "old-string-formatting",
+    "7": "reading-and-writing-files",
+    "8": "methods-of-file-objects",
+    "9": "saving-structured-data-with-json"
+   }
+  },
+  "pydocs-312-modules": {
+   "title": "The Python Tutorial 3.12: Modules",
+   "short": "Python 3.12 tutorial, Modules",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/tutorial/modules.html",
+   "kind": "web",
+   "sha256": "07b54eaa726c8495636b0094412545a05d4d3163290496c2bd3dcd7888ac5691",
+   "page_count": 11,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "modules",
+    "2": "more-on-modules",
+    "3": "executing-modules-as-scripts",
+    "4": "the-module-search-path",
+    "5": "compiled-python-files",
+    "6": "standard-modules",
+    "7": "the-dir-function",
+    "8": "packages",
+    "9": "importing-from-a-package",
+    "10": "intra-package-references",
+    "11": "packages-in-multiple-directories"
+   }
+  },
+  "pydocs-312-classes": {
+   "title": "The Python Tutorial 3.12: Classes",
+   "short": "Python 3.12 tutorial, Classes",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/tutorial/classes.html",
+   "kind": "web",
+   "sha256": "1374b3b919fe6e635079118ce80011797f5acf942d13bf8440b90b10d0e44a78",
+   "page_count": 18,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "classes",
+    "2": "a-word-about-names-and-objects",
+    "3": "python-scopes-and-namespaces",
+    "4": "scopes-and-namespaces-example",
+    "5": "a-first-look-at-classes",
+    "6": "class-definition-syntax",
+    "7": "class-objects",
+    "8": "instance-objects",
+    "9": "method-objects",
+    "10": "class-and-instance-variables",
+    "11": "random-remarks",
+    "12": "inheritance",
+    "13": "multiple-inheritance",
+    "14": "private-variables",
+    "15": "odds-and-ends",
+    "16": "iterators",
+    "17": "generators",
+    "18": "generator-expressions"
+   }
   }
  }
 }

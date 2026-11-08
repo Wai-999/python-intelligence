@@ -78,7 +78,7 @@ Core Python path → NumPy/pandas → probability and statistics → linear alge
 | P4-1 | Claude → Codex | Core path: `py-strings`, `py-lists`, `py-dicts` (book-grounded, 9-step arc); lists now requires strings; map order continues the current chain | ✅ Codex review: 6 medium (3 factual: string-method returns, `pop` return, hashable keys; 2 weak tests; dict order not in cited books) all fixed |
 | P4-2 | Claude → Codex | Cite official Python docs: `docs/audit/web_sources.json` registry (PSF licence, pinned 3.12 URL, sha256), `scripts/fetch_web_source.py` (Sphinx sections → numbered pages in the extract format, so range/section/copy checks and the hashed index work unchanged), section deep links in the UI. Cited: dict order + hashable keys, int→str digit limit, truth-value testing | ✅ Codex: 1 high (catalog not bound to registry sha) + 1 medium (parser parent text) fixed; re-review approved, 0 findings |
 | P4-3 | Claude → Codex | Core path continued: `py-tuples`, `py-comprehensions`, `py-exceptions` (books + docs) | ✅ Codex: 5 medium (overbroad comprehension rule, unchecked syntax, 3 unsupported citations) fixed; re-review approved, 0 findings |
-| P4-5 | Claude → Codex | Core path: files, modules, classes | open |
+| P4-5 | Claude → Codex | Core path: `py-modules`, `py-files`, `py-classes` (books + 3 tutorial pages); validator snippets now run in an isolated temp dir; e2e proves file I/O in Pyodide | drafted; Codex review pending |
 | P4-4 ⛔ | Owner | Choose licensed sources for NumPy/pandas, statistics and ML (P0-5 style decision) | open |
 
 ## Phase 5 — Release (≈ 1–2 weeks)
