@@ -18,6 +18,7 @@ from functools import lru_cache
 import pymupdf
 
 QUALITY_THRESHOLD = 0.6
+CALLOUTS = re.compile(r"[\u2460-\u2473\u2776-\u277f]")
 
 
 class IngestError(Exception):
@@ -101,20 +102,22 @@ def _code_blocks(page):
                 if "chars" in span:
                     span["text"] = "".join(c["c"] for c in span["chars"])
             text = _normalize("".join(span.get("text", "") for span in spans))
-            if not text.strip():
+            if not CALLOUTS.sub("", text).strip():
                 continue
-            total = sum(sum(not c.isspace() for c in s["text"]) for s in spans)
-            mono = sum(sum(not c.isspace() for c in s["text"]) for s in spans if _is_mono(s))
+            total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)
+            mono = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans if _is_mono(s))
             if total and mono / total >= 0.8:
                 bbox = line.get("bbox")
                 first = next(s for s in spans if _is_mono(s) and s["text"].strip())
                 if previous and bbox:
                     delta = bbox[1] - previous[1]
-                    fallback = 1.2 * first.get("size", (previous[3] - previous[1]) / 1.2)
+                    fallback = max(previous[3] - previous[1], 1.2 * first.get("size", 0))
                     pitch = sorted(pitches)[len(pitches) // 2] if pitches else fallback
-                    if bbox[1] < previous[3] or delta > 3.5 * pitch:
+                    # Full font bboxes can overlap even on consecutive baselines.
+                    # Without a measured pitch, a first gap may be two blank lines.
+                    if delta <= 0.01 or (pitches and delta > 3.5 * pitch):
                         flush()
-                    else:
+                    elif delta <= 1.5 * fallback:
                         pitches.append(delta)
                 widths = [c["bbox"][2] - c["bbox"][0]
                           for c in first.get("chars", [])
@@ -122,7 +125,9 @@ def _code_blocks(page):
                 width = sorted(widths)[len(widths) // 2] if widths else 0
                 origin = spans[0].get("bbox", (None,))[0] if width else None
                 # Callouts are editorial annotations, retained in page text.
-                text = re.sub(r" ?[\u2460-\u2473\u2776-\u277f]+$", "", text)
+                text = re.sub(r"(?: ?[\u2460-\u2473\u2776-\u277f])+$", "", text)
+                if not text.strip():
+                    continue
                 current.append((text, origin, width or 1))
                 previous = bbox
             else:
@@ -161,17 +166,23 @@ def _publish(target, artifacts):
             continue
         marker = leftover / "target.json"
         try:
-            if json.loads(marker.read_text(encoding="utf-8")) != target.name:
+            try:
+                if json.loads(marker.read_text(encoding="utf-8")) != target.name:
+                    continue
+            except (OSError, ValueError):
+                # An older unmarked workspace may hold the only previous output.
+                if (leftover / "old").exists() and not target.exists():
+                    continue
+                if not marker.exists() and time.time() - leftover.stat().st_mtime > 3600:
+                    shutil.rmtree(leftover)
                 continue
-        except (OSError, ValueError):
-            if not marker.exists() and time.time() - leftover.stat().st_mtime > 3600:
-                shutil.rmtree(leftover)
-            continue
-        backup = leftover / "old"
-        if backup.exists() and not target.exists():
-            os.replace(backup, target)
-            _fsync_directory(target.parent)
-        shutil.rmtree(leftover)
+            backup = leftover / "old"
+            if backup.exists() and not target.exists():
+                os.replace(backup, target)
+                _fsync_directory(target.parent)
+            shutil.rmtree(leftover)
+        except OSError as cleanup_error:
+            print(f"Warning: output cleanup failed at {leftover}: {cleanup_error}", file=sys.stderr)
     workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=target.parent))
     staged, backup = workspace / "new", workspace / "old"
     preserve = False

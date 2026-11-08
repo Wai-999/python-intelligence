@@ -513,20 +513,9 @@ def test_font_metric_fallback(monkeypatch):
 
 def test_callouts_only_removed_from_code(tmp_path):
     path = tmp_path / 'callouts.pdf'
-    # Embed a Unicode font so actual circled glyphs survive PDF extraction.
-    fontpath = Path('/System/Library/Fonts/Supplemental/Arial Unicode.ttf')
-    if not fontpath.exists():
-        # Raw layout fixture keeps this regression portable without system fonts.
-        from ingest.extract import _code_blocks
-        class Page:
-            def get_text(self, kind):
-                return {'blocks': [{'lines': [{'spans': [dict(
-                    text=t, flags=8)]} for t in ['x = "①" ①', 'y = 2❿', 'z = 3 ⑳']]}]}
-        assert _code_blocks(Page()) == ['x = "①"\ny = 2\nz = 3']
-        return
     with pymupdf.open() as doc:
         page = doc.new_page()
-        page.insert_font(fontname='Callout', fontfile=str(fontpath))
+        page.insert_font(fontname='Callout', fontbuffer=pymupdf.Font('cjk').buffer)
         page.insert_text((50, 50), 'value = 1 ', fontname='cour', fontsize=11)
         page.insert_text((116, 50), '①', fontname='Callout', fontsize=11)
         doc.save(path)
@@ -588,3 +577,78 @@ def test_unknown_font_is_not_monospace(monkeypatch):
     monkeypatch.setattr(pymupdf, 'Font', unknown)
     assert not _mono_font('FixtureUnknownFont')
     _mono_font.cache_clear()
+
+
+@pytest.mark.parametrize('pitch,height', [(11, 13.86), (12, 12.76)])
+def test_tall_font_tight_leading(pitch, height):
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [
+                {'bbox': (50, 50+i*pitch, 180, 50+i*pitch+height),
+                 'spans': [dict(text=text, font='SourceCodePro', size=11)]}
+                for i, text in enumerate(['def f():', '    return 1'])
+            ]}]}
+    code, = _code_blocks(Page())
+    assert code == 'def f():\n    return 1'
+    compile(code, '<tight-leading>', 'exec')
+
+
+def test_short_code_with_symbol_callouts():
+    from ingest.extract import _code_blocks
+    class Page:
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [
+                {'spans': [dict(text='x = 1', flags=8),
+                           dict(text=' ① ②', font='Symbol', flags=0)]},
+                {'spans': [dict(text='①', flags=8)]},
+                {'spans': [dict(text='y = 2', flags=8)]},
+            ]}]}
+    code, = _code_blocks(Page())
+    assert code == 'x = 1\ny = 2'
+    compile(code, '<callouts>', 'exec')
+
+
+def test_first_gap_is_double_blank_line():
+    from ingest.extract import _code_blocks
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        for y, text in [(50, 'import os'), (104, 'def f():'), (122, '    return 1')]:
+            page.insert_text((50, y), text, fontname='cour', fontsize=11)
+        code, = _code_blocks(page)
+    assert code == 'import os\ndef f():\n    return 1'
+    compile(code, '<first-gap>', 'exec')
+
+
+@pytest.mark.parametrize('marked', [False, True])
+def test_leftover_cleanup_failure_does_not_abort(tmp_path, monkeypatch, capsys, marked):
+    import importlib
+    import os
+    import time
+    module = importlib.import_module('ingest.extract')
+    leftover = tmp_path / '.book.tmp-leftover'
+    leftover.mkdir()
+    if marked:
+        (leftover / 'target.json').write_text(json.dumps('book'))
+    os.utime(leftover, (time.time()-7200, time.time()-7200))
+    original = module.shutil.rmtree
+    def remove(path):
+        if Path(path) == leftover:
+            raise PermissionError('leftover removal denied')
+        return original(path)
+    monkeypatch.setattr(module.shutil, 'rmtree', remove)
+    module._publish(tmp_path / 'book', {'pages.jsonl': 'complete'})
+    assert (tmp_path / 'book/pages.jsonl').read_text() == 'complete'
+    assert 'leftover removal denied' in capsys.readouterr().err
+
+
+def test_stale_unmarked_backup_is_preserved(tmp_path):
+    import os
+    import time
+    from ingest.extract import _publish
+    leftover = tmp_path / '.book.tmp-old'
+    (leftover / 'old').mkdir(parents=True)
+    (leftover / 'old/marker').write_text('previous')
+    os.utime(leftover, (time.time()-7200, time.time()-7200))
+    _publish(tmp_path / 'book', {'pages.jsonl': 'complete'})
+    assert (leftover / 'old/marker').read_text() == 'previous'
