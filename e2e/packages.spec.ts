@@ -57,3 +57,16 @@ test("lesson packages load before examples and exercise checks; pandas is suppor
   }), workerUrl);
   expect(output).toBe("123");
 });
+
+test("the pandas lesson runs in the browser and its challenge checks pass", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.goto("./#/lesson/pd-dataframes/4"); // "Run it: a small results table"
+  await page.getByRole("button", { name: "▶ Run", exact: true }).click();
+  await expect(page.locator(".console pre").first())
+    .toHaveText("(4, 3)\n6.666666666666667\n['Ana', 'Bo']\n1\n{'blue': 9.0, 'red': 11.0}\n", { timeout: 180_000 });
+  await page.goto("./#/lesson/pd-dataframes/6"); // "Challenge: team averages"
+  await page.locator("textarea.editor-input").fill(
+    'import pandas as pd\n\ndef team_averages(df):\n    return df.groupby("team")["score"].mean().round(1).to_dict()\n');
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
+});
