@@ -283,7 +283,7 @@
         },
         {
           "name": "every feature counts",
-          "code": "got = predict_centroids({'p': [0, 0, 0], 'q': [0, 0, 10]}, [[0, 0, 8], [1, 1, 1]])\nassert got == ['q', 'p'], f'the third feature decides; got {got}'",
+          "code": "got = predict_centroids({'p': [0, 0, 0], 'q': [0, 0, 10]}, [[0, 0, 8], [1, 1, 1]])\nassert got == ['q', 'p'], f'the third feature decides; got {got}'\nc = fit_centroids([[1, 2, 0], [1, 2, 2], [1, 2, 9], [1, 2, 11]], ['lo', 'lo', 'hi', 'hi'])\nassert c == {'lo': [1.0, 2.0, 1.0], 'hi': [1.0, 2.0, 10.0]}, f'average every feature; got {c}'\nassert predict_centroids(c, [[1, 2, 7], [1, 2, 4]]) == ['hi', 'lo']",
           "concept": "classification"
         },
         {
