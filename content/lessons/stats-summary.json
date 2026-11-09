@@ -388,7 +388,7 @@
       "id": "recap",
       "kind": "summary",
       "title": "What you can do now",
-      "body": "- Summarise data by its mean (centre) and standard deviation (spread).\n- Compute variance by hand, and say whether a tool divides by `N` or `N − 1`.\n- Use NumPy's `mean`, `var` and `std` (with `ddof`) and the `statistics` module.\n- Flag outliers by their distance from the mean in standard deviations.\n\nNext: fitting a line to data, where the squared-distance idea returns as the loss to minimise."
+      "body": "- Summarise data by its mean (centre) and standard deviation (spread).\n- Compute variance by hand, and say whether a tool divides by `N` or `N − 1`.\n- Use NumPy's `mean`, and `var` and `std` with `ddof`, and the `statistics` module.\n- Flag outliers by their distance from the mean in standard deviations.\n\nNext: fitting a line to data, where the squared-distance idea returns as the loss to minimise."
     }
   ]
 }

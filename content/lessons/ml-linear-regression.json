@@ -213,8 +213,8 @@
       "starter": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w = y.mean() / x.mean()\n    return float(w), 0.0\n",
       "hints": [
         "Centre the inputs first: `dx = x - x.mean()`.",
-        "`w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)`, then `b = y.mean() - w * x.mean()`; check the denominator before dividing.",
-        "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    dx = x - x.mean()\n    denom = np.sum(dx * dx)\n    if denom == 0:\n        raise ValueError('x must not be constant')\n    w = np.sum(dx * (y - y.mean())) / denom\n    b = y.mean() - w * x.mean()\n    return float(w), float(b)\n"
+        "`w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)`, then `b = y.mean() - w * x.mean()`; but first raise `ValueError` if every value equals the first one: `np.all(x == x[0])`. (Checking the denominator for exactly 0 is not enough: with decimals such as 0.1, rounding can leave a tiny non-zero value.)",
+        "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    b = y.mean() - w * x.mean()\n    return float(w), float(b)\n"
       ],
       "tests": [
         {
@@ -228,13 +228,18 @@
           "concept": "least-squares"
         },
         {
+          "name": "negative slope",
+          "code": "import numpy as np\nx, y = [1, 2, 3, 4], [9.8, 7.1, 4.2, 1.9]\nw, b = fit_line(x, y)\nwant = np.polyfit(x, y, 1)\nassert abs(w - want[0]) < 1e-9 and abs(b - want[1]) < 1e-9, f'a falling line: got {(w, b)}, want {tuple(want)}'\nw, b = fit_line([0, 1, 2], [5, 3, 1])\nassert abs(w + 2) < 1e-12 and abs(b - 5) < 1e-12, f'y = -2x + 5 exactly; got {(w, b)}'",
+          "concept": "least-squares"
+        },
+        {
           "name": "minimises the loss",
           "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nx, y = np.array(x), np.array(y)\nw, b = fit_line(x, y)\nloss = lambda w, b: np.mean((w * x + b - y) ** 2)\nfor dw, db in ((0.01, 0), (-0.01, 0), (0, 0.01), (0, -0.01)):\n    assert loss(w, b) < loss(w + dw, b + db), 'nudging the line should only make the loss worse'",
           "concept": "loss-functions"
         },
         {
           "name": "constant x",
-          "code": "for xs, ys in (([2, 2, 2], [1, 2, 3]), ([3], [5])):\n    try:\n        fit_line(xs, ys)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when every x is the same: {xs}')\nw, b = fit_line([2, 2, 5], [1, 1, 4])\nassert abs(w - 1) < 1e-12 and abs(b + 1) < 1e-12, 'x = [2, 2, 5] is not constant: y = x - 1 fits exactly'",
+          "code": "for xs, ys in (([2, 2, 2], [1, 2, 3]), ([3], [5]), ([0.1, 0.1, 0.1], [1, 2, 3])):\n    try:\n        fit_line(xs, ys)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when every x is the same: {xs}')\nw, b = fit_line([2, 2, 5], [1, 1, 4])\nassert abs(w - 1) < 1e-12 and abs(b + 1) < 1e-12, 'x = [2, 2, 5] is not constant: y = x - 1 fits exactly'",
           "concept": "linear-models"
         },
         {
@@ -243,7 +248,7 @@
           "concept": "linear-models"
         }
       ],
-      "solution": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    dx = x - x.mean()\n    denom = np.sum(dx * dx)\n    if denom == 0:\n        raise ValueError('x must not be constant')\n    w = np.sum(dx * (y - y.mean())) / denom\n    b = y.mean() - w * x.mean()\n    return float(w), float(b)\n"
+      "solution": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    b = y.mean() - w * x.mean()\n    return float(w), float(b)\n"
     },
     {
       "id": "descent",
