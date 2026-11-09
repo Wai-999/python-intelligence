@@ -1,0 +1,348 @@
+{
+  "id": "pd-dataframes",
+  "title": "Tables: pandas DataFrames",
+  "summary": "Load a table, select and filter rows, handle missing values, and summarise by group.",
+  "track": "data",
+  "level": 3,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "np-arrays"
+  ],
+  "concepts": [
+    "dataframes",
+    "selection",
+    "missing-data",
+    "groupby"
+  ],
+  "packages": [
+    "pandas"
+  ],
+  "sources": [
+    {
+      "id": "pd-structures",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        2,
+        3
+      ],
+      "section": "Basic data structures in pandas",
+      "use": "reference"
+    },
+    {
+      "id": "pd-select",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        5,
+        8
+      ],
+      "section": "Selection",
+      "use": "reference"
+    },
+    {
+      "id": "pd-bool",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "Boolean indexing",
+      "use": "reference"
+    },
+    {
+      "id": "pd-missing",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        11,
+        11
+      ],
+      "section": "Missing data",
+      "use": "reference"
+    },
+    {
+      "id": "pd-stats",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        13,
+        13
+      ],
+      "section": "Stats",
+      "use": "reference"
+    },
+    {
+      "id": "pd-group",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        20,
+        20
+      ],
+      "section": "Grouping",
+      "use": "reference"
+    },
+    {
+      "id": "pd-csv",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        28,
+        28
+      ],
+      "section": "CSV",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Real data comes in tables",
+      "body": "Survey answers, sales records, sensor logs: real data usually arrives as a table, with a row per\nrecord and named columns, and with gaps where values are missing. **pandas** gives Python a\nspreadsheet-like table, the **DataFrame**, plus the operations analysts use every day: pick columns,\nfilter rows, fill or drop gaps, and summarise by group."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Labelled columns of arrays",
+      "body": "Think of a DataFrame as several NumPy-style columns standing side by side, each with a **name**, all\nsharing the same row labels (the **index**). One column on its own is a **Series**. Everything you\nlearned about whole-array thinking still applies: `df[\"score\"] > 50` asks every row at once, and\nthe answer can filter the table. Missing values appear as `NaN` (\"not a number\").",
+      "cites": [
+        "pd-structures",
+        "pd-bool"
+      ],
+      "socratic": {
+        "questions": [
+          "Why might named columns be safer than remembering that 'score' is column 2?",
+          "If a score is missing, should the average count it as zero, skip it, or fail?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a group summary",
+      "body": "Split rows into groups, total each group, pick the largest.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import pandas as pd\n\ndef busiest(df):\n    totals = df.groupby(\"day\")[\"visitors\"].sum()\n    return totals.idxmax()\n\nvisits = pd.DataFrame({\"day\": [\"Mon\", \"Tue\", \"Mon\"], \"visitors\": [120, 80, 95]})\nprint(busiest(visits))",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "`pd` is the conventional short name for pandas."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "pd": "<module 'pandas'>",
+              "busiest": "<function busiest>"
+            },
+            "note": "A dictionary of equal-length lists becomes a table: one column per key, three rows."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "pd": "<module 'pandas'>",
+              "busiest": "<function busiest>",
+              "visits": "DataFrame (3 rows x 2 columns)"
+            },
+            "note": "Call `busiest(visits)`."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "busiest(visits)"
+            ],
+            "locals": {
+              "df": "DataFrame (3 rows x 2 columns)",
+              "totals": "Series: Mon 215, Tue 80"
+            },
+            "note": "`groupby(\"day\")` splits the rows by day; `[\"visitors\"].sum()` totals each group."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "busiest(visits)"
+            ],
+            "locals": {
+              "df": "DataFrame (3 rows x 2 columns)",
+              "totals": "Series: Mon 215, Tue 80"
+            },
+            "note": "`idxmax` returns the LABEL of the largest value, not the value itself."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "pd": "<module 'pandas'>",
+              "busiest": "<function busiest>",
+              "visits": "DataFrame (3 rows x 2 columns)"
+            },
+            "note": "The busiest day.",
+            "output": "Mon"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Create and look:** `pd.DataFrame({\"col\": [...], ...})`; `pd.read_csv(path)` loads a CSV file and\n`df.to_csv(path, index=False)` writes one. `df.shape` is `(rows, columns)`; `df.head()` shows the\nfirst rows.\n\n**Select:** `df[\"score\"]` is one column (a Series); `df[[\"name\", \"score\"]]` a smaller table.\n`df.loc[row_label, \"col\"]` selects by **label**; `df.iloc[i, j]` by **position**.\n\n**Filter:** `df[df[\"score\"] > 50]` keeps the rows where the condition is `True`; combine\nconditions with `&` and `|`, each in parentheses.\n\n**Missing data:** gaps are `NaN`. `df[\"score\"].isna()` marks them; `dropna()` removes rows with\ngaps and `fillna(value)` replaces them. Summaries such as `mean()` and `sum()` **skip** missing\nvalues by default.\n\n**Summarise:** `df[\"col\"].mean()`, `.describe()`, `.value_counts()`; `df.groupby(\"key\")[\"col\"].sum()`\nsplits rows by `key` and summarises each group.",
+      "cites": [
+        "pd-structures",
+        "pd-select",
+        "pd-bool",
+        "pd-missing",
+        "pd-stats",
+        "pd-group",
+        "pd-csv"
+      ]
+    },
+    {
+      "id": "teams",
+      "kind": "example",
+      "title": "Run it: a small results table",
+      "body": "Di's score is missing. Predict each line, especially the average and the group totals.",
+      "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    \"name\": [\"Ana\", \"Bo\", \"Cy\", \"Di\"],\n    \"team\": [\"red\", \"blue\", \"red\", \"blue\"],\n    \"score\": [7, 9, 4, None],\n})\nprint(df.shape)\nprint(df[\"score\"].mean())\nprint(df[df[\"score\"] > 5][\"name\"].tolist())\nprint(df[\"score\"].isna().sum())\nprint(df.groupby(\"team\")[\"score\"].sum().to_dict())",
+      "expected_output": "(4, 3)\n6.666666666666667\n['Ana', 'Bo']\n1\n{'blue': 9.0, 'red': 11.0}\n"
+    },
+    {
+      "id": "passrate",
+      "kind": "guided",
+      "title": "Your turn: pass rate",
+      "body": "Complete `pass_rate(df)` so it returns the fraction of rows whose `\"score\"` is at least 50, rounded to\n2 decimal places. Count missing scores as **not** passing (they are part of the total).",
+      "starter": "import pandas as pd\n\ndef pass_rate(df):\n    return 0.0",
+      "hints": [
+        "`df[\"score\"] >= 50` is a True/False column; a missing value compares as False.",
+        "The mean of a True/False column is the fraction of True values.",
+        "import pandas as pd\n\ndef pass_rate(df):\n    return round(float((df[\"score\"] >= 50).mean()), 2)"
+      ],
+      "tests": [
+        {
+          "name": "half pass",
+          "code": "import pandas as pd\nassert pass_rate(pd.DataFrame({'team': ['red', 'blue', 'red', 'blue'], 'score': [70, 40, 90, None]})) == 0.5, f'got {pass_rate(pd.DataFrame({'team': ['red', 'blue', 'red', 'blue'], 'score': [70, 40, 90, None]}))!r}'",
+          "concept": "selection"
+        },
+        {
+          "name": "missing counts as not passing",
+          "code": "import pandas as pd\nassert pass_rate(pd.DataFrame({'score': [60, None, 30]})) == 0.33, 'one of three rows passes'",
+          "concept": "missing-data"
+        },
+        {
+          "name": "returns a plain float",
+          "code": "import pandas as pd\nassert type(pass_rate(pd.DataFrame({'score': [50]}))) is float, 'return a Python float (wrap in float(...))'",
+          "concept": "dataframes"
+        }
+      ],
+      "solution": "import pandas as pd\n\ndef pass_rate(df):\n    return round(float((df[\"score\"] >= 50).mean()), 2)"
+    },
+    {
+      "id": "summary",
+      "kind": "challenge",
+      "title": "Challenge: team averages",
+      "body": "Write `team_averages(df)` returning a plain dictionary mapping each team to its **average** score,\nrounded to 1 decimal place, skipping missing scores. The starter totals instead of averaging.",
+      "starter": "import pandas as pd\n\ndef team_averages(df):\n    return df.groupby(\"team\")[\"score\"].sum().to_dict()",
+      "hints": [
+        "Swap `sum()` for the summary that averages.",
+        "Round the result Series with `.round(1)` before `.to_dict()`.",
+        "import pandas as pd\n\ndef team_averages(df):\n    return df.groupby(\"team\")[\"score\"].mean().round(1).to_dict()"
+      ],
+      "tests": [
+        {
+          "name": "averages per team",
+          "code": "import pandas as pd\nassert team_averages(pd.DataFrame({'team': ['red', 'blue', 'red', 'blue'], 'score': [70, 40, 90, None]})) == {'blue': 40.0, 'red': 80.0}, f'got {team_averages(pd.DataFrame({'team': ['red', 'blue', 'red', 'blue'], 'score': [70, 40, 90, None]}))!r}'",
+          "concept": "groupby"
+        },
+        {
+          "name": "rounded",
+          "code": "import pandas as pd\nassert team_averages(pd.DataFrame({'team': ['a', 'a', 'a'], 'score': [1, 2, 2]})) == {'a': 1.7}, 'round to 1 decimal place'",
+          "concept": "groupby"
+        },
+        {
+          "name": "returns a dict",
+          "code": "import pandas as pd\nassert type(team_averages(pd.DataFrame({'team': ['red', 'blue', 'red', 'blue'], 'score': [70, 40, 90, None]}))) is dict, 'return a plain dict (use .to_dict())'",
+          "concept": "dataframes"
+        }
+      ],
+      "solution": "import pandas as pd\n\ndef team_averages(df):\n    return df.groupby(\"team\")[\"score\"].mean().round(1).to_dict()"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is `df[\"score\"]`?",
+          "choices": [
+            "A list",
+            "A Series (one labelled column)",
+            "A one-column DataFrame",
+            "A NumPy array"
+          ],
+          "answer": 1,
+          "explanation": "Single brackets with one name give a Series; `df[[\"score\"]]` would give a DataFrame.",
+          "concept": "selection"
+        },
+        {
+          "id": "q2",
+          "prompt": "Which selects the value in the row with POSITION 0 and the column at position 1?",
+          "choices": [
+            "df.loc[0, 1]",
+            "df.iloc[0, 1]",
+            "df[0][1]",
+            "df.at[1, 0]"
+          ],
+          "answer": 1,
+          "explanation": "`iloc` is position-based; `loc` uses labels.",
+          "concept": "selection"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "import pandas as pd\nprint(pd.Series([1, None, 3]).mean())",
+          "choices": [
+            "1.0",
+            "2.0",
+            "nan",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "`mean()` skips missing values by default: (1 + 3) / 2.",
+          "concept": "missing-data"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does `df[df[\"age\"] >= 18]` return?",
+          "choices": [
+            "A True/False column",
+            "The rows where age is at least 18",
+            "The number of adults",
+            "The age column only"
+          ],
+          "answer": 1,
+          "explanation": "A boolean Series used inside `df[...]` filters rows.",
+          "concept": "selection"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Build a DataFrame or read one from CSV, and inspect its shape and first rows.\n- Select columns, rows by label (`loc`) or position (`iloc`), and filter with conditions.\n- Detect, drop or fill missing values, knowing that summaries skip them by default.\n- Summarise by group with `groupby(...)[col].sum()` / `.mean()`."
+    }
+  ]
+}
