@@ -41,6 +41,26 @@ def branch_exists(repo: str | Path, branch: str) -> bool:
 SHARED_LINKS = ("node_modules", ".venv312")
 
 
+def tree_fingerprint(root) -> str:
+    """Hash of every entry's relative path, type, size and mtime under `root` (symlinks not followed)."""
+    import hashlib
+    h = hashlib.sha256()
+    root = Path(root)
+    if not root.is_dir():
+        return "absent"
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames.sort()
+        for name in sorted(filenames) + [d for d in dirnames if (Path(dirpath) / d).is_symlink()]:
+            p = Path(dirpath) / name
+            st = p.lstat()
+            h.update(f"{p.relative_to(root)}\0{st.st_mode}\0{st.st_size}\0{st.st_mtime_ns}\n".encode())
+    return h.hexdigest()
+
+
+def shared_fingerprints(repo) -> dict[str, str]:
+    return {name: tree_fingerprint(Path(repo) / name) for name in SHARED_LINKS}
+
+
 def _link_shared(repo, path) -> None:
     for name in SHARED_LINKS:
         src, dst = Path(repo) / name, Path(path) / name

@@ -70,3 +70,20 @@ def test_ci_installs_exactly_the_browser_package_versions():
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
     for name, version in vc.PACKAGES.items():
         assert f'"{name}=={version}"' in ci, f"CI must pip install {name}=={version} (src/py/packages.json)"
+
+
+def test_imported_roots():
+    code = "import numpy as np\nimport os.path\nfrom pandas import DataFrame\nfrom . import x\nfrom collections.abc import Mapping"
+    assert vc.imported_roots(code) == {"numpy", "os", "pandas", "collections"}
+    assert vc.imported_roots("def (") == set()
+
+
+def test_undeclared_package_imports_are_rejected():
+    lesson = {"packages": ["numpy"], "steps": [
+        {"id": "ex", "code": "import numpy as np"},
+        {"id": "ch", "solution": "import pandas as pd", "tests": [{"code": "from pandas import Series"}]},
+        {"id": "tr", "visual": {"code": "import math"}}]}
+    errs = vc.check_packages(lesson, dict(vc.PACKAGES))
+    assert errs == ["step ch: imports pandas but the lesson does not declare it in packages"]
+    lesson["packages"] = ["numpy", "pandas"]
+    assert vc.check_packages(lesson, dict(vc.PACKAGES)) == []

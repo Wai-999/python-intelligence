@@ -190,3 +190,37 @@ def test_release_not_available_live(env):
     ctl = mk(repo, make_spec("T8", acceptance=ACCEPT))
     with pytest.raises(db.GateError, match="not implemented"):
         ctl.approve("T8", "human:owner", S.RELEASED)
+
+
+def _with_shared_dirs(repo):
+    for name in gitops.SHARED_LINKS:
+        (repo / name).mkdir(exist_ok=True)
+        (repo / name / "pkg.py").write_text("ok = True\n")
+
+
+def test_agent_writing_through_a_shared_link_blocks_the_task(env):
+    repo, plan, calls = env
+    _with_shared_dirs(repo)
+    plan({"claude:implement": [{"write": {"src/feature.py": "def f():\n    return 2\n", ".venv312/pkg.py": "ok = False\n"}}]})
+    ctl = mk(repo, make_spec("T7", acceptance=ACCEPT))
+    assert drive(ctl, "T7", {S.BLOCKED, S.AWAITING_APPROVAL, S.REPAIR}) == S.BLOCKED
+    ev = ctl.conn.execute("SELECT detail_json FROM events WHERE task_id='T7' AND to_status='blocked'").fetchone()
+    assert ".venv312" in ev[0] and "implementation" in ev[0]
+
+
+def test_acceptance_code_writing_into_node_modules_blocks_the_task(env):
+    repo, plan, calls = env
+    _with_shared_dirs(repo)
+    evil = "python -c \"open('node_modules/pkg.py', 'w').write('hacked = 1')\""
+    ctl = mk(repo, make_spec("T8", acceptance=(evil,) + tuple(ACCEPT)))
+    assert drive(ctl, "T8", {S.BLOCKED, S.AWAITING_APPROVAL, S.REPAIR}) == S.BLOCKED
+    ev = ctl.conn.execute("SELECT detail_json FROM events WHERE task_id='T8' AND to_status='blocked'").fetchone()
+    assert "node_modules" in ev[0] and "acceptance" in ev[0]
+    assert (repo / "node_modules" / "pkg.py").read_text() == "hacked = 1"  # detected, so a human must restore it
+
+
+def test_untouched_shared_dirs_do_not_block(env):
+    repo, plan, calls = env
+    _with_shared_dirs(repo)
+    ctl = mk(repo, make_spec("T9", acceptance=ACCEPT))
+    assert drive(ctl, "T9", {S.BLOCKED, S.AWAITING_APPROVAL, S.REPAIR}) == S.AWAITING_APPROVAL

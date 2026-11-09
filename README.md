@@ -20,7 +20,16 @@ npm run build          # content gate -> typecheck -> vite build -> dist gate
 npm run test:e2e       # Playwright against dist/ served under /python-intelligence/
 ```
 
-Lessons are JSON in `content/lessons/`, validated by `scripts/validate_content.py`. Every example, solution and
+Lessons are JSON in `content/lessons/`, validated by `scripts/validate_content.py`. Snippets are validated with CPython 3.12 and
+the browser's exact numpy/pandas versions (`src/py/packages.json`). Create that environment once, inside the project:
+
+```bash
+.venv/bin/pip install uv
+UV_PYTHON_INSTALL_DIR=.tools/python .venv/bin/uv python install 3.12
+.venv/bin/uv venv --python 3.12 .venv312
+.venv/bin/uv pip install --python .venv312/bin/python numpy==2.0.2 pandas==2.2.3
+```
+ Every example, solution and
 starter is executed with the same `src/py/harness.py` that the browser runs in Pyodide.
 
 ## Book sources (internal only, never published)

@@ -95,7 +95,8 @@
       "body": "An array is a grid of numbers that all have the same type: a row for 1-D, a table for 2-D. The key\nshift is to stop thinking \"for each number...\" and start thinking about the whole grid:\n`temps * 1.8 + 32` converts **every** temperature at once, and `temps > 20` asks the question of\nevery element, giving back a grid of `True`/`False` answers you can use as a filter.",
       "cites": [
         "np-why",
-        "np-ops"
+        "np-ops",
+        "np-index"
       ],
       "socratic": {
         "questions": [
@@ -236,6 +237,11 @@
         {
           "name": "textbook example",
           "code": "assert zscores([2, 4, 4, 4, 5, 5, 7, 9]) == [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0], f'got {zscores([2, 4, 4, 4, 5, 5, 7, 9])}'",
+          "concept": "vectorization"
+        },
+        {
+          "name": "rounded to 2 decimals",
+          "code": "assert zscores([1, 2, 3, 4]) == [-1.34, -0.45, 0.45, 1.34], f'got {zscores([1, 2, 3, 4])}'",
           "concept": "vectorization"
         },
         {

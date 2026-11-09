@@ -16,6 +16,7 @@ for version-specific behaviour; lessons should stay within the common subset.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -184,12 +185,37 @@ def interpreter_report() -> tuple[str, dict[str, str | None]]:
     return ver, pkgs
 
 
+def imported_roots(code: str) -> set[str]:
+    """Top-level module names a snippet imports (`import a.b` -> a, `from c import d` -> c). Unparseable -> empty."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return set()
+    roots = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots |= {a.name.split(".")[0] for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            roots.add(node.module.split(".")[0])
+    return roots
+
+
 def check_packages(lesson: dict, installed: dict[str, str | None] | None) -> list[str]:
     """`packages` must be allowlisted, and the validating interpreter must have the browser's exact versions."""
     pk = lesson.get("packages", [])
     if not (isinstance(pk, list) and all(isinstance(x, str) for x in pk)):
         return ["packages must be a list of package names"]
     errs = [f"package {x!r} is not available in the browser runtime (allowed: {sorted(PACKAGES)})" for x in pk if x not in PACKAGES]
+    # Every package a snippet imports must be declared, or the browser won't load it (the validator's own
+    # interpreter has them all installed, so it would not notice).
+    declared = set(pk) if isinstance(pk, list) else set()
+    for s in lesson.get("steps", []):
+        used: set[str] = set()
+        for code in (s.get("code"), s.get("solution"), s.get("starter"), (s.get("visual") or {}).get("code"),
+                     *[t.get("code") for t in s.get("tests", [])]):
+            used |= imported_roots(code or "") & set(PACKAGES)
+        errs += [f"step {s.get('id')}: imports {mod} but the lesson does not declare it in packages"
+                 for mod in sorted(used - declared)]
     for x in pk:
         if x in PACKAGES and installed is not None and installed.get(x) != PACKAGES[x]:
             errs.append(f"needs {x}=={PACKAGES[x]} (the browser's version) to validate, found {installed.get(x)}; "
@@ -305,6 +331,10 @@ def main() -> int:
     catalog = {sid: {**c, "sections": secs.get(sid, [])} for sid, c in catalog.items()}
     errs += check_catalog_bindings(catalog, approved)
     py_version, installed = interpreter_report()
+    if not py_version.startswith("3.12."):
+        print(f"✗ lesson snippets must be validated with CPython 3.12 (the browser's Pyodide runs 3.12); {CONTENT_PY} is "
+              f"{py_version}. Create .venv312 (see README) or set PI_CONTENT_PYTHON.")
+        return 1
     for l in lessons:
         errs += check_lesson(l, cleared, set(ids), catalog, installed)
     index = load_index()
@@ -341,7 +371,7 @@ def main() -> int:
         return 1
     n_exec = sum(1 for l in lessons for s in l["steps"] if s["kind"] in ("example", "guided", "challenge", "visual"))
     print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness "
-          f"(CPython {py_version}{'' if py_version.startswith('3.12.') else '; WARNING: the browser runs 3.12'})")
+          f"(CPython {py_version})")
     n_cited = sum(1 for l in lessons if l["sources"])
     if isinstance(index, ExtractIndex):
         if write_hashed_index(index):

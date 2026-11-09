@@ -87,6 +87,26 @@
       ],
       "section": "CSV",
       "use": "reference"
+    },
+    {
+      "id": "pd-view",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "Viewing data",
+      "use": "reference"
+    },
+    {
+      "id": "pd-counts",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "Value Counts",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -197,7 +217,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Create and look:** `pd.DataFrame({\"col\": [...], ...})`; `pd.read_csv(path)` loads a CSV file and\n`df.to_csv(path, index=False)` writes one. `df.shape` is `(rows, columns)`; `df.head()` shows the\nfirst rows.\n\n**Select:** `df[\"score\"]` is one column (a Series); `df[[\"name\", \"score\"]]` a smaller table.\n`df.loc[row_label, \"col\"]` selects by **label**; `df.iloc[i, j]` by **position**.\n\n**Filter:** `df[df[\"score\"] > 50]` keeps the rows where the condition is `True`; combine\nconditions with `&` and `|`, each in parentheses.\n\n**Missing data:** gaps are `NaN`. `df[\"score\"].isna()` marks them; `dropna()` removes rows with\ngaps and `fillna(value)` replaces them. Summaries such as `mean()` and `sum()` **skip** missing\nvalues by default.\n\n**Summarise:** `df[\"col\"].mean()`, `.describe()`, `.value_counts()`; `df.groupby(\"key\")[\"col\"].sum()`\nsplits rows by `key` and summarises each group.",
+      "body": "**Create and look:** `pd.DataFrame({\"col\": [...], ...})`; `pd.read_csv(path)` loads a CSV file and\n`df.to_csv(path, index=False)` writes one. `df.shape` is `(rows, columns)`; `df.head()` shows the\nfirst rows.\n\n**Select:** `df[\"score\"]` is one column (a Series); `df[[\"name\", \"score\"]]` a smaller table.\n`df.loc[row_label, \"col\"]` selects by **label**; `df.iloc[i, j]` by **position**.\n\n**Filter:** `df[df[\"score\"] > 50]` keeps the rows where the condition is `True`.\n\n**Missing data:** gaps are `NaN`. `df[\"score\"].isna()` marks them; `dropna()` removes rows with\ngaps and `fillna(value)` replaces them. Summaries such as `mean()` and `sum()` **skip** missing\nvalues by default.\n\n**Summarise:** `df[\"col\"].mean()`, `.describe()`, `.value_counts()`; `df.groupby(\"key\")[\"col\"].sum()`\nsplits rows by `key` and summarises each group.",
       "cites": [
         "pd-structures",
         "pd-select",
@@ -205,7 +225,9 @@
         "pd-missing",
         "pd-stats",
         "pd-group",
-        "pd-csv"
+        "pd-csv",
+        "pd-view",
+        "pd-counts"
       ]
     },
     {
@@ -220,12 +242,12 @@
       "id": "passrate",
       "kind": "guided",
       "title": "Your turn: pass rate",
-      "body": "Complete `pass_rate(df)` so it returns the fraction of rows whose `\"score\"` is at least 50, rounded to\n2 decimal places. Count missing scores as **not** passing (they are part of the total).",
+      "body": "Complete `pass_rate(df)` so it returns the fraction of rows whose `\"score\"` is at least 50, rounded to\n2 decimal places. Count missing scores as **not** passing (they are part of the total). Careful: in some columns a comparison\nwith a missing value gives *missing* rather than `False`, so fill those with `False` first.",
       "starter": "import pandas as pd\n\ndef pass_rate(df):\n    return 0.0",
       "hints": [
-        "`df[\"score\"] >= 50` is a True/False column; a missing value compares as False.",
-        "The mean of a True/False column is the fraction of True values.",
-        "import pandas as pd\n\ndef pass_rate(df):\n    return round(float((df[\"score\"] >= 50).mean()), 2)"
+        "`df[\"score\"] >= 50` is a True/False column, but a missing score may give a missing answer instead of False.",
+        "`.fillna(False)` turns those into False; the mean of a True/False column is the fraction of True values.",
+        "import pandas as pd\n\ndef pass_rate(df):\n    return round(float((df[\"score\"] >= 50).fillna(False).mean()), 2)"
       ],
       "tests": [
         {
@@ -242,9 +264,19 @@
           "name": "returns a plain float",
           "code": "import pandas as pd\nassert type(pass_rate(pd.DataFrame({'score': [50]}))) is float, 'return a Python float (wrap in float(...))'",
           "concept": "dataframes"
+        },
+        {
+          "name": "50 exactly passes",
+          "code": "import pandas as pd\nassert pass_rate(pd.DataFrame({'score': [49, 50, 51]})) == 0.67, 'at least 50 passes: 50 and 51 of three'",
+          "concept": "selection"
+        },
+        {
+          "name": "nullable integer column",
+          "code": "import pandas as pd\n_df = pd.DataFrame({'score': pd.array([60, None, 30], dtype='Int64')})\nassert pass_rate(_df) == 0.33, f'got {pass_rate(_df)!r}: a missing score must still count in the total (fill missing comparisons with False)'",
+          "concept": "missing-data"
         }
       ],
-      "solution": "import pandas as pd\n\ndef pass_rate(df):\n    return round(float((df[\"score\"] >= 50).mean()), 2)"
+      "solution": "import pandas as pd\n\ndef pass_rate(df):\n    return round(float((df[\"score\"] >= 50).fillna(False).mean()), 2)"
     },
     {
       "id": "summary",

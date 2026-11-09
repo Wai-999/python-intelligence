@@ -34,6 +34,10 @@ class LiveController(Controller):
         self.handles: dict[str, tuple[runner.Handle, int, str, Path | None]] = {}
         self.t_impl, self.t_review, self.t_test = implement_timeout_s, review_timeout_s, test_timeout_s
         self.codex_home = codex_home or agents.ensure_codex_home(self.repo / ".orchestrator" / "codex-home")
+        # Worktrees see node_modules and .venv312 through symlinks into the main checkout. Writes through them
+        # (by an agent, or by agent-written code run as an acceptance test) would silently change what every later
+        # task is built and validated with, so any change blocks the task for a human.
+        self.shared_baseline = gitops.shared_fingerprints(self.repo)
 
     # -- startup ---------------------------------------------------------------------
     def recover(self):
@@ -48,6 +52,19 @@ class LiveController(Controller):
         d = self.repo / "logs" / tid
         d.mkdir(parents=True, exist_ok=True)
         return d
+
+    def _shared_tampered(self) -> list[str]:
+        now = gitops.shared_fingerprints(self.repo)
+        return [name for name, fp in now.items() if fp != self.shared_baseline.get(name)]
+
+    def _block_if_shared_tampered(self, tid, frm, stage: str) -> str | None:
+        changed = self._shared_tampered()
+        if not changed:
+            return None
+        db.transition(self.conn, tid, S.BLOCKED, actor=CONTROLLER, expect=frm,
+                      detail={"reason": f"shared dependency dir(s) {changed} changed during {stage}; inspect and "
+                                        "reinstall them, then restart the controller before unblocking"})
+        return f"{tid}: {frm} -> blocked (shared {changed} modified during {stage})"
 
     def _repair(self, tid, frm, reason: str, **detail) -> str:
         db.transition(self.conn, tid, S.REPAIR, actor=CONTROLLER, expect=frm, detail={"reason": reason, **detail})
@@ -127,6 +144,8 @@ class LiveController(Controller):
             return self._repair(tid, S.RUNNING, f"implementer timed out after {self.t_impl:.0f}s", log_tail=report[-1500:])
         if code != 0:
             return self._repair(tid, S.RUNNING, f"implementer exited {code}", log_tail=report[-1500:])
+        if (blocked := self._block_if_shared_tampered(tid, S.RUNNING, "implementation")):
+            return blocked
         denials = []
         if spec.owner == "claude":
             try:
@@ -170,6 +189,8 @@ class LiveController(Controller):
                              env=runner.scrubbed_env({"PATH": runner.scrubbed_env()["PATH"]}))
             db.record_run(self.conn, tid, row["attempts"], "test", None, argv, wt, False,
                           log_path=str(log), exit_code=res.code)
+            if (blocked := self._block_if_shared_tampered(tid, S.TESTING, f"acceptance `{cmd}`")):
+                return blocked
             if res.code != 0 or res.timed_out:
                 return self._repair(tid, S.TESTING, f"acceptance failed: `{cmd}` exit {res.code}"
                                     f"{' (timeout)' if res.timed_out else ''}\n{res.output[-2500:]}",
