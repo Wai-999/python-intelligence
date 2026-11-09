@@ -40,10 +40,16 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
   if (msg.type !== "run") return;
   const py = await ready;
   currentId = msg.id;
+  const requested = [...new Set(msg.packages ?? [])];
+  const unsupported = requested.filter((name) => name === "_note" || !Object.hasOwn(packages, name));
+  if (unsupported.length) {
+    const message = `Unsupported lesson packages: ${unsupported.join(", ")}`;
+    post({ id: msg.id, type: "result", result: { ok: false, tests: [], error: {
+      type: "PackageError", message, summary: message, line: null,
+    } } });
+    return;
+  }
   try {
-    const requested = [...new Set(msg.packages ?? [])];
-    const unsupported = requested.filter((name) => name.startsWith("_") || !Object.hasOwn(packages, name));
-    if (unsupported.length) throw new Error(`Unsupported lesson packages: ${unsupported.join(", ")}`);
     const missing = requested.filter((name) => !loadedPackages.has(name));
     if (missing.length) {
       post({ id: msg.id, type: "packages-loading" });

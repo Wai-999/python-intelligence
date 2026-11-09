@@ -109,7 +109,7 @@ export class PythonRunner {
         const message = "Lesson packages took too long to load. Check your connection and run again.";
         done({ ok: false, tests: [], stdout, stderr, durationMs: performance.now() - started,
           error: { type: "LoadError", line: null, summary: message, message } }, "idle");
-      }, opts.packageTimeoutMs ?? 90_000);
+      }, opts.packageTimeoutMs ?? 120_000);
       const onMsg = (ev: MessageEvent<FromWorker>) => {
         const m = ev.data;
         if (!("id" in m) || m.id !== id) return;

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import lesson from "../content/lessons/np-arrays.json";
 
 test("lesson packages load before examples and exercise checks; pandas is supported", async ({ page }) => {
   test.setTimeout(240_000);
@@ -8,14 +9,14 @@ test("lesson packages load before examples and exercise checks; pandas is suppor
   });
   await page.goto("./#/lesson/np-arrays/4");
   await page.getByRole("button", { name: "▶ Run", exact: true }).click();
-  await expect(page.locator(".console pre").first()).toContainText("(2, 3)", { timeout: 120_000 });
+  await expect(page.locator(".console pre").first()).toHaveText("(2, 3)\n20.166666666666668\n[21 24]\n[21 24 22]\n[[35 41 33]\n [47 43 37]]\n", { timeout: 120_000 });
   await expect(page.locator(".console-error")).toHaveCount(0);
   // A second run reuses the loaded package in the same interpreter.
   await page.getByRole("button", { name: "▶ Run", exact: true }).click();
   await expect(page.locator(".console pre").first()).toContainText("(2, 3)");
   await page.goto("./#/lesson/np-arrays/5");
   await page.locator("textarea.editor-input").fill(
-    "import numpy as np\ndef above_average(values):\n    arr = np.array(values)\n    return arr[arr > arr.mean()]\n",
+    lesson.steps[5]!.solution!,
   );
   await page.getByRole("button", { name: "▶ Run checks" }).click();
   await expect(page.getByText("All checks pass")).toBeVisible();
@@ -31,7 +32,7 @@ test("lesson packages load before examples and exercise checks; pandas is suppor
     worker.onmessage = ({ data }) => {
       if (data.type === "ready") worker.postMessage({ id: 1, type: "run", packages: ["unsupported-package"],
         code: "raise AssertionError('must not execute without packages')", tests: [] });
-      if (data.type === "result" && runId === 1 && data.result?.error?.type === "LoadError") {
+      if (data.type === "result" && runId === 1 && data.result?.error?.type === "PackageError") {
         runId = 2;
         worker.postMessage({ id: runId, type: "run", packages: ["pandas", "pandas"],
           code: "import pandas as pd\nprint(pd.Series([2, 4, 6]).sum())", tests: [] });

@@ -112,3 +112,22 @@ it("recovers from a worker crash during package loading with a fresh interpreter
   workers[1]!.send({ id: 2, type: "result", result });
   expect((await retry).ok).toBe(true);
 });
+
+it("returns package validation errors and allows a corrected run", async () => {
+  const { runner, worker } = await setup();
+  const pending = runner.run("must not execute", [], { packages: ["_note"] });
+  await Promise.resolve(); await Promise.resolve();
+  const error = { type: "PackageError", message: "Unsupported lesson packages: _note",
+    summary: "Unsupported lesson packages: _note", line: null };
+  worker.send({ id: 1, type: "result", result: { ok: false, tests: [], error } });
+  expect((await pending).error).toEqual(error);
+  expect(runner.status).toBe("ready");
+  expect(worker.terminate).not.toHaveBeenCalled();
+
+  const retry = runner.run("print(1)");
+  await Promise.resolve(); await Promise.resolve();
+  worker.send({ id: 2, type: "packages-ready" });
+  worker.send({ id: 2, type: "stdout", text: "1" });
+  worker.send({ id: 2, type: "result", result });
+  expect(await retry).toMatchObject({ ok: true, stdout: "1\n" });
+});

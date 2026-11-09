@@ -51,7 +51,7 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
     try {
       const r = await getRunner().run(code, step.tests, { packages, onOutput: (_s, t) => setLive((x) => x + t) });
       setResult(r);
-      if (r.error?.type === "LoadError") return;
+      if (r.error?.type === "LoadError" || r.error?.type === "PackageError") return;
       const passed = r.ok && r.tests.length === step.tests.length && r.tests.every((t) => t.passed);
       const failedConcepts = r.ok
         ? r.tests.filter((t) => !t.passed).map((t) => t.concept).filter((c): c is string => !!c)
@@ -67,7 +67,7 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
   };
 
   const fb = result
-    ? result.error && result.error.type !== "LoadError" ? feedbackForError(result.error) : result.error ? null : feedbackForTests(result.tests)
+    ? result.error && !["LoadError", "PackageError"].includes(result.error.type) ? feedbackForError(result.error) : result.error ? null : feedbackForTests(result.tests)
     : null;
   const allPassed = !!result && result.ok && result.tests.every((t) => t.passed);
   const edId = `ed-${lessonId}-${step.id}`;
@@ -76,7 +76,7 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
     <section className="cell exercise" aria-label={step.kind === "challenge" ? "Challenge" : "Guided exercise"}>
       {record?.passed && !result && <p className="pill ok">✓ Completed earlier. You can keep experimenting.</p>}
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
-      <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} runLabel="Run checks" />
+      <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" />
       <Console result={result} live={live} />
 
       {result && result.ok && (
