@@ -209,7 +209,7 @@
       "id": "closed",
       "kind": "guided",
       "title": "Your turn: fit_line",
-      "body": "Complete `fit_line(x, y)` so it returns the least-squares `(w, b)` as plain floats, using the\nclosed-form rules. Raise `ValueError` if every `x` is the same (no line can be fitted).",
+      "body": "Complete `fit_line(x, y)` so it returns the least-squares `(w, b)` as plain floats, using the\nclosed-form rules. Raise `ValueError` if every `x` is the same: then no single slope and intercept fit best (many lines tie), so the fit is not unique.",
       "starter": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w = y.mean() / x.mean()\n    return float(w), 0.0\n",
       "hints": [
         "Centre the inputs first: `dx = x - x.mean()`.",
@@ -284,7 +284,7 @@
         },
         {
           "name": "exactly `steps` updates",
-          "code": "def ref(x, y, lr, steps):\n    w = b = 0.0\n    n = len(x)\n    for _ in range(steps):\n        e = [w * xi + b - yi for xi, yi in zip(x, y)]\n        dw = 2 * sum(ei * xi for ei, xi in zip(e, x)) / n\n        db = 2 * sum(e) / n\n        w, b = w - lr * dw, b - lr * db\n    return w, b\nfor x, y in (([1.0, 2.0, 3.0], [2.0, 3.0, 5.0]), ([1.0, 2.0, 3.0], [-3.0, -5.0, -7.0])):\n  for lr, steps in ((0.05, 2), (0.01, 7), (0.0005, 1500)):\n    got, want = gd_fit(x, y, lr=lr, steps=steps), ref(x, y, lr, steps)\n    assert all(abs(g - r) < 1e-9 for g, r in zip(got, want)), f'lr={lr}, steps={steps}: got {got}, want {want}'",
+          "code": "def ref(x, y, lr, steps):\n    w = b = 0.0\n    n = len(x)\n    for _ in range(steps):\n        e = [w * xi + b - yi for xi, yi in zip(x, y)]\n        dw = 2 * sum(ei * xi for ei, xi in zip(e, x)) / n\n        db = 2 * sum(e) / n\n        w, b = w - lr * dw, b - lr * db\n    return w, b\nfor x, y in (([1.0, 2.0, 3.0], [2.0, 3.0, 5.0]), ([1.0, 2.0, 3.0], [-3.0, -5.0, -7.0])):\n  for lr, steps in ((0.05, 2), (0.01, 7), (0.0005, 1500)):\n    got, want = gd_fit(x, y, lr=lr, steps=steps), ref(x, y, lr, steps)\n    assert all(abs(g - r) < 1e-9 for g, r in zip(got, want)), f'lr={lr}, steps={steps}: got {got}, want {want}'\nx, y = [1.0, 2.0, 3.0], [2.0, 3.0, 5.0]\nfor got, want, call in ((gd_fit(x, y), ref(x, y, 0.01, 5000), 'gd_fit(x, y)'), (gd_fit(x, y, steps=40), ref(x, y, 0.01, 40), 'gd_fit(x, y, steps=40)'), (gd_fit(x, y, lr=0.002), ref(x, y, 0.002, 5000), 'gd_fit(x, y, lr=0.002)')):\n    assert all(abs(g - r) < 1e-9 for g, r in zip(got, want)), f'{call}: defaults are lr=0.01, steps=5000; got {got}, want {want}'",
           "concept": "gradient-descent"
         },
         {
