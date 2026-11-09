@@ -1,0 +1,432 @@
+{
+  "id": "stats-simulation",
+  "title": "Probability by simulation",
+  "summary": "Estimate probabilities by running many random trials, and keep the results reproducible with seeds.",
+  "track": "statistics",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "py-modules"
+  ],
+  "concepts": [
+    "randomness",
+    "simulation",
+    "estimation"
+  ],
+  "sources": [
+    {
+      "id": "mml-discrete",
+      "source_id": "pch-mml-book",
+      "pages": [
+        184,
+        188
+      ],
+      "section": "6.2 Discrete and Continuous Probabilities",
+      "use": "reference"
+    },
+    {
+      "id": "mml-stats",
+      "source_id": "pch-mml-book",
+      "pages": [
+        192,
+        194
+      ],
+      "section": "6.4 Summary Statistics and Independence",
+      "use": "reference"
+    },
+    {
+      "id": "bb-birthday",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        34,
+        38
+      ],
+      "section": "Project #2: Birthday Paradox",
+      "use": "reference"
+    },
+    {
+      "id": "bb-dice",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        256,
+        258
+      ],
+      "section": "Project #46: Million Dice Roll Statistics Simulator",
+      "use": "reference"
+    },
+    {
+      "id": "bb-monty",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        266,
+        272
+      ],
+      "section": "Project #48: Monty Hall Problem",
+      "use": "reference"
+    },
+    {
+      "id": "tp-random",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        148,
+        148
+      ],
+      "section": "Random numbers",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-book",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Bookkeeping functions",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-int",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "Functions for integers",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-gen",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        8,
+        8
+      ],
+      "section": "Alternative Generator",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-repro",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "Notes on Reproducibility",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "When the maths is hard, run the experiment",
+      "body": "In a room of 23 people, how likely is it that two share a birthday? Most people guess far too low.\nYou could work it out with probability rules, but you can also let the computer **simulate** the\nroom thousands of times and count how often it happens. Simulation answers questions that are\nawkward to calculate, and it is a good way to check a calculation you are unsure of."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Probability as a long-run fraction",
+      "body": "Think of a probability as the fraction of times something happens if you repeat the experiment\nagain and again. A fair die shows a six about 1 time in 6. A simulation repeats a random trial\nmany times and divides the number of **hits** by the number of **trials**. One run of the program\ngives an *estimate*, and more trials give a steadier one. A computer's random numbers come from a\nformula started from a **seed**, so the same seed replays exactly the same \"random\" run.",
+      "cites": [
+        "mml-discrete",
+        "bb-dice",
+        "rnd-repro"
+      ],
+      "socratic": {
+        "questions": [
+          "If you roll a die 6 times, will you always get exactly one six?",
+          "Why might a scientist want to replay exactly the same random run later?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a tiny simulation",
+      "body": "Three rolls of a die, counting sixes. The seed makes this run the same every time.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import random\n\ndef estimate(trials):\n    hits = 0\n    for _ in range(trials):\n        roll = random.randint(1, 6)\n        if roll == 6:\n            hits += 1\n    return hits / trials\n\nrandom.seed(28)\nprint(estimate(3))",
+        "frames": [
+          {
+            "line": 11,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "random": "<module 'random'>",
+              "estimate": "<function estimate>"
+            },
+            "note": "Fix the seed so the run is repeatable."
+          },
+          {
+            "line": 12,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "random": "<module 'random'>",
+              "estimate": "<function estimate>"
+            },
+            "note": "Call `estimate(3)`."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "estimate(3)"
+            ],
+            "locals": {
+              "trials": "3",
+              "hits": "0"
+            },
+            "note": "No hits yet."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>",
+              "estimate(3)"
+            ],
+            "locals": {
+              "trials": "3",
+              "hits": "0",
+              "_": "0",
+              "roll": "1"
+            },
+            "note": "First roll: 1. Not a six."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>",
+              "estimate(3)"
+            ],
+            "locals": {
+              "trials": "3",
+              "hits": "1",
+              "_": "1",
+              "roll": "6"
+            },
+            "note": "Second roll: 6. A hit."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>",
+              "estimate(3)"
+            ],
+            "locals": {
+              "trials": "3",
+              "hits": "1",
+              "_": "2",
+              "roll": "2"
+            },
+            "note": "Third roll: 2."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>",
+              "estimate(3)"
+            ],
+            "locals": {
+              "trials": "3",
+              "hits": "1",
+              "_": "2",
+              "roll": "2"
+            },
+            "note": "1 hit in 3 trials. Three trials is far too few to trust."
+          },
+          {
+            "line": 12,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "random": "<module 'random'>",
+              "estimate": "<function estimate>"
+            },
+            "note": "The estimate, a long way from the true 1/6.",
+            "output": "0.3333333333333333"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Random numbers:** `random.randint(a, b)` returns a whole number from `a` to `b`, **including both\nends**. `random.random()` returns a float from 0.0 up to, but not including, 1.0.\n\n**Seeds:** `random.seed(n)` restarts the generator, so the numbers that follow are the same on every\nrun. `random.Random(n)` makes a separate generator object with its own seed and the same methods\n(`rng.randint(1, 6)`), which you can pass to functions instead of sharing one global generator.\n\n**Estimating:** if `hits` of `trials` repetitions succeed, `hits / trials` estimates the\nprobability. The average of many simulated values likewise estimates their expected value (mean).",
+      "cites": [
+        "rnd-int",
+        "rnd-book",
+        "rnd-gen",
+        "tp-random",
+        "mml-discrete",
+        "mml-stats"
+      ]
+    },
+    {
+      "id": "dice",
+      "kind": "example",
+      "title": "Run it: ten thousand pairs of dice",
+      "body": "Rolling two dice gives totals from 2 to 12, and 7 is the most common. Predict the shape of each line.",
+      "code": "import random\n\nrandom.seed(42)\nrolls = [random.randint(1, 6) + random.randint(1, 6) for _ in range(10000)]\nprint(len(rolls))\nprint(min(rolls), max(rolls))\nprint(rolls.count(7) / len(rolls))\nprint(round(sum(rolls) / len(rolls), 2))",
+      "expected_output": "10000\n2 12\n0.1704\n7.04\n",
+      "cites": [
+        "bb-dice"
+      ]
+    },
+    {
+      "id": "birthday",
+      "kind": "guided",
+      "title": "Your turn: one room of people",
+      "body": "Complete `birthday_trial(rng, people)`: draw one birthday per person with `rng.randint(1, 365)`\nand return `True` if any two are the same. Use the `rng` you are given, not the `random` module\ndirectly: that lets the tests hand you a scripted generator.",
+      "starter": "import random\n\ndef birthday_trial(rng, people):\n    return False\n",
+      "hints": [
+        "Build a list with `[rng.randint(1, 365) for _ in range(people)]`.",
+        "A `set` keeps one copy of each value, so it is shorter than the list exactly when something repeats.",
+        "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n"
+      ],
+      "tests": [
+        {
+          "name": "spots a repeat",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        return self.values.pop(0)\nassert birthday_trial(Scripted([5, 9, 5]), 3) is True, 'days 5, 9, 5 contain a repeat'",
+          "concept": "simulation"
+        },
+        {
+          "name": "no false alarms",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        return self.values.pop(0)\nassert birthday_trial(Scripted([1, 2, 3]), 3) is False, 'days 1, 2, 3 are all different'",
+          "concept": "simulation"
+        },
+        {
+          "name": "draws one day per person",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        return self.values.pop(0)\nr = Scripted([7, 8, 9, 10])\nbirthday_trial(r, 4)\nassert r.values == [], 'call rng.randint once for each person'",
+          "concept": "randomness"
+        },
+        {
+          "name": "366 people must share",
+          "code": "import random\nassert birthday_trial(random.Random(0), 366) is True, 'there are only 365 possible days'",
+          "concept": "simulation"
+        }
+      ],
+      "solution": "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n",
+      "cites": [
+        "bb-birthday"
+      ]
+    },
+    {
+      "id": "estimate",
+      "kind": "challenge",
+      "title": "Challenge: a reusable estimator",
+      "body": "Write `estimate(trial, trials, seed)`. Make **one** generator with `random.Random(seed)`, call\n`trial(rng)` `trials` times with that same generator, and return the fraction of calls that returned\n`True`, rounded to 3 decimal places. Then try `estimate(lambda r: birthday_trial(r, 23), 2000, 0)`.",
+      "starter": "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n\n\ndef estimate(trial, trials, seed):\n    rng = random.Random(seed)\n    return trial(rng)\n",
+      "hints": [
+        "Count the hits with a loop, or `sum(1 for _ in range(trials) if trial(rng))`.",
+        "Create the generator once, before the loop. Re-seeding inside the loop would replay the same trial every time.",
+        "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n\n\ndef estimate(trial, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(1 for _ in range(trials) if trial(rng))\n    return round(hits / trials, 3)\n"
+      ],
+      "tests": [
+        {
+          "name": "always true",
+          "code": "assert estimate(lambda rng: True, 10, 0) == 1.0, f'got {estimate(lambda rng: True, 10, 0)!r}'",
+          "concept": "estimation"
+        },
+        {
+          "name": "counts every call",
+          "code": "calls = []\ndef every_fourth(rng):\n    calls.append(1)\n    return len(calls) % 4 == 0\nassert estimate(every_fourth, 100, 0) == 0.25, 'one call in four succeeds'\nassert len(calls) == 100, 'call trial exactly `trials` times'",
+          "concept": "estimation"
+        },
+        {
+          "name": "rounded to 3 places",
+          "code": "calls = []\ndef first_only(rng):\n    calls.append(1)\n    return len(calls) == 1\nassert estimate(first_only, 3, 0) == 0.333, 'round(1/3, 3) is 0.333'",
+          "concept": "estimation"
+        },
+        {
+          "name": "one seeded generator, shared",
+          "code": "import random\nr = random.Random(3)\nwant = round(sum(r.random() < 0.3 for _ in range(200)) / 200, 3)\nassert estimate(lambda rng: rng.random() < 0.3, 200, 3) == want, 'make random.Random(seed) once and pass the same object to every trial'",
+          "concept": "randomness"
+        },
+        {
+          "name": "the birthday surprise",
+          "code": "p = estimate(lambda r: birthday_trial(r, 23), 2000, 0)\nassert 0.45 < p < 0.6, f'23 people share a birthday about half the time; got {p}'",
+          "concept": "simulation"
+        }
+      ],
+      "solution": "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n\n\ndef estimate(trial, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(1 for _ in range(trials) if trial(rng))\n    return round(hits / trials, 3)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Which values can `random.randint(1, 6)` return?",
+          "choices": [
+            "0 to 5",
+            "1 to 5",
+            "1 to 6",
+            "0 to 6"
+          ],
+          "answer": 2,
+          "explanation": "`randint` includes both ends.",
+          "concept": "randomness"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does this print?",
+          "code": "import random\nrandom.seed(5)\na = random.random()\nrandom.seed(5)\nb = random.random()\nprint(a == b)",
+          "choices": [
+            "True",
+            "False",
+            "It changes from run to run",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "Re-seeding with the same number replays the same sequence.",
+          "concept": "randomness"
+        },
+        {
+          "id": "q3",
+          "prompt": "A simulation of 1,000 trials had 512 hits. What is the estimated probability?",
+          "choices": [
+            "512",
+            "0.512",
+            "Exactly 0.5",
+            "0.001"
+          ],
+          "answer": 1,
+          "explanation": "Hits divided by trials: 512 / 1000.",
+          "concept": "estimation"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why pass an `rng` into a trial function instead of calling `random` inside it?",
+          "choices": [
+            "Tests and experiments can supply a seeded or scripted generator, so results are reproducible",
+            "It makes the numbers more random",
+            "The `random` module cannot be used inside functions",
+            "It always runs faster"
+          ],
+          "answer": 0,
+          "explanation": "The caller decides where the randomness comes from, which is what made this lesson's tests possible.",
+          "concept": "simulation"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Turn a probability question into a trial function that returns `True` or `False`.\n- Run it many times and estimate the probability as hits / trials.\n- Make runs reproducible with seeds, and pass a generator in so code can be tested.\n\nTry next: simulate the Monty Hall game show puzzle. Is it better to switch doors?",
+      "cites": [
+        "bb-monty"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,357 @@
+{
+  "id": "ml-vectors",
+  "title": "Vectors: length, distance and similarity",
+  "summary": "Treat data as vectors and measure how long, how far apart and how similar they are, with NumPy.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "np-arrays"
+  ],
+  "concepts": [
+    "vectors",
+    "dot-product",
+    "norms",
+    "similarity"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-la",
+      "source_id": "pch-mml-book",
+      "pages": [
+        23,
+        24
+      ],
+      "section": "2 Linear Algebra",
+      "use": "reference"
+    },
+    {
+      "id": "mml-norms",
+      "source_id": "pch-mml-book",
+      "pages": [
+        77,
+        77
+      ],
+      "section": "3.1 Norms",
+      "use": "reference"
+    },
+    {
+      "id": "mml-inner",
+      "source_id": "pch-mml-book",
+      "pages": [
+        78,
+        80
+      ],
+      "section": "3.2 Inner Products",
+      "use": "reference"
+    },
+    {
+      "id": "mml-dist",
+      "source_id": "pch-mml-book",
+      "pages": [
+        81,
+        81
+      ],
+      "section": "3.3 Lengths and Distances",
+      "use": "reference"
+    },
+    {
+      "id": "mml-angles",
+      "source_id": "pch-mml-book",
+      "pages": [
+        82,
+        83
+      ],
+      "section": "3.4 Angles and Orthogonality",
+      "use": "reference"
+    },
+    {
+      "id": "np-ops",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "Basic array operations",
+      "use": "reference"
+    },
+    {
+      "id": "np-formulas",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        25,
+        25
+      ],
+      "section": "Working with mathematical formulas",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Data as points in space",
+      "body": "Machine learning starts by turning things into lists of numbers. A flat might be\n`[size, rooms, age]`; a song might be how much it uses each of 100 musical features. Once things\nare **vectors**, \"similar\" becomes something you can measure: similar flats and similar songs are\nvectors that are close together or point the same way. Recommenders, search engines and many\nclassifiers are built on exactly these measurements."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Arrows from the origin",
+      "body": "Draw a vector with two numbers as an arrow from the origin to that point. Three questions come up\nagain and again. **How long** is the arrow? **How far apart** are the tips of two arrows? Do two\narrows **point the same way**? The last one ignores length: a short and a long arrow in the same\ndirection count as perfectly similar. The **dot product**, which multiplies matching entries and adds\nthem up, is the tool behind all three.",
+      "cites": [
+        "mml-la",
+        "mml-angles"
+      ],
+      "socratic": {
+        "questions": [
+          "Two shoppers bought the same items, but one bought ten of each. Should a recommender call them similar?",
+          "What would you expect the dot product of two arrows at right angles to be?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a similarity score",
+      "body": "Two arrows a little apart: their cosine similarity is close to, but below, 1.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import numpy as np\n\ndef cosine(u, v):\n    dot = np.sum(u * v)\n    return dot / (np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5)\n\na = np.array([3.0, 4.0])\nb = np.array([4.0, 3.0])\nprint(round(float(cosine(a, b)), 2))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "cosine": "<function cosine>"
+            },
+            "note": "Two vectors, each of length 5."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "cosine": "<function cosine>",
+              "a": "array([3., 4.])",
+              "b": "array([4., 3.])"
+            },
+            "note": "Call `cosine(a, b)`."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "cosine(a, b)"
+            ],
+            "locals": {
+              "u": "array([3., 4.])",
+              "v": "array([4., 3.])"
+            },
+            "note": "`u * v` is [12, 12]; the sum, 24.0, is the dot product."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "cosine(a, b)"
+            ],
+            "locals": {
+              "u": "array([3., 4.])",
+              "v": "array([4., 3.])",
+              "dot": "np.float64(24.0)"
+            },
+            "note": "Each length is the square root of 9 + 16 = 25, so 5. 24 / (5 * 5) = 0.96."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "cosine": "<function cosine>",
+              "a": "array([3., 4.])",
+              "b": "array([4., 3.])"
+            },
+            "note": "Nearly the same direction.",
+            "output": "0.96"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "For vectors `u` and `v` with the same number of entries:\n\n**Dot product:** `u · v = u[0]*v[0] + u[1]*v[1] + ...`. In NumPy: `np.sum(u * v)`.\n\n**Length (Euclidean norm):** `‖u‖ = √(u · u)`, the square root of the sum of squares:\n`np.sum(u * u) ** 0.5`. Other norms exist; the **Manhattan** norm adds up absolute values instead.\n\n**Distance:** the distance between two points is the length of their difference, `‖u − v‖`.\n\n**Angle:** `cos θ = (u · v) / (‖u‖ ‖v‖)`, always between -1 and 1. It is 1 when the vectors point\nthe same way and 0 when they are **orthogonal** (at right angles), which happens exactly when\n`u · v = 0`. Scaling a vector changes its length but not its direction, so not its cosine.",
+      "cites": [
+        "mml-inner",
+        "mml-norms",
+        "mml-dist",
+        "mml-angles",
+        "np-ops",
+        "np-formulas"
+      ]
+    },
+    {
+      "id": "measure",
+      "kind": "example",
+      "title": "Run it: three measurements",
+      "body": "Predict the dot product, the length and the distance before you run it.",
+      "code": "import numpy as np\n\nu = np.array([1.0, 2.0, 2.0])\nv = np.array([2.0, 0.0, -1.0])\nprint(np.sum(u * v))\nprint(np.sum(u * u) ** 0.5)\nprint(np.sum((u - v) ** 2) ** 0.5)\nprint(np.sum(np.abs(u)))",
+      "expected_output": "0.0\n3.0\n3.7416573867739413\n5.0\n"
+    },
+    {
+      "id": "cosine",
+      "kind": "guided",
+      "title": "Your turn: cosine similarity",
+      "body": "Complete `cosine(u, v)` so it returns the cosine similarity of two lists of numbers as a plain\nPython `float`, using the dot product and the two lengths.",
+      "starter": "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v))\n",
+      "hints": [
+        "The starter has the dot product. Divide it by the product of the two lengths.",
+        "A length is `np.sum(u * u) ** 0.5`.",
+        "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v) / (np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5))\n"
+      ],
+      "tests": [
+        {
+          "name": "a little apart",
+          "code": "assert round(cosine([3, 4], [4, 3]), 2) == 0.96, f'got {cosine([3, 4], [4, 3])!r}'",
+          "concept": "similarity"
+        },
+        {
+          "name": "right angles give 0",
+          "code": "assert abs(cosine([1, 0], [0, 5])) < 1e-12, 'orthogonal vectors have cosine 0'",
+          "concept": "dot-product"
+        },
+        {
+          "name": "length does not matter",
+          "code": "assert abs(cosine([1, 2, 3], [10, 20, 30]) - 1.0) < 1e-12, 'same direction, different length: cosine 1'",
+          "concept": "norms"
+        },
+        {
+          "name": "opposite directions",
+          "code": "assert abs(cosine([1, 1], [-2, -2]) + 1.0) < 1e-12, 'opposite directions: cosine -1'",
+          "concept": "similarity"
+        },
+        {
+          "name": "returns a float",
+          "code": "assert type(cosine([1, 2], [2, 1])) is float, 'wrap the result in float(...)'",
+          "concept": "vectors"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v) / (np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5))\n"
+    },
+    {
+      "id": "nearest",
+      "kind": "challenge",
+      "title": "Challenge: nearest neighbour",
+      "body": "A **nearest-neighbour** search finds the stored item closest to a query. Write\n`nearest(query, items)`, where `items` is a dictionary from names to vectors. Return the name whose\nvector has the smallest Euclidean **distance** to `query`; if two tie, keep the one listed first.",
+      "starter": "import numpy as np\n\ndef nearest(query, items):\n    return next(iter(items))\n",
+      "hints": [
+        "The distance is the length of the difference: `np.sum((vec - q) ** 2) ** 0.5`.",
+        "Loop over `items.items()` and replace your best only when the new distance is strictly smaller.",
+        "import numpy as np\n\ndef nearest(query, items):\n    q = np.array(query, dtype=float)\n    best_name, best_dist = None, None\n    for name, vec in items.items():\n        d = float(np.sum((np.array(vec, dtype=float) - q) ** 2) ** 0.5)\n        if best_dist is None or d < best_dist:\n            best_name, best_dist = name, d\n    return best_name\n"
+      ],
+      "tests": [
+        {
+          "name": "finds the closest",
+          "code": "flats = {'a': [50, 2], 'b': [80, 3], 'c': [62, 2]}\nassert nearest([60, 2], flats) == 'c', f'got {nearest([60, 2], flats)!r}'",
+          "concept": "vectors"
+        },
+        {
+          "name": "distance, not direction",
+          "code": "items = {'far-same-way': [10, 10], 'near': [1, 2]}\nassert nearest([1, 1], items) == 'near', 'measure distance between tips, not angle'",
+          "concept": "norms"
+        },
+        {
+          "name": "ties keep the first",
+          "code": "assert nearest([0, 0], {'x': [1, 0], 'y': [0, 1]}) == 'x', 'equal distances: keep the first listed'",
+          "concept": "vectors"
+        },
+        {
+          "name": "works in three dimensions",
+          "code": "assert nearest([0, 0, 3], {'p': [0, 0, 0], 'q': [0, 1, 2]}) == 'q', 'p is 3 away, q about 1.41'",
+          "concept": "norms"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef nearest(query, items):\n    q = np.array(query, dtype=float)\n    best_name, best_dist = None, None\n    for name, vec in items.items():\n        d = float(np.sum((np.array(vec, dtype=float) - q) ** 2) ** 0.5)\n        if best_dist is None or d < best_dist:\n            best_name, best_dist = name, d\n    return best_name\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is the dot product of `[1, 2, 3]` and `[4, 5, 6]`?",
+          "choices": [
+            "32",
+            "[4, 10, 18]",
+            "21",
+            "91"
+          ],
+          "answer": 0,
+          "explanation": "4 + 10 + 18 = 32. The element-wise products are added up.",
+          "concept": "dot-product"
+        },
+        {
+          "id": "q2",
+          "prompt": "What is the length of `[6, 8]`?",
+          "choices": [
+            "14",
+            "10",
+            "48",
+            "100"
+          ],
+          "answer": 1,
+          "explanation": "√(36 + 64) = √100 = 10.",
+          "concept": "norms"
+        },
+        {
+          "id": "q3",
+          "prompt": "If `u · v` is 0 for two non-zero vectors, they are...",
+          "choices": [
+            "identical",
+            "orthogonal (at right angles)",
+            "pointing in opposite directions",
+            "the same length"
+          ],
+          "answer": 1,
+          "explanation": "A zero dot product means a cosine of 0: a right angle.",
+          "concept": "dot-product"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does this print?",
+          "code": "import numpy as np\nu = np.array([2.0, 1.0])\nv = 2 * u\nprint(round(float(np.sum(u * v) / (np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5)), 6))",
+          "choices": [
+            "1.0",
+            "2.0",
+            "0.5",
+            "4.0"
+          ],
+          "answer": 0,
+          "explanation": "Doubling a vector does not change its direction, so the cosine with the original stays 1.",
+          "concept": "similarity"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Represent things as vectors and compute dot products with `np.sum(u * v)`.\n- Measure length with the Euclidean norm, and distance as the length of a difference.\n- Compare directions with cosine similarity, which ignores length.\n- Find the nearest neighbour of a query: the core of many recommenders and classifiers."
+    }
+  ]
+}

@@ -160,6 +160,26 @@
     "basis": "Official pandas documentation; pandas is distributed under the BSD 3-Clause licence (overview page, checked 2026-11-08). Pinned to 2.2.3 to match Pyodide 0.27.8."
    },
    "sha256": "d357432f960345f877fc758812328805acf477b363ab2c70696551910f5a5a20"
+  },
+  {
+   "source_id": "pydocs-312-random",
+   "title": "The Python Standard Library 3.12: random — Generate pseudo-random numbers",
+   "short": "Python 3.12 docs, random",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/random.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'combine these books and continue')",
+    "date": "2026-11-08",
+    "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
+   },
+   "sha256": "ebe62caad0756d32478ee6800f2abfb76c8367753c857b4489356f068be696af"
   }
  ]
 }

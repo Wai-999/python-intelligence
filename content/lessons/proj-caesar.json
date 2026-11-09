@@ -1,0 +1,322 @@
+{
+  "id": "proj-caesar",
+  "title": "Project: a Caesar cipher",
+  "summary": "Build a small encryption program from functions you can test, then break it by brute force.",
+  "track": "projects",
+  "level": 2,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "py-strings"
+  ],
+  "concepts": [
+    "modular-arithmetic",
+    "program-decomposition",
+    "brute-force-search"
+  ],
+  "sources": [
+    {
+      "id": "bb-caesar",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        57,
+        60
+      ],
+      "section": "Project #6: Caesar Cipher",
+      "use": "reference"
+    },
+    {
+      "id": "bb-hacker",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        61,
+        63
+      ],
+      "section": "Project #7: Caesar Hacker",
+      "use": "reference"
+    },
+    {
+      "id": "bb-rot13",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        318,
+        320
+      ],
+      "section": "Project #61: ROT13 Cipher",
+      "use": "reference"
+    },
+    {
+      "id": "tp-mod",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        61,
+        61
+      ],
+      "section": "Floor division and modulus",
+      "use": "reference"
+    },
+    {
+      "id": "std-str",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        21,
+        21
+      ],
+      "section": "String Methods",
+      "use": "reference"
+    },
+    {
+      "id": "ab-join",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        155,
+        155
+      ],
+      "section": "The join() and split() String Methods",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "From features to a whole program",
+      "body": "So far each lesson taught one feature. Real programs combine them. In this project you build a\ntiny encryption tool, the **Caesar cipher**, which hides a message by moving every letter a fixed\nnumber of places along the alphabet. It needs strings, loops, conditions and functions working\ntogether, and it is small enough to finish, test and then break."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Letters on a wheel",
+      "body": "Picture the 26 letters written around a wheel. The **key** says how many places to turn it: with key\n3, A becomes D and B becomes E. At the end the wheel wraps round, so X, Y and Z become A, B and C.\nIn code the wheel is a position number from 0 to 25, and \"wrap round\" is the remainder after\ndividing by 26: `(position + key) % 26`. Turning the wheel back the other way undoes it.",
+      "cites": [
+        "bb-caesar",
+        "tp-mod"
+      ],
+      "socratic": {
+        "questions": [
+          "If the key is 26, what does the message look like after encryption?",
+          "How many different keys are really possible? What does that mean for someone trying to read your secret?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch one letter wrap round",
+      "body": "Y is near the end of the alphabet, so shifting it by 3 has to wrap.",
+      "visual": {
+        "type": "call-trace",
+        "code": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef shift_letter(ch, key):\n    pos = ALPHABET.index(ch)\n    return ALPHABET[(pos + key) % 26]\n\nprint(shift_letter(\"Y\", 3))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "ALPHABET": "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'",
+              "shift_letter": "<function shift_letter>"
+            },
+            "note": "Call `shift_letter(\"Y\", 3)`."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "shift_letter(\"Y\", 3)"
+            ],
+            "locals": {
+              "ch": "'Y'",
+              "key": "3"
+            },
+            "note": "`index` finds where Y sits: position 24 (A is 0)."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "shift_letter(\"Y\", 3)"
+            ],
+            "locals": {
+              "ch": "'Y'",
+              "key": "3",
+              "pos": "24"
+            },
+            "note": "24 + 3 = 27 is past the end; 27 % 26 = 1 wraps to the start."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "ALPHABET": "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'",
+              "shift_letter": "<function shift_letter>"
+            },
+            "note": "Position 1 is B.",
+            "output": "B"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The pieces you need",
+      "body": "**Remainder:** `a % n` is what is left after dividing `a` by `n`. For a positive `n` the answer is\nalways between `0` and `n - 1`, even when `a` is negative: `-3 % 26` is `23`. That is why shifting by\n`-key` correctly turns the wheel back.\n\n**Finding a position:** `text.index(ch)` gives the position of the first `ch` in `text`, and raises\n`ValueError` if it is missing, so check `ch in text` first. `message.upper()` gives an upper-case copy.\n\n**Building the result:** collect the pieces in a list and finish with `\"\".join(pieces)`, which glues\na list of strings into one string.\n\n**Program design:** give each job its own small function (`encrypt`, `decrypt`, `crack`). Each one\ncan then be tested on its own, and later functions reuse earlier ones.",
+      "cites": [
+        "tp-mod",
+        "std-str",
+        "ab-join",
+        "bb-caesar"
+      ]
+    },
+    {
+      "id": "round-trip",
+      "kind": "example",
+      "title": "Run it: encrypt and back",
+      "body": "Characters that are not letters pass through unchanged. Predict the last line before you run it.",
+      "code": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\nsecret = encrypt(\"Meet at noon!\", 3)\nprint(secret)\nprint(encrypt(secret, -3))\nprint(-3 % 26)\n",
+      "expected_output": "PHHW DW QRRQ!\nMEET AT NOON!\n23\n"
+    },
+    {
+      "id": "decrypt",
+      "kind": "guided",
+      "title": "Your turn: decrypt",
+      "body": "`encrypt` is done. Complete `decrypt(message, key)` so it undoes `encrypt` with the same key. Reuse\n`encrypt` rather than writing the loop again.",
+      "starter": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, key)\n",
+      "hints": [
+        "Decrypting with key 3 means turning the wheel 3 places the other way.",
+        "`encrypt(message, -key)` turns it backwards; `%` handles the negative number for you.",
+        "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, -key)\n"
+      ],
+      "tests": [
+        {
+          "name": "undoes key 3",
+          "code": "assert decrypt('PHHW', 3) == 'MEET', f\"got {decrypt('PHHW', 3)!r}\"",
+          "concept": "modular-arithmetic"
+        },
+        {
+          "name": "round trip for every key",
+          "code": "for k in range(0, 60):\n    assert decrypt(encrypt('HELLO, WORLD', k), k) == 'HELLO, WORLD', f'key {k} does not round-trip'",
+          "concept": "modular-arithmetic"
+        },
+        {
+          "name": "reuses encrypt",
+          "code": "calls = []\n_real = encrypt\ndef encrypt(m, k):\n    calls.append(k)\n    return _real(m, k)\ntry:\n    decrypt('ABC', 2)\nfinally:\n    encrypt = _real\nassert calls, 'call encrypt inside decrypt instead of repeating the loop'",
+          "concept": "program-decomposition"
+        }
+      ],
+      "solution": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, -key)\n"
+    },
+    {
+      "id": "crack",
+      "kind": "challenge",
+      "title": "Challenge: break the cipher",
+      "body": "With only 26 possible keys, an attacker can simply try them all. Write `crack(ciphertext, words)`:\ntry every key from 0 to 25, score each decryption by how many of its space-separated words are in\nthe set `words`, and return `(key, plaintext)` for the best score. If keys tie, keep the smallest.",
+      "starter": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, -key)\n\n\ndef crack(ciphertext, words):\n    return 0, ciphertext\n",
+      "hints": [
+        "Loop `for key in range(26):` and call `decrypt(ciphertext, key)`.",
+        "Score with `sum(1 for w in plain.split() if w in words)`; remember the best key so far, replacing it only on a strictly higher score.",
+        "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, -key)\n\n\ndef crack(ciphertext, words):\n    best_key, best_score = 0, -1\n    for key in range(26):\n        plain = decrypt(ciphertext, key)\n        score = sum(1 for w in plain.split() if w in words)\n        if score > best_score:\n            best_key, best_score = key, score\n    return best_key, decrypt(ciphertext, best_key)\n"
+      ],
+      "tests": [
+        {
+          "name": "finds key 3",
+          "code": "assert crack('PHHW DW QRRQ', {'MEET', 'AT', 'NOON'}) == (3, 'MEET AT NOON'), f\"got {crack('PHHW DW QRRQ', {'MEET', 'AT', 'NOON'})!r}\"",
+          "concept": "brute-force-search"
+        },
+        {
+          "name": "key 0 is a candidate",
+          "code": "assert crack('HELLO THERE', {'HELLO', 'THERE'}) == (0, 'HELLO THERE'), 'try key 0 as well'",
+          "concept": "brute-force-search"
+        },
+        {
+          "name": "best score wins, not the first match",
+          "code": "c = encrypt('THE CAT SAT', 13)\nassert crack(c, {'THE', 'CAT', 'SAT', 'GUR'}) == (13, 'THE CAT SAT'), 'key 0 matches one word, key 13 matches three'",
+          "concept": "brute-force-search"
+        },
+        {
+          "name": "ties keep the smallest key",
+          "code": "assert crack('XYZ', set()) == (0, 'XYZ'), 'with no matches at all, every key ties: return key 0'",
+          "concept": "brute-force-search"
+        }
+      ],
+      "solution": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, -key)\n\n\ndef crack(ciphertext, words):\n    best_key, best_score = 0, -1\n    for key in range(26):\n        plain = decrypt(ciphertext, key)\n        score = sum(1 for w in plain.split() if w in words)\n        if score > best_score:\n            best_key, best_score = key, score\n    return best_key, decrypt(ciphertext, best_key)\n",
+      "cites": [
+        "bb-hacker"
+      ]
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is `27 % 26`?",
+          "choices": [
+            "27",
+            "1",
+            "0",
+            "26"
+          ],
+          "answer": 1,
+          "explanation": "26 goes into 27 once, leaving 1.",
+          "concept": "modular-arithmetic"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does this print?",
+          "code": "print(-1 % 26)",
+          "choices": [
+            "-1",
+            "25",
+            "1",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "With a positive divisor, Python's `%` gives an answer from 0 to 25, so one step back from A lands on Z (25).",
+          "concept": "modular-arithmetic"
+        },
+        {
+          "id": "q3",
+          "prompt": "Why does trying every key break a Caesar cipher so easily?",
+          "choices": [
+            "There are only 26 keys to try",
+            "The key is stored inside the message",
+            "Python can reverse `%` automatically",
+            "Each letter is encrypted twice"
+          ],
+          "answer": 0,
+          "explanation": "A search over 26 candidates finishes instantly; real ciphers have far too many keys for this.",
+          "concept": "brute-force-search"
+        },
+        {
+          "id": "q4",
+          "prompt": "With this lesson's `encrypt`, what is `encrypt(\"A-Z\", 1)`?",
+          "choices": [
+            "'B-A'",
+            "'B-Z'",
+            "'A-Z'",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "A moves to B, the dash is kept, and Z wraps round to A.",
+          "concept": "modular-arithmetic"
+        }
+      ],
+      "cites": [
+        "bb-rot13"
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you built",
+      "body": "- A cipher made of small functions that each do one job and can be tested alone.\n- `%` to wrap positions round, including negative shifts for decryption.\n- `index`, `in` and `\"\".join(...)` to move between letters, positions and strings.\n- A brute-force search that scores every candidate and keeps the best.\n\nTry next: the ROT13 cipher uses key 13, so encrypting twice gets the message back. Can you see why?"
+    }
+  ]
+}

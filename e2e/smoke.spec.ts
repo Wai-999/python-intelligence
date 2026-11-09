@@ -15,6 +15,11 @@ test("loads under the sub-path, fits the viewport, and is keyboard reachable", a
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
 
+  await page.goto("./#/library");
+  await expect(page.getByRole("heading", { name: "Library", level: 1 })).toBeVisible();
+  const libOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(libOverflow, "library page fits the viewport").toBeLessThanOrEqual(1);
+
   await page.goto("./#/lesson/py-functions/2");
   await page.getByRole("button", { name: "Step ▶" }).click();
   await page.getByRole("button", { name: "Step ▶" }).click();

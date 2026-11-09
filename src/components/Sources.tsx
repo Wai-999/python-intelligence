@@ -41,7 +41,7 @@ export function FurtherReading({ lesson }: { lesson: Lesson }) {
             <li key={c.title}>
               {c.authors}, <a href={c.url} target="_blank" rel="noopener noreferrer"><cite>{c.title}</cite></a>:{" "}
               {cs.map((x, i) => <span key={x.id}>{i > 0 && "; "}<Section c={x} />{x.sectionUrl ? "" : `, ${x.pages}`}</span>)}.{" "}
-              <span className="muted">Free online; <a href={c.licenseUrl} target="_blank" rel="noopener noreferrer">{c.license}</a>.
+              <span className="muted">{/^free/i.test(c.license) ? "" : "Free online; "}<a href={c.licenseUrl} target="_blank" rel="noopener noreferrer">{c.license}</a>.
                 {adapted ? " This lesson adapts this material under the same licence." : " This lesson is original writing that points to it."}</span>
             </li>
           );

@@ -21,6 +21,10 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await scan(page, "home");
 
+      await page.goto("./#/library");
+      await expect(page.getByRole("heading", { name: "Library", level: 1 })).toBeVisible();
+      await scan(page, "library");
+
       await page.goto("./#/lesson/py-conditionals/1");
       await expect(page.getByRole("heading", { name: "A comparison is a question" })).toBeVisible();
       await scan(page, "intuition step with sources and look-ahead notice");

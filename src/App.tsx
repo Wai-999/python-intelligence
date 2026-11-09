@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CurriculumMap } from "./components/CurriculumMap";
 import { LessonView } from "./components/LessonView";
+import { Library } from "./components/Library";
 import { ProgressPanel } from "./components/ProgressPanel";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -12,7 +13,7 @@ import type { LessonProgress, ProgressStore } from "./progress/types";
 
 const graph = buildGraph(LESSONS);
 
-type Route = { view: "home" } | { view: "lesson"; lessonId: string; step: number };
+type Route = { view: "home" } | { view: "library" } | { view: "lesson"; lessonId: string; step: number };
 
 function parseHash(h: string): Route {
   const m = /^#\/lesson\/([\w-]+)(?:\/(\d+))?/.exec(h);
@@ -20,6 +21,7 @@ function parseHash(h: string): Route {
     const max = graph.byId.get(m[1]!)!.steps.length - 1;
     return { view: "lesson", lessonId: m[1]!, step: Math.min(max, Number(m[2] ?? 0)) };
   }
+  if (/^#\/library\/?$/.test(h)) return { view: "library" };
   return { view: "home" };
 }
 
@@ -91,6 +93,7 @@ export function App() {
       <header className="top">
         <a className="brand" href="#/"><span className="logo" aria-hidden="true">py</span> Python Intelligence</a>
         <div className="top-right">
+          <a className="btn ghost" href="#/library" aria-current={route.view === "library" ? "page" : undefined}>Library</a>
           <span className="overall" aria-label={`${completed} of ${LESSONS.length} lessons completed`}>
             <span className="bar"><span style={{ width: `${(completed / LESSONS.length) * 100}%` }} /></span>
             {completed}/{LESSONS.length}
@@ -106,7 +109,7 @@ export function App() {
           <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} /></aside>
         )}
         <main id="main" tabIndex={-1}>
-          {!ready ? <p className="muted">Loading your progress…</p> : route.view === "home" ? (
+          {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "home" ? (
             <>
               <section className="hero">
                 <h1>Learn Python by running it.</h1>

@@ -53,6 +53,8 @@ export interface CatalogSource {
   kind?: "pdf" | "web";
   /** Section number (as a string) -> HTML id on the page, for web sources. */
   anchors?: Record<string, string>;
+  /** Cited by page only, never adapted (rights manifest `reference_only`). */
+  reference_only?: boolean;
 }
 
 export interface Socratic {

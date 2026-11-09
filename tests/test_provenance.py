@@ -89,6 +89,36 @@ def test_adapted_with_matching_licence_passes():
     assert errs(m) == []
 
 
+def test_reference_only_source_cannot_be_adapted_even_with_matching_licence():
+    cat = {**CATALOG, "book-a": {**CATALOG["book-a"], "reference_only": True}}
+    def m(l):
+        l["sources"][0]["use"] = "adapted"
+        l["license"] = "CC BY-NC 3.0"
+    e = errs(m, catalog=cat)
+    assert any("reference-only" in x and "don't adapt it" in x for x in e), e
+
+
+def test_reference_only_source_can_be_cited():
+    cat = {**CATALOG, "book-a": {**CATALOG["book-a"], "reference_only": True}}
+    assert errs(catalog=cat) == []
+
+
+def test_reference_only_flags_come_from_the_rights_manifest():
+    """The two cite-only books are flagged in the manifest, and the public catalog mirrors exactly that set."""
+    manifest = json.loads((ROOT / "docs" / "audit" / "source_manifest.json").read_text())["sources"]
+    catalog = json.loads((ROOT / "content" / "sources.json").read_text())["sources"]
+    ref_manifest = {s["source_id"] for s in manifest if s.get("reference_only")}
+    assert ref_manifest == {"pch-bigbooksmallpythonprojects", "pch-mml-book"}
+    assert {sid for sid, c in catalog.items() if c.get("reference_only")} == ref_manifest
+    for s in manifest:
+        if s.get("reference_only"):
+            assert s["allowed_to_publish"] is False, s["source_id"]
+    for f in (ROOT / "content" / "lessons").glob("*.json"):
+        for s in json.loads(f.read_text())["sources"]:
+            if s["source_id"] in ref_manifest:
+                assert s["use"] == "reference", (f.name, s["id"])
+
+
 @pytest.fixture
 def index(tmp_path):
     d = tmp_path / "book-a"

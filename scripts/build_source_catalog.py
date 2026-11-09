@@ -47,6 +47,23 @@ INFO = {
         "license_url": "https://creativecommons.org/licenses/by-nc-sa/3.0/",
         "official_url": "https://automatetheboringstuff.com/",
     },
+    # Reference-only books (manifest `reference_only`): cited by page, never adapted.
+    "pch-bigbooksmallpythonprojects": {
+        "title": "The Big Book of Small Python Projects: 81 Easy Practice Programs",
+        "short": "Big Book of Small Python Projects",
+        "authors": ["Al Sweigart"],
+        "license": "free to read online; cited for reference only",
+        "license_url": "https://inventwithpython.com/bigbookpython/",
+        "official_url": "https://inventwithpython.com/bigbookpython/",
+    },
+    "pch-mml-book": {
+        "title": "Mathematics for Machine Learning",
+        "short": "Mathematics for Machine Learning",
+        "authors": ["Marc Peter Deisenroth", "A. Aldo Faisal", "Cheng Soon Ong"],
+        "license": "free PDF for personal use, © the authors (Cambridge University Press); cited for reference only",
+        "license_url": "https://mml-book.github.io/",
+        "official_url": "https://mml-book.github.io/",
+    },
 }
 
 
@@ -85,6 +102,7 @@ def build() -> tuple[dict, dict]:
             "page_count": meta["page_count"],
             "page_label_offset": k,
             "page_label_from": first,
+            "reference_only": bool(src.get("reference_only")),
         }
         sections[sid] = [[lvl, title.strip(), page] for lvl, title, page in meta["toc"] if lvl <= 4]
     # Official documentation pages (scripts/fetch_web_source.py): "pages" are numbered sections.

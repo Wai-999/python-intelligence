@@ -39,19 +39,25 @@
       "downloaded": true,
       "presumed_author_publisher": "Al Sweigart / No Starch Press",
       "rights_status": "open_upstream_copy_unverified",
-      "rights_verified": false,
+      "rights_verified": true,
       "allowed_to_publish": false,
-      "allowed_for_internal_extraction": false,
+      "allowed_for_internal_extraction": true,
       "notes": "Author's online edition is CC BY-NC-SA 3.0; this PDF's origin is unknown. Obtain from inventwithpython.com instead.",
       "local_path": "sources/pdfs/pch-bigbooksmallpythonprojects.pdf",
       "downloaded_from": "https://raw.githubusercontent.com/Ravikisha/PythonCentralHub/d1590b79e98eb9975548da88001387bdedcd930a/books/BigBookSmallPythonProjects.pdf",
       "downloaded_size_bytes": 10452373,
       "license": "free to read online; reuse licence not confirmed",
       "decision": {
-        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "by": "human:waiyan (instruction 'combine these books and continue', applied by Claude session)",
         "date": "2026-11-08",
-        "basis": "inventwithpython.com offers it free to read; reuse licence not found, so reference only"
-      }
+        "basis": "inventwithpython.com offers it free to read; reuse licence not found; owner cleared local extraction for citation checks only. Reference use: lessons are original and cite pages; no text, code or figures are adapted, and the PDF is never published.",
+        "previous": {
+          "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+          "date": "2026-11-08",
+          "basis": "inventwithpython.com offers it free to read; reuse licence not found, so reference only"
+        }
+      },
+      "reference_only": true
     },
     {
       "source_id": "pch-deep-learning-with-python",
@@ -62,7 +68,7 @@
       "size_bytes": 14456615,
       "sha256": null,
       "downloaded": false,
-      "presumed_author_publisher": "Fran\u00e7ois Chollet / Manning",
+      "presumed_author_publisher": "François Chollet / Manning",
       "rights_status": "commercial_all_rights_reserved",
       "rights_verified": false,
       "allowed_to_publish": false,
@@ -125,7 +131,7 @@
       "size_bytes": 58542927,
       "sha256": null,
       "downloaded": false,
-      "presumed_author_publisher": "Aur\u00e9lien G\u00e9ron / O'Reilly",
+      "presumed_author_publisher": "Aurélien Géron / O'Reilly",
       "rights_status": "commercial_all_rights_reserved",
       "rights_verified": false,
       "allowed_to_publish": false,
@@ -326,17 +332,23 @@
       "rights_status": "free_personal_use_only",
       "rights_verified": true,
       "allowed_to_publish": false,
-      "allowed_for_internal_extraction": false,
+      "allowed_for_internal_extraction": true,
       "notes": "Authors distribute a free PDF for personal use; not an open license.",
       "local_path": "sources/pdfs/pch-mml-book.pdf",
       "downloaded_from": "https://mml-book.github.io/book/mml-book.pdf",
       "downloaded_size_bytes": 17565898,
       "license": "free PDF from authors; (c) Deisenroth, Faisal, Ong / CUP",
       "decision": {
-        "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+        "by": "human:waiyan (instruction 'combine these books and continue', applied by Claude session)",
         "date": "2026-11-08",
-        "basis": "mml-book.github.io offers the PDF freely; no reuse licence, so reference only"
-      }
+        "basis": "mml-book.github.io offers the PDF freely; no reuse licence; owner cleared local extraction for citation checks only. Reference use: lessons are original and cite pages; no text, code or figures are adapted, and the PDF is never published.",
+        "previous": {
+          "by": "human:waiyan (instruction 'download pdf', applied by Claude session)",
+          "date": "2026-11-08",
+          "basis": "mml-book.github.io offers the PDF freely; no reuse licence, so reference only"
+        }
+      },
+      "reference_only": true
     }
   ],
   "owner_decision_p0_5": {

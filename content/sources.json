@@ -13,7 +13,8 @@
    "sha256": "6033000bac3f9268ad75ee041bf8e5d9a3bc8a33bb156399cbd014918cb59f94",
    "page_count": 244,
    "page_label_offset": 22,
-   "page_label_from": 23
+   "page_label_from": 23,
+   "reference_only": false
   },
   "pch-diveintopython3": {
    "title": "Dive Into Python 3",
@@ -27,7 +28,8 @@
    "sha256": "5394901a2d48d77a2525ca95fcffadceedb31c34c6f0340d37c78c1296c4f118",
    "page_count": 487,
    "page_label_offset": null,
-   "page_label_from": null
+   "page_label_from": null,
+   "reference_only": false
   },
   "pch-automate-the-boring-stuff-with-python": {
    "title": "Automate the Boring Stuff with Python",
@@ -41,7 +43,40 @@
    "sha256": "ba5e3306438c985c969a159092957d039efa606f3a679292ed44e1015e697200",
    "page_count": 505,
    "page_label_offset": 24,
-   "page_label_from": 25
+   "page_label_from": 25,
+   "reference_only": false
+  },
+  "pch-bigbooksmallpythonprojects": {
+   "title": "The Big Book of Small Python Projects: 81 Easy Practice Programs",
+   "short": "Big Book of Small Python Projects",
+   "authors": [
+    "Al Sweigart"
+   ],
+   "license": "free to read online; cited for reference only",
+   "license_url": "https://inventwithpython.com/bigbookpython/",
+   "official_url": "https://inventwithpython.com/bigbookpython/",
+   "sha256": "edc4905eacb143ea8b7ddc10270d012c2167270c9934bb8220fd600e19c21e7e",
+   "page_count": 434,
+   "page_label_offset": 28,
+   "page_label_from": 29,
+   "reference_only": true
+  },
+  "pch-mml-book": {
+   "title": "Mathematics for Machine Learning",
+   "short": "Mathematics for Machine Learning",
+   "authors": [
+    "Marc Peter Deisenroth",
+    "A. Aldo Faisal",
+    "Cheng Soon Ong"
+   ],
+   "license": "free PDF for personal use, © the authors (Cambridge University Press); cited for reference only",
+   "license_url": "https://mml-book.github.io/",
+   "official_url": "https://mml-book.github.io/",
+   "sha256": "3f87b70c64a35d30ec4e565b4d5cfd18fe913002d3b3bed44691c7d0838911bc",
+   "page_count": 417,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "reference_only": true
   },
   "pydocs-312-stdtypes": {
    "title": "The Python Standard Library 3.12: Built-in Types",
@@ -377,6 +412,34 @@
     "29": "parquet",
     "30": "excel",
     "31": "gotchas"
+   }
+  },
+  "pydocs-312-random": {
+   "title": "The Python Standard Library 3.12: random — Generate pseudo-random numbers",
+   "short": "Python 3.12 docs, random",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/library/random.html",
+   "kind": "web",
+   "sha256": "ebe62caad0756d32478ee6800f2abfb76c8367753c857b4489356f068be696af",
+   "page_count": 11,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "module-random",
+    "2": "bookkeeping-functions",
+    "3": "functions-for-bytes",
+    "4": "functions-for-integers",
+    "5": "functions-for-sequences",
+    "6": "discrete-distributions",
+    "7": "real-valued-distributions",
+    "8": "alternative-generator",
+    "9": "notes-on-reproducibility",
+    "10": "examples",
+    "11": "recipes"
    }
   }
  }

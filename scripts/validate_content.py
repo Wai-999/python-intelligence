@@ -159,6 +159,9 @@ def check_provenance(lesson: dict, cleared: set[str], catalog: dict) -> list[str
             errs.append(f"step {st.get('id')}: uncited claim: a {st.get('kind')} step in a book-grounded lesson must cite a source")
     for r in sorted(set(refs) - cited):
         errs.append(f"source {r}: listed but never cited by a step")
+    for r, s in refs.items():
+        if s.get("use") == "adapted" and catalog.get(s.get("source_id"), {}).get("reference_only"):
+            errs.append(f"source {r}: {s['source_id']} is reference-only in the rights manifest; cite it, don't adapt it")
     adapted = {catalog[s["source_id"]]["license"] for s in refs.values()
                if s.get("use") == "adapted" and s.get("source_id") in catalog}
     if len(adapted) > 1:
@@ -328,7 +331,9 @@ def main() -> int:
         errs.append("duplicate lesson ids")
     catalog = json.loads(CATALOG.read_text())["sources"] if CATALOG.is_file() else {}
     secs = json.loads(SECTIONS.read_text())["sections"] if SECTIONS.is_file() else {}
-    catalog = {sid: {**c, "sections": secs.get(sid, [])} for sid, c in catalog.items()}
+    # reference_only comes from the rights manifest (the authority), never from the generated catalog.
+    ref_only = {s["source_id"] for s in manifest["sources"] if s.get("reference_only")}
+    catalog = {sid: {**c, "sections": secs.get(sid, []), "reference_only": sid in ref_only} for sid, c in catalog.items()}
     errs += check_catalog_bindings(catalog, approved)
     py_version, installed = interpreter_report()
     if not py_version.startswith("3.12."):
