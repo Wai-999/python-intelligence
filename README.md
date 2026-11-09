@@ -50,6 +50,7 @@ python3 -m orchestrator events --task P1-1         # audit trail
 python3 -m orchestrator run --live                 # REALLY run claude/codex until a human gate
 python3 -m orchestrator reject P2-4 --by <you> --with-findings --feedback "..."  # send back
 python3 -m orchestrator accept P3-4 --by <you> --reason "..."   # blocked but tested -> gate (still needs approve)
+python3 -m orchestrator unblock P4-6 --by <you> --reason "..." --feedback "..."  # retry; feedback replaces the last
 ```
 
 State lives in `.orchestrator/state.sqlite3` (gitignored). The orchestrator is local-only and is never deployed.
