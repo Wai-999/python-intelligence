@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import lesson from "../content/lessons/np-arrays.json";
+import lesson from "../content/lessons/np-arrays.json" with { type: "json" };
 
 test("lesson packages load before examples and exercise checks; pandas is supported", async ({ page }) => {
   test.setTimeout(240_000);
