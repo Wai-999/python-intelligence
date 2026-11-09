@@ -1,0 +1,378 @@
+{
+  "id": "stats-summary",
+  "title": "Summary statistics: centre and spread",
+  "summary": "Describe data with its mean, variance and standard deviation, and know which variance a library computes.",
+  "track": "statistics",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "stats-simulation",
+    "np-arrays"
+  ],
+  "concepts": [
+    "mean",
+    "variance",
+    "standard-deviation"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-stats",
+      "source_id": "pch-mml-book",
+      "pages": [
+        192,
+        202
+      ],
+      "section": "6.4 Summary Statistics and Independence",
+      "use": "reference"
+    },
+    {
+      "id": "np-more",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "More useful array operations",
+      "use": "reference"
+    },
+    {
+      "id": "np-std",
+      "source_id": "npdocs-20-std",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "numpy.std",
+      "use": "reference"
+    },
+    {
+      "id": "stat-spread",
+      "source_id": "pydocs-312-statistics",
+      "pages": [
+        3,
+        3
+      ],
+      "section": "Measures of spread",
+      "use": "reference"
+    },
+    {
+      "id": "stat-centre",
+      "source_id": "pydocs-312-statistics",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Averages and measures of central location",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Same average, different story",
+      "body": "Two classes both average 70 on a test. In one, everyone scored 70. In the other, scores ran from 40\nto 100. The average alone can't tell them apart, yet a teacher would treat them very differently.\nStatistics summarise data with two kinds of number: where its **centre** is, and how **spread out**\nit is. Nearly every later idea in statistics and machine learning uses both."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A balance point and a typical distance",
+      "body": "Picture the values as weights on a ruler. The **mean** is the point where the ruler balances. For\nspread, measure how far each value is from the mean, square those distances (so values below\nand above don't cancel, and big misses count more), and average them: that is the **variance**.\nSquaring changed the units (points became points squared), so take the square root to get back\nto the original units: the **standard deviation**, a typical distance from the mean.",
+      "cites": [
+        "mml-stats",
+        "stat-spread"
+      ],
+      "socratic": {
+        "questions": [
+          "Why not just average the distances from the mean without squaring them? What would that average always be?",
+          "If every score rises by 10 points, what happens to the mean, and to the spread?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a variance being computed",
+      "body": "Each frame shows the variables just before the highlighted line runs.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def variance(xs):\n    m = sum(xs) / len(xs)\n    total = 0\n    for x in xs:\n        total += (x - m) ** 2\n    return total / len(xs)\n\nprint(variance([2, 4, 6]))",
+        "frames": [
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "variance": "<function variance>"
+            },
+            "note": "Call `variance([2, 4, 6])`."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "variance([2, 4, 6])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 6]"
+            },
+            "note": "First the mean: 12 / 3."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "variance([2, 4, 6])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 6]",
+              "m": "4.0"
+            },
+            "note": "Start a running total of squared distances."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "variance([2, 4, 6])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 6]",
+              "m": "4.0",
+              "total": "0",
+              "x": "2"
+            },
+            "note": "2 is 2 below the mean: adds (2 - 4)² = 4."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "variance([2, 4, 6])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 6]",
+              "m": "4.0",
+              "total": "4.0",
+              "x": "4"
+            },
+            "note": "4 is the mean itself: adds 0."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "variance([2, 4, 6])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 6]",
+              "m": "4.0",
+              "total": "4.0",
+              "x": "6"
+            },
+            "note": "6 is 2 above: adds 4 again."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>",
+              "variance([2, 4, 6])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 6]",
+              "m": "4.0",
+              "total": "8.0",
+              "x": "6"
+            },
+            "note": "Average the squared distances: 8 / 3."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "variance": "<function variance>"
+            },
+            "note": "The variance. Its square root, about 1.63, is the standard deviation.",
+            "output": "2.6666666666666665"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "For values `x₁ … x_N`:\n\n**Mean:** `x̄ = (x₁ + … + x_N) / N`.\n\n**Variance:** the average squared distance from the mean, `Σ (xᵢ − x̄)² / N`. **Standard\ndeviation:** its square root.\n\n**Two versions of variance.** Dividing by `N` describes exactly the data you have (the\n*population* or *empirical* variance). When the data is a sample and you want to estimate the\nvariance of the larger population it came from, dividing by `N − 1` instead gives an unbiased\nestimate (the *sample* variance). The two differ most for small `N`.\n\n**Which one a library computes:** NumPy's `arr.mean()`, `arr.var()` and `arr.std()` divide by `N` by\ndefault (`ddof=0`); pass `ddof=1` to divide by `N − 1`. Python's `statistics` module names them:\n`pvariance`/`pstdev` divide by `N`, `variance`/`stdev` by `N − 1` and need at least two values.",
+      "cites": [
+        "mml-stats",
+        "np-more",
+        "np-std",
+        "stat-spread",
+        "stat-centre"
+      ]
+    },
+    {
+      "id": "classes",
+      "kind": "example",
+      "title": "Run it: two classes",
+      "body": "Both classes average 70. Predict which numbers differ, and why the last two lines disagree.",
+      "code": "import numpy as np\nimport statistics\n\na = np.array([70, 70, 70, 70])\nb = np.array([40, 100, 55, 85])\nprint(a.mean(), b.mean())\nprint(a.std(), b.std())\nprint(b.var(), b.var(ddof=1))\nprint(statistics.pvariance([40, 100, 55, 85]), statistics.variance([40, 100, 55, 85]))",
+      "expected_output": "70.0 70.0\n0.0 23.717082451262844\n562.5 750.0\n562.5 750\n"
+    },
+    {
+      "id": "std",
+      "kind": "guided",
+      "title": "Your turn: standard deviation from scratch",
+      "body": "Without NumPy or `statistics`, complete `std(xs, sample=False)`. With `sample=False` divide the sum\nof squared distances by `N`; with `sample=True` divide by `N − 1`. Raise `ValueError` if `xs` is\nempty, or if `sample=True` and there are fewer than two values.",
+      "starter": "def std(xs, sample=False):\n    m = sum(xs) / len(xs)\n    return sum(abs(x - m) for x in xs) / len(xs)\n",
+      "hints": [
+        "The starter averages plain distances. Square each distance, divide, then take the square root with `** 0.5`.",
+        "Choose the divisor with `n - 1 if sample else n`, after checking there is enough data.",
+        "def std(xs, sample=False):\n    n = len(xs)\n    if n == 0 or (sample and n < 2):\n        raise ValueError('not enough data')\n    m = sum(xs) / n\n    ss = sum((x - m) ** 2 for x in xs)\n    return (ss / (n - 1 if sample else n)) ** 0.5\n"
+      ],
+      "tests": [
+        {
+          "name": "population",
+          "code": "assert abs(std([2, 4, 4, 4, 5, 5, 7, 9]) - 2.0) < 1e-12, f'got {std([2, 4, 4, 4, 5, 5, 7, 9])!r}'",
+          "concept": "standard-deviation"
+        },
+        {
+          "name": "sample divides by N - 1",
+          "code": "import statistics\nxs = [2, 4, 4, 4, 5, 5, 7, 9]\nassert abs(std(xs, sample=True) - statistics.stdev(xs)) < 1e-12, 'with sample=True divide by N - 1'",
+          "concept": "variance"
+        },
+        {
+          "name": "matches the statistics module",
+          "code": "import statistics\nfor xs in ([1.5, 2.5], [10, 20, 60, 10], [3, -3, 0, 6, 9]):\n    assert abs(std(xs) - statistics.pstdev(xs)) < 1e-9, f'population std of {xs}'\n    assert abs(std(xs, sample=True) - statistics.stdev(xs)) < 1e-9, f'sample std of {xs}'",
+          "concept": "standard-deviation"
+        },
+        {
+          "name": "not enough data",
+          "code": "try:\n    std([5], sample=True)\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('one value is not enough for a sample standard deviation')\ntry:\n    std([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError for no data')\nassert std([5]) == 0.0, 'one value has population spread 0'",
+          "concept": "variance"
+        }
+      ],
+      "solution": "def std(xs, sample=False):\n    n = len(xs)\n    if n == 0 or (sample and n < 2):\n        raise ValueError('not enough data')\n    m = sum(xs) / n\n    ss = sum((x - m) ** 2 for x in xs)\n    return (ss / (n - 1 if sample else n)) ** 0.5\n"
+    },
+    {
+      "id": "outliers",
+      "kind": "challenge",
+      "title": "Challenge: flag unusual values",
+      "body": "A simple outlier rule flags values more than `k` standard deviations from the mean. Write\n`outliers(values, k=2)` with NumPy, using the population standard deviation, and return the flagged\nvalues as a list in their original order. A value exactly `k` standard deviations away is not\nflagged. If every value is the same, nothing is unusual: return `[]`.",
+      "starter": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    return arr[arr > arr.mean()].tolist()\n",
+      "hints": [
+        "`np.abs(arr - arr.mean())` is each value's distance from the mean.",
+        "Keep values whose distance is `> k * arr.std()`; check for a standard deviation of 0 first.",
+        "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    s = arr.std()\n    if s == 0:\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * s].tolist()\n"
+      ],
+      "tests": [
+        {
+          "name": "one clear outlier",
+          "code": "v = [10] * 9 + [50]\nassert outliers(v) == [50], f'got {outliers(v)!r}'",
+          "concept": "standard-deviation"
+        },
+        {
+          "name": "low values count too",
+          "code": "v = [50] * 9 + [10]\nassert outliers(v) == [10], 'distance from the mean works in both directions'",
+          "concept": "standard-deviation"
+        },
+        {
+          "name": "k is respected",
+          "code": "v = [10] * 9 + [50]\nassert outliers(v, k=3) == [], '50 is exactly 3 standard deviations away: not more than 3'\nassert outliers(v, k=2.9) == [50]",
+          "concept": "standard-deviation"
+        },
+        {
+          "name": "constant data",
+          "code": "import warnings\nwith warnings.catch_warnings():\n    warnings.simplefilter('error')\n    assert outliers([4, 4, 4]) == [], 'no spread, no outliers'",
+          "concept": "variance"
+        },
+        {
+          "name": "returns a list",
+          "code": "assert type(outliers([1, 2, 30])) is list, 'return a plain list (use .tolist())'",
+          "concept": "standard-deviation"
+        },
+        {
+          "name": "population, not sample",
+          "code": "v = [0, 0, 0, 0, 3]\nassert outliers(v, k=1.9) == [3], 'use arr.std() (divides by N)'",
+          "concept": "variance"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    s = arr.std()\n    if s == 0:\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * s].tolist()\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is the variance (dividing by N) of `[1, 3]`?",
+          "choices": [
+            "1.0",
+            "2.0",
+            "4.0",
+            "0.0"
+          ],
+          "answer": 0,
+          "explanation": "The mean is 2; each value is 1 away; (1 + 1) / 2 = 1.",
+          "concept": "variance"
+        },
+        {
+          "id": "q2",
+          "prompt": "Every value in a data set is increased by 10. What happens to the standard deviation?",
+          "choices": [
+            "It increases by 10",
+            "It stays the same",
+            "It is multiplied by 10",
+            "It becomes 0"
+          ],
+          "answer": 1,
+          "explanation": "Shifting everything moves the mean too, so every distance from the mean is unchanged.",
+          "concept": "standard-deviation"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "import numpy as np\na = np.array([1, 3])\nprint(a.var(), a.var(ddof=1))",
+          "choices": [
+            "1.0 2.0",
+            "2.0 1.0",
+            "1.0 1.0",
+            "2.0 2.0"
+          ],
+          "answer": 0,
+          "explanation": "NumPy divides by N by default (2 / 2); `ddof=1` divides by N − 1 (2 / 1).",
+          "concept": "variance"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why is the standard deviation often easier to interpret than the variance?",
+          "choices": [
+            "It is in the same units as the data",
+            "It is always smaller",
+            "It ignores outliers",
+            "It never needs a mean"
+          ],
+          "answer": 0,
+          "explanation": "Variance is in squared units; the square root brings it back.",
+          "concept": "standard-deviation"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Summarise data by its mean (centre) and standard deviation (spread).\n- Compute variance by hand, and say whether a tool divides by `N` or `N − 1`.\n- Use NumPy's `mean`, `var` and `std` (with `ddof`) and the `statistics` module.\n- Flag outliers by their distance from the mean in standard deviations.\n\nNext: fitting a line to data, where the squared-distance idea returns as the loss to minimise."
+    }
+  ]
+}

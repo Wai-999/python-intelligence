@@ -1,0 +1,356 @@
+{
+  "id": "ml-linear-regression",
+  "title": "Linear regression: fitting a line",
+  "summary": "Fit a straight line to data by minimising squared error, first in closed form, then by gradient descent.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-vectors",
+    "stats-summary"
+  ],
+  "concepts": [
+    "linear-models",
+    "loss-functions",
+    "least-squares",
+    "gradient-descent"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-reg",
+      "source_id": "pch-mml-book",
+      "pages": [
+        295,
+        296
+      ],
+      "section": "9 Linear Regression",
+      "use": "reference"
+    },
+    {
+      "id": "mml-form",
+      "source_id": "pch-mml-book",
+      "pages": [
+        297,
+        297
+      ],
+      "section": "9.1 Problem Formulation",
+      "use": "reference"
+    },
+    {
+      "id": "mml-est",
+      "source_id": "pch-mml-book",
+      "pages": [
+        298,
+        308
+      ],
+      "section": "9.2 Parameter Estimation",
+      "use": "reference"
+    },
+    {
+      "id": "mml-gd",
+      "source_id": "pch-mml-book",
+      "pages": [
+        233,
+        238
+      ],
+      "section": "7.1 Optimization Using Gradient Descent",
+      "use": "reference"
+    },
+    {
+      "id": "np-formulas",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        25,
+        25
+      ],
+      "section": "Working with mathematical formulas",
+      "use": "reference"
+    },
+    {
+      "id": "np-ops",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "Basic array operations",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Predicting from examples",
+      "body": "Given the sizes and prices of flats that have sold, what should a new flat of 70 m² cost? **Linear\nregression** learns a straight-line rule from examples and uses it to predict new cases. It is the\nsimplest machine-learning model, and it introduces the ideas the rest are built on: a model with\nadjustable **parameters**, a **loss** that scores how wrong it is, and **training** that adjusts\nthe parameters to make the loss small."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "The line that misses least",
+      "body": "Plot the examples as points and imagine laying a ruler across them. Each point misses the ruler by\nsome vertical gap, its **error**. Square each gap, so misses above and below both count and big\nmisses count more, and average them. That average, the **mean squared error**, is the score. The\nbest line is the one with the smallest score. You can find it with a formula, or by starting\nanywhere and repeatedly nudging the line downhill on the score.",
+      "cites": [
+        "mml-reg",
+        "mml-est",
+        "np-formulas"
+      ],
+      "socratic": {
+        "questions": [
+          "Why not just add up the errors without squaring them?",
+          "If you had to find the lowest point of a valley blindfolded, what would you do?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a line being scored",
+      "body": "The candidate line is y = 2x + 0. Each frame shows the variables just before the highlighted line runs.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import numpy as np\n\ndef mse(w, b, x, y):\n    pred = w * x + b\n    return np.mean((pred - y) ** 2)\n\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([2.0, 4.0, 7.0])\nprint(mse(2.0, 0.0, x, y))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "mse": "<function mse>"
+            },
+            "note": "Three examples: inputs `x` and true answers `y`."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "mse": "<function mse>",
+              "x": "array([1., 2., 3.])",
+              "y": "array([2., 4., 7.])"
+            },
+            "note": "Score the line with slope 2 and intercept 0."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "mse(2.0, 0.0, x, y)"
+            ],
+            "locals": {
+              "w": "2.0",
+              "b": "0.0",
+              "x": "array([1., 2., 3.])",
+              "y": "array([2., 4., 7.])"
+            },
+            "note": "Predict every example at once: 2 * x + 0."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "mse(2.0, 0.0, x, y)"
+            ],
+            "locals": {
+              "w": "2.0",
+              "b": "0.0",
+              "x": "array([1., 2., 3.])",
+              "y": "array([2., 4., 7.])",
+              "pred": "array([2., 4., 6.])"
+            },
+            "note": "Errors are [0, 0, -1]; squared, [0, 0, 1]; their mean is 1/3."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "mse": "<function mse>",
+              "x": "array([1., 2., 3.])",
+              "y": "array([2., 4., 7.])"
+            },
+            "note": "A small loss, but a better line exists.",
+            "output": "0.3333333333333333"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Model:** with one input, predict `ŷ = w·x + b`: slope `w` and intercept `b` are the parameters.\n\n**Loss:** the mean squared error over `N` examples, `L(w, b) = Σ (ŷᵢ − yᵢ)² / N`. In NumPy,\n`np.mean((pred - y) ** 2)`.\n\n**Least squares in closed form:** the parameters that minimise this loss can be solved for\ndirectly. With one input they are\n`w = Σ (xᵢ − x̄)(yᵢ − ȳ) / Σ (xᵢ − x̄)²` and `b = ȳ − w·x̄`, which needs the `x` values to not\nall be equal.\n\n**Gradient descent:** start from a guess and repeat `θ ← θ − γ · (gradient of L)`, where the step\nsize `γ` (the *learning rate*) is a small positive number. For this loss the gradient is\n`∂L/∂w = 2·mean((ŷ − y)·x)` and `∂L/∂b = 2·mean(ŷ − y)`. Update both parameters from the **same**\nold values. Too large a step size can overshoot and diverge; too small a step is slow.",
+      "cites": [
+        "mml-form",
+        "mml-est",
+        "mml-gd",
+        "np-formulas",
+        "np-ops"
+      ]
+    },
+    {
+      "id": "fit",
+      "kind": "example",
+      "title": "Run it: the closed-form fit",
+      "body": "The data is roughly y = 2x + 1 with some noise. Predict roughly what the slope and intercept will be.",
+      "code": "import numpy as np\n\nx = np.array([1.0, 2.0, 3.0, 4.0])\ny = np.array([3.1, 4.9, 7.2, 8.8])\ndx = x - x.mean()\nw = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\nb = y.mean() - w * x.mean()\nprint(round(float(w), 3), round(float(b), 3))\nprint(round(float(np.mean((w * x + b - y) ** 2)), 4))\nprint(round(float(w * 5 + b), 2))",
+      "expected_output": "1.94 1.15\n0.0205\n10.85\n"
+    },
+    {
+      "id": "closed",
+      "kind": "guided",
+      "title": "Your turn: fit_line",
+      "body": "Complete `fit_line(x, y)` so it returns the least-squares `(w, b)` as plain floats, using the\nclosed-form rules. Raise `ValueError` if every `x` is the same (no line can be fitted).",
+      "starter": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w = y.mean() / x.mean()\n    return float(w), 0.0\n",
+      "hints": [
+        "Centre the inputs first: `dx = x - x.mean()`.",
+        "`w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)`, then `b = y.mean() - w * x.mean()`; check the denominator before dividing.",
+        "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    dx = x - x.mean()\n    denom = np.sum(dx * dx)\n    if denom == 0:\n        raise ValueError('x must not be constant')\n    w = np.sum(dx * (y - y.mean())) / denom\n    b = y.mean() - w * x.mean()\n    return float(w), float(b)\n"
+      ],
+      "tests": [
+        {
+          "name": "exact line",
+          "code": "w, b = fit_line([0, 1, 2, 3], [-2, 1, 4, 7])\nassert abs(w - 3) < 1e-12 and abs(b + 2) < 1e-12, f'y = 3x - 2 exactly; got w={w}, b={b}'",
+          "concept": "least-squares"
+        },
+        {
+          "name": "noisy data",
+          "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nw, b = fit_line(x, y)\nwant = np.polyfit(x, y, 1)\nassert abs(w - want[0]) < 1e-9 and abs(b - want[1]) < 1e-9, f'got {(w, b)}, want {tuple(want)}'",
+          "concept": "least-squares"
+        },
+        {
+          "name": "minimises the loss",
+          "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nx, y = np.array(x), np.array(y)\nw, b = fit_line(x, y)\nloss = lambda w, b: np.mean((w * x + b - y) ** 2)\nfor dw, db in ((0.01, 0), (-0.01, 0), (0, 0.01), (0, -0.01)):\n    assert loss(w, b) < loss(w + dw, b + db), 'nudging the line should only make the loss worse'",
+          "concept": "loss-functions"
+        },
+        {
+          "name": "constant x",
+          "code": "try:\n    fit_line([2, 2, 2], [1, 2, 3])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when every x is the same')",
+          "concept": "linear-models"
+        },
+        {
+          "name": "returns floats",
+          "code": "w, b = fit_line([1, 2], [1, 3])\nassert type(w) is float and type(b) is float, 'return plain Python floats'",
+          "concept": "linear-models"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    dx = x - x.mean()\n    denom = np.sum(dx * dx)\n    if denom == 0:\n        raise ValueError('x must not be constant')\n    w = np.sum(dx * (y - y.mean())) / denom\n    b = y.mean() - w * x.mean()\n    return float(w), float(b)\n"
+    },
+    {
+      "id": "descent",
+      "kind": "challenge",
+      "title": "Challenge: gradient descent",
+      "body": "Write `gd_fit(x, y, lr=0.01, steps=5000)`. Start at `w = b = 0.0` and take exactly `steps` gradient\ndescent steps on the mean squared error with learning rate `lr`, updating `w` and `b` together from\nthe same old values. Return `(w, b)` as floats. With enough steps it should agree with `fit_line`.",
+      "starter": "import numpy as np\n\ndef gd_fit(x, y, lr=0.01, steps=5000):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w, b = 0.0, 0.0\n    for _ in range(steps):\n        err = w * x + b - y\n        w = w - lr * 2 * np.mean(err * x)\n    return float(w), float(b)\n",
+      "hints": [
+        "The starter never updates `b`. Its gradient is `2 * np.mean(err)`.",
+        "Compute both gradients first, then assign `w, b = w - lr * dw, b - lr * db` in one statement.",
+        "import numpy as np\n\ndef gd_fit(x, y, lr=0.01, steps=5000):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w, b = 0.0, 0.0\n    for _ in range(steps):\n        err = w * x + b - y\n        dw = 2 * np.mean(err * x)\n        db = 2 * np.mean(err)\n        w, b = w - lr * dw, b - lr * db\n    return float(w), float(b)\n"
+      ],
+      "tests": [
+        {
+          "name": "no steps, no change",
+          "code": "assert gd_fit([1, 2], [2, 4], steps=0) == (0.0, 0.0), 'start at w = b = 0'",
+          "concept": "gradient-descent"
+        },
+        {
+          "name": "one step, both parameters",
+          "code": "w, b = gd_fit([1, 2], [2, 4], lr=0.1, steps=1)\nassert abs(w - 1.0) < 1e-12 and abs(b - 0.6) < 1e-12, f'one step from (0, 0) gives (1.0, 0.6); got {(w, b)}'",
+          "concept": "gradient-descent"
+        },
+        {
+          "name": "simultaneous update",
+          "code": "w, b = gd_fit([1, 2], [2, 4], lr=0.1, steps=1)\nassert abs(b - 0.3) > 1e-6, 'compute both gradients from the old w and b before updating either'",
+          "concept": "gradient-descent"
+        },
+        {
+          "name": "converges to least squares",
+          "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nw, b = gd_fit(x, y, lr=0.05, steps=5000)\nwant = np.polyfit(x, y, 1)\nassert abs(w - want[0]) < 1e-3 and abs(b - want[1]) < 1e-3, f'got {(w, b)}, least squares is {tuple(want)}'",
+          "concept": "least-squares"
+        },
+        {
+          "name": "returns floats",
+          "code": "w, b = gd_fit([1, 2], [2, 4], steps=3)\nassert type(w) is float and type(b) is float, 'return plain Python floats'",
+          "concept": "linear-models"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef gd_fit(x, y, lr=0.01, steps=5000):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w, b = 0.0, 0.0\n    for _ in range(steps):\n        err = w * x + b - y\n        dw = 2 * np.mean(err * x)\n        db = 2 * np.mean(err)\n        w, b = w - lr * dw, b - lr * db\n    return float(w), float(b)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Predictions are `[2, 4]` and the true values are `[3, 4]`. What is the mean squared error?",
+          "choices": [
+            "0.5",
+            "1.0",
+            "0.25",
+            "2.0"
+          ],
+          "answer": 0,
+          "explanation": "Errors [-1, 0], squared [1, 0], mean 0.5.",
+          "concept": "loss-functions"
+        },
+        {
+          "id": "q2",
+          "prompt": "What does gradient descent do at each step?",
+          "choices": [
+            "Moves the parameters a small step in the direction that lowers the loss",
+            "Tries every possible parameter value",
+            "Removes the examples with the biggest errors",
+            "Doubles the learning rate"
+          ],
+          "answer": 0,
+          "explanation": "It steps opposite the gradient, which is the direction of steepest increase.",
+          "concept": "gradient-descent"
+        },
+        {
+          "id": "q3",
+          "prompt": "During training the loss grows larger and larger with each step. What is the most likely cause?",
+          "choices": [
+            "The learning rate is too large",
+            "There are too many examples",
+            "The model has an intercept",
+            "The data has no noise"
+          ],
+          "answer": 0,
+          "explanation": "Steps that are too big overshoot the minimum and can diverge.",
+          "concept": "gradient-descent"
+        },
+        {
+          "id": "q4",
+          "prompt": "A fitted line is `ŷ = 2x + 1`. What does it predict for `x = 3`?",
+          "choices": [
+            "7",
+            "6",
+            "5",
+            "9"
+          ],
+          "answer": 0,
+          "explanation": "2 * 3 + 1 = 7.",
+          "concept": "linear-models"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Describe a linear model by its parameters and score it with the mean squared error.\n- Fit the least-squares line directly with the closed-form rules.\n- Train the same model with gradient descent, choosing a sensible learning rate.\n- Use a fitted line to predict new cases.\n\nWith many inputs the same ideas carry over: vectors of parameters, a matrix of examples, and the\nsame loss and gradient-descent loop."
+    }
+  ]
+}

@@ -180,6 +180,46 @@
     "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
    },
    "sha256": "ebe62caad0756d32478ee6800f2abfb76c8367753c857b4489356f068be696af"
+  },
+  {
+   "source_id": "pydocs-312-statistics",
+   "title": "The Python Standard Library 3.12: statistics — Mathematical statistics functions",
+   "short": "Python 3.12 docs, statistics",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/statistics.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-08",
+    "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
+   },
+   "sha256": "d352eb46f10a3c30aae7e8108ca24dd0ded58158462d06ba724b150fb1f1da5f"
+  },
+  {
+   "source_id": "npdocs-20-std",
+   "title": "NumPy 2.0 API reference: numpy.std",
+   "short": "NumPy 2.0 docs, numpy.std",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.std.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-08",
+    "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
+   },
+   "sha256": "8de1d072cfa7328466b03adc573e69a48e99288e565534dc0b7bf0df81f97aaf"
   }
  ]
 }

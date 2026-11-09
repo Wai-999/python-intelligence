@@ -441,6 +441,54 @@
     "10": "examples",
     "11": "recipes"
    }
+  },
+  "pydocs-312-statistics": {
+   "title": "The Python Standard Library 3.12: statistics — Mathematical statistics functions",
+   "short": "Python 3.12 docs, statistics",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/library/statistics.html",
+   "kind": "web",
+   "sha256": "d352eb46f10a3c30aae7e8108ca24dd0ded58158462d06ba724b150fb1f1da5f",
+   "page_count": 13,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "module-statistics",
+    "2": "averages-and-measures-of-central-location",
+    "3": "measures-of-spread",
+    "4": "statistics-for-relations-between-two-inputs",
+    "5": "function-details",
+    "6": "exceptions",
+    "7": "normaldist-objects",
+    "8": "examples-and-recipes",
+    "9": "classic-probability-problems",
+    "10": "monte-carlo-inputs-for-simulations",
+    "11": "approximating-binomial-distributions",
+    "12": "naive-bayesian-classifier",
+    "13": "kernel-density-estimation"
+   }
+  },
+  "npdocs-20-std": {
+   "title": "NumPy 2.0 API reference: numpy.std",
+   "short": "NumPy 2.0 docs, numpy.std",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "official_url": "https://numpy.org/doc/2.0/reference/generated/numpy.std.html",
+   "kind": "web",
+   "sha256": "8de1d072cfa7328466b03adc573e69a48e99288e565534dc0b7bf0df81f97aaf",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "numpy-std"
+   }
   }
  }
 }

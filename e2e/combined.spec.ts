@@ -2,8 +2,10 @@ import { expect, test } from "@playwright/test";
 import caesar from "../content/lessons/proj-caesar.json" with { type: "json" };
 import sim from "../content/lessons/stats-simulation.json" with { type: "json" };
 import vectors from "../content/lessons/ml-vectors.json" with { type: "json" };
+import summary from "../content/lessons/stats-summary.json" with { type: "json" };
+import regression from "../content/lessons/ml-linear-regression.json" with { type: "json" };
 
-// The lessons that combine all five books: each runs in the browser exactly as the CPython 3.12 gate checked it.
+// The lessons that combine all five books (and the statistics/ML path built on them): each runs in the browser exactly as the CPython 3.12 gate checked it.
 type L = { steps: { id: string; kind: string; code?: string; expected_output?: string; solution?: string }[] };
 const at = (l: L, id: string) => l.steps.findIndex((s) => s.id === id);
 
@@ -25,6 +27,8 @@ for (const [name, lesson, example, exercises] of [
   ["proj-caesar", caesar, "round-trip", ["decrypt", "crack"]],
   ["stats-simulation", sim, "dice", ["birthday", "estimate"]],
   ["ml-vectors", vectors, "measure", ["cosine", "nearest"]],
+  ["stats-summary", summary, "classes", ["std", "outliers"]],
+  ["ml-linear-regression", regression, "fit", ["closed", "descent"]],
 ] as const) {
   test(`${name}: example output and every exercise solution pass in the browser`, async ({ page }) => {
     test.setTimeout(240_000);
