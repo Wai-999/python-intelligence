@@ -222,6 +222,11 @@
           "concept": "decision-boundary"
         },
         {
+          "name": "tiny scores keep their sign",
+          "code": "got = predict_linear([1, -1], 0, [[1, 1.0000001], [1.0000001, 1]])\nassert got == [-1, 1], f'scores of -1e-7 and +1e-7: do not round them; got {got}'",
+          "concept": "decision-boundary"
+        },
+        {
           "name": "the intercept moves the boundary",
           "code": "assert predict_linear([1, 0], -3, [[2, 9], [4, -9]]) == [-1, 1], 'with b = -3 the boundary is x = 3'",
           "concept": "decision-boundary"
@@ -253,7 +258,7 @@
       "tests": [
         {
           "name": "centroids",
-          "code": "X = [[1.0, 1.5], [1.5, 0.5], [0.5, 1.0], [4.0, 4.5], [4.5, 3.5], [3.5, 4.0]]\ny = ['A', 'A', 'A', 'B', 'B', 'B']\ngot = fit_centroids(X, y)\nassert got == {'A': [1.0, 1.0], 'B': [4.0, 4.0]}, f'got {got}'",
+          "code": "X = [[1.0, 1.5], [1.5, 0.5], [0.5, 1.0], [4.0, 4.5], [4.5, 3.5], [3.5, 4.0]]\ny = ['A', 'A', 'A', 'B', 'B', 'B']\ngot = fit_centroids(X, y)\nassert got == {'A': [1.0, 1.0], 'B': [4.0, 4.0]}, f'got {got}'\nassert all(type(c) is list and all(isinstance(v, float) for v in c) for c in got.values()), 'each centroid is a list of floats'",
           "concept": "classification"
         },
         {
@@ -282,8 +287,13 @@
           "concept": "decision-boundary"
         },
         {
+          "name": "near-ties are not ties",
+          "code": "got = predict_centroids({'a': [0.0], 'b': [1.0]}, [[0.50000001]])\nassert got == ['b'], f'b is nearer by 2e-8: compare exact distances; got {got}'",
+          "concept": "decision-boundary"
+        },
+        {
           "name": "ties go to the first label in sorted order",
-          "code": "assert predict_centroids({'b': [0, 0], 'a': [2, 0]}, [[1, 0]]) == ['a'], 'equally near: choose a'\nassert predict_centroids({2: [0], 1: [4]}, [[2]]) == [1]",
+          "code": "assert predict_centroids({'b': [0, 0], 'a': [2, 0]}, [[1, 0]]) == ['a'], 'equally near: choose a'\nassert predict_centroids({2: [0], 1: [4]}, [[2]]) == [1]\nassert predict_centroids({10: [0], 2: [4]}, [[2]]) == [2], 'numbers sort as numbers: 2 comes before 10'",
           "concept": "decision-boundary"
         },
         {
