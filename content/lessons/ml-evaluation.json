@@ -1,0 +1,363 @@
+{
+  "id": "ml-evaluation",
+  "title": "Evaluating models: test sets and overfitting",
+  "summary": "Measure how a model does on data it has never seen, spot overfitting, and compare models fairly with cross-validation.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "ml-linear-regression"
+  ],
+  "concepts": [
+    "train-test-split",
+    "overfitting",
+    "cross-validation"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-erm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        270
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "mml-select",
+      "source_id": "pch-mml-book",
+      "pages": [
+        289,
+        294
+      ],
+      "section": "8.6 Model Selection",
+      "use": "reference"
+    },
+    {
+      "id": "mml-poly",
+      "source_id": "pch-mml-book",
+      "pages": [
+        304,
+        306
+      ],
+      "section": "9.2 Parameter Estimation",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-seq",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        5,
+        5
+      ],
+      "section": "Functions for sequences",
+      "use": "reference"
+    },
+    {
+      "id": "np-formulas",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        25,
+        25
+      ],
+      "section": "Working with mathematical formulas",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Good on the examples, bad on the job",
+      "body": "If an exam reused the exact questions from the practice sheet, a student could score full marks by\nmemorising the answers without understanding anything. Models can do the same. A model's error on\nthe examples it learned from says little about how it will do on **new** cases, which is the only\nthing that matters once it is used. This lesson is about measuring that honestly."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Keep some examples out of sight",
+      "body": "Before training, set some examples aside as a **test set** and never let the model learn from them.\nThe error on those unseen examples estimates how the model will do on new data. A model that\nfits its training examples very closely but does badly on the test set has **overfitted**: it\nlearned the noise in those particular examples instead of the general pattern. With little data,\n**cross-validation** takes turns: each part of the data is held out once while the rest trains.",
+      "cites": [
+        "mml-erm",
+        "mml-select"
+      ],
+      "socratic": {
+        "questions": [
+          "Why should you shuffle the examples before setting some aside? What could go wrong if the data is sorted?",
+          "If you try many models and keep the one with the best test error, is that test error still an honest estimate?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a reproducible split",
+      "body": "Shuffle the positions with a seeded generator, then cut. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import random\n\ndef split(n, test_fraction, seed):\n    idx = list(range(n))\n    random.Random(seed).shuffle(idx)\n    cut = int(n * test_fraction)\n    return idx[cut:], idx[:cut]\n\ntrain, test = split(5, 0.4, seed=1)\nprint(train, test)",
+        "frames": [
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "random": "<module 'random'>",
+              "split": "<function split>"
+            },
+            "note": "Split 5 examples, 40% for testing."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "split(5, 0.4, seed=1)"
+            ],
+            "locals": {
+              "n": "5",
+              "test_fraction": "0.4",
+              "seed": "1"
+            },
+            "note": "Work with positions 0 to 4, not the examples themselves."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "split(5, 0.4, seed=1)"
+            ],
+            "locals": {
+              "n": "5",
+              "test_fraction": "0.4",
+              "seed": "1",
+              "idx": "[0, 1, 2, 3, 4]"
+            },
+            "note": "`shuffle` reorders the list in place; the seed makes the order repeatable."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>",
+              "split(5, 0.4, seed=1)"
+            ],
+            "locals": {
+              "n": "5",
+              "test_fraction": "0.4",
+              "seed": "1",
+              "idx": "[2, 3, 4, 0, 1]"
+            },
+            "note": "int(5 * 0.4) = 2 positions go to the test set."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>",
+              "split(5, 0.4, seed=1)"
+            ],
+            "locals": {
+              "n": "5",
+              "test_fraction": "0.4",
+              "seed": "1",
+              "idx": "[2, 3, 4, 0, 1]",
+              "cut": "2"
+            },
+            "note": "The first 2 shuffled positions are the test set; the rest train."
+          },
+          {
+            "line": 10,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "random": "<module 'random'>",
+              "split": "<function split>",
+              "train": "[4, 0, 1]",
+              "test": "[2, 3]"
+            },
+            "note": "Every position is in exactly one of the two lists.",
+            "output": "[4, 0, 1] [2, 3]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Training error** is the average loss on the examples the model was fitted to. **Test error** is\nthe average loss on held-out examples it never saw. Only the test error estimates performance on\nnew data.\n\n**Splitting:** shuffle first (data files are often sorted, so the last rows can differ\nsystematically from the first), then cut. `random.Random(seed).shuffle(items)` reorders a list in\nplace, the same way for the same seed.\n\n**Overfitting:** a model flexible enough to fit every training example, noise included, can have\na very low training error and a high test error. More flexibility is not automatically better.\n\n**Choosing between models:** if you pick the model with the best test error, that error is no\nlonger an honest estimate. Choose using a separate **validation** set, or **K-fold\ncross-validation**: split the training data into K parts (folds); for each fold, train on the\nother K − 1 and measure the error on that fold; average the K errors. Every example is used for\nvalidation exactly once.",
+      "cites": [
+        "mml-erm",
+        "mml-select",
+        "mml-poly",
+        "rnd-seq",
+        "np-formulas"
+      ]
+    },
+    {
+      "id": "memoriser",
+      "kind": "example",
+      "title": "Run it: a line versus a memoriser",
+      "body": "The memoriser answers with the `y` of the nearest training example, so it is perfect on its own\ntraining data. Predict which model does better on the 3 held-out examples.",
+      "code": "import random\nimport numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\nxs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nys = [2.3, 3.8, 6.4, 8.1, 9.7, 12.5, 13.6, 16.2, 18.4, 19.9]\nidx = list(range(len(xs)))\nrandom.Random(0).shuffle(idx)\ntest, train = idx[:3], idx[3:]\nx_tr, y_tr = [xs[i] for i in train], [ys[i] for i in train]\nx_te, y_te = [xs[i] for i in test], [ys[i] for i in test]\n\nw, b = fit_line(x_tr, y_tr)\n\n\ndef memoriser(x):\n    best = 0\n    for i in range(len(x_tr)):\n        if abs(x_tr[i] - x) < abs(x_tr[best] - x):\n            best = i\n    return y_tr[best]\n\n\nprint(\"line     \", round(mse([w * x + b for x in x_tr], y_tr), 3), round(mse([w * x + b for x in x_te], y_te), 3))\nprint(\"memoriser\", round(mse([memoriser(x) for x in x_tr], y_tr), 3), round(mse([memoriser(x) for x in x_te], y_te), 3))\n",
+      "expected_output": "line      0.08 0.2\nmemoriser 0.0 5.257\n"
+    },
+    {
+      "id": "split",
+      "kind": "guided",
+      "title": "Your turn: train_test_split",
+      "body": "Complete `train_test_split(xs, ys, test_fraction, seed)`. Follow this recipe exactly, so results are\nreproducible: make the positions `list(range(len(xs)))`, shuffle them with\n`random.Random(seed).shuffle`, let `cut = int(len(xs) * test_fraction)`, use the first `cut`\nshuffled positions for the test set and the rest for training (both in shuffled order). Return\n`(x_train, y_train, x_test, y_test)` as lists, keep each `x` with its `y`, don't change the input\nlists, and raise `ValueError` if `xs` and `ys` have different lengths.",
+      "starter": "import random\n\ndef train_test_split(xs, ys, test_fraction, seed):\n    cut = int(len(xs) * test_fraction)\n    return xs[cut:], ys[cut:], xs[:cut], ys[:cut]\n",
+      "hints": [
+        "The starter never shuffles, so a sorted file would put all the smallest examples in the test set.",
+        "Shuffle a list of positions, then build each output with a comprehension such as `[xs[i] for i in train]`.",
+        "import random\n\ndef train_test_split(xs, ys, test_fraction, seed):\n    if len(xs) != len(ys):\n        raise ValueError('xs and ys must have the same length')\n    idx = list(range(len(xs)))\n    random.Random(seed).shuffle(idx)\n    cut = int(len(xs) * test_fraction)\n    test, train = idx[:cut], idx[cut:]\n    return ([xs[i] for i in train], [ys[i] for i in train],\n            [xs[i] for i in test], [ys[i] for i in test])\n"
+      ],
+      "tests": [
+        {
+          "name": "follows the recipe",
+          "code": "xs = list(range(10))\nys = [x * 10 for x in xs]\nx_tr, y_tr, x_te, y_te = train_test_split(xs, ys, 0.3, seed=0)\nassert x_te == [7, 8, 1] and x_tr == [5, 3, 4, 2, 0, 9, 6], f'got train {x_tr}, test {x_te}'",
+          "concept": "train-test-split"
+        },
+        {
+          "name": "pairs stay together",
+          "code": "xs = list(range(20))\nys = [x * 10 for x in xs]\nx_tr, y_tr, x_te, y_te = train_test_split(xs, ys, 0.25, seed=4)\nassert all(y == 10 * x for x, y in zip(x_tr + x_te, y_tr + y_te)), 'each y must stay with its x'",
+          "concept": "train-test-split"
+        },
+        {
+          "name": "sizes, disjoint and complete",
+          "code": "xs = list(range(10))\nx_tr, y_tr, x_te, y_te = train_test_split(xs, xs, 0.25, seed=2)\nassert len(x_te) == 2 and len(x_tr) == 8, 'int(10 * 0.25) = 2 test examples'\nx_tr, y_tr, x_te, y_te = train_test_split(xs, xs, 0.38, seed=2)\nassert len(x_te) == 3, 'int(10 * 0.38) = 3: use int, which rounds down'\nassert sorted(x_tr + x_te) == xs, 'every example in exactly one set'",
+          "concept": "train-test-split"
+        },
+        {
+          "name": "inputs unchanged",
+          "code": "xs, ys = [1, 2, 3, 4], [5, 6, 7, 8]\ntrain_test_split(xs, ys, 0.5, seed=1)\nassert xs == [1, 2, 3, 4] and ys == [5, 6, 7, 8], 'shuffle a list of positions, not the inputs'",
+          "concept": "train-test-split"
+        },
+        {
+          "name": "lengths must match",
+          "code": "try:\n    train_test_split([1, 2, 3], [1, 2], 0.5, seed=0)\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when xs and ys differ in length')",
+          "concept": "train-test-split"
+        }
+      ],
+      "solution": "import random\n\ndef train_test_split(xs, ys, test_fraction, seed):\n    if len(xs) != len(ys):\n        raise ValueError('xs and ys must have the same length')\n    idx = list(range(len(xs)))\n    random.Random(seed).shuffle(idx)\n    cut = int(len(xs) * test_fraction)\n    test, train = idx[:cut], idx[cut:]\n    return ([xs[i] for i in train], [ys[i] for i in train],\n            [xs[i] for i in test], [ys[i] for i in test])\n"
+    },
+    {
+      "id": "kfold",
+      "kind": "challenge",
+      "title": "Challenge: K-fold cross-validation",
+      "body": "Write `cross_val_mse(xs, ys, k)` for the straight-line model (`fit_line` and `mse` are given). Fold\n`i` (for `i` from 0 to `k − 1`) is the positions `i, i + k, i + 2k, …`. For each fold, fit on all the\nother positions and compute the mean squared error on the fold. Return the average of the `k` fold\nerrors as a float. Raise `ValueError` unless `2 <= k <= len(xs)`.",
+      "starter": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\ndef cross_val_mse(xs, ys, k):\n    w, b = fit_line(xs, ys)\n    return mse([w * x + b for x in xs], ys)\n",
+      "hints": [
+        "The starter trains and measures on the same data: that is the training error, not a cross-validation score.",
+        "`list(range(i, n, k))` is fold `i`; the training positions are those with `j % k != i`. Collect one score per fold and average them.",
+        "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\ndef cross_val_mse(xs, ys, k):\n    n = len(xs)\n    if not 2 <= k <= n:\n        raise ValueError('need 2 <= k <= len(xs)')\n    scores = []\n    for i in range(k):\n        val = list(range(i, n, k))\n        train = [j for j in range(n) if j % k != i]\n        w, b = fit_line([xs[j] for j in train], [ys[j] for j in train])\n        scores.append(mse([w * xs[j] + b for j in val], [ys[j] for j in val]))\n    return float(np.mean(scores))\n"
+      ],
+      "tests": [
+        {
+          "name": "a perfect line scores 0",
+          "code": "xs = [0, 1, 2, 3, 4, 5]\nys = [3 * x - 1 for x in xs]\nassert abs(cross_val_mse(xs, ys, 3)) < 1e-12, 'held-out points on an exact line have no error'",
+          "concept": "cross-validation"
+        },
+        {
+          "name": "matches a reference",
+          "code": "def ref(xs, ys, k):\n    def line(x, y):\n        mx, my = sum(x) / len(x), sum(y) / len(y)\n        w = sum((a - mx) * (c - my) for a, c in zip(x, y)) / sum((a - mx) ** 2 for a in x)\n        return w, my - w * mx\n    out = []\n    for i in range(k):\n        val = [j for j in range(len(xs)) if j % k == i]\n        tr = [j for j in range(len(xs)) if j % k != i]\n        w, b = line([xs[j] for j in tr], [ys[j] for j in tr])\n        out.append(sum((w * xs[j] + b - ys[j]) ** 2 for j in val) / len(val))\n    return sum(out) / k\nxs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nys = [2.3, 3.8, 6.4, 8.1, 9.7, 12.5, 13.6, 16.2, 18.4, 19.9]\nfor k in (2, 5, 10):\n    got, want = cross_val_mse(xs, ys, k), ref(xs, ys, k)\n    assert abs(got - want) < 1e-9, f'k={k}: got {got}, want {want}'",
+          "concept": "cross-validation"
+        },
+        {
+          "name": "unequal folds: average the fold errors",
+          "code": "def ref(xs, ys, k):\n    def line(x, y):\n        mx, my = sum(x) / len(x), sum(y) / len(y)\n        w = sum((a - mx) * (c - my) for a, c in zip(x, y)) / sum((a - mx) ** 2 for a in x)\n        return w, my - w * mx\n    out = []\n    for i in range(k):\n        val = [j for j in range(len(xs)) if j % k == i]\n        tr = [j for j in range(len(xs)) if j % k != i]\n        w, b = line([xs[j] for j in tr], [ys[j] for j in tr])\n        out.append(sum((w * xs[j] + b - ys[j]) ** 2 for j in val) / len(val))\n    return sum(out) / k\nxs = [1, 2, 3, 4, 5]\nys = [1.0, 2.5, 2.9, 4.4, 6.5]\ngot, want = cross_val_mse(xs, ys, 2), ref(xs, ys, 2)\nassert abs(got - want) < 1e-9, f'folds of 3 and 2: average the two fold MSEs (got {got}, want {want})'",
+          "concept": "cross-validation"
+        },
+        {
+          "name": "held-out error is not training error",
+          "code": "xs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nys = [2.3, 3.8, 6.4, 8.1, 9.7, 12.5, 13.6, 16.2, 18.4, 19.9]\nimport numpy as np\nw, b = np.polyfit(xs, ys, 1)\ntrain_err = float(np.mean((w * np.array(xs) + b - np.array(ys)) ** 2))\nassert cross_val_mse(xs, ys, 5) > train_err, 'never measure a fold with a line that was fitted to it'",
+          "concept": "overfitting"
+        },
+        {
+          "name": "k must be sensible",
+          "code": "for k in (1, 6):\n    try:\n        cross_val_mse([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'k={k} with 5 examples: raise ValueError')",
+          "concept": "cross-validation"
+        },
+        {
+          "name": "returns a float",
+          "code": "assert type(cross_val_mse([1, 2, 3, 4], [1, 3, 2, 4], 2)) is float, 'return a plain float'",
+          "concept": "cross-validation"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\ndef cross_val_mse(xs, ys, k):\n    n = len(xs)\n    if not 2 <= k <= n:\n        raise ValueError('need 2 <= k <= len(xs)')\n    scores = []\n    for i in range(k):\n        val = list(range(i, n, k))\n        train = [j for j in range(n) if j % k != i]\n        w, b = fit_line([xs[j] for j in train], [ys[j] for j in train])\n        scores.append(mse([w * xs[j] + b for j in val], [ys[j] for j in val]))\n    return float(np.mean(scores))\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Why keep a test set aside?",
+          "choices": [
+            "To estimate how the model does on data it has not seen",
+            "To make training faster",
+            "Because models need fewer examples",
+            "To raise the training error"
+          ],
+          "answer": 0,
+          "explanation": "Only unseen examples show how the model generalises.",
+          "concept": "train-test-split"
+        },
+        {
+          "id": "q2",
+          "prompt": "Model A: training MSE 0.0, test MSE 5.3. Model B: training MSE 0.08, test MSE 0.2. Which is overfitting?",
+          "choices": [
+            "Model A",
+            "Model B",
+            "Both",
+            "Neither"
+          ],
+          "answer": 0,
+          "explanation": "A fits its training data perfectly but does far worse on new data.",
+          "concept": "overfitting"
+        },
+        {
+          "id": "q3",
+          "prompt": "In 5-fold cross-validation, how many times is each example used for validation?",
+          "choices": [
+            "Once",
+            "Five times",
+            "Never",
+            "Four times"
+          ],
+          "answer": 0,
+          "explanation": "Each example sits in exactly one fold, and each fold is held out once. (It is used for training four times.)",
+          "concept": "cross-validation"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does this print?",
+          "code": "cut = int(10 * 0.25)\nprint(cut, 10 - cut)",
+          "choices": [
+            "2 8",
+            "3 7",
+            "2.5 7.5",
+            "8 2"
+          ],
+          "answer": 0,
+          "explanation": "`int` drops the fractional part of 2.5.",
+          "concept": "train-test-split"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Split data reproducibly into training and test sets, shuffling first.\n- Tell training error from test error, and recognise overfitting.\n- Compare models with K-fold cross-validation instead of peeking at the test set.\n\nYou have now been through the core loop of machine learning: represent data as vectors, choose a\nmodel and a loss, train it, and evaluate it honestly."
+    }
+  ]
+}
