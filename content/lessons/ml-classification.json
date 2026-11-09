@@ -1,0 +1,365 @@
+{
+  "id": "ml-classification",
+  "title": "Classification: sorting examples into classes",
+  "summary": "Predict a category instead of a number: linear decision boundaries, a nearest-centroid classifier and accuracy.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "ml-evaluation"
+  ],
+  "concepts": [
+    "classification",
+    "decision-boundary",
+    "accuracy"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-data",
+      "source_id": "pch-mml-book",
+      "pages": [
+        257,
+        263
+      ],
+      "section": "8.1 Data, Models, and Learning",
+      "use": "reference"
+    },
+    {
+      "id": "mml-perf",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        267
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "mml-svm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        376,
+        377
+      ],
+      "section": "12 Classification with Support Vector Machines",
+      "use": "reference"
+    },
+    {
+      "id": "mml-hyper",
+      "source_id": "pch-mml-book",
+      "pages": [
+        378,
+        379
+      ],
+      "section": "12.1 Separating Hyperplanes",
+      "use": "reference"
+    },
+    {
+      "id": "np-broadcast",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        16,
+        16
+      ],
+      "section": "Broadcasting",
+      "use": "reference"
+    },
+    {
+      "id": "np-more",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "More useful array operations",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Which kind is it?",
+      "body": "Is this email spam? Is this scan healthy? Which digit is this handwriting? Many prediction problems\nask for a **category**, not a number. That task is **classification**: learn from labelled\nexamples, then put new examples into the right class. Everything from the last lessons carries\nover: examples are vectors, a model makes predictions, and you judge it on held-out data."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Drawing a line between the classes",
+      "body": "Plot the examples of two classes as points. Often you can draw a line (in more dimensions, a flat\n**hyperplane**) with one class mostly on each side. A new example is classified by which side of\nthe line it falls on. That line is the **decision boundary**. A different way to decide is to\naverage each class's examples into one typical point, its **centroid**, and give a new example the\nclass of the nearest centroid.",
+      "cites": [
+        "mml-svm",
+        "mml-hyper"
+      ],
+      "socratic": {
+        "questions": [
+          "Where are the points that are exactly as close to one centroid as to the other? What shape do they make?",
+          "If 95% of emails are not spam, how accurate is a model that always says 'not spam'? Is it useful?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a linear classifier decide",
+      "body": "The boundary is where the score `w · x + b` is 0. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import numpy as np\n\ndef predict(w, b, x):\n    score = np.sum(w * x) + b\n    return 1 if score >= 0 else -1\n\nw = np.array([1.0, -1.0])\nprint(predict(w, 0.5, np.array([1.0, 2.0])))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "predict": "<function predict>"
+            },
+            "note": "The weight vector points towards the +1 side of the boundary."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "predict": "<function predict>",
+              "w": "array([ 1., -1.])"
+            },
+            "note": "Classify the point (1, 2) with intercept 0.5."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "predict(w, 0.5, np.array([1.0, 2.0]))"
+            ],
+            "locals": {
+              "w": "array([ 1., -1.])",
+              "b": "0.5",
+              "x": "array([1., 2.])"
+            },
+            "note": "The score is the dot product plus b: 1 - 2 + 0.5."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "predict(w, 0.5, np.array([1.0, 2.0]))"
+            ],
+            "locals": {
+              "w": "array([ 1., -1.])",
+              "b": "0.5",
+              "x": "array([1., 2.])",
+              "score": "np.float64(-0.5)"
+            },
+            "note": "A negative score: the point is on the -1 side."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "predict": "<function predict>",
+              "w": "array([ 1., -1.])"
+            },
+            "note": "Class -1.",
+            "output": "-1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Binary classification:** each example `x` has a label from two classes, often written `+1` and `−1`.\n\n**Linear classifier:** compute the score `f(x) = w · x + b`. The points with `f(x) = 0` form a\nhyperplane, the decision boundary, and `w` is perpendicular (normal) to it. Positive scores lie on\none side and negative on the other, so predict `+1` when `f(x) ≥ 0` and `−1` otherwise. (Which\nclass gets a score of exactly 0 is a convention; this lesson uses `+1`.) For many examples at\nonce, with one example per row of `X`: `np.sum(X * w, axis=1) + b` gives every score.\n\n**Nearest centroid** (the method this lesson builds): the centroid of a class is the mean of its\ntraining examples; predict the class whose centroid is closest in Euclidean distance.\n\n**Accuracy:** the fraction of predictions that match the true labels, measured on held-out\nexamples. The error rate is `1 − accuracy`. Accuracy alone can mislead when one class is much more\ncommon than another.",
+      "cites": [
+        "mml-data",
+        "mml-svm",
+        "mml-hyper",
+        "mml-perf",
+        "np-broadcast",
+        "np-more"
+      ]
+    },
+    {
+      "id": "centroids",
+      "kind": "example",
+      "title": "Run it: nearest centroid",
+      "body": "Two classes, A near (1, 1) and B near (4, 4). Predict which held-out point is misclassified.",
+      "code": "import numpy as np\n\nX = [[1.0, 1.5], [1.5, 0.5], [0.5, 1.0], [4.0, 4.5], [4.5, 3.5], [3.5, 4.0]]\ny = ['A', 'A', 'A', 'B', 'B', 'B']\nX_test = [[1.2, 0.8], [3.0, 3.4], [2.4, 2.0], [2.6, 2.9]]\ny_test = ['A', 'B', 'B', 'B']\n\nX, X_test = np.array(X), np.array(X_test)\ncents = {label: X[[i for i in range(len(y)) if y[i] == label]].mean(axis=0) for label in ['A', 'B']}\nprint({label: c.tolist() for label, c in cents.items()})\n\npred = []\nfor x in X_test:\n    d_a = np.sum((x - cents['A']) ** 2) ** 0.5\n    d_b = np.sum((x - cents['B']) ** 2) ** 0.5\n    pred.append('A' if d_a <= d_b else 'B')\nprint(pred)\nprint(sum(p == t for p, t in zip(pred, y_test)) / len(y_test))\n",
+      "expected_output": "{'A': [1.0, 1.0], 'B': [4.0, 4.0]}\n['A', 'B', 'A', 'B']\n0.75\n"
+    },
+    {
+      "id": "linear",
+      "kind": "guided",
+      "title": "Your turn: classify many examples at once",
+      "body": "Complete `predict_linear(w, b, X)`, where each row of `X` is one example. Compute every score\n`w · x + b` with NumPy, then return a plain list of `1` or `-1` per row (`1` when the score is\n`>= 0`).",
+      "starter": "import numpy as np\n\ndef predict_linear(w, b, X):\n    return [1 for _ in X]\n",
+      "hints": [
+        "`np.array(X) * np.array(w)` multiplies each row by `w` (broadcasting); `np.sum(..., axis=1)` adds up each row.",
+        "Add `b`, then turn each score into `1 if s >= 0 else -1` with a list comprehension.",
+        "import numpy as np\n\ndef predict_linear(w, b, X):\n    scores = np.sum(np.array(X, dtype=float) * np.array(w, dtype=float), axis=1) + b\n    return [1 if s >= 0 else -1 for s in scores]\n"
+      ],
+      "tests": [
+        {
+          "name": "both sides",
+          "code": "got = predict_linear([1, -1], 0.5, [[1, 2], [3, 1], [0, 0]])\nassert got == [-1, 1, 1], f'scores are -0.5, 2.5, 0.5; got {got}'",
+          "concept": "decision-boundary"
+        },
+        {
+          "name": "a score of exactly 0 is +1",
+          "code": "assert predict_linear([1, -1], 0.5, [[2, 2.5]]) == [1], 'on the boundary: predict 1'",
+          "concept": "decision-boundary"
+        },
+        {
+          "name": "the intercept moves the boundary",
+          "code": "assert predict_linear([1, 0], -3, [[2, 9], [4, -9]]) == [-1, 1], 'with b = -3 the boundary is x = 3'",
+          "concept": "decision-boundary"
+        },
+        {
+          "name": "any number of features",
+          "code": "got = predict_linear([0.5, -2, 1], 0, [[2, 1, 1], [0, 0, -1], [4, 1, 0]])\nassert got == [1, -1, 1], f'scores 0.0, -1.0, 0.0; got {got}'",
+          "concept": "classification"
+        },
+        {
+          "name": "plain ints in a list",
+          "code": "out = predict_linear([1, 1], 0, [[1, 1], [-1, -1]])\nassert type(out) is list and all(type(p) is int for p in out), 'return a list of Python ints'",
+          "concept": "classification"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef predict_linear(w, b, X):\n    scores = np.sum(np.array(X, dtype=float) * np.array(w, dtype=float), axis=1) + b\n    return [1 if s >= 0 else -1 for s in scores]\n"
+    },
+    {
+      "id": "nearest",
+      "kind": "challenge",
+      "title": "Challenge: a nearest-centroid classifier",
+      "body": "Write two functions. `fit_centroids(X, y)` returns a dictionary mapping each label to its centroid\n(the mean of that label's rows) as a list of floats; raise `ValueError` if `X` and `y` differ in\nlength or are empty. `predict_centroids(centroids, X)` returns a list with the label of the\nnearest centroid (Euclidean distance) for each row; if several are equally near, choose the label\nthat comes first in sorted order. Labels can be any sortable values, such as strings or numbers.",
+      "starter": "import numpy as np\n\ndef fit_centroids(X, y):\n    return {label: list(X[y.index(label)]) for label in set(y)}\n\n\ndef predict_centroids(centroids, X):\n    first = sorted(centroids)[0]\n    return [first for _ in X]\n",
+      "hints": [
+        "For each label, select its rows with a list of positions, `X[rows]`, and take `.mean(axis=0)`.",
+        "Loop over the labels in sorted order and keep the first one with the smallest distance: `dists.index(min(dists))` does exactly that.",
+        "import numpy as np\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    if len(X) != len(y) or len(y) == 0:\n        raise ValueError('need one label per example, and at least one example')\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n"
+      ],
+      "tests": [
+        {
+          "name": "centroids",
+          "code": "X = [[1.0, 1.5], [1.5, 0.5], [0.5, 1.0], [4.0, 4.5], [4.5, 3.5], [3.5, 4.0]]\ny = ['A', 'A', 'A', 'B', 'B', 'B']\ngot = fit_centroids(X, y)\nassert got == {'A': [1.0, 1.0], 'B': [4.0, 4.0]}, f'got {got}'",
+          "concept": "classification"
+        },
+        {
+          "name": "interleaved labels, unequal classes",
+          "code": "got = fit_centroids([[0, 0], [10, 2], [2, 0], [20, 4], [4, 6]], ['x', 'y', 'x', 'y', 'x'])\nassert got == {'x': [2.0, 2.0], 'y': [15.0, 3.0]}, f'got {got}'",
+          "concept": "classification"
+        },
+        {
+          "name": "exact means",
+          "code": "got = fit_centroids([[0, 1], [1, 0], [1, 1], [5, 5]], ['a', 'a', 'a', 'b'])\nassert abs(got['a'][0] - 2 / 3) < 1e-12 and abs(got['a'][1] - 2 / 3) < 1e-12 and got['b'] == [5.0, 5.0], f'centroid of a is (2/3, 2/3), unrounded; got {got}'",
+          "concept": "classification"
+        },
+        {
+          "name": "predicts held-out points",
+          "code": "X = [[1.0, 1.5], [1.5, 0.5], [0.5, 1.0], [4.0, 4.5], [4.5, 3.5], [3.5, 4.0]]\ny = ['A', 'A', 'A', 'B', 'B', 'B']\nX_test = [[1.2, 0.8], [3.0, 3.4], [2.4, 2.0], [2.6, 2.9]]\ny_test = ['A', 'B', 'B', 'B']\nc = fit_centroids(X, y)\ngot = predict_centroids(c, X_test)\nassert got == ['A', 'B', 'A', 'B'], f'got {got}'\nacc = sum(p == t for p, t in zip(got, y_test)) / len(y_test)\nassert acc == 0.75",
+          "concept": "accuracy"
+        },
+        {
+          "name": "three classes, number labels",
+          "code": "c = fit_centroids([[0], [1], [10], [11], [20], [21]], [3, 3, 1, 1, 2, 2])\ngot = predict_centroids(c, [[-5], [12], [19], [6]])\nassert got == [3, 1, 2, 1], f'centroids are 0.5 (label 3), 10.5 (label 1) and 20.5 (label 2); got {got}'",
+          "concept": "classification"
+        },
+        {
+          "name": "Euclidean, not Manhattan",
+          "code": "c = {'p': [3, 3], 'q': [5, 0]}\nassert predict_centroids(c, [[0, 0]]) == ['p'], 'p is about 4.24 away in straight-line distance, q is 5'",
+          "concept": "decision-boundary"
+        },
+        {
+          "name": "ties go to the first label in sorted order",
+          "code": "assert predict_centroids({'b': [0, 0], 'a': [2, 0]}, [[1, 0]]) == ['a'], 'equally near: choose a'\nassert predict_centroids({2: [0], 1: [4]}, [[2]]) == [1]",
+          "concept": "decision-boundary"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, y in (([[1, 2]], []), ([[1, 2]], ['a', 'b']), ([], [])):\n    try:\n        fit_centroids(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
+          "concept": "classification"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    if len(X) != len(y) or len(y) == 0:\n        raise ValueError('need one label per example, and at least one example')\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Which is a classification problem?",
+          "choices": [
+            "Predicting whether a photo shows a cat or a dog",
+            "Predicting tomorrow's temperature in degrees",
+            "Predicting a house's price",
+            "Predicting a person's height"
+          ],
+          "answer": 0,
+          "explanation": "The answer is a category, not a number on a scale.",
+          "concept": "classification"
+        },
+        {
+          "id": "q2",
+          "prompt": "With `w = [2, 1]` and `b = -4`, which class does a linear classifier give the point `(1, 1)`?",
+          "choices": [
+            "-1",
+            "+1",
+            "Both",
+            "It cannot tell"
+          ],
+          "answer": 0,
+          "explanation": "The score is 2 + 1 - 4 = -1, which is negative.",
+          "concept": "decision-boundary"
+        },
+        {
+          "id": "q3",
+          "prompt": "A model gets 18 of 20 held-out examples right. What is its accuracy?",
+          "choices": [
+            "0.9",
+            "0.18",
+            "18",
+            "0.1"
+          ],
+          "answer": 0,
+          "explanation": "18 / 20 = 0.9; the error rate is 0.1.",
+          "concept": "accuracy"
+        },
+        {
+          "id": "q4",
+          "prompt": "99 of 100 transactions are genuine. A model that always predicts 'genuine' has accuracy 0.99. What is the catch?",
+          "choices": [
+            "It never catches a single fraud",
+            "Accuracy can't be above 0.9",
+            "It must be overfitting",
+            "Nothing: 0.99 is excellent"
+          ],
+          "answer": 0,
+          "explanation": "When one class is rare, high accuracy can hide a model that ignores it completely.",
+          "concept": "accuracy"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Classify with a linear score `w · x + b` and say which side of the boundary a point is on.\n- Score many examples at once with NumPy broadcasting and `axis=1`.\n- Build a nearest-centroid classifier from class means and distances.\n- Measure accuracy on held-out data, and know when it misleads."
+    }
+  ]
+}

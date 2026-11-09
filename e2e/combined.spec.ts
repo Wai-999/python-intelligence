@@ -5,6 +5,7 @@ import vectors from "../content/lessons/ml-vectors.json" with { type: "json" };
 import summary from "../content/lessons/stats-summary.json" with { type: "json" };
 import regression from "../content/lessons/ml-linear-regression.json" with { type: "json" };
 import evaluation from "../content/lessons/ml-evaluation.json" with { type: "json" };
+import classification from "../content/lessons/ml-classification.json" with { type: "json" };
 
 // The lessons that combine all five books (and the statistics/ML path built on them): each runs in the browser exactly as the CPython 3.12 gate checked it.
 type L = { steps: { id: string; kind: string; code?: string; expected_output?: string; solution?: string }[] };
@@ -31,6 +32,7 @@ for (const [name, lesson, example, exercises] of [
   ["stats-summary", summary, "classes", ["std", "outliers"]],
   ["ml-linear-regression", regression, "fit", ["closed", "descent"]],
   ["ml-evaluation", evaluation, "memoriser", ["split", "kfold"]],
+  ["ml-classification", classification, "centroids", ["linear", "nearest"]],
 ] as const) {
   test(`${name}: example output and every exercise solution pass in the browser`, async ({ page }) => {
     test.setTimeout(240_000);
