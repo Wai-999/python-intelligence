@@ -1,0 +1,325 @@
+{
+  "id": "np-arrays",
+  "title": "Numbers in bulk: NumPy arrays",
+  "summary": "Store numbers in arrays and compute on all of them at once: arithmetic, filters and summaries.",
+  "track": "data",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "py-modules",
+    "py-comprehensions"
+  ],
+  "concepts": [
+    "arrays",
+    "vectorization",
+    "boolean-masks",
+    "array-aggregation"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "np-why",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        4,
+        5
+      ],
+      "section": "Why use NumPy?",
+      "use": "reference"
+    },
+    {
+      "id": "np-attrs",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        7,
+        8
+      ],
+      "section": "Array attributes",
+      "use": "reference"
+    },
+    {
+      "id": "np-index",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        13,
+        14
+      ],
+      "section": "Indexing and slicing",
+      "use": "reference"
+    },
+    {
+      "id": "np-ops",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "Basic array operations",
+      "use": "reference"
+    },
+    {
+      "id": "np-broadcast",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        16,
+        16
+      ],
+      "section": "Broadcasting",
+      "use": "reference"
+    },
+    {
+      "id": "np-more",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "More useful array operations",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Thousands of numbers, one line of code",
+      "body": "A year of hourly temperatures is almost 9,000 numbers. With lists, every calculation (convert to\nFahrenheit, find the hot hours, average each day) needs its own loop. **NumPy** stores numbers in\n**arrays** and lets you write the calculation once for the whole collection: shorter code that\nalso runs far faster, because the looping happens in compiled code instead of in Python."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Think in whole arrays",
+      "body": "An array is a grid of numbers that all have the same type: a row for 1-D, a table for 2-D. The key\nshift is to stop thinking \"for each number...\" and start thinking about the whole grid:\n`temps * 1.8 + 32` converts **every** temperature at once, and `temps > 20` asks the question of\nevery element, giving back a grid of `True`/`False` answers you can use as a filter.",
+      "cites": [
+        "np-why",
+        "np-ops"
+      ],
+      "socratic": {
+        "questions": [
+          "With a list, how would you add 1 to every number? What does the array version look like?",
+          "What shape of answer would you expect from asking `temps > 20` of a 2 x 3 table?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a whole-array calculation",
+      "body": "No loop anywhere, yet every element is transformed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import numpy as np\n\ndef normalise(scores):\n    arr = np.array(scores)\n    return (arr - arr.min()) / (arr.max() - arr.min())\n\nprint(normalise([50, 75, 100]))",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "`np` is the conventional short name for NumPy."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "normalise": "<function normalise>"
+            },
+            "note": "Call with an ordinary list."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "normalise([50, 75, 100])"
+            ],
+            "locals": {
+              "scores": "[50, 75, 100]"
+            },
+            "note": "`np.array` copies the list into an array of integers."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "normalise([50, 75, 100])"
+            ],
+            "locals": {
+              "scores": "[50, 75, 100]",
+              "arr": "array([ 50,  75, 100])"
+            },
+            "note": "`arr - 50` subtracts from EVERY element, giving [0, 25, 50]; dividing by 50 divides every element too."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "np": "<module 'numpy'>",
+              "normalise": "<function normalise>"
+            },
+            "note": "The result is a new array of floats between 0 and 1.",
+            "output": "[0.  0.5 1. ]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Create and inspect:** `np.array([[1, 2, 3], [4, 5, 6]])` builds a 2-D array. `.shape` is\n`(rows, columns)` = `(2, 3)`, `.ndim` the number of dimensions, `.size` the element count and\n`.dtype` the single element type all items share.\n\n**Element-wise arithmetic:** `+ - * / **` between an array and a number apply to every element; between\ntwo arrays of the same shape they pair elements up. This is *broadcasting* in its simplest form\n(NumPy can also stretch compatible shapes, such as a row across every row of a table).\n\n**Comparisons and masks:** `arr > 20` is a boolean array of the same shape; `arr[arr > 20]` keeps only\nthe elements where it is `True`, as a 1-D array.\n\n**Summaries:** `arr.sum()`, `.mean()`, `.min()`, `.max()` reduce the whole array; `axis=0` reduces down\nthe columns and `axis=1` across each row.\n\n**Indexing:** `arr[1, 2]` is row 1, column 2. A slice such as `arr[0:2]` is a **view** of the same\ndata: changing it changes the original. Use `.copy()` when you need independent data.",
+      "cites": [
+        "np-attrs",
+        "np-ops",
+        "np-broadcast",
+        "np-index",
+        "np-more"
+      ]
+    },
+    {
+      "id": "temps",
+      "kind": "example",
+      "title": "Run it: two days of temperatures",
+      "body": "Rows are days, columns are morning/noon/evening. Predict each line, including the shapes.",
+      "code": "import numpy as np\n\ntemps = np.array([[18, 21, 17], [24, 22, 19]])\nprint(temps.shape)\nprint(temps.mean())\nprint(temps.max(axis=1))\nprint(temps[temps > 20])\nprint(temps * 2 - 1)",
+      "expected_output": "(2, 3)\n20.166666666666668\n[21 24]\n[21 24 22]\n[[35 41 33]\n [47 43 37]]\n"
+    },
+    {
+      "id": "above",
+      "kind": "guided",
+      "title": "Your turn: above average",
+      "body": "Complete `above_average(values)` so it returns a NumPy array of the values strictly greater than their\nmean, in their original order. Use a boolean mask rather than a loop.",
+      "starter": "import numpy as np\n\ndef above_average(values):\n    arr = np.array(values)\n    return arr",
+      "hints": [
+        "`arr.mean()` is the average; `arr > arr.mean()` is a mask of the same shape.",
+        "Index with the mask: `arr[mask]`.",
+        "import numpy as np\n\ndef above_average(values):\n    arr = np.array(values)\n    return arr[arr > arr.mean()]"
+      ],
+      "tests": [
+        {
+          "name": "keeps the larger values",
+          "code": "assert above_average([1, 5, 2, 8]).tolist() == [5, 8], f'got {above_average([1, 5, 2, 8]).tolist()}'",
+          "concept": "boolean-masks"
+        },
+        {
+          "name": "returns an array",
+          "code": "import numpy as _np\nassert isinstance(above_average([1, 2, 3]), _np.ndarray), 'return a NumPy array'",
+          "concept": "arrays"
+        },
+        {
+          "name": "equal to the mean is excluded",
+          "code": "assert above_average([2, 2, 2]).tolist() == [], 'values equal to the mean are not above it'",
+          "concept": "boolean-masks"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef above_average(values):\n    arr = np.array(values)\n    return arr[arr > arr.mean()]"
+    },
+    {
+      "id": "zscores",
+      "kind": "challenge",
+      "title": "Challenge: standard scores",
+      "body": "A standard score (z-score) says how many standard deviations a value is from the mean:\n`(x - mean) / std`. Write `zscores(values)` that returns them as a plain list rounded to 2 decimals\n(use `np.round(..., 2).tolist()`). If every value is the same, `std` is 0: return a list of zeros\ninstead of dividing by zero.",
+      "starter": "import numpy as np\n\ndef zscores(values):\n    arr = np.array(values, dtype=float)\n    return np.round(arr - arr.mean(), 2).tolist()",
+      "hints": [
+        "The starter forgets to divide by `arr.std()`.",
+        "Check `if arr.std() == 0:` first and return `[0.0] * len(arr)`.",
+        "import numpy as np\n\ndef zscores(values):\n    arr = np.array(values, dtype=float)\n    if arr.std() == 0:\n        return [0.0] * len(arr)\n    return np.round((arr - arr.mean()) / arr.std(), 2).tolist()"
+      ],
+      "tests": [
+        {
+          "name": "textbook example",
+          "code": "assert zscores([2, 4, 4, 4, 5, 5, 7, 9]) == [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0], f'got {zscores([2, 4, 4, 4, 5, 5, 7, 9])}'",
+          "concept": "vectorization"
+        },
+        {
+          "name": "all equal",
+          "code": "assert zscores([3, 3, 3]) == [0.0, 0.0, 0.0], f'got {zscores([3, 3, 3])}'",
+          "concept": "array-aggregation"
+        },
+        {
+          "name": "returns a plain list",
+          "code": "assert type(zscores([1, 2])) is list, 'return a list (use .tolist())'",
+          "concept": "arrays"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef zscores(values):\n    arr = np.array(values, dtype=float)\n    if arr.std() == 0:\n        return [0.0] * len(arr)\n    return np.round((arr - arr.mean()) / arr.std(), 2).tolist()"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before you run anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?",
+          "code": "import numpy as np\nprint(np.array([1, 2, 3]) * 2)",
+          "choices": [
+            "[1 2 3 1 2 3]",
+            "[2 4 6]",
+            "[1, 2, 3, 1, 2, 3]",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "Arithmetic on an array is element-wise; on a list, `* 2` would repeat it.",
+          "concept": "vectorization"
+        },
+        {
+          "id": "q2",
+          "prompt": "What is `np.array([[1, 2, 3], [4, 5, 6]]).shape`?",
+          "choices": [
+            "(3, 2)",
+            "(2, 3)",
+            "6",
+            "(2,)"
+          ],
+          "answer": 1,
+          "explanation": "Two rows, three columns.",
+          "concept": "arrays"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?",
+          "code": "import numpy as np\na = np.array([1, 2, 3, 4])\nprint(a[a % 2 == 0])",
+          "choices": [
+            "[2 4]",
+            "[False  True False  True]",
+            "[1 3]",
+            "2"
+          ],
+          "answer": 0,
+          "explanation": "The mask selects the elements where it is True.",
+          "concept": "boolean-masks"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does this print?",
+          "code": "import numpy as np\na = np.array([1, 2, 3])\nb = a[0:2]\nb[0] = 99\nprint(a)",
+          "choices": [
+            "[1 2 3]",
+            "[99  2  3]",
+            "[99]",
+            "An error"
+          ],
+          "answer": 1,
+          "explanation": "A slice is a view of the same data, so writing through it changes `a`; use `.copy()` to avoid that.",
+          "concept": "arrays"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Create arrays and read their `shape`, `size` and `dtype`.\n- Compute on whole arrays with element-wise arithmetic instead of loops.\n- Filter with boolean masks and summarise with `sum`, `mean`, `min`, `max` and `axis`.\n- Remember that slices are views; `.copy()` when you need independent data.\n\nNext: pandas, which adds row and column labels on top of arrays."
+    }
+  ]
+}

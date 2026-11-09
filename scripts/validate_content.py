@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,11 @@ from provenance import ExtractIndex, HashedIndex, load_index, strings_in, write_
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "content" / "sources.json"
 SECTIONS = ROOT / "content" / "source_sections.json"
+PACKAGES = {k: v for k, v in json.loads((ROOT / "src" / "py" / "packages.json").read_text()).items() if not k.startswith("_")}
+# Interpreter for lesson snippets: the browser runs CPython 3.12 (Pyodide 0.27.8), so prefer a matching 3.12
+# environment (PI_CONTENT_PYTHON, else the project's .venv312) over whatever runs this script.
+CONTENT_PY = os.environ.get("PI_CONTENT_PYTHON") or (
+    str(ROOT / ".venv312" / "bin" / "python") if (ROOT / ".venv312" / "bin" / "python").is_file() else sys.executable)
 CLAIM_KINDS = {"intuition", "formal"}  # steps that state facts and so must cite, in a book-grounded lesson
 USES = {"reference", "adapted"}
 HARNESS = ROOT / "src" / "py" / "harness.py"
@@ -62,7 +68,7 @@ def run_snippet(code: str, tests: list | None = None, timeout: float = 10) -> di
         # Each snippet runs in its own empty temporary directory: lessons that create files (open(..., "w"))
         # must not write into the repository, and must not see each other's files.
         with tempfile.TemporaryDirectory(prefix="pi-snippet-") as tmp:
-            p = subprocess.run([sys.executable, "-I", "-c", RUNNER, str(HARNESS)],
+            p = subprocess.run([CONTENT_PY, "-I", "-c", RUNNER, str(HARNESS)],
                                input=json.dumps({"code": code, "tests": tests or []}),
                                capture_output=True, text=True, timeout=timeout, cwd=tmp)
     except subprocess.TimeoutExpired:
@@ -169,7 +175,30 @@ def check_verbatim(lesson: dict, index: ExtractIndex | HashedIndex) -> list[str]
     return errs
 
 
-def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], catalog: dict | None = None) -> list[str]:
+def interpreter_report() -> tuple[str, dict[str, str | None]]:
+    """(python version, {package: installed version or None}) of CONTENT_PY."""
+    code = ("import sys, json, importlib.metadata as m\nv = {}\nfor n in sys.argv[1:]:\n    try:\n        v[n] = m.version(n)\n"
+            "    except m.PackageNotFoundError:\n        v[n] = None\nprint(json.dumps([sys.version.split()[0], v]))")
+    out = subprocess.run([CONTENT_PY, "-I", "-c", code, *PACKAGES], capture_output=True, text=True, timeout=30)
+    ver, pkgs = json.loads(out.stdout)
+    return ver, pkgs
+
+
+def check_packages(lesson: dict, installed: dict[str, str | None] | None) -> list[str]:
+    """`packages` must be allowlisted, and the validating interpreter must have the browser's exact versions."""
+    pk = lesson.get("packages", [])
+    if not (isinstance(pk, list) and all(isinstance(x, str) for x in pk)):
+        return ["packages must be a list of package names"]
+    errs = [f"package {x!r} is not available in the browser runtime (allowed: {sorted(PACKAGES)})" for x in pk if x not in PACKAGES]
+    for x in pk:
+        if x in PACKAGES and installed is not None and installed.get(x) != PACKAGES[x]:
+            errs.append(f"needs {x}=={PACKAGES[x]} (the browser's version) to validate, found {installed.get(x)}; "
+                        "use .venv312 or set PI_CONTENT_PYTHON")
+    return errs
+
+
+def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], catalog: dict | None = None,
+                 installed: dict[str, str | None] | None = None) -> list[str]:
     lid = lesson.get("id", "?")
     errs: list[str] = []
     E = lambda m: errs.append(f"{lid}: {m}")
@@ -186,6 +215,7 @@ def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], cat
         if p not in all_ids:
             E(f"unknown prerequisite {p}")
     errs += [f"{lid}: {m}" for m in check_provenance(lesson, cleared_sources, catalog or {})]
+    errs += [f"{lid}: {m}" for m in check_packages(lesson, installed)]
 
     steps = lesson["steps"]
     kinds = [s.get("kind") for s in steps]
@@ -274,8 +304,9 @@ def main() -> int:
     secs = json.loads(SECTIONS.read_text())["sections"] if SECTIONS.is_file() else {}
     catalog = {sid: {**c, "sections": secs.get(sid, [])} for sid, c in catalog.items()}
     errs += check_catalog_bindings(catalog, approved)
+    py_version, installed = interpreter_report()
     for l in lessons:
-        errs += check_lesson(l, cleared, set(ids), catalog)
+        errs += check_lesson(l, cleared, set(ids), catalog, installed)
     index = load_index()
     errs += check_index_coverage(index, catalog)
     for l in lessons:
@@ -309,7 +340,8 @@ def main() -> int:
         print(f"content invalid: {len(errs)} error(s)", file=sys.stderr)
         return 1
     n_exec = sum(1 for l in lessons for s in l["steps"] if s["kind"] in ("example", "guided", "challenge", "visual"))
-    print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness")
+    print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness "
+          f"(CPython {py_version}{'' if py_version.startswith('3.12.') else '; WARNING: the browser runs 3.12'})")
     n_cited = sum(1 for l in lessons if l["sources"])
     if isinstance(index, ExtractIndex):
         if write_hashed_index(index):

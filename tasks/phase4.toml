@@ -1,0 +1,39 @@
+# Phase 4 runtime work dispatched through the orchestrator (lesson content is Claude's, reviewed by Codex).
+
+[[task]]
+id = "P4-6"
+title = "Load Pyodide packages (numpy, pandas) for lessons that declare them"
+owner = "codex"
+reviewer = "claude"
+depends_on = []
+allowed_paths = ["src/py/worker.ts", "src/py/protocol.ts", "src/py/runner.ts", "src/py/runner.test.ts",
+                 "src/components/usePython.ts", "src/components/CodeCell.tsx", "src/components/Exercise.tsx",
+                 "src/components/LessonView.tsx", "e2e/packages.spec.ts"]
+acceptance = ["npm run build", "npx playwright test e2e/packages.spec.ts --reporter=line"]
+risk = "medium"
+max_attempts = 3
+brief = """
+Lessons may now declare `packages?: string[]` (see src/content/types.ts, read-only for you). The allowlist and pinned
+versions are in src/py/packages.json (read-only; keys other than "_note" are package names). The first such lesson is
+content/lessons/np-arrays.json (packages: ["numpy"]). Today the Pyodide worker never loads packages, so its code fails
+with ModuleNotFoundError in the browser.
+
+1. src/py/protocol.ts: add an optional `packages?: string[]` to the run request (and to warm, if you route it there).
+2. src/py/worker.ts: before executing, load any requested packages not yet loaded with `await py.loadPackage(names)`
+   (Pyodide fetches them from the pinned indexURL, which the service worker already caches cache-first). Reject names
+   not in packages.json with a clear error result (type "PackageError", message naming the package), without
+   loading anything. Remember loaded packages so later runs don't reload them.
+3. src/py/runner.ts: package loading must NOT count against the code-execution timeout (a cold numpy load can take
+   tens of seconds); give it its own generous limit (e.g. 120 s) and report a distinct error if it is exceeded.
+   Post a status so the UI can say "Loading numpy…" while it happens.
+4. UI: LessonView passes `lesson.packages` to CodeCell and Exercise; usePython/CodeCell/Exercise forward it to the
+   runner and show the loading status text in the existing console/status area (accessible: role="status").
+5. src/py/runner.test.ts (vitest, mock the worker as existing tests do): packages are forwarded; the package-load
+   time is excluded from the run timeout.
+6. e2e/packages.spec.ts: open ./#/lesson/np-arrays/4 ("Run it: two days of temperatures"), click "▶ Run" and expect
+   ".console pre" to have text "(2, 3)\\n20.166666666666668\\n[21 24]\\n[21 24 22]\\n[[35 41 33]\\n [47 43 37]]\\n"
+   (timeout 120 s). Then open ./#/lesson/np-arrays/5, fill the editor (textarea.editor-input) with that step's
+   solution from the lesson JSON, click "▶ Run checks" and expect "All checks pass".
+Your sandbox has NO network: run `npm run build` and the vitest tests; the controller runs the Playwright test.
+Do not add dependencies; do not edit files outside allowed_paths.
+"""

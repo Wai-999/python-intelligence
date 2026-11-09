@@ -52,3 +52,21 @@ def test_snippets_run_in_an_isolated_temporary_directory():
     assert first["stdout"].strip() == "['probe.txt']"
     assert second["stdout"].strip() == "[]"
     assert not (ROOT / "probe.txt").exists()
+
+
+def test_packages_must_be_allowlisted_and_match_the_browser_versions():
+    pins = vc.PACKAGES
+    ok = {name: version for name, version in pins.items()}
+    assert vc.check_packages({"packages": ["numpy"]}, ok) == []
+    assert vc.check_packages({}, ok) == []
+    assert "not available in the browser runtime" in vc.check_packages({"packages": ["scipy"]}, ok)[0]
+    wrong = dict(ok, numpy="1.26.4")
+    assert "needs numpy==" in vc.check_packages({"packages": ["numpy"]}, wrong)[0]
+    assert "needs pandas==" in vc.check_packages({"packages": ["pandas"]}, dict(ok, pandas=None))[0]
+    assert vc.check_packages({"packages": "numpy"}, ok) == ["packages must be a list of package names"]
+
+
+def test_ci_installs_exactly_the_browser_package_versions():
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    for name, version in vc.PACKAGES.items():
+        assert f'"{name}=={version}"' in ci, f"CI must pip install {name}=={version} (src/py/packages.json)"

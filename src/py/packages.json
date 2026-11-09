@@ -1,0 +1,5 @@
+{
+ "_note": "Packages lessons may declare in \"packages\". Versions must equal those shipped by Pyodide 0.27.8 (pyodide-lock.json); the content gate and CI install exactly these.",
+ "numpy": "2.0.2",
+ "pandas": "2.2.3"
+}

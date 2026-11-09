@@ -16,3 +16,5 @@ worktrees/
 # frontend
 test-results/
 playwright-report/
+.tools/
+.venv312/

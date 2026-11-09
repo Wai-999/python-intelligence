@@ -41,15 +41,16 @@ class SectionParser(HTMLParser):
         self.skip = 0                 # depth inside skipped subtrees
         self.heading: str | None = None
         self.in_headerlink = False
-        self.main_depth = 0           # >0 while inside <div role="main">
+        self.main_depth = 0           # >0 while inside the element with role="main" (div, main or article)
+        self.main_tag: str | None = None
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if self.main_depth == 0:
-            if tag == "div" and a.get("role") == "main":
-                self.main_depth = 1
+            if a.get("role") == "main":
+                self.main_tag, self.main_depth = tag, 1
             return
-        if tag == "div":
+        if tag == self.main_tag:
             self.main_depth += 1
         if self.skip or tag in SKIP_TAGS:
             if tag in SKIP_TAGS:
@@ -67,7 +68,7 @@ class SectionParser(HTMLParser):
     def handle_endtag(self, tag):
         if self.main_depth == 0:
             return
-        if tag == "div":
+        if tag == self.main_tag:
             self.main_depth -= 1
             return
         if tag in SKIP_TAGS and self.skip:

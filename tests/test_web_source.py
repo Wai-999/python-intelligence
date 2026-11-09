@@ -8,6 +8,13 @@ spec = importlib.util.spec_from_file_location("fetch_web_source", ROOT / "script
 fw = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fw)
 
+_PKG = json.loads((ROOT / "src" / "py" / "packages.json").read_text())
+PINNED_DOC_PREFIXES = (
+    "https://docs.python.org/3.12/",                                                   # Pyodide 0.27.8 = CPython 3.12
+    "https://numpy.org/doc/" + ".".join(_PKG["numpy"].split(".")[:2]) + "/",           # numpy 2.0.x
+    "https://pandas.pydata.org/pandas-docs/version/" + _PKG["pandas"] + "/",           # pandas 2.2.3
+)
+
 PAGE = """<html><head><script>var x = "not text";</script></head><body>
 <nav>Navigation junk</nav>
 <div class="body" role="main">
@@ -39,7 +46,8 @@ def test_web_registry_entries_are_cleared_with_a_recorded_decision():
         assert s["allowed_to_publish"] is False
         if s["allowed_for_internal_extraction"]:
             assert s["rights_verified"] and s["decision"]["by"] and s["decision"]["basis"]
-            assert s["url"].startswith("https://docs.python.org/3.12/"), "pin docs to the Pyodide CPython version"
+            assert any(s["url"].startswith(prefix) for prefix in PINNED_DOC_PREFIXES), \
+                f"{s['source_id']}: pin docs to the version the browser runs ({s['url']})"
             assert len(s["sha256"]) == 64
 
 
@@ -78,3 +86,13 @@ def test_catalog_must_match_the_registry_approved_sha():
     errs = vc.check_catalog_bindings(cat, {"docs": "cc" * 32, "book": "bb" * 32})   # registry re-approved a new page
     assert len(errs) == 1 and errs[0].startswith("docs: content/sources.json sha256")
     assert "no approved sha256" in vc.check_catalog_bindings(cat, {"book": "bb" * 32})[0]
+
+
+def test_pydata_theme_main_and_article_containers_are_supported():
+    html = """<nav>menu</nav><main id="main-content" role="main"><div class="sidebar">side</div>
+    <article class="bd-article" role="main"><section id="a"><h1>A</h1><p>body</p>
+    <div><p>nested div text</p></div></section></article></main><footer>foot</footer>"""
+    records, toc = fw.to_records(html, "d", "0" * 64)
+    assert toc == [[1, "A", 1]]
+    assert "body" in records[0]["text"] and "nested div text" in records[0]["text"]
+    assert "foot" not in records[0]["text"] and "menu" not in records[0]["text"]

@@ -120,6 +120,46 @@
     "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
    },
    "sha256": "1374b3b919fe6e635079118ce80011797f5acf942d13bf8440b90b10d0e44a78"
+  },
+  {
+   "source_id": "npdocs-20-beginners",
+   "title": "NumPy 2.0 User Guide: NumPy, the absolute basics for beginners",
+   "short": "NumPy 2.0 docs, absolute basics",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/user/absolute_beginners.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official NumPy documentation; numpy.org/doc/2.0/license.html is the BSD 3-Clause licence (checked 2026-11-08). Pinned to 2.0 to match Pyodide 0.27.8's numpy 2.0.2."
+   },
+   "sha256": "111aab1bcd668f629fef7dd863eb80386397ed5ac1e256040539fdc3dccbbdc5"
+  },
+  {
+   "source_id": "pddocs-223-10min",
+   "title": "pandas 2.2.3 User Guide: 10 minutes to pandas",
+   "short": "pandas 2.2.3 docs, 10 minutes to pandas",
+   "authors": [
+    "pandas development team"
+   ],
+   "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/user_guide/10min.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official pandas documentation; pandas is distributed under the BSD 3-Clause licence (overview page, checked 2026-11-08). Pinned to 2.2.3 to match Pyodide 0.27.8."
+   },
+   "sha256": "d357432f960345f877fc758812328805acf477b363ab2c70696551910f5a5a20"
   }
  ]
 }

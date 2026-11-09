@@ -147,6 +147,8 @@ export interface Lesson {
   sources: SourceRef[];
   /** License of this lesson's prose and code. */
   license: string;
+  /** Pyodide packages the lesson's code imports (allowlist and pinned versions: src/py/packages.json). */
+  packages?: string[];
   steps: Step[];
 }
 
