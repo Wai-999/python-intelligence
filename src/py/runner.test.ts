@@ -19,6 +19,56 @@ async function setup() {
 }
 afterEach(() => vi.useRealTimers());
 
+it("only shows package loading when the worker reports a download", async () => {
+  const { runner, worker } = await setup();
+  const statuses: string[] = [];
+  runner.onStatus((status) => statuses.push(status));
+  const first = runner.run("import numpy", [], { packages: ["numpy"] });
+  await Promise.resolve(); await Promise.resolve();
+  expect(statuses).toEqual(["running"]);
+  worker.send({ id: 1, type: "packages-loading" });
+  expect(statuses).toEqual(["running", "loading-packages"]);
+  worker.send({ id: 1, type: "packages-ready" });
+  worker.send({ id: 1, type: "result", result });
+  await first;
+
+  statuses.length = 0;
+  const cached = runner.run("import numpy", [], { packages: ["numpy"] });
+  await Promise.resolve(); await Promise.resolve();
+  worker.send({ id: 2, type: "packages-ready" });
+  worker.send({ id: 2, type: "result", result });
+  await cached;
+  expect(statuses).not.toContain("loading-packages");
+});
+
+it("surfaces a package LoadError before execution and allows download retry", async () => {
+  vi.useFakeTimers();
+  const { runner, worker } = await setup();
+  const output = vi.fn();
+  const pending = runner.run("print('learner code')", [], {
+    packages: ["pandas"], timeoutMs: 100, onOutput: output,
+  });
+  await Promise.resolve(); await Promise.resolve();
+  worker.send({ id: 1, type: "packages-loading" });
+  // Loading can exceed the learner timeout without executing code.
+  await vi.advanceTimersByTimeAsync(500);
+  const error = { type: "LoadError", message: "Missing packages: pandas. integrity failure",
+    summary: "Package load failed", line: null };
+  worker.send({ id: 1, type: "result", result: { ok: false, tests: [], error } });
+  expect(await pending).toMatchObject({ ok: false, error, stdout: "", stderr: "" });
+  expect(output).not.toHaveBeenCalled();
+  expect(worker.terminate).not.toHaveBeenCalled();
+  expect(vi.getTimerCount()).toBe(0);
+
+  const retry = runner.run("import pandas", [], { packages: ["pandas"] });
+  await Promise.resolve(); await Promise.resolve();
+  expect(worker.messages[1]?.packages).toEqual(["pandas"]);
+  worker.send({ id: 2, type: "packages-loading" });
+  worker.send({ id: 2, type: "packages-ready" });
+  worker.send({ id: 2, type: "result", result });
+  expect((await retry).ok).toBe(true);
+});
+
 it("forwards declared packages and gives downloads a separate timeout", async () => {
   vi.useFakeTimers();
   const { runner, worker } = await setup();

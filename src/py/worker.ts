@@ -8,6 +8,7 @@ import { PYODIDE_INDEX, type FromWorker, type ToWorker } from "./protocol";
 declare const self: DedicatedWorkerGlobalScope;
 
 interface Pyodide {
+  loadedPackages: Record<string, string>;
   loadPackage(names: string[], options: {
     messageCallback: (message: string) => void;
     errorCallback: (message: string) => void;
@@ -56,10 +57,17 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
     const missing = requested.filter((name) => !loadedPackages.has(name));
     if (missing.length) {
       post({ id: msg.id, type: "packages-loading" });
+      const errors: string[] = [];
       await py.loadPackage(missing, {
         messageCallback: (message) => post({ id: msg.id, type: "packages-loading", message }),
-        errorCallback: (message) => post({ id: msg.id, type: "packages-loading", message }),
+        errorCallback: (message) => { errors.push(message); },
       });
+      const notLoaded = requested.filter((name) => !Object.hasOwn(py.loadedPackages, name));
+      if (notLoaded.length || errors.length) {
+        throw new Error(`Missing packages: ${notLoaded.join(", ") || "none"}. ${errors.join("; ")}`);
+      }
+      // Import initialization belongs to loading, outside the learner code timeout.
+      missing.forEach((name) => py.runPython(`import ${name}`));
       missing.forEach((name) => loadedPackages.add(name));
     }
   } catch (e) {

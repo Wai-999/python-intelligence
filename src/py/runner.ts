@@ -86,7 +86,7 @@ export class PythonRunner {
     const started = performance.now();
     let stdout = "";
     let stderr = "";
-    this.set(opts.packages?.length ? "loading-packages" : "running");
+    this.set("running");
     return new Promise<RunResult>((resolve) => {
       const done = (r: RunResult, status: RunnerStatus = "ready") => {
         clearTimeout(timer);
