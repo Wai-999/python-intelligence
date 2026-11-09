@@ -72,3 +72,43 @@ it("serializes runs so package loading cannot mix output between cells", async (
   expect((await second).error?.type).toBe("LoadError");
   expect(runner.status).toBe("ready");
 });
+
+it("captures package declarations before a run waits in the queue", async () => {
+  const { runner, worker } = await setup();
+  const packages = ["numpy"];
+  const pending = runner.run("import numpy", [], { packages });
+  packages[0] = "pandas";
+  await Promise.resolve(); await Promise.resolve();
+  expect(worker.messages[0]?.packages).toEqual(["numpy"]);
+  worker.send({ id: 1, type: "result", result });
+  expect((await pending).ok).toBe(true);
+});
+
+it("recovers from a worker crash during package loading with a fresh interpreter", async () => {
+  const workers: FakeWorker[] = [];
+  const runner = new PythonRunner(() => {
+    const worker = new FakeWorker();
+    workers.push(worker);
+    return worker as unknown as Worker;
+  });
+  const warm = runner.warm();
+  workers[0]!.send({ type: "ready" });
+  await warm;
+  const pending = runner.run("import pandas", [], { packages: ["pandas"] });
+  await Promise.resolve(); await Promise.resolve();
+  workers[0]!.send({ id: 1, type: "packages-loading" });
+  workers[0]!.dispatchEvent(new ErrorEvent("error", { message: "download worker crashed" }));
+  expect((await pending).error?.type).toBe("LoadError");
+  expect(workers[0]!.terminate).toHaveBeenCalledOnce();
+  expect(runner.status).toBe("idle");
+
+  const retry = runner.run("import pandas", [], { packages: ["pandas"] });
+  await Promise.resolve(); await Promise.resolve();
+  expect(workers).toHaveLength(2);
+  workers[1]!.send({ type: "ready" });
+  await Promise.resolve(); await Promise.resolve();
+  expect(workers[1]!.messages[0]?.packages).toEqual(["pandas"]);
+  workers[1]!.send({ id: 2, type: "packages-ready" });
+  workers[1]!.send({ id: 2, type: "result", result });
+  expect((await retry).ok).toBe(true);
+});

@@ -25,19 +25,34 @@ test("lesson packages load before examples and exercise checks; pandas is suppor
   const output = await page.evaluate((url) => new Promise<string>((resolve, reject) => {
     const worker = new Worker(url, { type: "module" });
     let stdout = "";
+    let runId = 1;
+    let repeatLoaded = false;
     const timer = setTimeout(() => { worker.terminate(); reject(new Error("Package run timed out")); }, 120_000);
     worker.onmessage = ({ data }) => {
-      if (data.type === "ready") worker.postMessage({ id: 1, type: "run", packages: ["pandas"],
-        code: "import pandas as pd\nprint(pd.Series([2, 4, 6]).sum())", tests: [] });
+      if (data.type === "ready") worker.postMessage({ id: 1, type: "run", packages: ["unsupported-package"],
+        code: "raise AssertionError('must not execute without packages')", tests: [] });
+      if (data.type === "result" && runId === 1 && data.result?.error?.type === "LoadError") {
+        runId = 2;
+        worker.postMessage({ id: runId, type: "run", packages: ["pandas", "pandas"],
+          code: "import pandas as pd\nprint(pd.Series([2, 4, 6]).sum())", tests: [] });
+        return;
+      }
+      if (data.type === "packages-loading" && runId === 3) repeatLoaded = true;
+      if (data.type === "result" && runId === 2 && data.result?.ok) {
+        runId = 3;
+        worker.postMessage({ id: runId, type: "run", packages: ["pandas"],
+          code: "import pandas as pd\nprint(pd.Series([1, 2]).sum())", tests: [] });
+        return;
+      }
       if (data.type === "stdout") stdout += data.text;
       if (data.type === "result" || data.type === "load-error") {
         clearTimeout(timer);
         worker.terminate();
-        if (data.result?.ok) resolve(stdout);
+        if (data.result?.ok && runId === 3 && !repeatLoaded) resolve(stdout);
         else reject(new Error(JSON.stringify(data)));
       }
     };
     worker.onerror = (event) => { clearTimeout(timer); worker.terminate(); reject(new Error(event.message)); };
   }), workerUrl);
-  expect(output).toBe("12");
+  expect(output).toBe("123");
 });

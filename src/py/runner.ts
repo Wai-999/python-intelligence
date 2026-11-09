@@ -46,6 +46,7 @@ export class PythonRunner {
         if (ev.data.type === "ready") {
           clearTimeout(timer);
           w.removeEventListener("message", onMsg);
+          w.removeEventListener("error", onError);
           this.set("ready");
           resolve();
         } else if (ev.data.type === "load-error") {
@@ -53,8 +54,9 @@ export class PythonRunner {
           fail(`Python failed to load: ${ev.data.message}`);
         }
       };
+      const onError = (e: ErrorEvent) => fail(`Python worker error: ${e.message}`);
       w.addEventListener("message", onMsg);
-      w.addEventListener("error", (e) => fail(`Python worker error: ${e.message}`), { once: true });
+      w.addEventListener("error", onError, { once: true });
     });
     return this.loaded;
   }
@@ -69,7 +71,9 @@ export class PythonRunner {
   private queue: Promise<unknown> = Promise.resolve();
 
   run(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void } = {}): Promise<RunResult> {
-    const run = this.queue.then(() => this.execute(code, tests, opts));
+    // Capture declarations now: a queued cell must keep its own lesson requirements.
+    const options = { ...opts, packages: [...(opts.packages ?? [])] };
+    const run = this.queue.then(() => this.execute(code, tests, options));
     this.queue = run.catch(() => undefined);
     return run;
   }
@@ -87,6 +91,7 @@ export class PythonRunner {
       const done = (r: RunResult, status: RunnerStatus = "ready") => {
         clearTimeout(timer);
         w.removeEventListener("message", onMsg);
+        w.removeEventListener("error", onError);
         if (status === "ready") this.set("ready");
         resolve(r);
       };
@@ -122,7 +127,14 @@ export class PythonRunner {
           done({ ...m.result, stdout, stderr, durationMs: performance.now() - started });
         }
       };
+      const onError = (event: ErrorEvent) => {
+        this.reset("idle");
+        const message = `Python worker failed. Run again to reload Python and lesson packages. ${event.message}`;
+        done({ ok: false, tests: [], stdout, stderr, durationMs: performance.now() - started,
+          error: { type: "LoadError", line: null, summary: message, message } }, "idle");
+      };
       w.addEventListener("message", onMsg);
+      w.addEventListener("error", onError);
       w.postMessage({ id, type: "run", code, tests, packages: opts.packages ?? [] });
     });
   }
