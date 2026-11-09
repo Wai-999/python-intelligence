@@ -31,7 +31,7 @@ export function RunBar({ onRun, onReset, busy, runLabel = "Run" }: { onRun: () =
   );
 }
 
-export function CodeCell({ id, initial }: { id: string; initial: string }) {
+export function CodeCell({ id, initial, packages }: { id: string; initial: string; packages?: string[] }) {
   const [code, setCode] = useState(initial);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -42,7 +42,7 @@ export function CodeCell({ id, initial }: { id: string; initial: string }) {
     setResult(null);
     setLive("");
     try {
-      const r = await getRunner().run(code, [], { onOutput: (_s, t) => setLive((x) => x + t) });
+      const r = await getRunner().run(code, [], { packages, onOutput: (_s, t) => setLive((x) => x + t) });
       setResult(r);
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,

@@ -11,6 +11,7 @@ import type { StepResult } from "../progress/types";
 
 interface Props {
   step: ExerciseStep;
+  packages?: string[];
   lessonId: string;
   draft: string | undefined;
   record: StepResult | undefined;
@@ -21,7 +22,7 @@ interface Props {
 /** Hints are revealed one at a time. The solution becomes available only after this many failed attempts. */
 export const SOLUTION_AFTER = 2;
 
-export function Exercise({ step, lessonId, draft, record, onDraft, onResult }: Props) {
+export function Exercise({ step, packages, lessonId, draft, record, onDraft, onResult }: Props) {
   const [code, setCode] = useState(draft ?? step.starter);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -48,8 +49,9 @@ export function Exercise({ step, lessonId, draft, record, onDraft, onResult }: P
     setResult(null);
     setLive("");
     try {
-      const r = await getRunner().run(code, step.tests, { onOutput: (_s, t) => setLive((x) => x + t) });
+      const r = await getRunner().run(code, step.tests, { packages, onOutput: (_s, t) => setLive((x) => x + t) });
       setResult(r);
+      if (r.error?.type === "LoadError") return;
       const passed = r.ok && r.tests.length === step.tests.length && r.tests.every((t) => t.passed);
       const failedConcepts = r.ok
         ? r.tests.filter((t) => !t.passed).map((t) => t.concept).filter((c): c is string => !!c)
@@ -65,7 +67,7 @@ export function Exercise({ step, lessonId, draft, record, onDraft, onResult }: P
   };
 
   const fb = result
-    ? result.error && result.error.type !== "LoadError" ? feedbackForError(result.error) : feedbackForTests(result.tests)
+    ? result.error && result.error.type !== "LoadError" ? feedbackForError(result.error) : result.error ? null : feedbackForTests(result.tests)
     : null;
   const allPassed = !!result && result.ok && result.tests.every((t) => t.passed);
   const edId = `ed-${lessonId}-${step.id}`;

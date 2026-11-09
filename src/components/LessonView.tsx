@@ -73,9 +73,9 @@ export function LessonView(p: Props) {
       <StepSources lesson={lesson} step={step} />
 
       {step.kind === "visual" && <TraceViewer key={step.id} visual={step.visual} />}
-      {step.kind === "example" && <CodeCell key={step.id} id={`ex-${lesson.id}-${step.id}`} initial={step.code} />}
+      {step.kind === "example" && <CodeCell key={step.id} id={`ex-${lesson.id}-${step.id}`} initial={step.code} packages={lesson.packages} />}
       {(step.kind === "guided" || step.kind === "challenge") && (
-        <Exercise key={step.id} step={step} lessonId={lesson.id} draft={p.drafts[step.id]}
+        <Exercise key={step.id} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
                   onDraft={(c) => p.onDraft(step.id, c)}
                   onResult={(passed, fc) => p.onExercise(step.id, passed, fc)} />
