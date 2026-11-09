@@ -282,6 +282,16 @@
           "concept": "classification"
         },
         {
+          "name": "every feature counts",
+          "code": "got = predict_centroids({'p': [0, 0, 0], 'q': [0, 0, 10]}, [[0, 0, 8], [1, 1, 1]])\nassert got == ['q', 'p'], f'the third feature decides; got {got}'",
+          "concept": "classification"
+        },
+        {
+          "name": "decimal labels are kept as they are",
+          "code": "c = fit_centroids([[0], [1], [10]], [0.5, 0.5, 2.5])\nassert c == {0.5: [0.5], 2.5: [10.0]}, f'got {c}'\nassert predict_centroids(c, [[9], [0]]) == [2.5, 0.5]",
+          "concept": "classification"
+        },
+        {
           "name": "Euclidean, not Manhattan",
           "code": "c = {'p': [3, 3], 'q': [5, 0]}\nassert predict_centroids(c, [[0, 0]]) == ['p'], 'p is about 4.24 away in straight-line distance, q is 5'",
           "concept": "decision-boundary"
@@ -298,7 +308,7 @@
         },
         {
           "name": "bad input",
-          "code": "for X, y in (([[1, 2]], []), ([[1, 2]], ['a', 'b']), ([], [])):\n    try:\n        fit_centroids(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
+          "code": "for X, y in (([[1, 2]], []), ([[1, 2]], ['a', 'b']), ([[1, 2], [3, 4]], ['a']), ([], [])):\n    try:\n        fit_centroids(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
           "concept": "classification"
         }
       ],
