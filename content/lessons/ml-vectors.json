@@ -192,7 +192,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "For vectors `u` and `v` with the same number of entries:\n\n**Dot product:** `u · v = u[0]*v[0] + u[1]*v[1] + ...`. In NumPy: `np.sum(u * v)`.\n\n**Length (Euclidean norm):** `‖u‖ = √(u · u)`, the square root of the sum of squares:\n`np.sum(u * u) ** 0.5`. Other norms exist; the **Manhattan** norm adds up absolute values instead.\n\n**Distance:** the distance between two points is the length of their difference, `‖u − v‖`.\n\n**Angle:** `cos θ = (u · v) / (‖u‖ ‖v‖)`, always between -1 and 1. It is 1 when the vectors point\nthe same way and 0 when they are **orthogonal** (at right angles), which happens exactly when\n`u · v = 0`. Scaling a vector changes its length but not its direction, so not its cosine.",
+      "body": "For vectors `u` and `v` with the same number of entries:\n\n**Dot product:** `u · v = u[0]*v[0] + u[1]*v[1] + ...`. In NumPy: `np.sum(u * v)`.\n\n**Length (Euclidean norm):** `‖u‖ = √(u · u)`, the square root of the sum of squares:\n`np.sum(u * u) ** 0.5`. Other norms exist; the **Manhattan** norm adds up absolute values instead.\n\n**Distance:** the distance between two points is the length of their difference, `‖u − v‖`.\n\n**Angle:** for two **non-zero** vectors, `cos θ = (u · v) / (‖u‖ ‖v‖)`, always between -1 and 1. (A zero\nvector has length 0 and no direction, so the formula would divide by zero.) The cosine is 1 when the\nvectors point the same way, -1 when they point in opposite directions, and 0 when they are\n**orthogonal** (at right angles), which happens exactly when `u · v = 0`. Multiplying a vector by a\n**positive** number changes its length but not its direction, so not its cosine; a negative number\nreverses the direction and flips the cosine's sign.",
       "cites": [
         "mml-inner",
         "mml-norms",
@@ -214,12 +214,12 @@
       "id": "cosine",
       "kind": "guided",
       "title": "Your turn: cosine similarity",
-      "body": "Complete `cosine(u, v)` so it returns the cosine similarity of two lists of numbers as a plain\nPython `float`, using the dot product and the two lengths.",
+      "body": "Complete `cosine(u, v)` so it returns the cosine similarity of two lists of numbers as a plain\nPython `float`, using the dot product and the two lengths. A zero vector has no direction: if either\nvector has length 0, return `0.0` instead of dividing by zero.",
       "starter": "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v))\n",
       "hints": [
         "The starter has the dot product. Divide it by the product of the two lengths.",
-        "A length is `np.sum(u * u) ** 0.5`.",
-        "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v) / (np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5))\n"
+        "A length is `np.sum(u * u) ** 0.5`. Check whether the product of the lengths is 0 before dividing.",
+        "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    lengths = np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5\n    if lengths == 0:\n        return 0.0\n    return float(np.sum(u * v) / lengths)\n"
       ],
       "tests": [
         {
@@ -243,12 +243,17 @@
           "concept": "similarity"
         },
         {
+          "name": "zero vector gives 0.0",
+          "code": "import warnings\nwith warnings.catch_warnings():\n    warnings.simplefilter('error')\n    got = cosine([0, 0], [3, 4])\nassert got == 0.0 and type(got) is float, f'a zero vector has no direction: return 0.0, got {got!r}'",
+          "concept": "norms"
+        },
+        {
           "name": "returns a float",
           "code": "assert type(cosine([1, 2], [2, 1])) is float, 'wrap the result in float(...)'",
           "concept": "vectors"
         }
       ],
-      "solution": "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v) / (np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5))\n"
+      "solution": "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    lengths = np.sum(u * u) ** 0.5 * np.sum(v * v) ** 0.5\n    if lengths == 0:\n        return 0.0\n    return float(np.sum(u * v) / lengths)\n"
     },
     {
       "id": "nearest",
@@ -270,6 +275,11 @@
         {
           "name": "distance, not direction",
           "code": "items = {'far-same-way': [10, 10], 'near': [1, 2]}\nassert nearest([1, 1], items) == 'near', 'measure distance between tips, not angle'",
+          "concept": "norms"
+        },
+        {
+          "name": "Euclidean, not Manhattan",
+          "code": "items = {'b': [5, 0], 'a': [3, 3]}\nassert nearest([0, 0], items) == 'a', 'a is about 4.24 away in straight-line distance, b is 5 (Manhattan distance would pick b)'",
           "concept": "norms"
         },
         {

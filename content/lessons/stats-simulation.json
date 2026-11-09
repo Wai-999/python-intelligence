@@ -144,7 +144,7 @@
       "id": "trace",
       "kind": "visual",
       "title": "Watch a tiny simulation",
-      "body": "Three rolls of a die, counting sixes. The seed makes this run the same every time.",
+      "body": "Three rolls of a die, counting sixes. The seed makes this run the same every time. Each frame shows the variables just before the highlighted line runs.",
       "visual": {
         "type": "call-trace",
         "code": "import random\n\ndef estimate(trials):\n    hits = 0\n    for _ in range(trials):\n        roll = random.randint(1, 6)\n        if roll == 6:\n            hits += 1\n    return hits / trials\n\nrandom.seed(28)\nprint(estimate(3))",
@@ -178,10 +178,9 @@
               "estimate(3)"
             ],
             "locals": {
-              "trials": "3",
-              "hits": "0"
+              "trials": "3"
             },
-            "note": "No hits yet."
+            "note": "Start counting hits from zero."
           },
           {
             "line": 7,
@@ -205,11 +204,11 @@
             ],
             "locals": {
               "trials": "3",
-              "hits": "1",
+              "hits": "0",
               "_": "1",
               "roll": "6"
             },
-            "note": "Second roll: 6. A hit."
+            "note": "Second roll: 6. This line counts the hit."
           },
           {
             "line": 7,
@@ -293,17 +292,17 @@
       "tests": [
         {
           "name": "spots a repeat",
-          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        return self.values.pop(0)\nassert birthday_trial(Scripted([5, 9, 5]), 3) is True, 'days 5, 9, 5 contain a repeat'",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        assert (a, b) == (1, 365), f'draw birthdays with randint(1, 365), not randint({a}, {b})'\n        return self.values.pop(0)\nassert birthday_trial(Scripted([5, 9, 5]), 3) is True, 'days 5, 9, 5 contain a repeat'",
           "concept": "simulation"
         },
         {
           "name": "no false alarms",
-          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        return self.values.pop(0)\nassert birthday_trial(Scripted([1, 2, 3]), 3) is False, 'days 1, 2, 3 are all different'",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        assert (a, b) == (1, 365), f'draw birthdays with randint(1, 365), not randint({a}, {b})'\n        return self.values.pop(0)\nassert birthday_trial(Scripted([1, 2, 3]), 3) is False, 'days 1, 2, 3 are all different'",
           "concept": "simulation"
         },
         {
           "name": "draws one day per person",
-          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        return self.values.pop(0)\nr = Scripted([7, 8, 9, 10])\nbirthday_trial(r, 4)\nassert r.values == [], 'call rng.randint once for each person'",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        assert (a, b) == (1, 365), f'draw birthdays with randint(1, 365), not randint({a}, {b})'\n        return self.values.pop(0)\nr = Scripted([7, 8, 9, 10])\nbirthday_trial(r, 4)\nassert r.values == [], 'call rng.randint once for each person'",
           "concept": "randomness"
         },
         {

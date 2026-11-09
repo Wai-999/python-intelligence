@@ -237,6 +237,11 @@
           "concept": "brute-force-search"
         },
         {
+          "name": "recovers every key, 0 to 25",
+          "code": "for k in range(26):\n    got = crack(encrypt('MEET AT NOON', k), {'MEET', 'AT', 'NOON'})\n    assert got == (k, 'MEET AT NOON'), f'key {k}: got {got!r}'",
+          "concept": "brute-force-search"
+        },
+        {
           "name": "ties keep the smallest key",
           "code": "assert crack('XYZ', set()) == (0, 'XYZ'), 'with no matches at all, every key ties: return key 0'",
           "concept": "brute-force-search"
