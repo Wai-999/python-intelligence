@@ -81,7 +81,7 @@ Core Python path → NumPy/pandas → probability and statistics → linear alge
 | P4-5 | Claude → Codex | Core path: `py-modules`, `py-files`, `py-classes` (books + 3 tutorial pages); validator snippets now run in an isolated temp dir; e2e proves file I/O in Pyodide | ✅ Codex: 4 medium (retry failure from persistent browser FS, 2 weak tests, 'math is a .py file') fixed (fresh folder per run in the shared harness); re-review approved, 0 findings |
 | P4-4 ⛔ | Owner | Choose licensed BOOKS for statistics and ML (P0-5 style decision). NumPy/pandas now use their official BSD-3 docs (delegated decision, like the Python docs) | open |
 | P4-6 | Codex → Claude | Pyodide package loading for lessons that declare `packages` (allowlist + pinned versions in `src/py/packages.json`) | ✅ merged after 7 attempts: 1–4 failed on the controller's missing `.venv312` (fixed: shared worktree links, `unblock --feedback`); 5 JSON import attribute in the e2e; 6 package progress leaking into stdout; 7 review: silent `loadPackage` failures (Pyodide resolves on error) and first-import cost inside the code timeout |
-| P4-7 | Claude → Codex | Data track: `np-arrays` (NumPy 2.0 docs), `pd-dataframes` (pandas 2.2.3 docs); content gate validates under CPython 3.12 + numpy 2.0.2 + pandas 2.2.3 (closes R15) | ✅ e2e: both lessons run in the browser; Codex review pending |
+| P4-7 | Claude → Codex | Data track: `np-arrays` (NumPy 2.0 docs), `pd-dataframes` (pandas 2.2.3 docs); content gate validates under CPython 3.12 + numpy 2.0.2 + pandas 2.2.3 (closes R15) | ✅ e2e: both lessons run in the browser; Codex: 7 data findings + 1 orchestrator high (shared-dir tampering) fixed, re-review approved |
 
 ## Phase 5 — Release ✅ core done 2026-11-08
 
