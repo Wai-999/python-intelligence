@@ -179,3 +179,15 @@ def test_accept_only_from_blocked(ctl):
     run_until(ctl, "D", S.AWAITING_APPROVAL)
     with pytest.raises(db.TransitionError):
         ctl.accept("D", "human:owner", "x")
+
+
+def test_unblock_feedback_replaces_misleading_repair_feedback(ctl):
+    _blocked_after_review(ctl, "F")
+    db.transition(ctl.conn, "F", S.READY, actor="human:owner", expect=S.BLOCKED, detail={"reason": "retry"})
+    db.transition(ctl.conn, "F", S.BLOCKED, actor="controller", expect=S.READY)
+    before = db.last_repair_feedback(ctl.conn, "F")
+    ctl.unblock("F", "human:owner", "retry")                      # no feedback: keep what the agent had
+    assert db.last_repair_feedback(ctl.conn, "F") == before
+    db.transition(ctl.conn, "F", S.BLOCKED, actor="controller", expect=S.READY)
+    ctl.unblock("F", "human:owner", "env fixed", feedback="The build failure was the controller's environment.")
+    assert db.last_repair_feedback(ctl.conn, "F") == "The build failure was the controller's environment."

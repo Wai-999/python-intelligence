@@ -177,6 +177,8 @@ class Controller:
                       detail={"reason": reason, "accepted_commit": row["commit_sha"]})
         return f"{task_id}: blocked -> awaiting_approval at {row['commit_sha'][:10]} (accepted by {actor}; approve to merge)"
 
-    def unblock(self, task_id: str, actor: str, reason: str) -> str:
-        db.transition(self.conn, task_id, S.READY, actor=actor, expect=S.BLOCKED, detail={"reason": reason})
+    def unblock(self, task_id: str, actor: str, reason: str, feedback: str | None = None) -> str:
+        """Human retries a blocked task. `feedback`, if given, replaces the last repair feedback for the next attempt."""
+        detail = {"reason": reason} | ({"feedback": feedback} if feedback else {})
+        db.transition(self.conn, task_id, S.READY, actor=actor, expect=S.BLOCKED, detail=detail)
         return f"{task_id}: blocked -> ready (by {actor})"

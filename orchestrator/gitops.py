@@ -36,23 +36,30 @@ def branch_exists(repo: str | Path, branch: str) -> bool:
     return git(repo, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", check=False) != ""
 
 
+# Local, gitignored tool directories shared read-through with agent and review worktrees (agents have no network):
+# JS deps, and the CPython 3.12 + pinned numpy/pandas environment the content gate needs (see validate_content.py).
+SHARED_LINKS = ("node_modules", ".venv312")
+
+
+def _link_shared(repo, path) -> None:
+    for name in SHARED_LINKS:
+        src, dst = Path(repo) / name, Path(path) / name
+        if src.is_dir() and not dst.exists() and not dst.is_symlink():
+            dst.symlink_to(src)
+
+
 def add_worktree(repo, path, branch, base) -> None:
     if Path(path).exists():
         raise GitError(f"worktree path already exists: {path}")
     git(repo, "worktree", "add", "-b", branch, str(path), base)
-    # Agents have no network; give them the main checkout's installed JS deps read-through.
-    nm = Path(repo) / "node_modules"
-    if nm.is_dir() and not (Path(path) / "node_modules").exists():
-        (Path(path) / "node_modules").symlink_to(nm)
+    _link_shared(repo, path)
 
 
 def add_review_worktree(repo, path, sha) -> None:
     if Path(path).exists():
         remove_worktree(repo, path)
     git(repo, "worktree", "add", "--detach", str(path), sha)
-    nm = Path(repo) / "node_modules"
-    if nm.is_dir():
-        (Path(path) / "node_modules").symlink_to(nm)
+    _link_shared(repo, path)
 
 
 def remove_worktree(repo, path) -> None:
@@ -62,8 +69,8 @@ def remove_worktree(repo, path) -> None:
 
 
 def stage_all(wt) -> list[str]:
-    """Stage everything except the node_modules link; return staged paths."""
-    git(wt, "add", "-A", "--", ".", ":(exclude)node_modules")
+    """Stage everything except the shared tool links; return staged paths."""
+    git(wt, "add", "-A", "--", ".", *[f":(exclude){name}" for name in SHARED_LINKS])
     out = git(wt, "diff", "--cached", "--name-only", "--no-renames")
     return [l for l in out.splitlines() if l]
 

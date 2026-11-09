@@ -237,9 +237,15 @@ def unfinished_live_runs(conn) -> list[sqlite3.Row]:
 
 
 def last_repair_feedback(conn, task_id: str) -> str | None:
-    row = conn.execute("SELECT detail_json FROM events WHERE task_id = ? AND to_status = 'repair'"
-                       " ORDER BY id DESC LIMIT 1", (task_id,)).fetchone()
-    if not row:
-        return None
-    d = json.loads(row["detail_json"])
-    return d.get("feedback") or d.get("reason")
+    """Feedback for the next attempt: the latest repair's, unless a human unblocked later WITH new feedback
+    (e.g. "the last failure was the controller's environment, not your code")."""
+    rows = conn.execute("SELECT to_status, from_status, detail_json FROM events WHERE task_id = ? AND"
+                        " (to_status = 'repair' OR (from_status = 'blocked' AND to_status = 'ready'))"
+                        " ORDER BY id DESC", (task_id,)).fetchall()
+    for row in rows:
+        d = json.loads(row["detail_json"])
+        if row["to_status"] == "repair":
+            return d.get("feedback") or d.get("reason")
+        if d.get("feedback"):
+            return d["feedback"]
+    return None

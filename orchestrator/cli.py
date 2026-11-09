@@ -106,7 +106,7 @@ def cmd_accept(args) -> int:
 
 
 def cmd_unblock(args) -> int:
-    print(_controller(args).unblock(args.task, f"human:{args.by}", args.reason))
+    print(_controller(args).unblock(args.task, f"human:{args.by}", args.reason, args.feedback))
     return 0
 
 
@@ -141,7 +141,9 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--with-findings", action="store_true", help="append the latest review findings")
     s.set_defaults(fn=cmd_reject)
     s = sub.add_parser("unblock"); s.add_argument("task"); s.add_argument("--by", required=True)
-    s.add_argument("--reason", required=True); s.set_defaults(fn=cmd_unblock)
+    s.add_argument("--reason", required=True)
+    s.add_argument("--feedback", help="replace the last repair feedback for the next attempt")
+    s.set_defaults(fn=cmd_unblock)
     s = sub.add_parser("accept", help="take a blocked task's tested commit to the approval gate as-is")
     s.add_argument("task"); s.add_argument("--by", required=True)
     s.add_argument("--reason", required=True); s.set_defaults(fn=cmd_accept)
