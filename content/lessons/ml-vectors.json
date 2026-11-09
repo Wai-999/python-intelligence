@@ -244,7 +244,7 @@
         },
         {
           "name": "zero vector gives 0.0",
-          "code": "import warnings\nwith warnings.catch_warnings():\n    warnings.simplefilter('error')\n    got = cosine([0, 0], [3, 4])\nassert got == 0.0 and type(got) is float, f'a zero vector has no direction: return 0.0, got {got!r}'",
+          "code": "import warnings\nfor u, v in [([0, 0], [3, 4]), ([3, 4], [0, 0]), ([0, 0], [0, 0])]:\n    with warnings.catch_warnings():\n        warnings.simplefilter('error')\n        got = cosine(u, v)\n    assert got == 0.0 and type(got) is float, f'cosine({u}, {v}): a zero vector has no direction, return 0.0, got {got!r}'",
           "concept": "norms"
         },
         {

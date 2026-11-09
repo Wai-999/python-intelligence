@@ -296,6 +296,11 @@
           "concept": "simulation"
         },
         {
+          "name": "spots a repeat anywhere",
+          "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        assert (a, b) == (1, 365), f'draw birthdays with randint(1, 365), not randint({a}, {b})'\n        return self.values.pop(0)\nassert birthday_trial(Scripted([5, 9, 9]), 3) is True, 'the second and third people share day 9'",
+          "concept": "simulation"
+        },
+        {
           "name": "no false alarms",
           "code": "class Scripted:\n    def __init__(self, values):\n        self.values = list(values)\n    def randint(self, a, b):\n        assert (a, b) == (1, 365), f'draw birthdays with randint(1, 365), not randint({a}, {b})'\n        return self.values.pop(0)\nassert birthday_trial(Scripted([1, 2, 3]), 3) is False, 'days 1, 2, 3 are all different'",
           "concept": "simulation"
