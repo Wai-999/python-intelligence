@@ -32,6 +32,6 @@ export type ToWorker = { id: number; type: "run"; code: string; tests: PyTest[];
 export type FromWorker =
   | { type: "ready" }
   | { type: "load-error"; message: string }
-  | { id: number; type: "packages-loading" | "packages-ready" }
+  | { id: number; type: "packages-loading" | "packages-ready"; message?: string }
   | { id: number; type: "stdout" | "stderr"; text: string }
   | { id: number; type: "result"; result: Omit<RunResult, "stdout" | "stderr" | "durationMs"> };

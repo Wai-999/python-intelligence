@@ -8,7 +8,10 @@ import { PYODIDE_INDEX, type FromWorker, type ToWorker } from "./protocol";
 declare const self: DedicatedWorkerGlobalScope;
 
 interface Pyodide {
-  loadPackage(names: string[]): Promise<unknown>;
+  loadPackage(names: string[], options: {
+    messageCallback: (message: string) => void;
+    errorCallback: (message: string) => void;
+  }): Promise<unknown>;
   runPython(code: string): unknown;
   globals: { get(name: string): (...args: unknown[]) => string };
   setStdout(o: { batched: (s: string) => void }): void;
@@ -53,7 +56,10 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
     const missing = requested.filter((name) => !loadedPackages.has(name));
     if (missing.length) {
       post({ id: msg.id, type: "packages-loading" });
-      await py.loadPackage(missing);
+      await py.loadPackage(missing, {
+        messageCallback: (message) => post({ id: msg.id, type: "packages-loading", message }),
+        errorCallback: (message) => post({ id: msg.id, type: "packages-loading", message }),
+      });
       missing.forEach((name) => loadedPackages.add(name));
     }
   } catch (e) {
