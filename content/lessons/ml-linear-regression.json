@@ -233,6 +233,11 @@
           "concept": "least-squares"
         },
         {
+          "name": "horizontal line",
+          "code": "w, b = fit_line([1, 2, 3], [4, 4, 4])\nassert w == 0.0 and b == 4.0, f'constant y gives slope 0 and intercept 4; got {(w, b)}'",
+          "concept": "least-squares"
+        },
+        {
           "name": "minimises the loss",
           "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nx, y = np.array(x), np.array(y)\nw, b = fit_line(x, y)\nloss = lambda w, b: np.mean((w * x + b - y) ** 2)\nfor dw, db in ((0.01, 0), (-0.01, 0), (0, 0.01), (0, -0.01)):\n    assert loss(w, b) < loss(w + dw, b + db), 'nudging the line should only make the loss worse'",
           "concept": "loss-functions"
@@ -279,12 +284,12 @@
         },
         {
           "name": "exactly `steps` updates",
-          "code": "def ref(x, y, lr, steps):\n    w = b = 0.0\n    n = len(x)\n    for _ in range(steps):\n        e = [w * xi + b - yi for xi, yi in zip(x, y)]\n        dw = 2 * sum(ei * xi for ei, xi in zip(e, x)) / n\n        db = 2 * sum(e) / n\n        w, b = w - lr * dw, b - lr * db\n    return w, b\nx, y = [1.0, 2.0, 3.0], [2.0, 3.0, 5.0]\nfor lr, steps in ((0.05, 2), (0.01, 7), (0.0005, 1500)):\n    got, want = gd_fit(x, y, lr=lr, steps=steps), ref(x, y, lr, steps)\n    assert all(abs(g - r) < 1e-9 for g, r in zip(got, want)), f'lr={lr}, steps={steps}: got {got}, want {want}'",
+          "code": "def ref(x, y, lr, steps):\n    w = b = 0.0\n    n = len(x)\n    for _ in range(steps):\n        e = [w * xi + b - yi for xi, yi in zip(x, y)]\n        dw = 2 * sum(ei * xi for ei, xi in zip(e, x)) / n\n        db = 2 * sum(e) / n\n        w, b = w - lr * dw, b - lr * db\n    return w, b\nfor x, y in (([1.0, 2.0, 3.0], [2.0, 3.0, 5.0]), ([1.0, 2.0, 3.0], [-3.0, -5.0, -7.0])):\n  for lr, steps in ((0.05, 2), (0.01, 7), (0.0005, 1500)):\n    got, want = gd_fit(x, y, lr=lr, steps=steps), ref(x, y, lr, steps)\n    assert all(abs(g - r) < 1e-9 for g, r in zip(got, want)), f'lr={lr}, steps={steps}: got {got}, want {want}'",
           "concept": "gradient-descent"
         },
         {
           "name": "converges to least squares",
-          "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nw, b = gd_fit(x, y, lr=0.05, steps=5000)\nwant = np.polyfit(x, y, 1)\nassert abs(w - want[0]) < 1e-3 and abs(b - want[1]) < 1e-3, f'got {(w, b)}, least squares is {tuple(want)}'",
+          "code": "import numpy as np\nx = [1.0, 2.0, 3.0, 4.0]\ny = [3.1, 4.9, 7.2, 8.8]\nw, b = gd_fit(x, y, lr=0.05, steps=5000)\nwant = np.polyfit(x, y, 1)\nassert abs(w - want[0]) < 1e-3 and abs(b - want[1]) < 1e-3, f'got {(w, b)}, least squares is {tuple(want)}'\nx, y = [1, 2, 3, 4], [-2.9, -5.2, -6.8, -9.1]\nw, b = gd_fit(x, y, lr=0.05, steps=5000)\nwant = np.polyfit(x, y, 1)\nassert abs(w - want[0]) < 1e-3 and abs(b - want[1]) < 1e-3, f'negative slope and intercept: got {(w, b)}, least squares is {tuple(want)}'",
           "concept": "least-squares"
         },
         {

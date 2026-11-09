@@ -280,8 +280,8 @@
       "starter": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    return arr[arr > arr.mean()].tolist()\n",
       "hints": [
         "`np.abs(arr - arr.mean())` is each value's distance from the mean.",
-        "Keep values whose distance is `> k * arr.std()`; check for a standard deviation of 0 first.",
-        "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    s = arr.std()\n    if s == 0:\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * s].tolist()\n"
+        "Keep values whose distance is `> k * arr.std()`. Check first whether every value equals the first one (`np.all(arr == arr[0])`): with decimals, rounding can make the standard deviation of identical values tiny but not 0.",
+        "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    if len(arr) == 0 or np.all(arr == arr[0]):\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * arr.std()].tolist()\n"
       ],
       "tests": [
         {
@@ -301,7 +301,7 @@
         },
         {
           "name": "constant data",
-          "code": "import warnings\nwith warnings.catch_warnings():\n    warnings.simplefilter('error')\n    assert outliers([4, 4, 4]) == [], 'no spread, no outliers'",
+          "code": "import warnings\nwith warnings.catch_warnings():\n    warnings.simplefilter('error')\n    assert outliers([4, 4, 4]) == [], 'no spread, no outliers'\n    assert outliers([0.1, 0.1, 0.1], k=0.5) == [], 'identical decimals: no outliers, even with a small k'",
           "concept": "variance"
         },
         {
@@ -320,7 +320,7 @@
           "concept": "variance"
         }
       ],
-      "solution": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    s = arr.std()\n    if s == 0:\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * s].tolist()\n"
+      "solution": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    if len(arr) == 0 or np.all(arr == arr[0]):\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * arr.std()].tolist()\n"
     },
     {
       "id": "check",
