@@ -1,7 +1,7 @@
 import type { PyTest } from "../content/types";
 import type { FromWorker, RunResult } from "./protocol";
 
-export type RunnerStatus = "idle" | "loading" | "ready" | "running" | "error";
+export type RunnerStatus = "idle" | "loading" | "ready" | "loading-packages" | "running" | "error";
 
 /**
  * Main-thread facade over the Pyodide worker.
@@ -46,6 +46,7 @@ export class PythonRunner {
         if (ev.data.type === "ready") {
           clearTimeout(timer);
           w.removeEventListener("message", onMsg);
+          w.removeEventListener("error", onError);
           this.set("ready");
           resolve();
         } else if (ev.data.type === "load-error") {
@@ -53,8 +54,9 @@ export class PythonRunner {
           fail(`Python failed to load: ${ev.data.message}`);
         }
       };
+      const onError = (e: ErrorEvent) => fail(`Python worker error: ${e.message}`);
       w.addEventListener("message", onMsg);
-      w.addEventListener("error", (e) => fail(`Python worker error: ${e.message}`), { once: true });
+      w.addEventListener("error", onError, { once: true });
     });
     return this.loaded;
   }
@@ -66,7 +68,17 @@ export class PythonRunner {
     this.set(status);
   }
 
-  async run(code: string, tests: PyTest[] = [], opts: { timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void } = {}): Promise<RunResult> {
+  private queue: Promise<unknown> = Promise.resolve();
+
+  run(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void } = {}): Promise<RunResult> {
+    // Capture declarations now: a queued cell must keep its own lesson requirements.
+    const options = { ...opts, packages: [...(opts.packages ?? [])] };
+    const run = this.queue.then(() => this.execute(code, tests, options));
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async execute(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void } = {}): Promise<RunResult> {
     const timeoutMs = opts.timeoutMs ?? 10_000;
     await this.warm();
     const w = this.worker!;
@@ -79,10 +91,11 @@ export class PythonRunner {
       const done = (r: RunResult, status: RunnerStatus = "ready") => {
         clearTimeout(timer);
         w.removeEventListener("message", onMsg);
+        w.removeEventListener("error", onError);
         if (status === "ready") this.set("ready");
         resolve(r);
       };
-      const timer = setTimeout(() => {
+      const timedOut = () => {
         // Infinite loop or very slow code: kill the interpreter. Next run gets a fresh one.
         this.reset("idle");
         done({
@@ -90,11 +103,23 @@ export class PythonRunner {
           error: { type: "TimeoutError", line: null, summary: `TimeoutError: stopped after ${timeoutMs / 1000}s`,
                    message: `Your code ran for more than ${timeoutMs / 1000} seconds and was stopped. Look for a loop whose condition never becomes false.` },
         }, "idle");
-      }, timeoutMs);
+      };
+      let timer = setTimeout(() => {
+        this.reset("idle");
+        const message = "Lesson packages took too long to load. Check your connection and run again.";
+        done({ ok: false, tests: [], stdout, stderr, durationMs: performance.now() - started,
+          error: { type: "LoadError", line: null, summary: message, message } }, "idle");
+      }, opts.packageTimeoutMs ?? 120_000);
       const onMsg = (ev: MessageEvent<FromWorker>) => {
         const m = ev.data;
         if (!("id" in m) || m.id !== id) return;
-        if (m.type === "stdout" || m.type === "stderr") {
+        if (m.type === "packages-loading") {
+          this.set("loading-packages");
+        } else if (m.type === "packages-ready") {
+          clearTimeout(timer);
+          timer = setTimeout(timedOut, timeoutMs);
+          this.set("running");
+        } else if (m.type === "stdout" || m.type === "stderr") {
           const text = m.text + "\n";
           if (m.type === "stdout") stdout += text; else stderr += text;
           opts.onOutput?.(m.type, text);
@@ -102,8 +127,15 @@ export class PythonRunner {
           done({ ...m.result, stdout, stderr, durationMs: performance.now() - started });
         }
       };
+      const onError = (event: ErrorEvent) => {
+        this.reset("idle");
+        const message = `Python worker failed. Run again to reload Python and lesson packages. ${event.message}`;
+        done({ ok: false, tests: [], stdout, stderr, durationMs: performance.now() - started,
+          error: { type: "LoadError", line: null, summary: message, message } }, "idle");
+      };
       w.addEventListener("message", onMsg);
-      w.postMessage({ id, type: "run", code, tests });
+      w.addEventListener("error", onError);
+      w.postMessage({ id, type: "run", code, tests, packages: opts.packages ?? [] });
     });
   }
 }

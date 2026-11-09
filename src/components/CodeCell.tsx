@@ -18,7 +18,7 @@ export function Console({ result, live }: { result: RunResult | null; live: stri
   );
 }
 
-export function RunBar({ onRun, onReset, busy, runLabel = "Run" }: { onRun: () => void; onReset?: () => void; busy: boolean; runLabel?: string }) {
+export function RunBar({ onRun, onReset, busy, runLabel = "Run", packages = [] }: { onRun: () => void; onReset?: () => void; busy: boolean; runLabel?: string; packages?: string[] }) {
   const status = usePythonStatus();
   return (
     <div className="run-bar">
@@ -26,12 +26,14 @@ export function RunBar({ onRun, onReset, busy, runLabel = "Run" }: { onRun: () =
         {busy ? "Running…" : `▶ ${runLabel}`}
       </button>
       {onReset && <button type="button" className="btn" onClick={onReset} disabled={busy}>Reset</button>}
-      <span className={`py-status py-${status}`} role="status">{STATUS_TEXT[status]}</span>
+      <span className={`py-status py-${status}`} role="status">{status === "loading-packages" && packages.length
+        ? `Loading ${packages.join(", ")}… the first download may take a minute.`
+        : STATUS_TEXT[status]}</span>
     </div>
   );
 }
 
-export function CodeCell({ id, initial }: { id: string; initial: string }) {
+export function CodeCell({ id, initial, packages }: { id: string; initial: string; packages?: string[] }) {
   const [code, setCode] = useState(initial);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -42,7 +44,7 @@ export function CodeCell({ id, initial }: { id: string; initial: string }) {
     setResult(null);
     setLive("");
     try {
-      const r = await getRunner().run(code, [], { onOutput: (_s, t) => setLive((x) => x + t) });
+      const r = await getRunner().run(code, [], { packages, onOutput: (_s, t) => setLive((x) => x + t) });
       setResult(r);
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,
@@ -55,9 +57,9 @@ export function CodeCell({ id, initial }: { id: string; initial: string }) {
   return (
     <section className="cell" aria-label="Runnable example">
       <Editor id={id} label="Example code" value={code} onChange={setCode} onRun={run} />
-      <RunBar onRun={run} onReset={() => { setCode(initial); setResult(null); }} busy={busy} />
+      <RunBar onRun={run} onReset={() => { setCode(initial); setResult(null); }} busy={busy} packages={packages} />
       <Console result={result} live={live} />
-      {result?.error && result.error.type !== "LoadError" && <TutorNote fb={feedbackForError(result.error)} />}
+      {result?.error && !["LoadError", "PackageError"].includes(result.error.type) && <TutorNote fb={feedbackForError(result.error)} />}
     </section>
   );
 }

@@ -1,12 +1,18 @@
 /// <reference lib="webworker" />
 // Runs Pyodide off the main thread. NOTE: this is isolation for responsiveness, not a security
 // boundary: learner code runs with the page's origin inside the worker (no DOM, no host access).
+import packages from "./packages.json";
 import harness from "./harness.py?raw";
 import { PYODIDE_INDEX, type FromWorker, type ToWorker } from "./protocol";
 
 declare const self: DedicatedWorkerGlobalScope;
 
 interface Pyodide {
+  loadedPackages: Record<string, string>;
+  loadPackage(names: string[], options: {
+    messageCallback: (message: string) => void;
+    errorCallback: (message: string) => void;
+  }): Promise<unknown>;
   runPython(code: string): unknown;
   globals: { get(name: string): (...args: unknown[]) => string };
   setStdout(o: { batched: (s: string) => void }): void;
@@ -16,6 +22,7 @@ interface Pyodide {
 
 const post = (m: FromWorker) => self.postMessage(m);
 let currentId = 0;
+const loadedPackages = new Set<string>();
 
 const ready: Promise<Pyodide> = (async () => {
   const mod = await import(/* @vite-ignore */ `${PYODIDE_INDEX}pyodide.mjs`);
@@ -37,6 +44,40 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
   if (msg.type !== "run") return;
   const py = await ready;
   currentId = msg.id;
+  const requested = [...new Set(msg.packages ?? [])];
+  const unsupported = requested.filter((name) => name === "_note" || !Object.hasOwn(packages, name));
+  if (unsupported.length) {
+    const message = `Unsupported lesson packages: ${unsupported.join(", ")}`;
+    post({ id: msg.id, type: "result", result: { ok: false, tests: [], error: {
+      type: "PackageError", message, summary: message, line: null,
+    } } });
+    return;
+  }
+  try {
+    const missing = requested.filter((name) => !loadedPackages.has(name));
+    if (missing.length) {
+      post({ id: msg.id, type: "packages-loading" });
+      const errors: string[] = [];
+      await py.loadPackage(missing, {
+        messageCallback: (message) => post({ id: msg.id, type: "packages-loading", message }),
+        errorCallback: (message) => { errors.push(message); },
+      });
+      const notLoaded = requested.filter((name) => !Object.hasOwn(py.loadedPackages, name));
+      if (notLoaded.length || errors.length) {
+        throw new Error(`Missing packages: ${notLoaded.join(", ") || "none"}. ${errors.join("; ")}`);
+      }
+      // Import initialization belongs to loading, outside the learner code timeout.
+      missing.forEach((name) => py.runPython(`import ${name}`));
+      missing.forEach((name) => loadedPackages.add(name));
+    }
+  } catch (e) {
+    const message = `Lesson packages failed to load. Check your connection and run again. ${String(e)}`;
+    post({ id: msg.id, type: "result", result: { ok: false, tests: [], error: {
+      type: "LoadError", message, summary: message, line: null,
+    } } });
+    return;
+  }
+  post({ id: msg.id, type: "packages-ready" });
   const runJson = py.globals.get("run_json");
   const result = JSON.parse(runJson(msg.code, JSON.stringify(msg.tests)));
   post({ id: msg.id, type: "result", result });
