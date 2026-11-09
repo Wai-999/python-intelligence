@@ -109,7 +109,7 @@
       "id": "trace",
       "kind": "visual",
       "title": "Watch a line being scored",
-      "body": "The candidate line is y = 2x + 0. Each frame shows the variables just before the highlighted line runs.",
+      "body": "The candidate line is y = 2x + 0. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
       "visual": {
         "type": "call-trace",
         "code": "import numpy as np\n\ndef mse(w, b, x, y):\n    pred = w * x + b\n    return np.mean((pred - y) ** 2)\n\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([2.0, 4.0, 7.0])\nprint(mse(2.0, 0.0, x, y))",
@@ -234,7 +234,7 @@
         },
         {
           "name": "constant x",
-          "code": "try:\n    fit_line([2, 2, 2], [1, 2, 3])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when every x is the same')",
+          "code": "for xs, ys in (([2, 2, 2], [1, 2, 3]), ([3], [5])):\n    try:\n        fit_line(xs, ys)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when every x is the same: {xs}')\nw, b = fit_line([2, 2, 5], [1, 1, 4])\nassert abs(w - 1) < 1e-12 and abs(b + 1) < 1e-12, 'x = [2, 2, 5] is not constant: y = x - 1 fits exactly'",
           "concept": "linear-models"
         },
         {
@@ -270,6 +270,11 @@
         {
           "name": "simultaneous update",
           "code": "w, b = gd_fit([1, 2], [2, 4], lr=0.1, steps=1)\nassert abs(b - 0.3) > 1e-6, 'compute both gradients from the old w and b before updating either'",
+          "concept": "gradient-descent"
+        },
+        {
+          "name": "exactly `steps` updates",
+          "code": "def ref(x, y, lr, steps):\n    w = b = 0.0\n    n = len(x)\n    for _ in range(steps):\n        e = [w * xi + b - yi for xi, yi in zip(x, y)]\n        dw = 2 * sum(ei * xi for ei, xi in zip(e, x)) / n\n        db = 2 * sum(e) / n\n        w, b = w - lr * dw, b - lr * db\n    return w, b\nx, y = [1.0, 2.0, 3.0], [2.0, 3.0, 5.0]\nfor lr, steps in ((0.05, 2), (0.01, 7), (0.0005, 1500)):\n    got, want = gd_fit(x, y, lr=lr, steps=steps), ref(x, y, lr, steps)\n    assert all(abs(g - r) < 1e-9 for g, r in zip(got, want)), f'lr={lr}, steps={steps}: got {got}, want {want}'",
           "concept": "gradient-descent"
         },
         {

@@ -144,7 +144,7 @@
       "id": "trace",
       "kind": "visual",
       "title": "Watch a tiny simulation",
-      "body": "Three rolls of a die, counting sixes. The seed makes this run the same every time. Each frame shows the variables just before the highlighted line runs.",
+      "body": "Three rolls of a die, counting sixes. The seed makes this run the same every time. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
       "visual": {
         "type": "call-trace",
         "code": "import random\n\ndef estimate(trials):\n    hits = 0\n    for _ in range(trials):\n        roll = random.randint(1, 6)\n        if roll == 6:\n            hits += 1\n    return hits / trials\n\nrandom.seed(28)\nprint(estimate(3))",
