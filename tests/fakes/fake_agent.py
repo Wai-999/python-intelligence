@@ -33,6 +33,11 @@ plan.setdefault("calls", []).append({"agent": AGENT, "role": role, "cwd": str(cw
 plan_file.write_text(json.dumps(plan))
 
 do = action.get("do", "ok")
+if do in ("sleep", "fail") and role == "implement" and "write" in action:  # misbehave first, then fail/hang
+    for rel, content in action["write"].items():
+        p = cwd / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
 if do == "sleep":
     time.sleep(action.get("seconds", 60))
 if do == "fail":

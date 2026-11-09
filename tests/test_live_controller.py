@@ -224,3 +224,20 @@ def test_untouched_shared_dirs_do_not_block(env):
     _with_shared_dirs(repo)
     ctl = mk(repo, make_spec("T9", acceptance=ACCEPT))
     assert drive(ctl, "T9", {S.BLOCKED, S.AWAITING_APPROVAL, S.REPAIR}) == S.AWAITING_APPROVAL
+
+
+def test_failing_implementer_that_tampered_is_blocked_not_retried(env):
+    repo, plan, calls = env
+    _with_shared_dirs(repo)
+    plan({"claude:implement": [{"do": "fail", "write": {".venv312/pkg.py": "ok = False\n"}}]})
+    ctl = mk(repo, make_spec("T10", acceptance=ACCEPT))
+    assert drive(ctl, "T10", {S.BLOCKED, S.REPAIR, S.AWAITING_APPROVAL}) == S.BLOCKED
+    assert ctl.conn.execute("SELECT COUNT(*) FROM events WHERE task_id='T10' AND to_status='repair'").fetchone()[0] == 0
+
+
+def test_timed_out_implementer_that_tampered_is_blocked(env):
+    repo, plan, calls = env
+    _with_shared_dirs(repo)
+    plan({"claude:implement": [{"do": "sleep", "seconds": 60, "write": {"node_modules/pkg.py": "x = 1\n"}}]})
+    ctl = mk(repo, make_spec("T11", acceptance=ACCEPT), implement_timeout_s=1)
+    assert drive(ctl, "T11", {S.BLOCKED, S.REPAIR, S.AWAITING_APPROVAL}, timeout=20) == S.BLOCKED

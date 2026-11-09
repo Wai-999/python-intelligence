@@ -140,12 +140,13 @@ class LiveController(Controller):
             return None
         full = runner.read_log(h.log_path)
         report = full[-4000:]
+        # Before ANY other outcome handling: a failing or timed-out agent may still have written through the links.
+        if (blocked := self._block_if_shared_tampered(tid, S.RUNNING, "implementation")):
+            return blocked
         if timed_out:
             return self._repair(tid, S.RUNNING, f"implementer timed out after {self.t_impl:.0f}s", log_tail=report[-1500:])
         if code != 0:
             return self._repair(tid, S.RUNNING, f"implementer exited {code}", log_tail=report[-1500:])
-        if (blocked := self._block_if_shared_tampered(tid, S.RUNNING, "implementation")):
-            return blocked
         denials = []
         if spec.owner == "claude":
             try:
@@ -222,6 +223,8 @@ class LiveController(Controller):
             return None
         rv_path = worktree.review_worktree(self.repo, tid, spec.reviewer, row["commit_sha"]).path
         gitops.remove_worktree(self.repo, rv_path)
+        if (blocked := self._block_if_shared_tampered(tid, S.REVIEW, "review")):
+            return blocked
         if timed_out or code != 0:
             return self._repair(tid, S.REVIEW, f"reviewer {'timed out' if timed_out else f'exited {code}'}",
                                 log_tail=runner.read_log(h.log_path, tail=1500))
