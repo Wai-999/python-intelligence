@@ -294,6 +294,11 @@
           "concept": "hyperparameters"
         },
         {
+          "name": "even k values are scored as given",
+          "code": "got = choose_k([[0], [1], [2], [3], [9]], ['b', 'b', 'a', 'a', 'c'], [[1.4]], ['a'], [1, 2, 3, 4])\nassert got['scores'] == {1: 0.0, 2: 1.0, 3: 0.0, 4: 1.0} and got['best'] == 2, f'even k ties go to a, odd k gives b; got {got}'\nassert choose_k([[0], [1]], ['b', 'a'], [[0.4]], ['a'], [2, 1]) == {'scores': {2: 1.0, 1: 0.0}, 'best': 2}",
+          "concept": "hyperparameters"
+        },
+        {
           "name": "compare exact accuracies",
           "code": "X = [[7], [14], [14], [11], [16], [19], [14], [7]]\ny = ['a', 'b', 'b', 'b', 'b', 'a', 'a', 'b']\nXv = [[3.5], [13.5], [19.5], [14.5], [19.5], [16.5], [14.5], [2.5], [12.5], [14.5], [19.5]]\nyv = ['b', 'b', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'b']\ngot = choose_k(X, y, Xv, yv, [1, 3])\nassert got['scores'] == {1: 5 / 11, 3: 6 / 11} and got['best'] == 3, f'6/11 beats 5/11, even though both round to 0.5; got {got}'",
           "concept": "validation-set"
