@@ -97,7 +97,7 @@
       "id": "trace",
       "kind": "visual",
       "title": "Watch one column being standardized",
-      "body": "The mean and standard deviation are passed in, as they would be after learning them from training data. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "body": "The mean 20 and standard deviation 10 were learned earlier from a training set; here they scale three new values (whose own spread is different). Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
       "visual": {
         "type": "call-trace",
         "code": "def standardize_column(values, mean, std):\n    return [(v - mean) / std for v in values]\n\nprint(standardize_column([10, 20, 30], 20, 10))",
@@ -110,7 +110,7 @@
             "locals": {
               "standardize_column": "<function standardize_column>"
             },
-            "note": "This column has mean 20 and standard deviation 10."
+            "note": "Scale three new values with the training mean 20 and standard deviation 10."
           },
           {
             "line": 2,
@@ -143,7 +143,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Standardization:** for each feature `d`, compute the mean `μ_d` and standard deviation `σ_d` over\nthe training examples, then replace every value `x_d` by `z_d = (x_d − μ_d) / σ_d`. The standardized\ntraining data has mean 0 and standard deviation 1 in every feature, and no units.\n\n**With NumPy:** `X.mean(axis=0)` and `X.std(axis=0)` give one mean and one standard deviation per\ncolumn (`np.std` divides by `N` unless you pass `ddof=1`); `(X - means) / stds` broadcasts them\nacross every row.\n\n**A constant feature** has `σ_d = 0`, and dividing by 0 is undefined. This lesson uses 1 instead,\nso such a column becomes all zeros: it carries no information to tell examples apart.\n\n**Fit on training data only:** `μ` and `σ` are learned parameters. Compute them from the training\nrows and reuse them for test rows and new examples; computing them from test rows leaks information,\nand computing them from a single new example is impossible (its spread is 0).",
+      "body": "**Standardization:** for each feature `d`, compute the mean `μ_d` and standard deviation `σ_d` over\nthe training examples, then replace every value `x_d` by `z_d = (x_d − μ_d) / σ_d`. The standardized\ntraining data has mean 0 in every feature and standard deviation 1 in every non-constant feature,\nand no units.\n\n**With NumPy:** `X.mean(axis=0)` and `X.std(axis=0)` give one mean and one standard deviation per\ncolumn (`np.std` divides by `N` unless you pass `ddof=1`); `(X - means) / stds` broadcasts them\nacross every row.\n\n**A constant feature** has `σ_d = 0`, and dividing by 0 is undefined. This lesson uses 1 instead,\nso such a column becomes all zeros: it carries no information to tell examples apart.\n\n**Fit on training data only:** `μ` and `σ` are learned parameters. Compute them from the training\nrows and reuse them for test rows and new examples. Computing them from test rows leaks information;\ncomputing them from a single new example gives a spread of 0 and throws away the training reference.",
       "cites": [
         "mml-stats",
         "mml-pca",
@@ -194,8 +194,13 @@
         },
         {
           "name": "three features, unrounded",
-          "code": "tr, te = standardize([[1, 0, 0.5], [2, 0, 0.25], [6, 0, 1.0]], [[3, 9, 0.6]])\nimport statistics\ncols = [[1, 2, 6], [0, 0, 0], [0.5, 0.25, 1.0]]\nm = [statistics.fmean(c) for c in cols]\ns = [statistics.pstdev(c) or 1.0 for c in cols]\nwant = [(v - m[j]) / s[j] for j, v in enumerate([3, 9, 0.6])]\nassert all(abs(a - b) < 1e-12 for a, b in zip(te[0], want)), f'expected about {want}, got {te[0]}'\nassert abs(tr[0][0] - (1 - m[0]) / s[0]) < 1e-12 and tr[0][1] == 0.0",
+          "code": "tr, te = standardize([[1, 0, 0.5], [2, 0, 0.25], [6, 0, 1.0]], [[3, 9, 0.6]])\nimport statistics\ncols = [[1, 2, 6], [0, 0, 0], [0.5, 0.25, 1.0]]\nm = [statistics.fmean(c) for c in cols]\ns = [statistics.pstdev(c) or 1.0 for c in cols]\nz = lambda row: [(v - m[j]) / s[j] for j, v in enumerate(row)]\nwant_tr, want_te = [z(r) for r in [[1, 0, 0.5], [2, 0, 0.25], [6, 0, 1.0]]], [z([3, 9, 0.6])]\nassert [len(r) for r in tr] == [3, 3, 3] and [len(r) for r in te] == [3], f'one row out per row in, three values each; got {tr}, {te}'\nassert all(abs(a - b) < 1e-12 for got, want in ((tr, want_tr), (te, want_te)) for gr, wr in zip(got, want) for a, b in zip(gr, wr)), f'expected about {want_tr} and {want_te}; got {tr} and {te}'",
           "concept": "standardization"
+        },
+        {
+          "name": "a single training row",
+          "code": "tr, te = standardize([[3, 4]], [[5, 4], [3, 0]])\nassert tr == [[0.0, 0.0]] and te == [[2.0, 0.0], [0.0, -4.0]], f'one training row: every spread is 0, so divide by 1; got {tr}, {te}'",
+          "concept": "feature-scaling"
         },
         {
           "name": "an empty test set is fine",
@@ -224,7 +229,7 @@
       "id": "model",
       "kind": "challenge",
       "title": "Challenge: a classifier that ignores units",
-      "body": "The starter gives you `fit_centroids` and `predict_centroids`. Write two functions.\n`fit_scaled_centroids(X, y)` learns each column's mean and standard deviation (dividing by `N`,\nwith 1 for a zero spread) from `X`, standardizes `X`, fits centroids to the standardized rows, and\nreturns `{'means': [...], 'stds': [...], 'centroids': {...}}` with plain lists of floats. Raise\n`ValueError` if `X` is empty or its length differs from `y`.\n`predict_scaled(model, X)` standardizes the new rows with the model's **stored** means and standard\ndeviations and returns the nearest centroid's label for each row (it must work for a single row).",
+      "body": "The starter gives you `fit_centroids` and `predict_centroids`. Write two functions.\n`fit_scaled_centroids(X, y)` learns each column's mean and standard deviation (dividing by `N`,\nwith 1 for a zero spread) from `X`, standardizes `X`, fits centroids to the standardized rows, and\nreturns `{'means': [...], 'stds': [...], 'centroids': {...}}` with plain lists of floats. Raise\n`ValueError` if `X` is empty or its length differs from `y`.\n`predict_scaled(model, X)` standardizes the new rows with the model's **stored** means and standard\ndeviations and returns the nearest centroid's label for each row (it must work for a single row);\nequally near centroids go to the label first in sorted order, as `predict_centroids` does.",
       "starter": "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    return {'means': [], 'stds': [], 'centroids': fit_centroids(X, y)}\n\n\ndef predict_scaled(model, X):\n    return predict_centroids(model['centroids'], X)\n",
       "hints": [
         "Inside `fit_scaled_centroids`, compute `Z = (X - means) / stds` and call `fit_centroids(Z, y)`.",
@@ -234,8 +239,13 @@
       "tests": [
         {
           "name": "the learned statistics",
-          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nimport statistics\nwant_m = [statistics.fmean(r[j] for r in X) for j in range(2)]\nwant_s = [statistics.pstdev([r[j] for r in X]) for j in range(2)]\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['means'], want_m)), f'column means of X; got {model[\"means\"]}'\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['stds'], want_s)), f'spreads dividing by N; got {model[\"stds\"]}'\nassert sorted(model['centroids']) == ['fern', 'palm']\nfern = [(statistics.fmean(r[j] for r in X[:4]) - want_m[j]) / want_s[j] for j in range(2)]\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['centroids']['fern'], fern)), f'centroids are means of the standardized rows; got {model[\"centroids\"]}'",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nimport statistics\nwant_m = [statistics.fmean(r[j] for r in X) for j in range(2)]\nwant_s = [statistics.pstdev([r[j] for r in X]) for j in range(2)]\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['means'], want_m)), f'column means of X; got {model[\"means\"]}'\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['stds'], want_s)), f'spreads dividing by N; got {model[\"stds\"]}'\nassert sorted(model['centroids']) == ['fern', 'palm']\nfor label, rows in (('fern', X[:4]), ('palm', X[4:])):\n    want = [(statistics.fmean(r[j] for r in rows) - want_m[j]) / want_s[j] for j in range(2)]\n    got = model['centroids'][label]\n    assert len(got) == 2 and all(abs(a - b) < 1e-12 for a, b in zip(got, want)), f'the {label} centroid is the mean of its standardized rows, about {want}; got {got}'",
           "concept": "standardization"
+        },
+        {
+          "name": "a single training row",
+          "code": "model = fit_scaled_centroids([[3, 4]], ['a'])\nassert model == {'means': [3.0, 4.0], 'stds': [1.0, 1.0], 'centroids': {'a': [0.0, 0.0]}}, f'got {model}'\nassert predict_scaled(model, [[10, 10], [3, 4]]) == ['a', 'a']",
+          "concept": "feature-scaling"
         },
         {
           "name": "plain lists of floats",
@@ -254,8 +264,13 @@
         },
         {
           "name": "prediction uses the stored statistics",
-          "code": "model = {'means': [10.0, 0.0], 'stds': [2.0, 1.0], 'centroids': {'a': [0.0, 0.0], 'b': [1.0, 0.0]}}\ngot = predict_scaled(model, [[11.2, 0.0], [10.8, 0.0], [12.0, 0.4]])\nassert got == ['b', 'a', 'b'], f'(11.2 - 10) / 2 = 0.6 is nearer b; (10.8 - 10) / 2 = 0.4 is nearer a; got {got}'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [3.0, 3.0], 'q': [5.0, 0.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'nearest in straight-line (Euclidean) distance: p is about 4.24 away, q is 5'",
+          "code": "model = {'means': [10.0, 0.0], 'stds': [2.0, 1.0], 'centroids': {'a': [0.0, 0.0], 'b': [1.0, 0.0]}}\ngot = predict_scaled(model, [[11.2, 0.0], [10.8, 0.0], [12.0, 0.4]])\nassert got == ['b', 'a', 'b'], f'(11.2 - 10) / 2 = 0.6 is nearer b; (10.8 - 10) / 2 = 0.4 is nearer a; got {got}'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [3.0, 3.0], 'q': [5.0, 0.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'nearest in straight-line (Euclidean) distance: p is about 4.24 away, q is 5'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [2.5, 0.0], 'q': [2.0, 2.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'p is 2.5 away, q about 2.83 (the largest-coordinate distance would pick q)'",
           "concept": "train-only-statistics"
+        },
+        {
+          "name": "ties go to the first label in sorted order",
+          "code": "model = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'b': [0.0, 0.0], 'a': [2.0, 0.0]}}\nassert predict_scaled(model, [[1, 0]]) == ['a'], 'equally near a and b: choose a'",
+          "concept": "feature-scaling"
         },
         {
           "name": "a constant feature",
@@ -269,7 +284,7 @@
         },
         {
           "name": "bad input",
-          "code": "for X, y in (([], []), ([[1, 2]], []), ([[1, 2], [3, 4]], ['a'])):\n    try:\n        fit_scaled_centroids(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
+          "code": "for X, y in (([], []), ([[1, 2]], []), ([[1, 2], [3, 4]], ['a']), ([[1, 2]], ['a', 'b'])):\n    try:\n        fit_scaled_centroids(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
           "concept": "feature-scaling"
         }
       ],
