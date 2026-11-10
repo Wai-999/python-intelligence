@@ -449,7 +449,7 @@
         },
         {
           "name": "the baseline learns from training labels",
-          "code": "got = run_pipeline('x,y\\n0,b\\n1,a\\n2,b\\n3,a\\n10,c\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 'a', f'the training labels are two a and two b: a tie goes to a; got {got}'\ngot = run_pipeline('x,y\\n0,10\\n1,2\\n2,10\\n3,2\\n50,7\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 2, f'number labels sort as numbers: the tie between 10 and 2 goes to 2; got {got}'",
+          "code": "got = run_pipeline('x,y\\n0,b\\n1,a\\n2,b\\n3,a\\n10,c\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 'a', f'the training labels are two a and two b: a tie goes to a; got {got}'\ngot = run_pipeline('x,y\\n0,10\\n1,2\\n2,10\\n3,2\\n50,7\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 2, f'number labels sort as numbers: the tie between 10 and 2 goes to 2; got {got}'\ngot = run_pipeline('x,y\\n0,a\\n1,b\\n2,b\\n3,c\\n4,c\\n50,d\\n', ['x'], 'y', 0.2, 8)\nassert got['n_test'] == 1 and got['baseline_label'] == 'b', f'training labels a once, b twice, c twice: only b and c tie for most common, so b; got {got}'",
           "concept": "baselines"
         },
         {
