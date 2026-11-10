@@ -828,3 +828,67 @@ def test_indent_origin_ignores_leading_callout_span():
         [_fixture_span('①', 20, 65), _fixture_span('return 1', 74, 65)],
     ])
     assert _code_blocks(page) == ['def f():\n    ①return 1']
+
+
+# P3-8 backlog (2026-11-09) ------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize('separate', [False, True])
+@pytest.mark.parametrize('marker', ['①', '❶'])
+def test_callout_leading_a_joined_fragment_is_dropped(separate, marker):
+    # An annotation that starts the second fragment of a line would otherwise land inside the code.
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('value = 1', 50, 50)],
+        [_fixture_span(marker + ' + 2', 110, 50)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    code, = _code_blocks(page)
+    assert code == 'value = 1 + 2'
+    compile(code, '<leading-callout-join>', 'exec')
+
+
+def test_line_starting_with_a_callout_keeps_it():
+    # Only callouts inside a joined line are dropped; one that starts the line stays as an annotation.
+    from ingest.extract import _code_blocks
+    assert _code_blocks(_fixture_page([[_fixture_span('① x = 1', 50, 50)]])) == ['① x = 1']
+
+
+def test_tall_glyph_across_blocks_does_not_join_the_next_baseline():
+    # Separate blocks are joined by baseline, like fragments within one block, not by (tall) bounding boxes.
+    from ingest.extract import _code_blocks
+    tall = _fixture_span('a = (', 50, 30, height=40)
+    tall['origin'] = (50, 50)
+    below = _fixture_span('1)', 86, 47, height=12)
+    below['origin'] = (86, 58)
+    code, = _code_blocks(_separate_blocks(_fixture_page([[tall], [below]])))
+    assert code.splitlines()[0] == 'a = (' and len(code.splitlines()) == 2
+
+
+def test_same_baseline_across_blocks_still_joins_with_a_small_font():
+    from ingest.extract import _code_blocks
+    a = _fixture_span('value =', 50, 50)
+    a['origin'] = (50, 60)
+    b = _fixture_span('1', 98, 54, height=8, size=7)
+    b['origin'] = (98, 60)
+    assert _code_blocks(_separate_blocks(_fixture_page([[a], [b]]))) == ['value = 1']
+
+
+def test_bullet_in_another_column_does_not_hide_code():
+    # A bullet far to the left (another column) on the same baseline is not this line's bullet.
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('•', 50, 50)], [_fixture_span('A point in the left column', 64, 50, width=5)],
+        [_fixture_span('total = 1', 350, 50)], [_fixture_span('total += 2', 350, 65)],
+    ])
+    assert 'total = 1\ntotal += 2' in _code_blocks(page)
+
+
+def test_prefix_in_a_wider_font_does_not_skew_indentation():
+    # A line-number prefix set in a wider font: indentation is measured from where the prefix starts.
+    from ingest.extract import _code_blocks
+    first = _fixture_span('def f():', 50, 50)
+    number = _fixture_span('7 ', 50, 65, width=10)
+    number['flags'] = 0
+    body = _fixture_span('return 1', 70, 65)
+    assert _code_blocks(_fixture_page([[first], [number, body]])) == ['def f():\n7 return 1']

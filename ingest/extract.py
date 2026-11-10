@@ -84,6 +84,10 @@ def _baseline(line):
     return sorted(origins)[len(origins) // 2] if origins else line["bbox"][3]
 
 
+def _has_origin(line):
+    return any(s.get("origin") for s in line.get("spans", []))
+
+
 def _ink_box(line):
     box = line.get("bbox")
     glyphs = [c for s in line.get("spans", []) for c in s.get("chars", [])
@@ -104,6 +108,26 @@ def _trim_fragment(spans):
             span["chars"] = span["chars"][:remaining]
         remaining = max(0, remaining - len(original))
     return had_callout
+
+
+LEADING_CALLOUTS = re.compile(r"^\s*(?:[①-⑳❶-❿]\s*)+")
+
+
+def _strip_leading_callouts(spans):
+    # A fragment joined onto a line must not carry an annotation into the middle of the code.
+    text = "".join(s.get("text", "") for s in spans)
+    match = LEADING_CALLOUTS.match(text)
+    if not match:
+        return False
+    cut = match.end()
+    for span in spans:
+        original = span.get("text", "")
+        take = min(cut, len(original))
+        span["text"] = original[take:]
+        if "chars" in span:
+            span["chars"] = span["chars"][take:]
+        cut -= take
+    return True
 
 
 def _visual_lines(lines):
@@ -139,7 +163,8 @@ def _visual_lines(lines):
             limit = 24 if text.lstrip().startswith("#") else 10
             if merged is not None and gap is not None and -.1 <= gap <= limit * width:
                 had_callout = _trim_fragment(merged["spans"])
-                spaces = 1 if had_callout else max(0, round(gap / width))
+                led_callout = _strip_leading_callouts(spans)
+                spaces = 1 if had_callout or led_callout else max(0, round(gap / width))
                 merged["spans"].append(dict(text=" " * spaces, flags=8))
                 merged["spans"].extend(spans)
                 old = merged["bbox"]
@@ -156,10 +181,11 @@ def _visual_lines(lines):
 def _code_blocks(page):
     blocks, current, pitches = [], [], []
     previous = None
+    previous_baseline = None
     previous_callout = False
 
     def flush():
-        nonlocal previous, previous_callout
+        nonlocal previous, previous_baseline, previous_callout
         if current:
             measured = [origin for _, origin, _ in current if origin is not None]
             baseline = min(measured) if measured else 0
@@ -170,6 +196,7 @@ def _code_blocks(page):
             current.clear()
         pitches.clear()
         previous = None
+        previous_baseline = None
         previous_callout = False
 
     layout = page.get_text("rawdict")
@@ -189,7 +216,9 @@ def _code_blocks(page):
             total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)
             mono = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans if _is_mono(s))
             bbox = line.get("bbox")
+            # A bullet belongs to this line only if it sits just before it (not in another column).
             bullet_line = any(bbox and b.get("bbox") and b["bbox"][0] <= bbox[0]
+                              and bbox[0] - b["bbox"][2] <= 4 * (bbox[3] - bbox[1])
                               and abs(_baseline(b) - _baseline(line)) <
                               .5 * min(b["bbox"][3] - b["bbox"][1], bbox[3] - bbox[1])
                               for b in bullets)
@@ -206,8 +235,14 @@ def _code_blocks(page):
                 if origin is not None:
                     # Prefix text is already present literally; do not count its
                     # width again as positioned indentation. Ignore annotations.
+                    # Measure from the prefix's first glyph, whatever its font; estimate only without glyph boxes.
                     prefix = spans[:next(i for i, s in enumerate(spans) if s is first)]
-                    origin -= sum(len(CALLOUTS.sub("", s["text"])) for s in prefix) * width
+                    placed = [c["bbox"][0] for s in prefix for c in s.get("chars", [])
+                              if not CALLOUTS.fullmatch(c["c"])]
+                    if placed:
+                        origin = min(placed)
+                    else:
+                        origin -= sum(len(CALLOUTS.sub("", s["text"])) for s in prefix) * width
                 # Callouts are editorial annotations, retained in page text.
                 trimmed = re.sub(r"(?:\s*[①-⑳❶-❿])+\s*$", "", text).rstrip()
                 trailing_callout = bool(CALLOUTS.search(text[len(trimmed):]))
@@ -216,13 +251,19 @@ def _code_blocks(page):
                     continue
                 # MuPDF can also place adjacent fragments in separate blocks.
                 if previous and bbox and current and width:
-                    overlap = min(previous[3], bbox[3]) - max(previous[1], bbox[1])
+                    shorter = min(previous[3] - previous[1], bbox[3] - bbox[1])
+                    if previous_baseline is not None and _has_origin(line):
+                        same_row = abs(_baseline(line) - previous_baseline) < .5 * shorter
+                    else:
+                        same_row = min(previous[3], bbox[3]) - max(previous[1], bbox[1]) > .5 * shorter
                     gap = bbox[0] - previous[2]
                     limit = 24 if text.lstrip().startswith("#") else 10
-                    if (overlap > .5 * min(previous[3] - previous[1], bbox[3] - bbox[1])
-                            and -.1 <= gap <= limit * width):
+                    if same_row and -.1 <= gap <= limit * width:
                         old_text, old_origin, old_width = current[-1]
-                        spaces = 1 if previous_callout else max(0, round(gap / width))
+                        lead = LEADING_CALLOUTS.match(text)
+                        if lead:
+                            text = text[lead.end():]
+                        spaces = 1 if previous_callout or lead else max(0, round(gap / width))
                         if old_text[-1:].isidentifier() and text[:1].isidentifier():
                             spaces = max(1, spaces)
                         current[-1] = (old_text + " " * spaces + text, old_origin, old_width)
@@ -247,6 +288,7 @@ def _code_blocks(page):
                         pitches.append(delta)
                 current.append((text, origin, width or 1))
                 previous = _ink_box(line)
+                previous_baseline = _baseline(line) if _has_origin(line) else None
                 previous_callout = trailing_callout
             else:
                 flush()
