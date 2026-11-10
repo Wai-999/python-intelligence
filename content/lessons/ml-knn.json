@@ -1,0 +1,360 @@
+{
+  "id": "ml-knn",
+  "title": "k-nearest neighbours: predicting from similar examples",
+  "summary": "Classify a new example by a vote among the k most similar training examples, and choose k on held-out validation data.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "ml-classification",
+    "ml-evaluation"
+  ],
+  "concepts": [
+    "k-nearest-neighbours",
+    "hyperparameters",
+    "validation-set"
+  ],
+  "sources": [
+    {
+      "id": "mml-dist",
+      "source_id": "pch-mml-book",
+      "pages": [
+        81,
+        82
+      ],
+      "section": "3.3 Lengths and Distances",
+      "use": "reference"
+    },
+    {
+      "id": "mml-data",
+      "source_id": "pch-mml-book",
+      "pages": [
+        257,
+        263
+      ],
+      "section": "8.1 Data, Models, and Learning",
+      "use": "reference"
+    },
+    {
+      "id": "mml-erm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        270
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "mml-select",
+      "source_id": "pch-mml-book",
+      "pages": [
+        289,
+        294
+      ],
+      "section": "8.6 Model Selection",
+      "use": "reference"
+    },
+    {
+      "id": "mml-svm-more",
+      "source_id": "pch-mml-book",
+      "pages": [
+        398,
+        398
+      ],
+      "section": "12.6 Further Reading",
+      "use": "reference"
+    },
+    {
+      "id": "py-lists",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "Lists",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Ask the neighbours",
+      "body": "To guess a house's price, an estate agent looks at similar houses nearby. To guess whether a film\nsuits you, a friend thinks of people with similar taste. **k-nearest neighbours (kNN)** does the\nsame: to label a new example, find the `k` training examples most like it and let them vote. There is\nno training step at all; the training data *is* the model. The one choice left is `k`, and making it\nwell is the real lesson."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Too few neighbours, too many",
+      "body": "With `k = 1`, each prediction copies the single closest example, including any mislabelled or unusual\none: the model follows noise, like the memoriser from the evaluation lesson. With `k` close to the\nnumber of training examples, every prediction becomes the most common class overall, ignoring where\nthe new example is. Somewhere between lies a good `k`. A setting like `k` that isn't learned from\nthe data is a **hyperparameter**. Choose it by trying several values on a **validation set**: labelled\nexamples kept aside from training, and kept separate from the final test set too.",
+      "cites": [
+        "mml-data",
+        "mml-erm",
+        "mml-select",
+        "mml-svm-more"
+      ],
+      "socratic": {
+        "questions": [
+          "With k = 1, what is the accuracy on the training data itself? Why is that number useless?",
+          "Why not pick k by its accuracy on the test set?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch the nearest neighbours being found",
+      "body": "One-dimensional points; the distance is just the absolute difference. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def nearest_labels(x, points, labels, k):\n    order = sorted(range(len(points)), key=lambda i: abs(points[i] - x))\n    return [labels[i] for i in order[:k]]\n\nprint(nearest_labels(5, [1, 4, 9, 6], ['a', 'b', 'a', 'b'], 3))",
+        "frames": [
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "nearest_labels": "<function nearest_labels>"
+            },
+            "note": "Which 3 of the points 1, 4, 9 and 6 are closest to 5?"
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "nearest_labels(5, [1, 4, 9, 6], ['a', 'b', 'a', 'b'], 3)"
+            ],
+            "locals": {
+              "x": "5",
+              "points": "[1, 4, 9, 6]",
+              "labels": "['a', 'b', 'a', 'b']",
+              "k": "3"
+            },
+            "note": "Sort the positions by distance: 1 and 3 are 1 away, 0 and 2 are 4 away. Equal distances keep their order."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "nearest_labels(5, [1, 4, 9, 6], ['a', 'b', 'a', 'b'], 3)"
+            ],
+            "locals": {
+              "x": "5",
+              "points": "[1, 4, 9, 6]",
+              "labels": "['a', 'b', 'a', 'b']",
+              "k": "3",
+              "order": "[1, 3, 0, 2]"
+            },
+            "note": "Take the first 3 positions and look up their labels."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "nearest_labels": "<function nearest_labels>"
+            },
+            "note": "Two votes for b, one for a: kNN with k = 3 predicts b.",
+            "output": "['b', 'b', 'a']"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Neighbours:** for a new example `x`, measure its Euclidean distance to every training example and\ntake the `k` closest (`1 ≤ k ≤` the number of training examples). Comparing squared distances gives\nthe same order. Python's `sorted` is **stable**: examples at equal distance keep their original order,\nso this lesson's tie rule is \"the earlier training example first\".\n\n**Vote:** predict the label held by most of the `k` neighbours; if several labels tie for most votes,\nthis lesson chooses the one first in sorted order.\n\n**Choosing k:** split the labelled data into training, validation and test parts. For each candidate\n`k`, predict the validation examples using only the training examples and measure accuracy; keep the\n`k` with the highest validation accuracy (this lesson breaks ties by choosing the smallest `k`). Only\nthen measure the chosen model once on the test set. Because `k` was picked to do well on the validation\nexamples, their accuracy is an optimistic estimate.",
+      "cites": [
+        "mml-dist",
+        "mml-erm",
+        "mml-select",
+        "py-lists"
+      ]
+    },
+    {
+      "id": "pick",
+      "kind": "example",
+      "title": "Run it: k from 1 to 9",
+      "body": "One training example (3.5) is labelled `b` among the `a`s. Predict which `k` copes best with it.",
+      "code": "train_x = [1.0, 2.0, 2.5, 3.0, 3.5, 6.0, 7.0, 8.0, 9.0, 10.0]\ntrain_y = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nval_x = [3.4, 3.6, 4.0, 6.5, 2.2]\nval_y = ['a', 'a', 'a', 'b', 'a']\n\ndef predict(x, k):\n    order = sorted(range(len(train_x)), key=lambda i: abs(train_x[i] - x))\n    votes = {}\n    for i in order[:k]:\n        votes[train_y[i]] = votes.get(train_y[i], 0) + 1\n    return max(sorted(votes), key=votes.get)\n\nfor k in (1, 3, 5, 9):\n    preds = [predict(x, k) for x in val_x]\n    acc = sum(p == t for p, t in zip(preds, val_y)) / len(val_y)\n    print(k, preds, acc)\n",
+      "expected_output": "1 ['b', 'b', 'b', 'b', 'a'] 0.4\n3 ['a', 'a', 'a', 'b', 'a'] 1.0\n5 ['a', 'a', 'a', 'b', 'a'] 1.0\n9 ['b', 'b', 'b', 'b', 'b'] 0.2\n"
+    },
+    {
+      "id": "knn",
+      "kind": "guided",
+      "title": "Your turn: a kNN classifier",
+      "body": "Complete `knn_predict(X_train, y_train, X, k)`, where each row is a list of numbers. For every row of\n`X`, find the `k` nearest training rows (Euclidean distance; equal distances keep training order),\ncount their labels and predict the most common one (a tie goes to the label first in sorted order).\nReturn the list of predictions. Raise `ValueError` if there are no training rows, if `X_train` and\n`y_train` differ in length, or unless `1 <= k <= len(X_train)`.",
+      "starter": "def knn_predict(X_train, y_train, X, k):\n    return [y_train[0] for _ in X]\n",
+      "hints": [
+        "`dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]`, then `sorted(range(len(X_train)), key=lambda i: dist[i])`.",
+        "Count the labels of the first `k` positions in a dictionary; `max(sorted(votes), key=votes.get)` applies both tie rules.",
+        "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n"
+      ],
+      "tests": [
+        {
+          "name": "nearest neighbours vote",
+          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\ngot = knn_predict(X, y, [[3.4], [3.6], [4.0], [6.5], [2.2]], 3)\nassert got == ['a', 'a', 'a', 'b', 'a'], f'got {got}'\nassert knn_predict(X, y, [[3.4], [3.6]], 1) == ['b', 'b'], 'with k = 1 the single nearest label wins'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "several features, Euclidean",
+          "code": "X = [[0, 0], [3, 3], [4.3, 0], [10, 10]]\ny = ['far', 'p', 'q', 'far']\nassert knn_predict(X[1:3], y[1:3], [[0, 0]], 1) == ['p'], 'straight-line distance: (3, 3) is about 4.24 away, (4.3, 0) is 4.3'\nassert knn_predict([[4.2, 0], [3, 3]], ['p', 'q'], [[0, 0]], 1) == ['p'], 'straight-line distance: (4.2, 0) is nearer than (3, 3)'\nassert knn_predict([[0, 0, 9], [0, 0, 1]], ['hi', 'lo'], [[0, 0, 7], [0, 0, 2]], 1) == ['hi', 'lo'], 'the third feature decides'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "equal distances keep training order",
+          "code": "assert knn_predict([[4], [6]], ['b', 'a'], [[5]], 1) == ['b'], 'both are 1 away: the earlier training row counts first'\nassert knn_predict([[0], [6], [4], [10]], ['x', 'y', 'z', 'w'], [[5]], 1) == ['y'], '6 and 4 are both 1 away; 6 comes first in the training data'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "vote ties go to the first label in sorted order",
+          "code": "assert knn_predict([[1], [2]], ['b', 'a'], [[1.4]], 2) == ['a'], 'one vote each: choose a'\nassert knn_predict([[1], [2], [3], [4]], [10, 2, 10, 2], [[2.5]], 4) == [2], 'numbers sort as numbers: 2 before 10'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "the majority, not the nearest",
+          "code": "got = knn_predict([[0], [1], [1.2], [9]], ['a', 'b', 'b', 'a'], [[0.1]], 3)\nassert got == ['b'], f'the nearest is a, but two of the three nearest are b; got {got}'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "k equal to the number of training rows",
+          "code": "assert knn_predict([[0], [1], [5]], ['a', 'b', 'b'], [[0], [100]], 3) == ['b', 'b'], 'every training row votes'",
+          "concept": "hyperparameters"
+        },
+        {
+          "name": "no rows to predict",
+          "code": "assert knn_predict([[0]], ['a'], [], 1) == [], 'no rows in, no predictions out'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nX, y, new = [[3, 1], [1, 2], [2, 2]], ['b', 'a', 'a'], [[0, 0], [5, 5]]\nkeep = copy.deepcopy((X, y, new))\nknn_predict(X, y, new, 2)\nassert (X, y, new) == keep, 'do not modify (or sort) the inputs'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, y, k in (([], [], 1), ([[1]], [], 1), ([[1], [2]], ['a'], 1), ([[1]], ['a'], 0), ([[1]], ['a'], 2), ([[1]], ['a'], -1)):\n    try:\n        knn_predict(X, y, [[0]], k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X_train={X}, y_train={y}, k={k}')",
+          "concept": "hyperparameters"
+        }
+      ],
+      "solution": "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n"
+    },
+    {
+      "id": "choose",
+      "kind": "challenge",
+      "title": "Challenge: choose k on validation data",
+      "body": "The starter gives you `knn_predict`. Write `choose_k(X_train, y_train, X_val, y_val, ks)`: for each `k`\nin `ks`, predict the validation rows from the training rows and record the validation accuracy (a\nfloat). Return `{'scores': {k: accuracy, ...}, 'best': k}` where `best` has the highest accuracy;\nif several tie, the smallest of them. Raise `ValueError` if `ks` is empty, there are no validation\nrows, or `X_val` and `y_val` differ in length (and let `knn_predict` reject a `k` that's too big).",
+      "starter": "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n\n\ndef choose_k(X_train, y_train, X_val, y_val, ks):\n    return {'scores': {k: 0.0 for k in ks}, 'best': ks[0]}\n",
+      "hints": [
+        "Build the scores dictionary in a loop over `ks`, calling `knn_predict(X_train, y_train, X_val, k)` each time.",
+        "`min(scores, key=lambda k: (-scores[k], k))` picks the highest score and, among equals, the smallest k.",
+        "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n\n\ndef choose_k(X_train, y_train, X_val, y_val, ks):\n    if not ks or not X_val or len(X_val) != len(y_val):\n        raise ValueError('need candidate ks and labelled validation rows')\n    scores = {}\n    for k in ks:\n        pred = knn_predict(X_train, y_train, X_val, k)\n        scores[k] = sum(p == t for p, t in zip(pred, y_val)) / len(y_val)\n    best = min(scores, key=lambda k: (-scores[k], k))\n    return {'scores': scores, 'best': best}\n"
+      ],
+      "tests": [
+        {
+          "name": "scores for every k",
+          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nXv = [[3.4], [3.6], [4.0], [6.5], [2.2]]\nyv = ['a', 'a', 'a', 'b', 'a']\ngot = choose_k(X, y, Xv, yv, [1, 3, 5, 9])\nassert got['scores'] == {1: 0.4, 3: 1.0, 5: 1.0, 9: 0.2}, f'validation accuracy for each k; got {got[\"scores\"]}'",
+          "concept": "validation-set"
+        },
+        {
+          "name": "the best k, smallest on a tie",
+          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nXv = [[3.4], [3.6], [4.0], [6.5], [2.2]]\nyv = ['a', 'a', 'a', 'b', 'a']\nassert choose_k(X, y, Xv, yv, [1, 3, 5, 9])['best'] == 3, 'k = 3 and k = 5 both score 1.0: choose 3'\nassert choose_k(X, y, Xv, yv, [9, 5, 3, 1])['best'] == 3, 'the smallest tied k, whatever order ks come in'\nassert choose_k(X, y, Xv, yv, [9, 1])['best'] == 1, '0.4 beats 0.2'",
+          "concept": "hyperparameters"
+        },
+        {
+          "name": "unrounded accuracies",
+          "code": "got = choose_k([[0], [10]], ['a', 'b'], [[1], [2], [9]], ['a', 'b', 'b'], [1])\nassert got['scores'] == {1: 2 / 3} and isinstance(got['scores'][1], float), f'2 of 3 right is 2/3, unrounded; got {got}'",
+          "concept": "validation-set"
+        },
+        {
+          "name": "only training rows vote",
+          "code": "got = choose_k([[0], [10]], ['a', 'b'], [[1], [9]], ['b', 'a'], [1])\nassert got['scores'] == {1: 0.0}, f'the validation rows are predicted from the training rows, never from each other; got {got}'",
+          "concept": "validation-set"
+        },
+        {
+          "name": "keys in the order given",
+          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nXv = [[3.4], [3.6], [4.0], [6.5], [2.2]]\nyv = ['a', 'a', 'a', 'b', 'a']\ngot = choose_k(X, y, Xv, yv, [5, 1, 3])\nassert list(got['scores']) == [5, 1, 3] and set(got) == {'scores', 'best'}, f'got {got}'",
+          "concept": "hyperparameters"
+        },
+        {
+          "name": "bad input",
+          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nXv = [[3.4], [3.6], [4.0], [6.5], [2.2]]\nyv = ['a', 'a', 'a', 'b', 'a']\nfor args in ((X, y, Xv, yv, []), (X, y, [], [], [1]), (X, y, Xv, yv[:2], [1]), (X, y, Xv, yv, [11]), (X, y, Xv, yv, [3, 11])):\n    try:\n        choose_k(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for no ks, no validation rows, mismatched lengths or a k larger than the training set')",
+          "concept": "validation-set"
+        }
+      ],
+      "solution": "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n\n\ndef choose_k(X_train, y_train, X_val, y_val, ks):\n    if not ks or not X_val or len(X_val) != len(y_val):\n        raise ValueError('need candidate ks and labelled validation rows')\n    scores = {}\n    for k in ks:\n        pred = knn_predict(X_train, y_train, X_val, k)\n        scores[k] = sum(p == t for p, t in zip(pred, y_val)) / len(y_val)\n    best = min(scores, key=lambda k: (-scores[k], k))\n    return {'scores': scores, 'best': best}\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "The 5 nearest neighbours of a point have labels a, b, b, a, b. What does 5-NN predict?",
+          "choices": [
+            "b",
+            "a",
+            "a tie",
+            "It depends on the distances"
+          ],
+          "answer": 0,
+          "explanation": "Three votes for b beat two for a.",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "id": "q2",
+          "prompt": "Why does 1-NN always score 100% on its own training data?",
+          "choices": [
+            "Each training point's nearest neighbour is itself",
+            "1 is the best k",
+            "It never overfits",
+            "Training data has no noise"
+          ],
+          "answer": 0,
+          "explanation": "At distance 0 each point votes for its own label, so the score says nothing about new data.",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "id": "q3",
+          "prompt": "Which data should you use to choose k?",
+          "choices": [
+            "A validation set kept apart from training and test data",
+            "The test set",
+            "The training set",
+            "Any data, as long as it's large"
+          ],
+          "answer": 0,
+          "explanation": "The test set must stay untouched until the very end; training accuracy favours k = 1.",
+          "concept": "validation-set"
+        },
+        {
+          "id": "q4",
+          "prompt": "What makes k a hyperparameter rather than a learned parameter?",
+          "choices": [
+            "You choose it; it isn't fitted from the training data",
+            "It is always odd",
+            "It has to be smaller than 10",
+            "It is learned by averaging"
+          ],
+          "answer": 0,
+          "explanation": "kNN fits nothing: k is a setting you pick, here by validation accuracy.",
+          "concept": "hyperparameters"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Predict with k-nearest neighbours: find the k closest training examples and take a majority vote.\n- Explain how a small k follows noise and a large k ignores where an example is.\n- Tell parameters (learned) from hyperparameters (chosen), and choose k on a validation set.\n- Keep the test set for one final, honest measurement."
+    }
+  ]
+}
