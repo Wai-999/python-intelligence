@@ -525,6 +525,24 @@
    "anchors": {
     "1": "pandas-dataframe-dropna"
    }
+  },
+  "npdocs-20-eigh": {
+   "title": "NumPy 2.0 API reference: numpy.linalg.eigh",
+   "short": "NumPy 2.0 docs, numpy.linalg.eigh",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "official_url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.eigh.html",
+   "kind": "web",
+   "sha256": "1de276633961adde851cfec4923c834dc529747a647d1baa2fb63a32fdcec964",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "numpy-linalg-eigh"
+   }
   }
  }
 }

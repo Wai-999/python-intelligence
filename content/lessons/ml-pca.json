@@ -1,0 +1,368 @@
+{
+  "id": "ml-pca",
+  "title": "Principal component analysis: fewer features, most of the spread",
+  "summary": "Find the directions along which data varies most, and describe each example by a few coordinates along them.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-scaling",
+    "ml-vectors"
+  ],
+  "concepts": [
+    "dimensionality-reduction",
+    "principal-components",
+    "explained-variance"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-proj",
+      "source_id": "pch-mml-book",
+      "pages": [
+        87,
+        96
+      ],
+      "section": "3.8 Orthogonal Projections",
+      "use": "reference"
+    },
+    {
+      "id": "mml-eig",
+      "source_id": "pch-mml-book",
+      "pages": [
+        111,
+        119
+      ],
+      "section": "4.2 Eigenvalues and Eigenvectors",
+      "use": "reference"
+    },
+    {
+      "id": "mml-setting",
+      "source_id": "pch-mml-book",
+      "pages": [
+        324,
+        325
+      ],
+      "section": "10.1 Problem Setting",
+      "use": "reference"
+    },
+    {
+      "id": "mml-maxvar",
+      "source_id": "pch-mml-book",
+      "pages": [
+        326,
+        330
+      ],
+      "section": "10.2 Maximum Variance Perspective",
+      "use": "reference"
+    },
+    {
+      "id": "mml-steps",
+      "source_id": "pch-mml-book",
+      "pages": [
+        342,
+        344
+      ],
+      "section": "10.6 Key Steps of PCA in Practice",
+      "use": "reference"
+    },
+    {
+      "id": "np-eigh",
+      "source_id": "npdocs-20-eigh",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "numpy.linalg.eigh",
+      "use": "reference"
+    },
+    {
+      "id": "np-transpose",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        21,
+        21
+      ],
+      "section": "Transposing and reshaping a matrix",
+      "use": "reference"
+    },
+    {
+      "id": "py-matmul",
+      "source_id": "pydocs-312-expressions",
+      "pages": [
+        26,
+        26
+      ],
+      "section": "6.7. Binary arithmetic operations",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Too many features to look at",
+      "body": "A table with two features fits on a scatter plot. With fifty, you can't see it, distances get\nexpensive, and many features repeat each other: a plant's height and stem length rise together.\n**Principal component analysis (PCA)** finds a few new directions that keep most of the variation in\nthe data, so each example can be described by a handful of numbers instead of fifty."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "The direction of greatest spread",
+      "body": "Picture a cloud of points stretched like a cigar. Along its length the points are spread far apart;\nacross it, hardly at all. Project every point onto the long direction and you keep almost all the\ndifferences between examples with one coordinate. That direction is the **first principal\ncomponent**. The second is the direction of greatest remaining spread at right angles to the first,\nand so on. Mathematically they are the eigenvectors of the data's covariance matrix, and each\neigenvalue is the variance of the data along its eigenvector.",
+      "cites": [
+        "mml-setting",
+        "mml-maxvar",
+        "mml-eig"
+      ],
+      "socratic": {
+        "questions": [
+          "If every point lies exactly on a line, what is the variance across that line?",
+          "Why must the data be centred (mean subtracted) before looking for directions of spread?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a point being projected",
+      "body": "The coordinate of a point along a unit-length direction `u` is the dot product `x · u`. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def project(x, u):\n    return sum(a * b for a, b in zip(x, u))\n\nprint(project([3, 4], [0.6, 0.8]))",
+        "frames": [
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "project": "<function project>"
+            },
+            "note": "u = (0.6, 0.8) has length 1."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "project([3, 4], [0.6, 0.8])"
+            ],
+            "locals": {
+              "x": "[3, 4]",
+              "u": "[0.6, 0.8]"
+            },
+            "note": "3 × 0.6 + 4 × 0.8: how far the point reaches along u."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "project": "<function project>"
+            },
+            "note": "The point (3, 4) lies 5 units along u, and nothing across it.",
+            "output": "5.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Centre:** subtract each feature's mean, giving `Xc`. (If features use different units, standardize\nthem as in the scaling lesson, or the feature with the largest numbers dominates.)\n\n**Covariance matrix:** `S = Xcᵀ Xc / N`, a symmetric `D × D` matrix; entry `(i, j)` is the covariance of\nfeatures `i` and `j`, and the diagonal holds their variances. In NumPy, `Xc.T` is the transpose and\n`@` is matrix multiplication.\n\n**Principal components:** the eigenvectors of `S`, ordered by eigenvalue from largest to smallest.\n`np.linalg.eigh(S)` handles symmetric matrices; it returns the eigenvalues in **ascending** order and\nthe eigenvectors as the **columns** of a matrix, each of length 1. An eigenvector times −1 is still an\neigenvector, so this lesson fixes the sign: the first entry larger than `1e-9` in size is positive.\n\n**Projection:** keep the top `k` components as the rows of `B`; the new coordinates are `Xc @ Bᵀ`,\none row of `k` numbers per example.\n\n**Explained variance:** component `i` explains `λᵢ / (λ₁ + … + λ_D)` of the total variance; the\nratios of all `D` components add up to 1.",
+      "cites": [
+        "mml-steps",
+        "mml-maxvar",
+        "mml-eig",
+        "mml-proj",
+        "np-eigh",
+        "np-transpose",
+        "py-matmul"
+      ]
+    },
+    {
+      "id": "cigar",
+      "kind": "example",
+      "title": "Run it: one direction holds almost everything",
+      "body": "Six points close to a straight line. Predict roughly what share of the variance the first component explains.",
+      "code": "import numpy as np\n\nX = np.array([[1.0, 1.2], [2.0, 1.9], [3.0, 3.2], [4.0, 3.8], [5.0, 5.1], [6.0, 5.8]])\nmean = X.mean(axis=0)\nXc = X - mean\nS = Xc.T @ Xc / len(X)\nprint(np.round(S, 3))\n\nvalues, vectors = np.linalg.eigh(S)\norder = np.argsort(values)[::-1]\nvalues, vectors = values[order], vectors[:, order]\nprint(np.round(values, 3))\nprint(np.round(values / values.sum(), 4))\n\nu = vectors[:, 0]\nif u[np.argmax(np.abs(u) > 1e-9)] < 0:\n    u = -u\nprint(np.round(u, 3))\nprint(np.round(Xc @ u, 2))\n",
+      "expected_output": "[[2.917 2.767]\n [2.767 2.647]]\n[5.552 0.012]\n[0.9979 0.0021]\n[0.724 0.69 ]\n[-3.4  -2.19 -0.57  0.57  2.19  3.4 ]\n"
+    },
+    {
+      "id": "covariance",
+      "kind": "guided",
+      "title": "Your turn: the covariance matrix",
+      "body": "Complete `covariance_matrix(X)`: centre each column of `X` on its mean, then return `Xcᵀ Xc / N` as a\nlist of lists of floats (`N` is the number of rows). Raise `ValueError` if `X` has no rows, and don't\nchange `X`.",
+      "starter": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    return (A.T @ A).tolist()\n",
+      "hints": [
+        "`A - A.mean(axis=0)` centres every column at once.",
+        "With the centred array `C`, `C.T @ C` is a `D × D` matrix; divide it by the number of rows.",
+        "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n"
+      ],
+      "tests": [
+        {
+          "name": "two features",
+          "code": "got = covariance_matrix([[1, 2], [3, 6], [5, 4]])\nwant = [[8 / 3, 4 / 3], [4 / 3, 8 / 3]]\nassert all(abs(a - b) < 1e-12 for gr, wr in zip(got, want) for a, b in zip(gr, wr)) and [len(r) for r in got] == [2, 2], f'expected about {want}; got {got}'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "matches NumPy (dividing by N)",
+          "code": "import numpy as np\nX = [[0.5, 1.0, -2.0], [1.5, 0.0, 4.0], [2.0, 3.0, 1.0], [7.0, -1.0, 0.25]]\ngot = np.array(covariance_matrix(X))\nwant = np.cov(np.array(X).T, bias=True)\nassert got.shape == (3, 3) and np.allclose(got, want, rtol=0, atol=1e-12), f'divide by N (bias=True), not N - 1; got {got.tolist()}'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "variances on the diagonal",
+          "code": "got = covariance_matrix([[2, 10], [4, 10], [6, 10]])\nassert abs(got[0][0] - 8 / 3) < 1e-12 and got[1][1] == 0.0 and got[0][1] == got[1][0] == 0.0, f'a constant column has variance 0 and covariance 0; got {got}'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "one row",
+          "code": "assert covariance_matrix([[3, 4, 5]]) == [[0.0] * 3] * 3, 'a single row has no spread'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "plain lists of floats",
+          "code": "got = covariance_matrix([[1, 2], [3, 4]])\nassert type(got) is list and all(type(r) is list for r in got) and all(isinstance(v, float) for r in got for v in r), 'return a list of lists of floats'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "X is not changed",
+          "code": "X = [[1, 2], [3, 4]]\ncovariance_matrix(X)\nassert X == [[1, 2], [3, 4]], 'do not modify X'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "no rows",
+          "code": "try:\n    covariance_matrix([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when X has no rows')",
+          "concept": "principal-components"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n"
+    },
+    {
+      "id": "pca",
+      "kind": "challenge",
+      "title": "Challenge: PCA from scratch",
+      "body": "The starter gives you `covariance_matrix`. Write `pca_fit(X, k)`, which returns a dictionary with\n`'mean'` (the column means), `'components'` (the top `k` eigenvectors of the covariance matrix, largest\neigenvalue first, each a list with the sign rule above), `'variances'` (their eigenvalues) and\n`'explained'` (each eigenvalue divided by the sum of **all** eigenvalues). Raise `ValueError` if `X`\nhas no rows, if `k` is not between 1 and the number of features, or if the data has no spread.\nThen write `pca_transform(model, X)`, which centres new rows with the model's **stored** mean and\nreturns their coordinates along the components (one list of `k` floats per row; `[]` for no rows).\nYou may assume the eigenvalues you keep are all different.",
+      "starter": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    first = [1.0] + [0.0] * (A.shape[1] - 1)\n    return {'mean': A.mean(axis=0).tolist(), 'components': [first] * k, 'variances': [0.0] * k, 'explained': [0.0] * k}\n\n\ndef pca_transform(model, X):\n    return [[row[0]] * len(model['components']) for row in X]\n",
+      "hints": [
+        "`values, vectors = np.linalg.eigh(S)`, then `order = np.argsort(values)[::-1]` sorts from largest; reorder both, taking `vectors[:, order]` (columns!).",
+        "For the sign rule, `u[np.argmax(np.abs(u) > 1e-9)]` is the first entry larger than `1e-9` in size; if it is negative, use `-u`.",
+        "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    if total <= 0:\n        raise ValueError('the data has no spread')\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
+      ],
+      "tests": [
+        {
+          "name": "components along the axes",
+          "code": "X = [[3, 0, 0], [-3, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 1], [0, 0, -1]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nmodel = pca_fit(X, 3)\nassert len(model['components']) == 3 and all(close(c, w) for c, w in zip(model['components'], [[1, 0, 0], [0, 1, 0], [0, 0, 1]])), f'the spread is largest along x, then y, then z; got {model[\"components\"]}'\nassert close(model['variances'], [3, 4 / 3, 1 / 3]), f'variances 18/6, 8/6, 2/6; got {model[\"variances\"]}'\nassert close(model['explained'], [9 / 14, 4 / 14, 1 / 14]) and close(model['mean'], [0, 0, 0])",
+          "concept": "principal-components"
+        },
+        {
+          "name": "largest variance first, whatever the column order",
+          "code": "X = [[0, 0, 1], [0, 0, -1], [0, 5, 0], [0, -5, 0], [2, 0, 0], [-2, 0, 0]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nmodel = pca_fit(X, 2)\nassert len(model['components']) == 2 and close(model['components'][0], [0, 1, 0]) and close(model['components'][1], [1, 0, 0]), f'y spreads most, then x; got {model[\"components\"]}'\nassert close(model['variances'], [25 / 3, 4 / 3]) and close(model['explained'], [25 / 30, 4 / 30]), f'explained divides by the sum of ALL variances (30/3); got {model}'",
+          "concept": "explained-variance"
+        },
+        {
+          "name": "the sign rule",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nmodel = pca_fit([[1, 1], [2, 2], [3, 3], [1, 1.5]], 1)\nu = model['components'][0]\nassert u[0] > 0 and abs(sum(v * v for v in u) - 1) < 1e-9, f'unit length, first entry positive; got {u}'\nmodel = pca_fit([[0, 1, -1], [0, -1, 1], [0, 2, -2], [0, -2, 2.5]], 1)\nu = model['components'][0]\nassert abs(u[0]) < 1e-9 and u[1] > 0 and u[2] < 0, f'the first entry is 0, so the second decides the sign; got {u}'",
+          "concept": "principal-components"
+        },
+        {
+          "name": "a correlated cloud",
+          "code": "import numpy as np\nX = [[1.0, 1.2], [2.0, 1.9], [3.0, 3.2], [4.0, 3.8], [5.0, 5.1], [6.0, 5.8]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nA = np.array(X)\nC = A - A.mean(axis=0)\nS = C.T @ C / len(A)\nvals, vecs = np.linalg.eigh(S)\nu = vecs[:, 1] if vecs[0, 1] > 0 else -vecs[:, 1]\nmodel = pca_fit(X, 1)\nassert close(model['components'][0], u.tolist()), f'expected about {u.tolist()}; got {model[\"components\"]}'\nassert close(model['variances'], [vals[1]]) and close(model['explained'], [vals[1] / vals.sum()])\ngot = pca_transform(model, X)\nassert len(got) == 6 and all(len(r) == 1 for r in got) and close([r[0] for r in got], (C @ u).tolist()), f'coordinates along u; got {got}'",
+          "concept": "dimensionality-reduction"
+        },
+        {
+          "name": "new rows use the stored mean",
+          "code": "X = [[3, 0, 0], [-3, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 1], [0, 0, -1]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nmodel = pca_fit(X, 2)\ngot = pca_transform(model, [[1, 2, 3], [1, 2, 3]])\nassert len(got) == 2 and all(close(r, [1, 2]) for r in got), f'centre with the training mean (0, 0, 0), not the new rows\\' mean; got {got}'\nshifted = pca_fit([[x + 10, y, z] for x, y, z in X], 1)\nassert close(shifted['mean'], [10, 0, 0]) and close(pca_transform(shifted, [[13, 5, 5]])[0], [3]), 'subtract the stored mean before projecting'",
+          "concept": "dimensionality-reduction"
+        },
+        {
+          "name": "one row and no rows",
+          "code": "X = [[3, 0, 0], [-3, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 1], [0, 0, -1]]\nmodel = pca_fit(X, 2)\nassert pca_transform(model, []) == [], 'no rows in, no rows out'\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nassert close(pca_transform(model, [[0, -2, 0]])[0], [0, -2])",
+          "concept": "dimensionality-reduction"
+        },
+        {
+          "name": "plain lists of floats",
+          "code": "X = [[3, 0, 0], [-3, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 1], [0, 0, -1]]\nmodel = pca_fit(X, 2)\nassert set(model) == {'mean', 'components', 'variances', 'explained'}, f'keys mean, components, variances, explained; got {sorted(model)}'\nfor v in [model['mean'], model['variances'], model['explained'], *model['components'], *pca_transform(model, X)]:\n    assert type(v) is list and all(isinstance(t, float) for t in v), f'plain lists of floats; got {v!r}'\nassert type(model['components']) is list",
+          "concept": "principal-components"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, k in (([], 1), ([[1, 2]], 0), ([[1, 2], [3, 5]], 3), ([[1, 2], [1, 2]], 1)):\n    try:\n        pca_fit(X, k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, k={k}')",
+          "concept": "principal-components"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    if total <= 0:\n        raise ValueError('the data has no spread')\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "The eigenvalues of a covariance matrix are 6, 3 and 1. What share of the variance do the first two components explain?",
+          "choices": [
+            "0.9",
+            "0.6",
+            "0.3",
+            "9"
+          ],
+          "answer": 0,
+          "explanation": "(6 + 3) / (6 + 3 + 1) = 0.9.",
+          "concept": "explained-variance"
+        },
+        {
+          "id": "q2",
+          "prompt": "`np.linalg.eigh` returns eigenvalues `[0.5, 2.0, 7.5]`. Which column of the eigenvector matrix is the first principal component?",
+          "choices": [
+            "The last column",
+            "The first column",
+            "The first row",
+            "The middle column"
+          ],
+          "answer": 0,
+          "explanation": "eigh sorts eigenvalues in ascending order, so the largest, 7.5, is last; eigenvectors are columns.",
+          "concept": "principal-components"
+        },
+        {
+          "id": "q3",
+          "prompt": "A dataset has 10 features. What is the largest number of principal components it can have?",
+          "choices": [
+            "10",
+            "9",
+            "As many as there are examples",
+            "2"
+          ],
+          "answer": 0,
+          "explanation": "One component per dimension of the feature space: the covariance matrix is 10 × 10.",
+          "concept": "dimensionality-reduction"
+        },
+        {
+          "id": "q4",
+          "prompt": "One feature is a distance in metres (values in the thousands), the others are small ratios. What should you do before PCA?",
+          "choices": [
+            "Standardize the features",
+            "Nothing: PCA ignores units",
+            "Drop the small features",
+            "Sort the rows"
+          ],
+          "answer": 0,
+          "explanation": "Otherwise the metres feature has by far the largest variance and becomes the first component regardless of structure.",
+          "concept": "principal-components"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Explain principal components as the directions of greatest spread, and eigenvalues as the variance along them.\n- Compute a covariance matrix and its eigenvectors with NumPy, in the right order and with a fixed sign.\n- Project new examples onto the top components using the stored training mean.\n- Report how much of the variance a few components explain."
+    }
+  ]
+}

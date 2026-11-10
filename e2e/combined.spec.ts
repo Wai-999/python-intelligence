@@ -8,6 +8,7 @@ import evaluation from "../content/lessons/ml-evaluation.json" with { type: "jso
 import classification from "../content/lessons/ml-classification.json" with { type: "json" };
 import capstone from "../content/lessons/ml-capstone.json" with { type: "json" };
 import scaling from "../content/lessons/ml-scaling.json" with { type: "json" };
+import pca from "../content/lessons/ml-pca.json" with { type: "json" };
 
 // The lessons that combine all five books (and the statistics/ML path built on them): each runs in the browser exactly as the CPython 3.12 gate checked it.
 type L = { steps: { id: string; kind: string; code?: string; expected_output?: string; solution?: string }[] };
@@ -37,6 +38,7 @@ for (const [name, lesson, example, exercises] of [
   ["ml-classification", classification, "centroids", ["linear", "nearest"]],
   ["ml-capstone", capstone, "inspect", ["load", "pipeline"]],
   ["ml-scaling", scaling, "units", ["standardize", "model"]],
+  ["ml-pca", pca, "cigar", ["covariance", "pca"]],
 ] as const) {
   test(`${name}: example output and every exercise solution pass in the browser`, async ({ page }) => {
     test.setTimeout(240_000);
