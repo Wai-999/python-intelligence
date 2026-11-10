@@ -165,7 +165,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Input:** examples `x₁ … x_N` (rows of `X`) and `k` starting centroids `μ₁ … μ_k`.\n\n**Assign:** each example gets the label `j` of its nearest centroid in Euclidean distance (comparing\nsquared distances gives the same answer). This lesson breaks ties by choosing the lowest `j`.\n\n**Update:** each centroid moves to the mean of the examples assigned to it. A centroid with no\nexamples stays where it is.\n\n**Stop:** repeat assign-then-update until an iteration changes no assignment, or until `max_iter`\niterations have run.\n\n**Inertia:** the sum of squared distances from each example to its own centroid. Each step can only\nkeep it the same or lower it, so k-means always stops, but at a *local* minimum: different starting\ncentroids can end in different, worse groupings. Larger `k` always allows lower inertia, so inertia\nalone can't choose `k`.\n\n**With NumPy:** `np.sum((C - x) ** 2, axis=1)` gives the squared distance from `x` to every row of\n`C` by broadcasting; `np.argmin` returns the first position of the smallest value; `X[rows].mean(axis=0)`\naverages selected rows.",
+      "body": "**Input:** examples `x₁ … x_N` (rows of `X`) and `k` starting centroids `μ₁ … μ_k`.\n\n**Assign:** each example gets the label `j` of its nearest centroid in Euclidean distance (comparing\nsquared distances gives the same answer). This lesson breaks ties by choosing the lowest `j`.\n\n**Update:** each centroid moves to the mean of the examples assigned to it. A centroid with no\nexamples stays where it is.\n\n**Stop:** repeat assign-then-update until an iteration changes no assignment, or until `max_iter`\niterations have run.\n\n**Inertia:** the sum of squared distances from each example to its own centroid. Neither step can\nraise it: reassigning a point to a nearer centroid shortens its distance, and the mean is the point\nwith the smallest total squared distance to its group. When an iteration changes no assignment, the\ntwo steps agree and nothing will move again; that result can still be a poor grouping, and which one\nyou reach depends on the starting centroids. If `max_iter` stops the loop first, the result may not\nhave settled yet.\n\n**Choosing k:** the *best possible* inertia can only fall as `k` grows (an extra centroid placed on\ntop of an existing one changes nothing, and moving it can only help), reaching 0 with one centroid\nper point. So the lowest inertia always favours the largest `k`, and inertia alone can't choose it.\n\n**With NumPy:** `np.sum((C - x) ** 2, axis=1)` gives the squared distance from `x` to every row of\n`C` by broadcasting; `np.argmin` returns the first position of the smallest value; `X[rows].mean(axis=0)`\naverages selected rows.",
       "cites": [
         "mml-dist",
         "mml-em",
@@ -215,6 +215,11 @@
           "concept": "clustering"
         },
         {
+          "name": "any number of centroids",
+          "code": "got = assign([[0], [5], [9.5], [20], [1]], [[0], [4], [10], [19]])\nassert got == [0, 1, 2, 3, 0], f'the nearest can be any centroid, not just the first two; got {got}'\nassert assign([[7, 7]], [[0, 0], [1, 1], [2, 2], [3, 3], [8, 8]]) == [4]",
+          "concept": "clustering"
+        },
+        {
           "name": "every feature counts",
           "code": "assert assign([[0, 0, 9], [0, 0, 1]], [[0, 0, 0], [0, 0, 10]]) == [1, 0], 'the third feature decides'",
           "concept": "clustering"
@@ -231,7 +236,7 @@
         },
         {
           "name": "inputs are not changed",
-          "code": "import copy\nX, C = [[1.0, 2.0], [3.0, 4.0]], [[0.0, 0.0], [5.0, 5.0]]\nkeep = copy.deepcopy((X, C))\nassign(X, C)\nassert (X, C) == keep, 'do not modify X or centroids'",
+          "code": "import copy\nX, C = [[1.0, 2.0], [3.0, 4.0]], [[0.0, 0.0], [5.0, 5.0]]\nkeep = copy.deepcopy((X, C))\nassign(X, C)\nassert (X, C) == keep, 'do not modify X or centroids'\nimport numpy as np\nA, B = np.array(X), np.array(C)\nkeepA, keepB = A.copy(), B.copy()\nassign(A, B)\nassert np.array_equal(A, keepA) and np.array_equal(B, keepB), 'not NumPy arrays either'",
           "concept": "clustering"
         },
         {
@@ -282,6 +287,11 @@
         {
           "name": "max_iter limits the iterations",
           "code": "P = [[0.0], [1.0], [2.0], [3.0], [10.0], [11.0]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ntwo = kmeans(P, [[0.0], [1.0]], max_iter=2)\nfull = kmeans(P, [[0.0], [1.0]])\nassert two['labels'] == [0, 0, 0, 1, 1, 1] and close([c[0] for c in two['centroids']], [1.0, 8.0]) and abs(two['inertia'] - 40) < 1e-9, f'after two iterations (not yet settled); got {two}'\nassert full['labels'] == [0, 0, 0, 0, 1, 1] and close([c[0] for c in full['centroids']], [1.5, 10.5]) and abs(full['inertia'] - 5.5) < 1e-9, f'run to convergence; got {full}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "Euclidean assignments",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[0, 0]], [[3, 3], [4.3, 0]], max_iter=1)\nassert got['labels'] == [0] and close(got['centroids'][0], [0, 0]) and close(got['centroids'][1], [4.3, 0]), f'(3, 3) is nearer in straight-line distance (about 4.24 vs 4.3); got {got}'\ngot = kmeans([[0, 0]], [[4.2, 0], [3, 3]], max_iter=1)\nassert got['labels'] == [0], f'(4.2, 0) is nearer than (3, 3) in straight-line distance; got {got}'",
           "concept": "k-means"
         },
         {
@@ -350,20 +360,20 @@
             "k-means never stops"
           ],
           "answer": 0,
-          "explanation": "k-means only ever improves on where it started; different starts can settle in different groupings.",
+          "explanation": "Each run only improves on where it started and stops when nothing changes; different starts can settle in different groupings.",
           "concept": "k-means"
         },
         {
           "id": "q4",
-          "prompt": "Why can't you choose k simply by picking the k with the lowest inertia?",
+          "prompt": "Why can't you choose k by picking the k whose best inertia is lowest?",
           "choices": [
-            "Inertia keeps falling as k grows, down to 0 with one cluster per point",
+            "The best possible inertia keeps falling as k grows, down to 0 with one centroid per point",
             "Inertia rises with k",
             "Inertia doesn't depend on k",
             "k must equal the number of features"
           ],
           "answer": 0,
-          "explanation": "With one centroid on every point the inertia is 0, but those clusters mean nothing.",
+          "explanation": "An extra centroid can never make the best grouping worse, and with one centroid on every point the inertia is 0, but those clusters mean nothing.",
           "concept": "inertia"
         }
       ]
