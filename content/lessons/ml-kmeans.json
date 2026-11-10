@@ -251,7 +251,7 @@
         },
         {
           "name": "no centroids",
-          "code": "try:\n    assign([[1, 2]], [])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when there are no centroids')",
+          "code": "for X in ([[1, 2]], []):\n    try:\n        assign(X, [])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when there are no centroids, even with X={X}')",
           "concept": "clustering"
         }
       ],
