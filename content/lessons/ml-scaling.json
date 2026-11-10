@@ -1,0 +1,346 @@
+{
+  "id": "ml-scaling",
+  "title": "Feature scaling: making every feature count",
+  "summary": "Standardize features with statistics learned from the training data, so a model's answer doesn't depend on units.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "ml-capstone",
+    "stats-summary"
+  ],
+  "concepts": [
+    "feature-scaling",
+    "standardization",
+    "train-only-statistics"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-stats",
+      "source_id": "pch-mml-book",
+      "pages": [
+        192,
+        197
+      ],
+      "section": "6.4 Summary Statistics and Independence",
+      "use": "reference"
+    },
+    {
+      "id": "mml-pca",
+      "source_id": "pch-mml-book",
+      "pages": [
+        342,
+        344
+      ],
+      "section": "10.6 Key Steps of PCA in Practice",
+      "use": "reference"
+    },
+    {
+      "id": "mml-erm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        270
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "np-std",
+      "source_id": "npdocs-20-std",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "numpy.std",
+      "use": "reference"
+    },
+    {
+      "id": "np-broadcast",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        16,
+        16
+      ],
+      "section": "Broadcasting",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Centimetres or millimetres?",
+      "body": "In the capstone, the nearest-centroid classifier measured distance using plant height and leaf size.\nHeights spread over about 20 cm, leaves over about 2 cm, so height decided almost everything. Worse:\nwrite the heights in millimetres instead and the distances change, and so can the predictions. The\nplants are the same; only the unit changed. A model whose answer depends on the unit you chose is\nnot measuring what you meant."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Measure every feature in its own spread",
+      "body": "Instead of raw units, describe each value by how far it is from that feature's average, counted in\nstandard deviations. A height 1 standard deviation above average and a leaf 1 standard deviation\nabove average now count the same. This is **standardization**, and the result has no units. The\naverages and spreads are learned from the **training** data, then applied unchanged to every new\nexample, exactly like a model's parameters.",
+      "cites": [
+        "mml-stats",
+        "mml-pca"
+      ],
+      "socratic": {
+        "questions": [
+          "What is the standardized value of a training example that is exactly average?",
+          "If you computed the averages from the test rows too, which habit from the capstone would you break?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch one column being standardized",
+      "body": "The mean and standard deviation are passed in, as they would be after learning them from training data. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def standardize_column(values, mean, std):\n    return [(v - mean) / std for v in values]\n\nprint(standardize_column([10, 20, 30], 20, 10))",
+        "frames": [
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "standardize_column": "<function standardize_column>"
+            },
+            "note": "This column has mean 20 and standard deviation 10."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "standardize_column([10, 20, 30], 20, 10)"
+            ],
+            "locals": {
+              "values": "[10, 20, 30]",
+              "mean": "20",
+              "std": "10"
+            },
+            "note": "Each value becomes (value - mean) / std."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "standardize_column": "<function standardize_column>"
+            },
+            "note": "One below average, exactly average, one above.",
+            "output": "[-1.0, 0.0, 1.0]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Standardization:** for each feature `d`, compute the mean `μ_d` and standard deviation `σ_d` over\nthe training examples, then replace every value `x_d` by `z_d = (x_d − μ_d) / σ_d`. The standardized\ntraining data has mean 0 and standard deviation 1 in every feature, and no units.\n\n**With NumPy:** `X.mean(axis=0)` and `X.std(axis=0)` give one mean and one standard deviation per\ncolumn (`np.std` divides by `N` unless you pass `ddof=1`); `(X - means) / stds` broadcasts them\nacross every row.\n\n**A constant feature** has `σ_d = 0`, and dividing by 0 is undefined. This lesson uses 1 instead,\nso such a column becomes all zeros: it carries no information to tell examples apart.\n\n**Fit on training data only:** `μ` and `σ` are learned parameters. Compute them from the training\nrows and reuse them for test rows and new examples; computing them from test rows leaks information,\nand computing them from a single new example is impossible (its spread is 0).",
+      "cites": [
+        "mml-stats",
+        "mml-pca",
+        "mml-erm",
+        "np-std",
+        "np-broadcast"
+      ]
+    },
+    {
+      "id": "units",
+      "kind": "example",
+      "title": "Run it: same plant, different units",
+      "body": "The same training plants and the same new plant, with heights in centimetres and then millimetres.\nPredict which of the four answers change.",
+      "code": "import numpy as np\n\nX = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nnew = [20.6, 2.5]\n\ndef nearest(X, y, x):\n    X, x = np.array(X), np.array(x)\n    cents = {c: X[[i for i in range(len(y)) if y[i] == c]].mean(axis=0) for c in sorted(set(y))}\n    return min(cents, key=lambda c: np.sum((x - cents[c]) ** 2))\n\ndef scaled(X, x):\n    X = np.array(X)\n    m, s = X.mean(axis=0), X.std(axis=0)\n    return (X - m) / s, (np.array(x) - m) / s\n\nX_mm = [[h * 10, leaf] for h, leaf in X]\nnew_mm = [new[0] * 10, new[1]]\nprint('raw, cm:', nearest(X, y, new))\nprint('raw, mm:', nearest(X_mm, y, new_mm))\nZ, z = scaled(X, new)\nprint('scaled, cm:', nearest(Z, y, z))\nZ_mm, z_mm = scaled(X_mm, new_mm)\nprint('scaled, mm:', nearest(Z_mm, y, z_mm))\n",
+      "expected_output": "raw, cm: fern\nraw, mm: palm\nscaled, cm: fern\nscaled, mm: fern\n"
+    },
+    {
+      "id": "standardize",
+      "kind": "guided",
+      "title": "Your turn: standardize train and test",
+      "body": "Complete `standardize(X_train, X_test)`. Learn each column's mean and standard deviation (dividing\nby `N`) from `X_train` only; use 1 for any column whose standard deviation is 0. Return the\nstandardized training and test sets as two lists of lists of floats. Raise `ValueError` if\n`X_train` has no rows; `X_test` may be empty. Don't change the inputs.",
+      "starter": "import numpy as np\n\ndef standardize(X_train, X_test):\n    A = np.array(X_train, dtype=float)\n    B = np.array(X_test, dtype=float)\n    return (A - A.mean()).tolist(), (B - B.mean()).tolist()\n",
+      "hints": [
+        "`A.mean(axis=0)` and `A.std(axis=0)` give one value per column; compute them from the training array only.",
+        "`stds[stds == 0] = 1.0` replaces zero spreads; `np.array(X_test, dtype=float).reshape(-1, A.shape[1])` copes with an empty test set.",
+        "import numpy as np\n\ndef standardize(X_train, X_test):\n    A = np.array(X_train, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('X_train needs at least one row')\n    B = np.array(X_test, dtype=float).reshape(-1, A.shape[1])\n    means = A.mean(axis=0)\n    stds = A.std(axis=0)\n    stds[stds == 0] = 1.0\n    return ((A - means) / stds).tolist(), ((B - means) / stds).tolist()\n"
+      ],
+      "tests": [
+        {
+          "name": "each column on its own scale",
+          "code": "tr, te = standardize([[1, 10], [3, 30]], [[2, 40]])\nassert tr == [[-1.0, -1.0], [1.0, 1.0]], f'column means 2 and 20, spreads 1 and 10; got {tr}'\nassert te == [[0.0, 2.0]], f'scale test rows with the training statistics; got {te}'",
+          "concept": "standardization"
+        },
+        {
+          "name": "test rows never change the statistics",
+          "code": "tr, te = standardize([[0, 4], [2, 8]], [[5, 0], [100, 100]])\nassert tr == [[-1.0, -1.0], [1.0, 1.0]], f'got {tr}'\nassert te == [[4.0, -3.0], [99.0, 47.0]], f'means 1 and 6, spreads 1 and 2, from the training rows only; got {te}'",
+          "concept": "train-only-statistics"
+        },
+        {
+          "name": "divide by N, not N - 1",
+          "code": "tr, te = standardize([[0], [1], [2]], [[3]])\nsd = (2 / 3) ** 0.5\nassert all(abs(a[0] - b) < 1e-12 for a, b in zip(tr, [-1 / sd, 0.0, 1 / sd])), f'the spread is sqrt(2/3), as np.std gives by default; got {tr}'\nassert abs(te[0][0] - 2 / sd) < 1e-12, f'got {te}'",
+          "concept": "standardization"
+        },
+        {
+          "name": "a constant column becomes zeros",
+          "code": "tr, te = standardize([[5, 1], [5, 3]], [[7, 2]])\nassert tr == [[0.0, -1.0], [0.0, 1.0]], f'the first column has spread 0: divide by 1 instead; got {tr}'\nassert te == [[2.0, 0.0]], f'got {te}'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "three features, unrounded",
+          "code": "tr, te = standardize([[1, 0, 0.5], [2, 0, 0.25], [6, 0, 1.0]], [[3, 9, 0.6]])\nimport statistics\ncols = [[1, 2, 6], [0, 0, 0], [0.5, 0.25, 1.0]]\nm = [statistics.fmean(c) for c in cols]\ns = [statistics.pstdev(c) or 1.0 for c in cols]\nwant = [(v - m[j]) / s[j] for j, v in enumerate([3, 9, 0.6])]\nassert all(abs(a - b) < 1e-12 for a, b in zip(te[0], want)), f'expected about {want}, got {te[0]}'\nassert abs(tr[0][0] - (1 - m[0]) / s[0]) < 1e-12 and tr[0][1] == 0.0",
+          "concept": "standardization"
+        },
+        {
+          "name": "an empty test set is fine",
+          "code": "tr, te = standardize([[1, 2], [3, 4]], [])\nassert te == [], f'got {te}'\nassert tr == [[-1.0, -1.0], [1.0, 1.0]]",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "plain lists of floats",
+          "code": "tr, te = standardize([[1, 2], [3, 4]], [[2, 3]])\nassert type(tr) is list and type(te) is list and all(type(r) is list for r in tr + te), 'return lists of lists'\nassert all(isinstance(v, float) for r in tr + te for v in r), 'every value is a float'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "a, b = [[1, 2], [3, 4]], [[2, 3]]\nstandardize(a, b)\nassert a == [[1, 2], [3, 4]] and b == [[2, 3]], 'do not modify X_train or X_test'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "no training rows",
+          "code": "try:\n    standardize([], [[1, 2]])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when X_train has no rows')",
+          "concept": "feature-scaling"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef standardize(X_train, X_test):\n    A = np.array(X_train, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('X_train needs at least one row')\n    B = np.array(X_test, dtype=float).reshape(-1, A.shape[1])\n    means = A.mean(axis=0)\n    stds = A.std(axis=0)\n    stds[stds == 0] = 1.0\n    return ((A - means) / stds).tolist(), ((B - means) / stds).tolist()\n"
+    },
+    {
+      "id": "model",
+      "kind": "challenge",
+      "title": "Challenge: a classifier that ignores units",
+      "body": "The starter gives you `fit_centroids` and `predict_centroids`. Write two functions.\n`fit_scaled_centroids(X, y)` learns each column's mean and standard deviation (dividing by `N`,\nwith 1 for a zero spread) from `X`, standardizes `X`, fits centroids to the standardized rows, and\nreturns `{'means': [...], 'stds': [...], 'centroids': {...}}` with plain lists of floats. Raise\n`ValueError` if `X` is empty or its length differs from `y`.\n`predict_scaled(model, X)` standardizes the new rows with the model's **stored** means and standard\ndeviations and returns the nearest centroid's label for each row (it must work for a single row).",
+      "starter": "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    return {'means': [], 'stds': [], 'centroids': fit_centroids(X, y)}\n\n\ndef predict_scaled(model, X):\n    return predict_centroids(model['centroids'], X)\n",
+      "hints": [
+        "Inside `fit_scaled_centroids`, compute `Z = (X - means) / stds` and call `fit_centroids(Z, y)`.",
+        "In `predict_scaled`, never compute a mean or spread from the rows you are predicting: use `model['means']` and `model['stds']`.",
+        "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    X = np.array(X, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or len(X) != len(y):\n        raise ValueError('need one label per example, and at least one example')\n    means = X.mean(axis=0)\n    stds = X.std(axis=0)\n    stds[stds == 0] = 1.0\n    Z = (X - means) / stds\n    return {'means': means.tolist(), 'stds': stds.tolist(), 'centroids': fit_centroids(Z, y)}\n\n\ndef predict_scaled(model, X):\n    X = np.array(X, dtype=float).reshape(-1, len(model['means']))\n    Z = (X - np.array(model['means'])) / np.array(model['stds'])\n    return predict_centroids(model['centroids'], Z)\n"
+      ],
+      "tests": [
+        {
+          "name": "the learned statistics",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nimport statistics\nwant_m = [statistics.fmean(r[j] for r in X) for j in range(2)]\nwant_s = [statistics.pstdev([r[j] for r in X]) for j in range(2)]\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['means'], want_m)), f'column means of X; got {model[\"means\"]}'\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['stds'], want_s)), f'spreads dividing by N; got {model[\"stds\"]}'\nassert sorted(model['centroids']) == ['fern', 'palm']\nfern = [(statistics.fmean(r[j] for r in X[:4]) - want_m[j]) / want_s[j] for j in range(2)]\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['centroids']['fern'], fern)), f'centroids are means of the standardized rows; got {model[\"centroids\"]}'",
+          "concept": "standardization"
+        },
+        {
+          "name": "plain lists of floats",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nassert set(model) == {'means', 'stds', 'centroids'}, f'keys means, stds, centroids; got {sorted(model)}'\nfor v in [model['means'], model['stds'], *model['centroids'].values()]:\n    assert type(v) is list and all(isinstance(t, float) for t in v), f'plain lists of floats; got {v!r}'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "units don't matter",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nnew = [[20.6, 2.5], [15.0, 5.2], [27.0, 3.0], [21.0, 4.0]]\ncm = predict_scaled(fit_scaled_centroids(X, y), new)\nmm = predict_scaled(fit_scaled_centroids([[h * 10, l] for h, l in X], y), [[h * 10, l] for h, l in new])\nassert cm == mm, f'centimetres {cm} vs millimetres {mm}: standardized values have no units'\nassert cm[0] == 'fern', f'(20.6, 2.5) is a fern once both features count; got {cm}'",
+          "concept": "standardization"
+        },
+        {
+          "name": "a single new example",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nassert predict_scaled(model, [[20.6, 2.5]]) == ['fern'], 'one row has no spread of its own: scale it with the stored statistics'\nassert predict_scaled(model, [[29.0, 5.0]]) == ['palm']",
+          "concept": "train-only-statistics"
+        },
+        {
+          "name": "prediction uses the stored statistics",
+          "code": "model = {'means': [10.0, 0.0], 'stds': [2.0, 1.0], 'centroids': {'a': [0.0, 0.0], 'b': [1.0, 0.0]}}\ngot = predict_scaled(model, [[11.2, 0.0], [10.8, 0.0], [12.0, 0.4]])\nassert got == ['b', 'a', 'b'], f'(11.2 - 10) / 2 = 0.6 is nearer b; (10.8 - 10) / 2 = 0.4 is nearer a; got {got}'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [3.0, 3.0], 'q': [5.0, 0.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'nearest in straight-line (Euclidean) distance: p is about 4.24 away, q is 5'",
+          "concept": "train-only-statistics"
+        },
+        {
+          "name": "a constant feature",
+          "code": "model = fit_scaled_centroids([[1, 5], [2, 5], [9, 5], [10, 5]], ['lo', 'lo', 'hi', 'hi'])\nassert model['stds'][1] == 1.0 and model['means'][1] == 5.0, f'spread 0 is replaced by 1; got {model}'\nassert predict_scaled(model, [[3, 5], [8, 5]]) == ['lo', 'hi']",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "every feature counts",
+          "code": "model = fit_scaled_centroids([[0, 0, 0], [0, 0, 1], [0, 0, 9], [0, 0, 10]], ['p', 'p', 'q', 'q'])\nassert predict_scaled(model, [[0, 0, 7], [0, 0, 2]]) == ['q', 'p'], 'the third feature decides'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, y in (([], []), ([[1, 2]], []), ([[1, 2], [3, 4]], ['a'])):\n    try:\n        fit_scaled_centroids(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
+          "concept": "feature-scaling"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    X = np.array(X, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or len(X) != len(y):\n        raise ValueError('need one label per example, and at least one example')\n    means = X.mean(axis=0)\n    stds = X.std(axis=0)\n    stds[stds == 0] = 1.0\n    Z = (X - means) / stds\n    return {'means': means.tolist(), 'stds': stds.tolist(), 'centroids': fit_centroids(Z, y)}\n\n\ndef predict_scaled(model, X):\n    X = np.array(X, dtype=float).reshape(-1, len(model['means']))\n    Z = (X - np.array(model['means'])) / np.array(model['stds'])\n    return predict_centroids(model['centroids'], Z)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "A feature has training mean 50 and standard deviation 5. What is the standardized value of 60?",
+          "choices": [
+            "2.0",
+            "10.0",
+            "1.2",
+            "0.5"
+          ],
+          "answer": 0,
+          "explanation": "(60 - 50) / 5 = 2: two standard deviations above average.",
+          "concept": "standardization"
+        },
+        {
+          "id": "q2",
+          "prompt": "Where should the means and standard deviations used to scale the test set come from?",
+          "choices": [
+            "The training set",
+            "The test set",
+            "Both sets together",
+            "Each test row on its own"
+          ],
+          "answer": 0,
+          "explanation": "They are learned parameters: fit on training data, then reuse them unchanged.",
+          "concept": "train-only-statistics"
+        },
+        {
+          "id": "q3",
+          "prompt": "Every training example has the same value, 7, in one feature. What does this lesson's scaler do with that feature?",
+          "choices": [
+            "Turns it into all zeros",
+            "Raises an error",
+            "Leaves it as 7",
+            "Divides it by 0"
+          ],
+          "answer": 0,
+          "explanation": "Its spread is 0, so the lesson divides by 1 after subtracting the mean 7, leaving 0 everywhere.",
+          "concept": "feature-scaling"
+        },
+        {
+          "id": "q4",
+          "prompt": "After standardizing, you convert one feature from metres to centimetres and standardize again. Do nearest-centroid predictions change?",
+          "choices": [
+            "No: standardized values have no units",
+            "Yes: every value is 100 times larger",
+            "Only for the test rows",
+            "Only if the feature is constant"
+          ],
+          "answer": 0,
+          "explanation": "Multiplying a feature by 100 multiplies its mean and spread by 100 too, so the standardized values are identical.",
+          "concept": "standardization"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Explain why features with large ranges or arbitrary units dominate distance-based models.\n- Standardize features column by column with NumPy broadcasting.\n- Learn scaling statistics from training data only and reuse them for new examples.\n- Build a classifier whose predictions don't depend on the units of its features."
+    }
+  ]
+}
