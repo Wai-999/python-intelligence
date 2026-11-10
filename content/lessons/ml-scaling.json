@@ -248,6 +248,11 @@
           "concept": "standardization"
         },
         {
+          "name": "interleaved labels",
+          "code": "X = [[0, 1], [10, 0], [2, 3], [12, 2], [4, 8]]\ny = ['a', 'b', 'a', 'b', 'a']\nimport statistics\nm = [statistics.fmean(r[j] for r in X) for j in range(2)]\ns = [statistics.pstdev([r[j] for r in X]) for j in range(2)]\nZ = [[(r[j] - m[j]) / s[j] for j in range(2)] for r in X]\nmodel = fit_scaled_centroids(X, y)\nfor label, rows in (('a', [Z[0], Z[2], Z[4]]), ('b', [Z[1], Z[3]])):\n    want = [statistics.fmean(r[j] for r in rows) for j in range(2)]\n    got = model['centroids'][label]\n    assert len(got) == 2 and all(abs(a - b) < 1e-12 for a, b in zip(got, want)), f'the {label} rows are not next to each other: its centroid is about {want}; got {got}'\nassert predict_scaled(model, [[1, 2], [11, 1], [3, 6]]) == ['a', 'b', 'a']",
+          "concept": "standardization"
+        },
+        {
           "name": "a single training row",
           "code": "model = fit_scaled_centroids([[3, 4]], ['a'])\nassert model == {'means': [3.0, 4.0], 'stds': [1.0, 1.0], 'centroids': {'a': [0.0, 0.0]}}, f'got {model}'\nassert predict_scaled(model, [[10, 10], [3, 4]]) == ['a', 'a']",
           "concept": "feature-scaling"
@@ -279,7 +284,7 @@
         },
         {
           "name": "near the boundary, nothing is rounded",
-          "code": "model = {'means': [0.0], 'stds': [1.0], 'centroids': {'a': [0.0], 'b': [1.0]}}\ngot = predict_scaled(model, [[0.5000001], [0.4999999]])\nassert got == ['b', 'a'], f'0.5000001 is nearer b and 0.4999999 nearer a: compare exact distances; got {got}'",
+          "code": "model = {'means': [0.0], 'stds': [1.0], 'centroids': {'a': [0.0], 'b': [1.0]}}\ngot = predict_scaled(model, [[0.5000001], [0.4999999], [0.5000000001], [0.4999999999]])\nassert got == ['b', 'a', 'b', 'a'], f'just above 0.5 is nearer b and just below nearer a: compare exact distances; got {got}'",
           "concept": "feature-scaling"
         },
         {
