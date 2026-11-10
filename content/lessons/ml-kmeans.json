@@ -1,0 +1,378 @@
+{
+  "id": "ml-kmeans",
+  "title": "Clustering with k-means: finding groups without labels",
+  "summary": "Group unlabelled examples by alternating two steps: assign each point to its nearest centre, then move each centre to its points' mean.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "ml-scaling"
+  ],
+  "concepts": [
+    "clustering",
+    "k-means",
+    "inertia"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-dist",
+      "source_id": "pch-mml-book",
+      "pages": [
+        81,
+        82
+      ],
+      "section": "3.3 Lengths and Distances",
+      "use": "reference"
+    },
+    {
+      "id": "mml-data",
+      "source_id": "pch-mml-book",
+      "pages": [
+        257,
+        263
+      ],
+      "section": "8.1 Data, Models, and Learning",
+      "use": "reference"
+    },
+    {
+      "id": "mml-em",
+      "source_id": "pch-mml-book",
+      "pages": [
+        366,
+        368
+      ],
+      "section": "11.3 EM Algorithm",
+      "use": "reference"
+    },
+    {
+      "id": "mml-gmm-more",
+      "source_id": "pch-mml-book",
+      "pages": [
+        374,
+        375
+      ],
+      "section": "11.5 Further Reading",
+      "use": "reference"
+    },
+    {
+      "id": "np-broadcast",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        16,
+        16
+      ],
+      "section": "Broadcasting",
+      "use": "reference"
+    },
+    {
+      "id": "np-more",
+      "source_id": "npdocs-20-beginners",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "More useful array operations",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Groups nobody labelled",
+      "body": "A shop has thousands of customers and no labels saying which are bargain hunters and which are big\nspenders. A biologist has measurements of plants but no species names. **Clustering** looks for groups\nof examples that are close to each other, using no labels at all. It is the first **unsupervised**\nmethod in this course: there is no right answer to check predictions against."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Two steps, repeated",
+      "body": "Pick `k` starting centres. Then repeat two steps. **Assign:** give every point to its nearest centre.\n**Update:** move every centre to the average of the points it was given. Each round, centres drift\ntowards the middle of a group, and points switch to the centre that now suits them better. When no\npoint switches, the groups are stable. This alternation, guess the groups, then refit the centres,\nis the same idea as the EM algorithm for Gaussian mixtures, with each point given wholly to one\ncluster instead of shared between them.",
+      "cites": [
+        "mml-em",
+        "mml-gmm-more",
+        "mml-data"
+      ],
+      "socratic": {
+        "questions": [
+          "If two starting centres sit right next to each other inside one group, what might happen to the other groups?",
+          "Why would measuring height in millimetres instead of metres change which points are 'nearest'?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch one point being assigned",
+      "body": "One-dimensional points make the distances easy to check. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def nearest(x, centroids):\n    d = [(x - c) ** 2 for c in centroids]\n    return d.index(min(d))\n\nprint(nearest(4, [1, 6]))",
+        "frames": [
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "nearest": "<function nearest>"
+            },
+            "note": "Which of the centres 1 and 6 is nearer to 4?"
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "nearest(4, [1, 6])"
+            ],
+            "locals": {
+              "x": "4",
+              "centroids": "[1, 6]"
+            },
+            "note": "Squared distances are enough to compare: no square root needed."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "nearest(4, [1, 6])"
+            ],
+            "locals": {
+              "x": "4",
+              "centroids": "[1, 6]",
+              "d": "[9, 4]"
+            },
+            "note": "The smallest is 4, at position 1."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "nearest": "<function nearest>"
+            },
+            "note": "The point joins cluster 1.",
+            "output": "1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Input:** examples `x₁ … x_N` (rows of `X`) and `k` starting centroids `μ₁ … μ_k`.\n\n**Assign:** each example gets the label `j` of its nearest centroid in Euclidean distance (comparing\nsquared distances gives the same answer). This lesson breaks ties by choosing the lowest `j`.\n\n**Update:** each centroid moves to the mean of the examples assigned to it. A centroid with no\nexamples stays where it is.\n\n**Stop:** repeat assign-then-update until an iteration changes no assignment, or until `max_iter`\niterations have run.\n\n**Inertia:** the sum of squared distances from each example to its own centroid. Each step can only\nkeep it the same or lower it, so k-means always stops, but at a *local* minimum: different starting\ncentroids can end in different, worse groupings. Larger `k` always allows lower inertia, so inertia\nalone can't choose `k`.\n\n**With NumPy:** `np.sum((C - x) ** 2, axis=1)` gives the squared distance from `x` to every row of\n`C` by broadcasting; `np.argmin` returns the first position of the smallest value; `X[rows].mean(axis=0)`\naverages selected rows.",
+      "cites": [
+        "mml-dist",
+        "mml-em",
+        "mml-gmm-more",
+        "np-broadcast",
+        "np-more"
+      ]
+    },
+    {
+      "id": "starts",
+      "kind": "example",
+      "title": "Run it: the start matters",
+      "body": "Seven points on a line, three clusters, two different starting centres. Predict which start finds the\nthree obvious groups.",
+      "code": "import numpy as np\n\nX = np.array([1.0, 2.0, 3.0, 10.0, 11.0, 12.0, 30.0])\n\ndef kmeans_1d(X, centres):\n    centres = np.array(centres, dtype=float)\n    labels = None\n    while True:\n        new = np.argmin(np.abs(X[:, None] - centres[None, :]), axis=1)\n        for j in range(len(centres)):\n            if np.any(new == j):\n                centres[j] = X[new == j].mean()\n        if labels is not None and np.array_equal(new, labels):\n            return new.tolist(), centres.tolist()\n        labels = new\n\nfor start in ([1, 10, 30], [1, 2, 3]):\n    labels, centres = kmeans_1d(X, start)\n    inertia = sum((x - centres[l]) ** 2 for x, l in zip(X, labels))\n    print(start, labels, centres, round(float(inertia), 2))\n",
+      "expected_output": "[1, 10, 30] [0, 0, 0, 1, 1, 1, 2] [2.0, 11.0, 30.0] 4.0\n[1, 2, 3] [0, 1, 1, 2, 2, 2, 2] [1.0, 2.5, 15.75] 273.25\n"
+    },
+    {
+      "id": "assign",
+      "kind": "guided",
+      "title": "Your turn: the assignment step",
+      "body": "Complete `assign(X, centroids)`: return a list with, for each row of `X`, the position (an `int`) of\nits nearest centroid in Euclidean distance; on a tie, the lowest position. Return `[]` when `X` has\nno rows, and raise `ValueError` when there are no centroids. Don't change the inputs.",
+      "starter": "import numpy as np\n\ndef assign(X, centroids):\n    return [0 for _ in X]\n",
+      "hints": [
+        "For one row `x`, `np.sum((C - x) ** 2, axis=1)` holds its squared distance to every centroid.",
+        "`np.argmin` returns the first smallest position, which is exactly the tie rule; wrap it in `int(...)`.",
+        "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n"
+      ],
+      "tests": [
+        {
+          "name": "nearest centroid",
+          "code": "got = assign([[0, 0], [9, 9], [4, 4], [6, 5]], [[1, 1], [8, 8]])\nassert got == [0, 1, 0, 1], f'got {got}'",
+          "concept": "clustering"
+        },
+        {
+          "name": "ties go to the lowest position",
+          "code": "assert assign([[5, 0]], [[0, 0], [10, 0]]) == [0], 'equally near: choose 0'\nassert assign([[1, 1]], [[3, 1], [1, 3], [-1, 1]]) == [0], 'a three-way tie: choose 0'\nassert assign([[0, 0]], [[9, 9], [1, 0], [0, 1]]) == [1], 'a tie between 1 and 2: choose 1'",
+          "concept": "k-means"
+        },
+        {
+          "name": "Euclidean distance",
+          "code": "assert assign([[0, 0]], [[3, 3], [4.3, 0]]) == [0], 'straight-line distance: (3, 3) is about 4.24 away'\nassert assign([[0, 0]], [[4.2, 0], [3, 3]]) == [0], 'straight-line distance: (4.2, 0) is nearer than (3, 3)'\nassert assign([[0, 0]], [[4.242640587119285, 0], [3, 3]]) == [0] and assign([[0, 0]], [[3, 3], [4.242640787119286, 0]]) == [0], 'compare exact squared distances'",
+          "concept": "clustering"
+        },
+        {
+          "name": "near-ties are not ties",
+          "code": "got = assign([[0.5000000001], [0.4999999999]], [[0], [1]])\nassert got == [1, 0], f'just past halfway is nearer the second centroid: compare exact distances; got {got}'",
+          "concept": "clustering"
+        },
+        {
+          "name": "every feature counts",
+          "code": "assert assign([[0, 0, 9], [0, 0, 1]], [[0, 0, 0], [0, 0, 10]]) == [1, 0], 'the third feature decides'",
+          "concept": "clustering"
+        },
+        {
+          "name": "plain ints",
+          "code": "got = assign([[0.5], [7]], [[0], [10]])\nassert got == [0, 1] and type(got) is list and all(type(v) is int for v in got), 'a list of Python ints'",
+          "concept": "clustering"
+        },
+        {
+          "name": "no rows",
+          "code": "assert assign([], [[1, 2]]) == [], 'no rows in, no labels out'",
+          "concept": "clustering"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nX, C = [[1.0, 2.0], [3.0, 4.0]], [[0.0, 0.0], [5.0, 5.0]]\nkeep = copy.deepcopy((X, C))\nassign(X, C)\nassert (X, C) == keep, 'do not modify X or centroids'",
+          "concept": "clustering"
+        },
+        {
+          "name": "no centroids",
+          "code": "try:\n    assign([[1, 2]], [])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when there are no centroids')",
+          "concept": "clustering"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n"
+    },
+    {
+      "id": "kmeans",
+      "kind": "challenge",
+      "title": "Challenge: k-means from scratch",
+      "body": "The starter gives you `assign`. Write `kmeans(X, init, max_iter=100)` following the rules above:\nstart from the centroids `init`, and each iteration assign every row, then move each centroid to the\nmean of its rows (a centroid with none stays put). Stop after an iteration in which no assignment\nchanged, or after `max_iter` iterations. Return `{'centroids': [...], 'labels': [...], 'inertia': ...}`:\nthe centroids after the last update (lists of floats), the labels from the last assignment (ints),\nand the inertia of those labels and centroids (a float). Raise `ValueError` if `X` or `init` is empty,\ntheir widths differ, or `max_iter < 1`. Don't change `X` or `init`.",
+      "starter": "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n\n\ndef kmeans(X, init, max_iter=100):\n    labels = assign(X, init)\n    return {'centroids': [list(c) for c in init], 'labels': labels, 'inertia': 0.0}\n",
+      "hints": [
+        "Keep the previous labels in a variable; after updating the centroids, stop if the new labels equal it.",
+        "Copy the starting centroids with `np.array(init, dtype=float)` so updating them never changes `init`.",
+        "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n\n\ndef kmeans(X, init, max_iter=100):\n    X = np.array(X, dtype=float)\n    C = np.array(init, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or C.ndim != 2 or len(C) == 0 or C.shape[1] != X.shape[1] or max_iter < 1:\n        raise ValueError('need rows, starting centroids of the same width, and max_iter >= 1')\n    labels = None\n    for _ in range(max_iter):\n        new = assign(X, C)\n        for j in range(len(C)):\n            members = [i for i in range(len(new)) if new[i] == j]\n            if members:\n                C[j] = X[members].mean(axis=0)\n        if new == labels:\n            break\n        labels = new\n    labels = new\n    inertia = float(sum(np.sum((X[i] - C[labels[i]]) ** 2) for i in range(len(X))))\n    return {'centroids': C.tolist(), 'labels': labels, 'inertia': inertia}\n"
+      ],
+      "tests": [
+        {
+          "name": "two blobs",
+          "code": "X = [[1, 1], [1.5, 2], [3, 4], [5, 7], [3.5, 5], [4.5, 5], [3.5, 4.5]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans(X, [[1, 1], [5, 7]])\nassert got['labels'] == [0, 0, 1, 1, 1, 1, 1], f'got {got[\"labels\"]}'\nassert close(got['centroids'][0], [1.25, 1.5]) and close(got['centroids'][1], [3.9, 5.1]), f'the means of each cluster; got {got[\"centroids\"]}'\nassert abs(got['inertia'] - 8.525) < 1e-9, f'sum of squared distances to the own centroid; got {got[\"inertia\"]}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "exactly one iteration",
+          "code": "X = [[1, 1], [1.5, 2], [3, 4], [5, 7], [3.5, 5], [4.5, 5], [3.5, 4.5]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans(X, [[1, 1], [5, 7]], max_iter=1)\nassert got['labels'] == [0, 0, 0, 1, 1, 1, 1], f'the first assignment puts (3, 4) with (1, 1); got {got[\"labels\"]}'\nassert close(got['centroids'][0], [11 / 6, 7 / 3]) and close(got['centroids'][1], [4.125, 5.375]), f'centroids after one update; got {got[\"centroids\"]}'\nassert abs(got['inertia'] - 12.208333333333332) < 1e-9, f'inertia of those labels and centroids; got {got[\"inertia\"]}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "the start matters",
+          "code": "P = [[1.0], [2.0], [3.0], [10.0], [11.0], [12.0], [30.0]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngood = kmeans(P, [[1.0], [10.0], [30.0]])\nbad = kmeans(P, [[1.0], [2.0], [3.0]])\nassert good['labels'] == [0, 0, 0, 1, 1, 1, 2] and close([c[0] for c in good['centroids']], [2, 11, 30]) and abs(good['inertia'] - 4) < 1e-9, f'got {good}'\nassert bad['labels'] == [0, 1, 1, 2, 2, 2, 2] and close([c[0] for c in bad['centroids']], [1, 2.5, 15.75]) and abs(bad['inertia'] - 273.25) < 1e-9, f'a poor start stops at a worse local minimum; got {bad}'",
+          "concept": "inertia"
+        },
+        {
+          "name": "an empty cluster stays put",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[0, 0], [1, 0], [0, 1]], [[0, 0], [50, 50]])\nassert got['labels'] == [0, 0, 0] and close(got['centroids'][1], [50, 50]), f'no point is near (50, 50), so it keeps its place; got {got}'\nassert close(got['centroids'][0], [1 / 3, 1 / 3]) and abs(got['inertia'] - 4 / 3) < 1e-9",
+          "concept": "k-means"
+        },
+        {
+          "name": "means, not medians",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[0], [1], [11], [100]], [[0], [100]])\nassert got['labels'] == [0, 0, 0, 1] and close(got['centroids'][0], [4.0]), f'the mean of 0, 1 and 11 is 4; got {got}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "max_iter limits the iterations",
+          "code": "P = [[0.0], [1.0], [2.0], [3.0], [10.0], [11.0]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ntwo = kmeans(P, [[0.0], [1.0]], max_iter=2)\nfull = kmeans(P, [[0.0], [1.0]])\nassert two['labels'] == [0, 0, 0, 1, 1, 1] and close([c[0] for c in two['centroids']], [1.0, 8.0]) and abs(two['inertia'] - 40) < 1e-9, f'after two iterations (not yet settled); got {two}'\nassert full['labels'] == [0, 0, 0, 0, 1, 1] and close([c[0] for c in full['centroids']], [1.5, 10.5]) and abs(full['inertia'] - 5.5) < 1e-9, f'run to convergence; got {full}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "ties inside k-means",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[5.0], [5.0]], [[0.0], [10.0]], max_iter=1)\nassert got['labels'] == [0, 0] and close(got['centroids'][0], [5.0]) and close(got['centroids'][1], [10.0]), f'equally near both: choose 0; got {got}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "plain lists of floats",
+          "code": "X = [[1, 1], [1.5, 2], [3, 4], [5, 7], [3.5, 5], [4.5, 5], [3.5, 4.5]]\ngot = kmeans(X, [[1, 1], [5, 7]])\nassert set(got) == {'centroids', 'labels', 'inertia'}, f'keys centroids, labels, inertia; got {sorted(got)}'\nassert type(got['centroids']) is list and all(type(c) is list and all(isinstance(v, float) for v in c) for c in got['centroids'])\nassert type(got['labels']) is list and all(type(v) is int for v in got['labels']) and isinstance(got['inertia'], float)",
+          "concept": "k-means"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nimport numpy as np\nX, init = [[0.0, 0.0], [1.0, 0.0], [9.0, 9.0]], [[0.0, 0.0], [9.0, 9.0]]\nkeep = copy.deepcopy((X, init))\nkmeans(X, init)\nassert (X, init) == keep, 'do not modify X or init'\nA, B = np.array(X), np.array(init)\nkeepA, keepB = A.copy(), B.copy()\nkmeans(A, B)\nassert np.array_equal(A, keepA) and np.array_equal(B, keepB), 'not NumPy arrays either'",
+          "concept": "k-means"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, init, it in (([], [[0]], 10), ([[1]], [], 10), ([[1, 2]], [[0]], 10), ([[1]], [[0]], 0)):\n    try:\n        kmeans(X, init, max_iter=it)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, init={init}, max_iter={it}')",
+          "concept": "k-means"
+        }
+      ],
+      "solution": "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n\n\ndef kmeans(X, init, max_iter=100):\n    X = np.array(X, dtype=float)\n    C = np.array(init, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or C.ndim != 2 or len(C) == 0 or C.shape[1] != X.shape[1] or max_iter < 1:\n        raise ValueError('need rows, starting centroids of the same width, and max_iter >= 1')\n    labels = None\n    for _ in range(max_iter):\n        new = assign(X, C)\n        for j in range(len(C)):\n            members = [i for i in range(len(new)) if new[i] == j]\n            if members:\n                C[j] = X[members].mean(axis=0)\n        if new == labels:\n            break\n        labels = new\n    labels = new\n    inertia = float(sum(np.sum((X[i] - C[labels[i]]) ** 2) for i in range(len(X))))\n    return {'centroids': C.tolist(), 'labels': labels, 'inertia': inertia}\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Points 0, 2 and 10 are assigned to one centroid. Where does the update step move it?",
+          "choices": [
+            "4",
+            "2",
+            "5",
+            "10"
+          ],
+          "answer": 0,
+          "explanation": "The mean of 0, 2 and 10 is 12 / 3 = 4.",
+          "concept": "k-means"
+        },
+        {
+          "id": "q2",
+          "prompt": "What is the inertia of points 1 and 3 with a single centroid at 2?",
+          "choices": [
+            "2",
+            "0",
+            "1",
+            "4"
+          ],
+          "answer": 0,
+          "explanation": "(1 - 2)² + (3 - 2)² = 1 + 1 = 2.",
+          "concept": "inertia"
+        },
+        {
+          "id": "q3",
+          "prompt": "Two runs of k-means with k = 3 on the same data end with inertia 40 and 25. Why can that happen?",
+          "choices": [
+            "They started from different centroids and stopped at different local minima",
+            "One run must have a bug",
+            "Inertia is random",
+            "k-means never stops"
+          ],
+          "answer": 0,
+          "explanation": "k-means only ever improves on where it started; different starts can settle in different groupings.",
+          "concept": "k-means"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why can't you choose k simply by picking the k with the lowest inertia?",
+          "choices": [
+            "Inertia keeps falling as k grows, down to 0 with one cluster per point",
+            "Inertia rises with k",
+            "Inertia doesn't depend on k",
+            "k must equal the number of features"
+          ],
+          "answer": 0,
+          "explanation": "With one centroid on every point the inertia is 0, but those clusters mean nothing.",
+          "concept": "inertia"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Explain clustering as finding groups in unlabelled data.\n- Run k-means: assign each point to its nearest centroid, move each centroid to its points' mean, repeat.\n- Measure a clustering with inertia, and know why it can't choose k by itself.\n- Recognise that the starting centroids (and the units of the features) change the result."
+    }
+  ]
+}
