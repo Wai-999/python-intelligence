@@ -273,6 +273,16 @@
           "concept": "feature-scaling"
         },
         {
+          "name": "near the boundary, nothing is rounded",
+          "code": "model = {'means': [0.0], 'stds': [1.0], 'centroids': {'a': [0.0], 'b': [1.0]}}\ngot = predict_scaled(model, [[0.5000001], [0.4999999]])\nassert got == ['b', 'a'], f'0.5000001 is nearer b and 0.4999999 nearer a: compare exact distances; got {got}'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "three classes",
+          "code": "model = fit_scaled_centroids([[0], [1], [10], [11], [20], [21]], ['c', 'c', 'a', 'a', 'b', 'b'])\nassert sorted(model['centroids']) == ['a', 'b', 'c']\ngot = predict_scaled(model, [[0.4], [10.6], [20.2], [30]])\nassert got == ['c', 'a', 'b', 'b'], f'every class can be predicted, including the last in sorted order; got {got}'",
+          "concept": "standardization"
+        },
+        {
           "name": "a constant feature",
           "code": "model = fit_scaled_centroids([[1, 5], [2, 5], [9, 5], [10, 5]], ['lo', 'lo', 'hi', 'hi'])\nassert model['stds'][1] == 1.0 and model['means'][1] == 5.0, f'spread 0 is replaced by 1; got {model}'\nassert predict_scaled(model, [[3, 5], [8, 5]]) == ['lo', 'hi']",
           "concept": "feature-scaling"
