@@ -173,7 +173,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Centre:** subtract each feature's mean, giving `Xc`. (If features use different units, standardize\nthem as in the scaling lesson, or the feature with the largest numbers dominates.)\n\n**Covariance matrix:** `S = Xcᵀ Xc / N`, a symmetric `D × D` matrix; entry `(i, j)` is the covariance of\nfeatures `i` and `j`, and the diagonal holds their variances. In NumPy, `Xc.T` is the transpose and\n`@` is matrix multiplication.\n\n**Principal components:** the eigenvectors of `S`, ordered by eigenvalue from largest to smallest.\n`np.linalg.eigh(S)` handles symmetric matrices; it returns the eigenvalues in **ascending** order and\nthe eigenvectors as the **columns** of a matrix, each of length 1. An eigenvector times −1 is still an\neigenvector, so this lesson fixes the sign: the first entry larger than `1e-9` in size is positive.\n\n**Projection:** keep the top `k` components as the rows of `B`; the new coordinates are `Xc @ Bᵀ`,\none row of `k` numbers per example.\n\n**Explained variance:** component `i` explains `λᵢ / (λ₁ + … + λ_D)` of the total variance; the\nratios of all `D` components add up to 1.",
+      "body": "**Centre:** subtract each feature's mean, giving `Xc`. (PCA follows variance, and a feature's variance\ndepends on its units. When features use different units and each should count equally,\nstandardize them first, as in the scaling lesson.)\n\n**Covariance matrix:** `S = Xcᵀ Xc / N`, a symmetric `D × D` matrix; entry `(i, j)` is the covariance of\nfeatures `i` and `j`, and the diagonal holds their variances. In NumPy, `Xc.T` is the transpose and\n`@` is matrix multiplication.\n\n**Principal components:** the eigenvectors of `S`, ordered by eigenvalue from largest to smallest.\n`np.linalg.eigh(S)` handles symmetric matrices; it returns the eigenvalues in **ascending** order and\nthe eigenvectors as the **columns** of a matrix, each of length 1. An eigenvector times −1 is still an\neigenvector, so this lesson fixes the sign: the first entry larger than `1e-9` in size is positive.\n\n**Projection:** keep the top `k` components as the rows of `B`; the new coordinates are `Xc @ Bᵀ`,\none row of `k` numbers per example.\n\n**Explained variance:** component `i` explains `λᵢ / (λ₁ + … + λ_D)` of the total variance; the\nratios of all `D` components add up to 1.",
       "cites": [
         "mml-steps",
         "mml-maxvar",
@@ -226,7 +226,7 @@
         },
         {
           "name": "one row",
-          "code": "assert covariance_matrix([[3, 4, 5]]) == [[0.0] * 3] * 3, 'a single row has no spread'",
+          "code": "got = covariance_matrix([[3, 4, 5]])\nassert got == [[0.0] * 3] * 3, 'a single row has no spread'\nassert type(got) is list and all(type(r) is list and all(isinstance(v, float) for v in r) for r in got), 'a list of lists of floats'",
           "concept": "principal-components"
         },
         {
@@ -251,12 +251,12 @@
       "id": "pca",
       "kind": "challenge",
       "title": "Challenge: PCA from scratch",
-      "body": "The starter gives you `covariance_matrix`. Write `pca_fit(X, k)`, which returns a dictionary with\n`'mean'` (the column means), `'components'` (the top `k` eigenvectors of the covariance matrix, largest\neigenvalue first, each a list with the sign rule above), `'variances'` (their eigenvalues) and\n`'explained'` (each eigenvalue divided by the sum of **all** eigenvalues). Raise `ValueError` if `X`\nhas no rows, if `k` is not between 1 and the number of features, or if the data has no spread.\nThen write `pca_transform(model, X)`, which centres new rows with the model's **stored** mean and\nreturns their coordinates along the components (one list of `k` floats per row; `[]` for no rows).\nYou may assume the eigenvalues you keep are all different.",
+      "body": "The starter gives you `covariance_matrix`. Write `pca_fit(X, k)`, which returns a dictionary with\n`'mean'` (the column means), `'components'` (the top `k` eigenvectors of the covariance matrix, largest\neigenvalue first, each a list with the sign rule above), `'variances'` (their eigenvalues) and\n`'explained'` (each eigenvalue divided by the sum of **all** eigenvalues). Raise `ValueError` if `X`\nhas no rows, if `k` is not between 1 and the number of features, or if the data has no spread (every\nrow identical; compare the rows, since rounding can leave a tiny variance).\nThen write `pca_transform(model, X)`, which centres new rows with the model's **stored** mean and\nreturns their coordinates along the components (one list of `k` floats per row; `[]` for no rows).\nYou may assume the eigenvalues you keep are all different.",
       "starter": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    first = [1.0] + [0.0] * (A.shape[1] - 1)\n    return {'mean': A.mean(axis=0).tolist(), 'components': [first] * k, 'variances': [0.0] * k, 'explained': [0.0] * k}\n\n\ndef pca_transform(model, X):\n    return [[row[0]] * len(model['components']) for row in X]\n",
       "hints": [
         "`values, vectors = np.linalg.eigh(S)`, then `order = np.argsort(values)[::-1]` sorts from largest; reorder both, taking `vectors[:, order]` (columns!).",
         "For the sign rule, `u[np.argmax(np.abs(u) > 1e-9)]` is the first entry larger than `1e-9` in size; if it is negative, use `-u`.",
-        "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    if total <= 0:\n        raise ValueError('the data has no spread')\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
+        "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    if np.all(A == A[0]):\n        raise ValueError('the data has no spread')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
       ],
       "tests": [
         {
@@ -306,11 +306,11 @@
         },
         {
           "name": "bad input",
-          "code": "for X, k in (([], 1), ([[1, 2]], 0), ([[1, 2], [3, 5]], -1), ([[1, 2], [3, 5]], 3), ([[1, 2], [1, 2]], 1)):\n    try:\n        pca_fit(X, k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, k={k}')",
+          "code": "for X, k in (([], 1), ([[1, 2]], 0), ([[1, 2], [3, 5]], -1), ([[1, 2], [3, 5]], 3), ([[1, 2], [1, 2]], 1), ([[0.1, 0.2]] * 3, 1)):\n    try:\n        pca_fit(X, k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, k={k}')\nmodel = pca_fit([[1e-12, 0], [3e-12, 0], [2e-12, 1e-12]], 1)\nassert model['variances'][0] > 0, 'tiny but real spread is still spread: only identical rows have none'",
           "concept": "principal-components"
         }
       ],
-      "solution": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    if total <= 0:\n        raise ValueError('the data has no spread')\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
+      "solution": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    if np.all(A == A[0]):\n        raise ValueError('the data has no spread')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
     },
     {
       "id": "check",
@@ -360,15 +360,15 @@
         },
         {
           "id": "q4",
-          "prompt": "One feature is a distance in metres (values in the thousands), the others are small ratios. What should you do before PCA?",
+          "prompt": "Your features are in different units (metres, seconds, ratios) and each should count equally. What should you do before PCA?",
           "choices": [
             "Standardize the features",
             "Nothing: PCA ignores units",
-            "Drop the small features",
+            "Drop the features with small values",
             "Sort the rows"
           ],
           "answer": 0,
-          "explanation": "Otherwise the metres feature has by far the largest variance and becomes the first component regardless of structure.",
+          "explanation": "Variance depends on units, so without standardizing a feature can dominate just because of how it was measured.",
           "concept": "principal-components"
         }
       ]
