@@ -489,6 +489,42 @@
    "anchors": {
     "1": "numpy-std"
    }
+  },
+  "pddocs-223-read-csv": {
+   "title": "pandas 2.2.3 API reference: pandas.read_csv",
+   "short": "pandas 2.2.3 docs, read_csv",
+   "authors": [
+    "pandas development team"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "official_url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.read_csv.html",
+   "kind": "web",
+   "sha256": "8bb99275d7a13fb5c610b08cdff8f068be2a4c5902f74af5a8ddfad2cd075eb6",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "pandas-read-csv"
+   }
+  },
+  "pddocs-223-dropna": {
+   "title": "pandas 2.2.3 API reference: pandas.DataFrame.dropna",
+   "short": "pandas 2.2.3 docs, DataFrame.dropna",
+   "authors": [
+    "pandas development team"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "official_url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.DataFrame.dropna.html",
+   "kind": "web",
+   "sha256": "4c4453e93ec24d8a4e6cf3a8b41b5148bbd863f79c3f6841f01bbc3356d68619",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "pandas-dataframe-dropna"
+   }
   }
  }
 }

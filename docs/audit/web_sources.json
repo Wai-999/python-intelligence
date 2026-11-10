@@ -220,6 +220,46 @@
     "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
    },
    "sha256": "8de1d072cfa7328466b03adc573e69a48e99288e565534dc0b7bf0df81f97aaf"
+  },
+  {
+   "source_id": "pddocs-223-read-csv",
+   "title": "pandas 2.2.3 API reference: pandas.read_csv",
+   "short": "pandas 2.2.3 docs, read_csv",
+   "authors": [
+    "pandas development team"
+   ],
+   "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.read_csv.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-09",
+    "basis": "Official pandas API reference, BSD 3-Clause like the 10-minute guide. Pinned to 2.2.3 to match Pyodide 0.27.8."
+   },
+   "sha256": "8bb99275d7a13fb5c610b08cdff8f068be2a4c5902f74af5a8ddfad2cd075eb6"
+  },
+  {
+   "source_id": "pddocs-223-dropna",
+   "title": "pandas 2.2.3 API reference: pandas.DataFrame.dropna",
+   "short": "pandas 2.2.3 docs, DataFrame.dropna",
+   "authors": [
+    "pandas development team"
+   ],
+   "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.DataFrame.dropna.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-09",
+    "basis": "Official pandas API reference, BSD 3-Clause like the 10-minute guide. Pinned to 2.2.3 to match Pyodide 0.27.8."
+   },
+   "sha256": "4c4453e93ec24d8a4e6cf3a8b41b5148bbd863f79c3f6841f01bbc3356d68619"
   }
  ]
 }
