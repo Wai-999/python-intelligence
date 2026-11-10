@@ -423,6 +423,11 @@
           "concept": "ml-pipeline"
         },
         {
+          "name": "duplicate rows are split by position",
+          "code": "DUPES = 'x,y\\n1,a\\n1,b\\n2,a\\n2,b\\n5,b\\n5,b\\n0,a\\n0,a\\n'\nseen = {}\n_fit, _pred = fit_centroids, predict_centroids\n\ndef fit_centroids(X, y):\n    seen['fit'] = sorted((float(r[0]), l) for r, l in zip(X, y))\n    return _fit(X, y)\n\ndef predict_centroids(c, X):\n    seen['pred'] = sorted(float(r[0]) for r in X)\n    return _pred(c, X)\n\ntry:\n    got = run_pipeline(DUPES, ['x'], 'y', 0.4, 1)\nfinally:\n    fit_centroids, predict_centroids = _fit, _pred\nassert (got['n_train'], got['n_test']) == (5, 3), f'split the 8 positions, not the distinct values; got {got}'\nassert seen.get('fit') == [(0.0, 'a'), (1.0, 'a'), (2.0, 'a'), (5.0, 'b'), (5.0, 'b')], f'rows with the same x can fall on both sides; trained on {seen.get(\"fit\")}'\nassert seen.get('pred') == [0.0, 1.0, 2.0], f'tested on {seen.get(\"pred\")}'",
+          "concept": "ml-pipeline"
+        },
+        {
           "name": "another seed",
           "code": "PLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\ngot = run_pipeline(PLANTS, ['height', 'leaf'], 'species', 0.4, 1)\nwant = {'n_train': 8, 'n_test': 4, 'baseline_label': 'palm', 'baseline': 0.25, 'model': 0.75}\nassert got == want, f'seed 1 gives a different split; expected {want}, got {got}'",
           "concept": "ml-pipeline"
