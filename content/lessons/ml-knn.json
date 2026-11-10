@@ -234,6 +234,11 @@
           "concept": "k-nearest-neighbours"
         },
         {
+          "name": "near-ties are not ties",
+          "code": "got = knn_predict([[0.0], [1.0]], ['a', 'b'], [[0.5000000001], [0.4999999999]], 1)\nassert got == ['b', 'a'], f'compare exact distances: just past halfway is nearer the second row; got {got}'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
           "name": "the majority, not the nearest",
           "code": "got = knn_predict([[0], [1], [1.2], [9]], ['a', 'b', 'b', 'a'], [[0.1]], 3)\nassert got == ['b'], f'the nearest is a, but two of the three nearest are b; got {got}'",
           "concept": "k-nearest-neighbours"
@@ -260,7 +265,7 @@
         },
         {
           "name": "bad input",
-          "code": "for X, y, k in (([], [], 1), ([[1]], [], 1), ([[1], [2]], ['a'], 1), ([[1]], ['a', 'b'], 1), ([[1]], ['a'], 0), ([[1]], ['a'], 2), ([[1]], ['a'], -1)):\n    try:\n        knn_predict(X, y, [[0]], k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X_train={X}, y_train={y}, k={k}')",
+          "code": "for X, y, k in (([], [], 1), ([[1]], [], 1), ([[1], [2]], ['a'], 1), ([[1]], ['a', 'b'], 1), ([[1]], ['a'], 0), ([[1]], ['a'], 2), ([[1]], ['a'], -1)):\n    for query in ([[0]], []):\n        try:\n            knn_predict(X, y, query, k)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(f'raise ValueError for X_train={X}, y_train={y}, k={k}, even with X={query}')",
           "concept": "hyperparameters"
         }
       ],
