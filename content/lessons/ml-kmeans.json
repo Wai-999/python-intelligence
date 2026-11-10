@@ -235,6 +235,11 @@
           "concept": "clustering"
         },
         {
+          "name": "a single centroid",
+          "code": "assert assign([[0], [2]], [[5]]) == [0, 0], 'with one centroid every row gets label 0'",
+          "concept": "clustering"
+        },
+        {
           "name": "inputs are not changed",
           "code": "import copy\nX, C = [[1.0, 2.0], [3.0, 4.0]], [[0.0, 0.0], [5.0, 5.0]]\nkeep = copy.deepcopy((X, C))\nassign(X, C)\nassert (X, C) == keep, 'do not modify X or centroids'\nimport numpy as np\nA, B = np.array(X), np.array(C)\nkeepA, keepB = A.copy(), B.copy()\nassign(A, B)\nassert np.array_equal(A, keepA) and np.array_equal(B, keepB), 'not NumPy arrays either'",
           "concept": "clustering"
@@ -278,6 +283,11 @@
           "name": "the start matters",
           "code": "P = [[1.0], [2.0], [3.0], [10.0], [11.0], [12.0], [30.0]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngood = kmeans(P, [[1.0], [10.0], [30.0]])\nbad = kmeans(P, [[1.0], [2.0], [3.0]])\nassert good['labels'] == [0, 0, 0, 1, 1, 1, 2] and close([c[0] for c in good['centroids']], [2, 11, 30]) and abs(good['inertia'] - 4) < 1e-9, f'got {good}'\nassert bad['labels'] == [0, 1, 1, 2, 2, 2, 2] and close([c[0] for c in bad['centroids']], [1, 2.5, 15.75]) and abs(bad['inertia'] - 273.25) < 1e-9, f'a poor start stops at a worse local minimum; got {bad}'",
           "concept": "inertia"
+        },
+        {
+          "name": "a single centroid",
+          "code": "got = kmeans([[0], [2]], [[5]])\nassert got['labels'] == [0, 0] and got['centroids'] == [[1.0]] and abs(got['inertia'] - 2.0) < 1e-12, f'k = 1: the centroid moves to the mean, 1; got {got}'",
+          "concept": "k-means"
         },
         {
           "name": "an empty cluster stays put",
