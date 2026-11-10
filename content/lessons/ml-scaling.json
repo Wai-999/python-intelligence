@@ -219,7 +219,7 @@
         },
         {
           "name": "no training rows",
-          "code": "try:\n    standardize([], [[1, 2]])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError when X_train has no rows')",
+          "code": "for X_test in ([[1, 2]], []):\n    try:\n        standardize([], X_test)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when X_train has no rows (X_test={X_test})')",
           "concept": "feature-scaling"
         }
       ],
@@ -240,6 +240,11 @@
         {
           "name": "the learned statistics",
           "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nimport statistics\nwant_m = [statistics.fmean(r[j] for r in X) for j in range(2)]\nwant_s = [statistics.pstdev([r[j] for r in X]) for j in range(2)]\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['means'], want_m)), f'column means of X; got {model[\"means\"]}'\nassert all(abs(a - b) < 1e-12 for a, b in zip(model['stds'], want_s)), f'spreads dividing by N; got {model[\"stds\"]}'\nassert sorted(model['centroids']) == ['fern', 'palm']\nfor label, rows in (('fern', X[:4]), ('palm', X[4:])):\n    want = [(statistics.fmean(r[j] for r in rows) - want_m[j]) / want_s[j] for j in range(2)]\n    got = model['centroids'][label]\n    assert len(got) == 2 and all(abs(a - b) < 1e-12 for a, b in zip(got, want)), f'the {label} centroid is the mean of its standardized rows, about {want}; got {got}'",
+          "concept": "standardization"
+        },
+        {
+          "name": "classes of different sizes",
+          "code": "X = [[0, 1], [2, 3], [4, 8], [10, 0], [12, 2]]\ny = ['a', 'a', 'a', 'b', 'b']\nimport statistics\nm = [statistics.fmean(r[j] for r in X) for j in range(2)]\ns = [statistics.pstdev([r[j] for r in X]) for j in range(2)]\nZ = [[(r[j] - m[j]) / s[j] for j in range(2)] for r in X]\nmodel = fit_scaled_centroids(X, y)\nfor label, rows in (('a', Z[:3]), ('b', Z[3:])):\n    want = [statistics.fmean(r[j] for r in rows) for j in range(2)]\n    got = model['centroids'][label]\n    assert len(got) == 2 and all(abs(a - b) < 1e-12 for a, b in zip(got, want)), f'{label} has {len(rows)} rows: its centroid is their mean, about {want}; got {got}'",
           "concept": "standardization"
         },
         {
