@@ -255,7 +255,7 @@
         },
         {
           "name": "bad input",
-          "code": "for X, y, k in (([], [], 1), ([[1]], [], 1), ([[1], [2]], ['a'], 1), ([[1]], ['a'], 0), ([[1]], ['a'], 2), ([[1]], ['a'], -1)):\n    try:\n        knn_predict(X, y, [[0]], k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X_train={X}, y_train={y}, k={k}')",
+          "code": "for X, y, k in (([], [], 1), ([[1]], [], 1), ([[1], [2]], ['a'], 1), ([[1]], ['a', 'b'], 1), ([[1]], ['a'], 0), ([[1]], ['a'], 2), ([[1]], ['a'], -1)):\n    try:\n        knn_predict(X, y, [[0]], k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X_train={X}, y_train={y}, k={k}')",
           "concept": "hyperparameters"
         }
       ],
@@ -310,7 +310,7 @@
         },
         {
           "name": "bad input",
-          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nXv = [[3.4], [3.6], [4.0], [6.5], [2.2]]\nyv = ['a', 'a', 'a', 'b', 'a']\nfor args in ((X, y, Xv, yv, []), (X, y, [], [], [1]), (X, y, Xv, yv[:2], [1]), (X, y, Xv, yv, [11]), (X, y, Xv, yv, [3, 11])):\n    try:\n        choose_k(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for no ks, no validation rows, mismatched lengths or a k larger than the training set')",
+          "code": "X = [[1], [2], [2.5], [3], [3.5], [6], [7], [8], [9], [10]]\ny = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nXv = [[3.4], [3.6], [4.0], [6.5], [2.2]]\nyv = ['a', 'a', 'a', 'b', 'a']\nfor args in ((X, y, Xv, yv, []), (X, y, [], [], [1]), (X, y, Xv, yv[:2], [1]), (X, y, Xv[:2], yv, [1]), (X, y, Xv, yv, [11]), (X, y, Xv, yv, [3, 11])):\n    try:\n        choose_k(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for no ks, no validation rows, mismatched lengths or a k larger than the training set')",
           "concept": "validation-set"
         }
       ],
@@ -381,7 +381,7 @@
       "id": "recap",
       "kind": "summary",
       "title": "What you can do now",
-      "body": "- Predict with k-nearest neighbours: find the k closest training examples and take a majority vote.\n- Explain how a small k follows noise and a large k ignores where an example is.\n- Tell parameters (learned) from hyperparameters (chosen), and choose k on a validation set.\n- Keep the test set for one final, honest measurement."
+      "body": "- Predict with k-nearest neighbours: find the k closest training examples and take a majority vote.\n- Explain how a small k follows noise, a larger k smooths the boundaries, and k equal to the training size gives one constant vote.\n- Tell parameters (learned) from hyperparameters (chosen), and choose k on a validation set.\n- Keep the test set for one final, honest measurement."
     }
   ]
 }
