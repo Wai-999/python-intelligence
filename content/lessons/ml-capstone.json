@@ -348,6 +348,11 @@
           "concept": "data-cleaning"
         },
         {
+          "name": "close number labels stay distinct",
+          "code": "X, y = load_examples('a,c\\n1,0.1000001\\n2,0.1000002\\n3,0.1000001\\n', ['a'], 'c')\nassert y == [0.1000001, 0.1000002, 0.1000001], f'0.1000001 and 0.1000002 are different labels; got {y}'",
+          "concept": "data-cleaning"
+        },
+        {
           "name": "nothing left after cleaning",
           "code": "assert load_examples('a,c\\n,x\\n1,\\n', ['a'], 'c') == ([], []), 'every row has a gap: return two empty lists'\nassert load_examples('a,c\\n', ['a'], 'c') == ([], []), 'a header with no rows: return two empty lists'",
           "concept": "data-cleaning"
@@ -405,6 +410,11 @@
         {
           "name": "the model gets every digit",
           "code": "PRECISE = 'x,w,y\\n0.123456789012,1.000000001,a\\n0.987654321098,2.000000002,b\\n0.5555555555555,3.000000003,a\\n0.3141592653589,4.000000004,b\\n'\nwant = sorted([(0.123456789012, 1.000000001), (0.987654321098, 2.000000002), (0.5555555555555, 3.000000003), (0.3141592653589, 4.000000004)])\nseen = []\n_fit, _pred = fit_centroids, predict_centroids\n\ndef fit_centroids(X, y):\n    seen.extend(tuple(float(v) for v in r) for r in X)\n    return _fit(X, y)\n\ndef predict_centroids(c, X):\n    seen.extend(tuple(float(v) for v in r) for r in X)\n    return _pred(c, X)\n\ntry:\n    run_pipeline(PRECISE, ['x', 'w'], 'y', 0.25, 0)\nfinally:\n    fit_centroids, predict_centroids = _fit, _pred\nassert sorted(seen) == want, f'the training and test rows reach the model unrounded; got {sorted(seen)}'",
+          "concept": "ml-pipeline"
+        },
+        {
+          "name": "close number labels stay distinct",
+          "code": "CLOSE = 'x,y\\n0,0.1000001\\n1,0.1000001\\n9,0.1000002\\n10,0.1000002\\n2,0.1000001\\n11,0.1000002\\n'\nlabels = []\n_fit = fit_centroids\n\ndef fit_centroids(X, y):\n    labels.extend(y)\n    return _fit(X, y)\n\ntry:\n    got = run_pipeline(CLOSE, ['x'], 'y', 0.5, 0)\nfinally:\n    fit_centroids = _fit\nwant = {'n_train': 3, 'n_test': 3, 'baseline_label': 0.1000002, 'baseline': 1 / 3, 'model': 1.0}\nassert got == want, f'two classes, 0.1000001 and 0.1000002; expected {want}, got {got}'\nassert sorted(labels) == [0.1000001, 0.1000002, 0.1000002], f'the training labels reach fit_centroids unchanged; got {labels}'",
           "concept": "ml-pipeline"
         },
         {
