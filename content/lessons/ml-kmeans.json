@@ -295,6 +295,16 @@
           "concept": "k-means"
         },
         {
+          "name": "every feature counts",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[0, 0, 9], [0, 0, 1], [0, 0, 8]], [[0, 0, 0], [0, 0, 10]], max_iter=1)\nassert got['labels'] == [1, 0, 1], f'the third feature decides; got {got[\"labels\"]}'\nassert close(got['centroids'][0], [0, 0, 1]) and close(got['centroids'][1], [0, 0, 8.5]) and abs(got['inertia'] - 0.5) < 1e-9, f'got {got}'",
+          "concept": "k-means"
+        },
+        {
+          "name": "near-ties are not ties",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[0.5000000001], [0.4999999999]], [[0.0], [1.0]], max_iter=1)\nassert got['labels'] == [1, 0], f'compare exact distances; got {got[\"labels\"]}'\nassert abs(got['centroids'][0][0] - 0.4999999999) < 1e-15 and abs(got['centroids'][1][0] - 0.5000000001) < 1e-15, f'got {got[\"centroids\"]}'",
+          "concept": "k-means"
+        },
+        {
           "name": "ties inside k-means",
           "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[5.0], [5.0]], [[0.0], [10.0]], max_iter=1)\nassert got['labels'] == [0, 0] and close(got['centroids'][0], [5.0]) and close(got['centroids'][1], [10.0]), f'equally near both: choose 0; got {got}'",
           "concept": "k-means"
@@ -311,7 +321,7 @@
         },
         {
           "name": "bad input",
-          "code": "for X, init, it in (([], [[0]], 10), ([[1]], [], 10), ([[1, 2]], [[0]], 10), ([[1]], [[0]], 0)):\n    try:\n        kmeans(X, init, max_iter=it)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, init={init}, max_iter={it}')",
+          "code": "for X, init, it in (([], [[0]], 10), ([[1]], [], 10), ([[1, 2]], [[0]], 10), ([[1]], [[0]], 0), ([[1]], [[0]], -3)):\n    try:\n        kmeans(X, init, max_iter=it)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, init={init}, max_iter={it}')",
           "concept": "k-means"
         }
       ],
