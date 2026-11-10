@@ -114,9 +114,12 @@ LEADING_CALLOUTS = re.compile(r"^\s*(?:[①-⑳❶-❿]\s*)+")
 TRIPLE_QUOTES = ("'''", '"""')
 
 
-def _open_literal_or_comment(text):
-    """True if `text`, one line of code so far, ends inside a string literal or a comment."""
-    quote, i = None, 0
+def _lex_line(text, quote=None):
+    """Scan one line of code starting inside `quote` (a triple quote left open by earlier lines, or None).
+
+    Returns (open quote at the end of the line or None, whether the line ends inside a comment).
+    """
+    i = 0
     while i < len(text):
         c = text[i]
         if quote:
@@ -128,13 +131,29 @@ def _open_literal_or_comment(text):
                 quote = None
                 continue
         elif c == "#":
-            return True
+            return None, True
         elif c in "'\"":
             quote = text[i:i + 3] if text[i:i + 3] in TRIPLE_QUOTES else c
             i += len(quote)
             continue
         i += 1
-    return quote is not None
+    return quote, False
+
+
+def _carried_quote(lines):
+    """The triple quote still open after these code lines (only triple-quoted strings span lines)."""
+    quote = None
+    for text in lines:
+        quote, _ = _lex_line(text, quote)
+        if quote not in TRIPLE_QUOTES:
+            quote = None
+    return quote
+
+
+def _open_literal_or_comment(text, quote=None):
+    """True if `text` (one line so far, starting inside `quote`) ends inside a string literal or a comment."""
+    end, comment = _lex_line(text, quote)
+    return end is not None or comment
 
 
 def _strip_leading_callouts(spans):
@@ -154,8 +173,12 @@ def _strip_leading_callouts(spans):
     return True
 
 
-def _visual_lines(lines):
-    """Reassemble raw fragments by baseline proximity, then x position."""
+def _visual_lines(lines, carry=lambda: None):
+    """Reassemble raw fragments by baseline proximity, then x position.
+
+    `carry()` gives the triple quote left open by the code lines already accepted, so a joined fragment that
+    continues a multi-line string keeps its content.
+    """
     groups = []
     for raw in lines:
         line = dict(raw)
@@ -189,7 +212,7 @@ def _visual_lines(lines):
                 had_callout = _trim_fragment(merged["spans"])
                 # Inside a string or comment a circled digit is content, not an annotation.
                 joined = "".join(s.get("text", "") for s in merged["spans"])
-                led_callout = not _open_literal_or_comment(joined) and _strip_leading_callouts(spans)
+                led_callout = not _open_literal_or_comment(joined, carry()) and _strip_leading_callouts(spans)
                 spaces = 1 if had_callout or led_callout else max(0, round(gap / width))
                 merged["spans"].append(dict(text=" " * spaces, flags=8))
                 merged["spans"].extend(spans)
@@ -231,7 +254,7 @@ def _code_blocks(page):
         "".join(c["c"] for c in s["chars"]) if "chars" in s else s.get("text", "")
         for s in line.get("spans", [])).strip() in {"•", "◦", "▪", "–"}]
     for block in layout["blocks"]:
-        for line in _visual_lines(block.get("lines", [])):
+        for line in _visual_lines(block.get("lines", []), carry=lambda: _carried_quote(t for t, _, _ in current)):
             spans = [dict(span) for span in line.get("spans", [])]
             for span in spans:
                 if "chars" in span:
@@ -286,7 +309,8 @@ def _code_blocks(page):
                     limit = 24 if text.lstrip().startswith("#") else 10
                     if same_row and -.1 <= gap <= limit * width:
                         old_text, old_origin, old_width = current[-1]
-                        lead = None if _open_literal_or_comment(old_text) else LEADING_CALLOUTS.match(text)
+                        inside = _open_literal_or_comment(old_text, _carried_quote(t for t, _, _ in current[:-1]))
+                        lead = None if inside else LEADING_CALLOUTS.match(text)
                         if lead:
                             text = text[lead.end():]
                         spaces = 1 if previous_callout or lead else max(0, round(gap / width))

@@ -919,3 +919,40 @@ def test_callout_inside_a_split_literal_or_comment_is_kept(separate, first, seco
 def test_open_literal_or_comment(text, open_):
     from ingest.extract import _open_literal_or_comment
     assert _open_literal_or_comment(text) is open_
+
+
+@pytest.mark.parametrize('separate', [False, True])
+@pytest.mark.parametrize('quote', ['"""', "'''"])
+def test_callout_inside_a_multiline_string_is_kept(separate, quote):
+    # The second line continues a triple-quoted string opened on the first, so its circled digit is content.
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('s = ' + quote + 'first', 50, 50)],
+        [_fixture_span('second', 50, 65)],
+        [_fixture_span('① third' + quote, 92, 65)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    assert _code_blocks(page) == ['s = ' + quote + 'first\nsecond ① third' + quote]
+
+
+@pytest.mark.parametrize('separate', [False, True])
+def test_callout_after_a_closed_multiline_string_is_dropped(separate):
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('s = """a', 50, 50)],
+        [_fixture_span('b"""', 50, 65)],
+        [_fixture_span('x = 1', 50, 80)],
+        [_fixture_span('① + 2', 86, 80)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    assert _code_blocks(page) == ['s = """a\nb"""\nx = 1 + 2']
+
+
+def test_carried_quote():
+    from ingest.extract import _carried_quote
+    assert _carried_quote(['s = """a', 'b']) == '"""'
+    assert _carried_quote(['s = """a', 'b"""']) is None
+    assert _carried_quote(["x = 'unterminated", 'y = 2']) is None   # only triple quotes span lines
+    assert _carried_quote(["# a ''' in a comment", 'y']) is None
