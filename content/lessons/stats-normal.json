@@ -254,6 +254,11 @@
           "concept": "cumulative-probability"
         },
         {
+          "name": "empty or reversed ranges hold no draws",
+          "code": "for a, b in ((1, -1), (0, 0), (2.5, -3)):\n    got = estimate_between(0, 1, a, b, 500, 1)\n    assert got == 0.0 and isinstance(got, float), f'no x satisfies {a} < x <= {b}, so the fraction is 0.0 (do not swap the bounds); got {got!r}'",
+          "concept": "cumulative-probability"
+        },
+        {
           "name": "the estimate approaches the exact answer",
           "code": "exact = prob_between(0, 1, -1, 1)\nest = estimate_between(0, 1, -1, 1, 20000, 11)\nassert abs(est - exact) < 0.02 and isinstance(est, float), f'20,000 draws should land within 0.02 of {exact}; got {est}'",
           "concept": "normal-distribution"
