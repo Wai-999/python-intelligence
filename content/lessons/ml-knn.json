@@ -239,6 +239,11 @@
           "concept": "k-nearest-neighbours"
         },
         {
+          "name": "an even k is used as given",
+          "code": "assert knn_predict([[0], [1]], ['b', 'a'], [[0.4]], 2) == ['a'], 'k = 2: one vote each for b and a, and the tie goes to a (using only the nearest would give b)'\ngot = knn_predict([[0], [1], [2], [3], [9]], ['b', 'b', 'a', 'a', 'c'], [[1.4]], 4)\nassert got == ['a'], f'k = 4: two votes each for a and b, so a; dropping to k = 3 would give b; got {got}'",
+          "concept": "hyperparameters"
+        },
+        {
           "name": "k equal to the number of training rows",
           "code": "assert knn_predict([[0], [1], [5]], ['a', 'b', 'b'], [[0], [100]], 3) == ['b', 'b'], 'every training row votes'",
           "concept": "hyperparameters"
@@ -265,7 +270,7 @@
       "id": "choose",
       "kind": "challenge",
       "title": "Challenge: choose k on validation data",
-      "body": "The starter gives you `knn_predict`. Write `choose_k(X_train, y_train, X_val, y_val, ks)`: for each `k`\nin `ks`, predict the validation rows from the training rows and record the validation accuracy (a\nfloat). Return `{'scores': {k: accuracy, ...}, 'best': k}` where `best` has the highest accuracy;\nif several tie, the smallest of them. Raise `ValueError` if `ks` is empty, there are no validation\nrows, or `X_val` and `y_val` differ in length (and let `knn_predict` reject a `k` that's too big).",
+      "body": "The starter gives you `knn_predict`. Write `choose_k(X_train, y_train, X_val, y_val, ks)`: for each `k`\nin `ks`, predict the validation rows from the training rows and record the validation accuracy (a\nfloat). Return `{'scores': {k: accuracy, ...}, 'best': k}`, with the scores in the order the `ks` were\ngiven, where `best` has the highest accuracy;\nif several tie, the smallest of them. Raise `ValueError` if `ks` is empty, there are no validation\nrows, or `X_val` and `y_val` differ in length (and let `knn_predict` reject a `k` that's too big).",
       "starter": "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n\n\ndef choose_k(X_train, y_train, X_val, y_val, ks):\n    return {'scores': {k: 0.0 for k in ks}, 'best': ks[0]}\n",
       "hints": [
         "Build the scores dictionary in a loop over `ks`, calling `knn_predict(X_train, y_train, X_val, k)` each time.",
