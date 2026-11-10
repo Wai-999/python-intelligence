@@ -236,7 +236,7 @@
         },
         {
           "name": "X is not changed",
-          "code": "X = [[1, 2], [3, 4]]\ncovariance_matrix(X)\nassert X == [[1, 2], [3, 4]], 'do not modify X'",
+          "code": "X = [[1, 2], [3, 4]]\ncovariance_matrix(X)\nassert X == [[1, 2], [3, 4]], 'do not modify X'\nimport numpy as np\nA = np.array([[1.5, 2.0], [3.0, 7.0], [0.5, 1.0]])\nsaved = A.copy()\ncovariance_matrix(A)\nassert np.array_equal(A, saved), 'do not modify a NumPy array passed as X either (np.asarray shares its memory)'",
           "concept": "principal-components"
         },
         {
@@ -302,6 +302,11 @@
         {
           "name": "plain lists of floats",
           "code": "X = [[3, 0, 0], [-3, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 1], [0, 0, -1]]\nmodel = pca_fit(X, 2)\nassert set(model) == {'mean', 'components', 'variances', 'explained'}, f'keys mean, components, variances, explained; got {sorted(model)}'\nfor v in [model['mean'], model['variances'], model['explained'], *model['components'], *pca_transform(model, X)]:\n    assert type(v) is list and all(isinstance(t, float) for t in v), f'plain lists of floats; got {v!r}'\nassert type(model['components']) is list",
+          "concept": "principal-components"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import numpy as np\nA = np.array([[1.5, 2.0], [3.0, 7.0], [0.5, 1.0]])\nsaved = A.copy()\nmodel = pca_fit(A, 1)\nassert np.array_equal(A, saved), 'pca_fit must not modify X'\nB = np.array([[2.0, 3.0]])\nkeep = B.copy()\npca_transform(model, B)\nassert np.array_equal(B, keep), 'pca_transform must not modify X'",
           "concept": "principal-components"
         },
         {
