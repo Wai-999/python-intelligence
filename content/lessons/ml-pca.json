@@ -220,6 +220,11 @@
           "concept": "principal-components"
         },
         {
+          "name": "a single feature",
+          "code": "got = covariance_matrix([[1], [3], [5]])\nassert type(got) is list and len(got) == 1 and type(got[0]) is list and len(got[0]) == 1 and abs(got[0][0] - 8 / 3) < 1e-12, f'one feature gives a 1 x 1 matrix [[8/3]], still a list of lists; got {got!r}'",
+          "concept": "principal-components"
+        },
+        {
           "name": "one row",
           "code": "assert covariance_matrix([[3, 4, 5]]) == [[0.0] * 3] * 3, 'a single row has no spread'",
           "concept": "principal-components"
@@ -276,8 +281,13 @@
         },
         {
           "name": "every component of a correlated 3-D cloud",
-          "code": "import numpy as np\nX = [[2.0, 1.0, 0.5], [3.5, 2.5, 1.0], [1.0, 0.0, 2.0], [4.0, 3.5, -1.0], [2.5, 2.0, 0.0], [5.0, 3.0, 1.5], [0.5, 1.5, 0.5]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nA = np.array(X)\nC = A - A.mean(axis=0)\nvals, vecs = np.linalg.eigh(C.T @ C / len(A))\norder = np.argsort(vals)[::-1]\nvals, vecs = vals[order], vecs[:, order]\nassert len(set(np.round(vals, 6))) == 3\nwant = []\nfor j in range(3):\n    u = vecs[:, j]\n    want.append((-u if u[np.argmax(np.abs(u) > 1e-9)] < 0 else u).tolist())\nmodel = pca_fit(X, 3)\nassert len(model['components']) == 3 and all(close(c, w) for c, w in zip(model['components'], want)), f'every component, in order, with the sign rule: expected about {want}; got {model[\"components\"]}'\nassert close(model['variances'], vals.tolist()) and close(model['explained'], (vals / vals.sum()).tolist())\ngot = pca_transform(model, X)\nB = np.array(want)\nassert type(got) is list and len(got) == 7 and all(close(r, w) for r, w in zip(got, (C @ B.T).tolist())), f'coordinates along all three components; got {got}'\ntwo = pca_fit(X, 2)\nassert len(two['components']) == 2 and all(close(c, w) for c, w in zip(two['components'], want[:2]))\nassert all(len(r) == 2 for r in pca_transform(two, X))",
+          "code": "import numpy as np\nX = [[2.0, 1.0, 0.5], [3.5, 2.5, 1.0], [1.0, 0.0, 2.0], [4.0, 3.5, -1.0], [2.5, 2.0, 0.0], [5.0, 3.0, 1.5], [0.5, 1.5, 0.5]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nA = np.array(X)\nC = A - A.mean(axis=0)\nvals, vecs = np.linalg.eigh(C.T @ C / len(A))\norder = np.argsort(vals)[::-1]\nvals, vecs = vals[order], vecs[:, order]\nassert len(set(np.round(vals, 6))) == 3\nwant = []\nfor j in range(3):\n    u = vecs[:, j]\n    want.append((-u if u[np.argmax(np.abs(u) > 1e-9)] < 0 else u).tolist())\nmodel = pca_fit(X, 3)\nassert len(model['components']) == 3 and all(close(c, w) for c, w in zip(model['components'], want)), f'every component, in order, with the sign rule: expected about {want}; got {model[\"components\"]}'\nassert close(model['variances'], vals.tolist()) and close(model['explained'], (vals / vals.sum()).tolist())\ngot = pca_transform(model, X)\nB = np.array(want)\nassert type(got) is list and len(got) == 7 and all(close(r, w) for r, w in zip(got, (C @ B.T).tolist())), f'coordinates along all three components; got {got}'\ntwo = pca_fit(X, 2)\nassert len(two['components']) == 2 and all(close(c, w) for c, w in zip(two['components'], want[:2]))\ngot2 = pca_transform(two, X)\nwant2 = (C @ np.array(want[:2]).T).tolist()\nassert type(got2) is list and len(got2) == 7 and all(close(r, w) for r, w in zip(got2, want2)), f'coordinates along the top two components; got {got2}'",
           "concept": "principal-components"
+        },
+        {
+          "name": "a single feature",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\nmodel = pca_fit([[1], [3], [5]], 1)\nassert close(model['components'][0], [1.0]) and close(model['variances'], [8 / 3]) and close(model['explained'], [1.0]) and close(model['mean'], [3.0]), f'one feature: the only component is (1); got {model}'\ngot = pca_transform(model, [[7], [3]])\nassert type(got) is list and len(got) == 2 and close(got[0], [4.0]) and close(got[1], [0.0]), f'got {got}'",
+          "concept": "dimensionality-reduction"
         },
         {
           "name": "new rows use the stored mean",
