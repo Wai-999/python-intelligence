@@ -220,7 +220,7 @@
         },
         {
           "name": "equal distances keep training order",
-          "code": "assert knn_predict([[4], [6]], ['b', 'a'], [[5]], 1) == ['b'], 'both are 1 away: the earlier training row counts first'\nassert knn_predict([[0], [6], [4], [10]], ['x', 'y', 'z', 'w'], [[5]], 1) == ['y'], '6 and 4 are both 1 away; 6 comes first in the training data'",
+          "code": "assert knn_predict([[4], [6]], ['b', 'a'], [[5]], 1) == ['b'], 'both are 1 away: the earlier training row counts first'\nassert knn_predict([[0], [6], [4], [10]], ['x', 'y', 'z', 'w'], [[5]], 1) == ['y'], '6 and 4 are both 1 away; 6 comes first in the training data'\ngot = knn_predict([[3], [5], [6], [2]], ['a', 'b', 'c', 'b'], [[4]], 3)\nassert got == ['a'], f'6 and 2 tie for third place; 6 comes first, so the votes are a, b, c and a wins the tie; got {got}'",
           "concept": "k-nearest-neighbours"
         },
         {
@@ -287,6 +287,11 @@
           "name": "when every k scores zero",
           "code": "got = choose_k([[0], [1], [2], [3], [4], [5]], ['a'] * 6, [[0.5], [4.5]], ['b', 'b'], [5, 3, 1])\nassert got['scores'] == {5: 0.0, 3: 0.0, 1: 0.0} and got['best'] == 1, f'all tie at 0.0: the smallest k is best; got {got}'",
           "concept": "hyperparameters"
+        },
+        {
+          "name": "compare exact accuracies",
+          "code": "X = [[7], [14], [14], [11], [16], [19], [14], [7]]\ny = ['a', 'b', 'b', 'b', 'b', 'a', 'a', 'b']\nXv = [[3.5], [13.5], [19.5], [14.5], [19.5], [16.5], [14.5], [2.5], [12.5], [14.5], [19.5]]\nyv = ['b', 'b', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'a', 'b']\ngot = choose_k(X, y, Xv, yv, [1, 3])\nassert got['scores'] == {1: 5 / 11, 3: 6 / 11} and got['best'] == 3, f'6/11 beats 5/11, even though both round to 0.5; got {got}'",
+          "concept": "validation-set"
         },
         {
           "name": "unrounded accuracies",
