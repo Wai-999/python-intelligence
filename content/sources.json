@@ -543,6 +543,44 @@
    "anchors": {
     "1": "numpy-linalg-eigh"
    }
+  },
+  "skdocs-15-neighbors": {
+   "title": "scikit-learn 1.5 User Guide: Nearest Neighbors",
+   "short": "scikit-learn 1.5 docs, Nearest Neighbors",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "official_url": "https://scikit-learn.org/1.5/modules/neighbors.html",
+   "kind": "web",
+   "sha256": "0b44e970ea6a5f9a7e2d146b18b5f575f1beb6aa82731d7d3a806f00defbeeb3",
+   "page_count": 21,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "nearest-neighbors",
+    "2": "unsupervised-nearest-neighbors",
+    "3": "finding-the-nearest-neighbors",
+    "4": "kdtree-and-balltree-classes",
+    "5": "nearest-neighbors-classification",
+    "6": "nearest-neighbors-regression",
+    "7": "nearest-neighbor-algorithms",
+    "8": "brute-force",
+    "9": "k-d-tree",
+    "10": "ball-tree",
+    "11": "nearest-centroid-classifier",
+    "12": "nearest-shrunken-centroid",
+    "13": "nearest-neighbors-transformer",
+    "14": "neighborhood-components-analysis",
+    "15": "id4",
+    "16": "dimensionality-reduction",
+    "17": "mathematical-formulation",
+    "18": "implementation",
+    "19": "complexity",
+    "20": "training",
+    "21": "transform"
+   }
   }
  }
 }

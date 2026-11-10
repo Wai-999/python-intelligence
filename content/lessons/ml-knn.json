@@ -74,6 +74,16 @@
       ],
       "section": "Lists",
       "use": "reference"
+    },
+    {
+      "id": "sk-knn",
+      "source_id": "skdocs-15-neighbors",
+      "pages": [
+        5,
+        5
+      ],
+      "section": "1.6.2. Nearest Neighbors Classification",
+      "use": "reference"
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
@@ -88,8 +98,9 @@
       "id": "picture",
       "kind": "intuition",
       "title": "Too few neighbours, too many",
-      "body": "With `k = 1`, each prediction copies the single closest example, including any mislabelled or unusual\none: the model follows noise, like the memoriser from the evaluation lesson. With `k` close to the\nnumber of training examples, every prediction becomes the most common class overall, ignoring where\nthe new example is. Somewhere between lies a good `k`. A setting like `k` that isn't learned from\nthe data is a **hyperparameter**. Choose it by trying several values on a **validation set**: labelled\nexamples kept aside from training, and kept separate from the final test set too.",
+      "body": "With `k = 1`, each prediction copies the single closest example, including any mislabelled or unusual\none: the model follows noise, like the memoriser from the evaluation lesson. A larger `k` averages over\nmore neighbours, which smooths out noise but blurs the boundaries between classes; when `k` equals the\nnumber of training examples, every prediction is the same overall majority vote, wherever the new\nexample is. The best `k` depends on the data. A setting like `k` that isn't learned from\nthe data is a **hyperparameter**. Choose it by trying several values on a **validation set**: labelled\nexamples kept aside from training, and kept separate from the final test set too.",
       "cites": [
+        "sk-knn",
         "mml-data",
         "mml-erm",
         "mml-select",
@@ -97,7 +108,7 @@
       ],
       "socratic": {
         "questions": [
-          "With k = 1, what is the accuracy on the training data itself? Why is that number useless?",
+          "With k = 1 and no two identical training rows carrying different labels, what is the accuracy on the training data itself? Why is that number useless?",
           "Why not pick k by its accuracy on the test set?"
         ]
       }
@@ -170,6 +181,7 @@
       "title": "The precise rules",
       "body": "**Neighbours:** for a new example `x`, measure its Euclidean distance to every training example and\ntake the `k` closest (`1 ≤ k ≤` the number of training examples). Comparing squared distances gives\nthe same order. Python's `sorted` is **stable**: examples at equal distance keep their original order,\nso this lesson's tie rule is \"the earlier training example first\".\n\n**Vote:** predict the label held by most of the `k` neighbours; if several labels tie for most votes,\nthis lesson chooses the one first in sorted order.\n\n**Choosing k:** split the labelled data into training, validation and test parts. For each candidate\n`k`, predict the validation examples using only the training examples and measure accuracy; keep the\n`k` with the highest validation accuracy (this lesson breaks ties by choosing the smallest `k`). Only\nthen measure the chosen model once on the test set. Because `k` was picked to do well on the validation\nexamples, their accuracy is an optimistic estimate.",
       "cites": [
+        "sk-knn",
         "mml-dist",
         "mml-erm",
         "mml-select",
@@ -214,6 +226,11 @@
         {
           "name": "vote ties go to the first label in sorted order",
           "code": "assert knn_predict([[1], [2]], ['b', 'a'], [[1.4]], 2) == ['a'], 'one vote each: choose a'\nassert knn_predict([[1], [2], [3], [4]], [10, 2, 10, 2], [[2.5]], 4) == [2], 'numbers sort as numbers: 2 before 10'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "the most votes, even without a majority",
+          "code": "got = knn_predict([[0], [1], [2], [3], [4]], ['a', 'b', 'b', 'c', 'd'], [[2]], 5)\nassert got == ['b'], f'b has 2 of 5 votes, fewer than half but more than any other label; got {got}'\ngot = knn_predict([[0], [1], [2], [3], [4]], ['a', 'b', 'b', 'c', 'c'], [[2]], 5)\nassert got == ['b'], f'b and c tie with 2 votes; a sorts first but has only 1, so b wins; got {got}'",
           "concept": "k-nearest-neighbours"
         },
         {
@@ -267,6 +284,11 @@
           "concept": "hyperparameters"
         },
         {
+          "name": "when every k scores zero",
+          "code": "got = choose_k([[0], [1], [2], [3], [4], [5]], ['a'] * 6, [[0.5], [4.5]], ['b', 'b'], [5, 3, 1])\nassert got['scores'] == {5: 0.0, 3: 0.0, 1: 0.0} and got['best'] == 1, f'all tie at 0.0: the smallest k is best; got {got}'",
+          "concept": "hyperparameters"
+        },
+        {
           "name": "unrounded accuracies",
           "code": "got = choose_k([[0], [10]], ['a', 'b'], [[1], [2], [9]], ['a', 'b', 'b'], [1])\nassert got['scores'] == {1: 2 / 3} and isinstance(got['scores'][1], float), f'2 of 3 right is 2/3, unrounded; got {got}'",
           "concept": "validation-set"
@@ -311,7 +333,7 @@
         },
         {
           "id": "q2",
-          "prompt": "Why does 1-NN always score 100% on its own training data?",
+          "prompt": "No two identical training rows have different labels. Why does 1-NN then score 100% on its own training data?",
           "choices": [
             "Each training point's nearest neighbour is itself",
             "1 is the best k",
@@ -319,7 +341,7 @@
             "Training data has no noise"
           ],
           "answer": 0,
-          "explanation": "At distance 0 each point votes for its own label, so the score says nothing about new data.",
+          "explanation": "At distance 0 each point votes for its own label (identical rows with different labels would break this), so the score says nothing about new data.",
           "concept": "k-nearest-neighbours"
         },
         {

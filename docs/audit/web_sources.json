@@ -280,6 +280,26 @@
     "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
    },
    "sha256": "1de276633961adde851cfec4923c834dc529747a647d1baa2fb63a32fdcec964"
+  },
+  {
+   "source_id": "skdocs-15-neighbors",
+   "title": "scikit-learn 1.5 User Guide: Nearest Neighbors",
+   "short": "scikit-learn 1.5 docs, Nearest Neighbors",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/neighbors.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-10",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what kNN is and how k trades noise against boundary detail; the lesson does not use scikit-learn."
+   },
+   "sha256": "0b44e970ea6a5f9a7e2d146b18b5f575f1beb6aa82731d7d3a806f00defbeeb3"
   }
  ]
 }
