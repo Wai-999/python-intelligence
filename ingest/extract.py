@@ -141,13 +141,19 @@ def _lex_line(text, quote=None):
 
 
 def _carried_quote(lines):
-    """The triple quote still open after these code lines (only triple-quoted strings span lines)."""
+    """The quote still open after these code lines: a triple quote, or a single quote whose line ends in a
+    backslash (an escaped newline continues the string). An unterminated single quote is otherwise dropped."""
     quote = None
     for text in lines:
         quote, _ = _lex_line(text, quote)
-        if quote not in TRIPLE_QUOTES:
+        if quote and quote not in TRIPLE_QUOTES and not _ends_with_escape(text):
             quote = None
     return quote
+
+
+def _ends_with_escape(text):
+    trailing = len(text) - len(text.rstrip("\\"))
+    return trailing % 2 == 1
 
 
 def _open_literal_or_comment(text, quote=None):

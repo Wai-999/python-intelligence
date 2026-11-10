@@ -956,3 +956,25 @@ def test_carried_quote():
     assert _carried_quote(['s = """a', 'b"""']) is None
     assert _carried_quote(["x = 'unterminated", 'y = 2']) is None   # only triple quotes span lines
     assert _carried_quote(["# a ''' in a comment", 'y']) is None
+
+
+@pytest.mark.parametrize('separate', [False, True])
+def test_callout_inside_a_backslash_continued_string_is_kept(separate):
+    # A single-quoted string whose line ends in a backslash continues on the next line.
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span("s = 'first \\", 50, 50)],
+        [_fixture_span('second', 50, 65)],
+        [_fixture_span("① third'", 92, 65)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    assert _code_blocks(page) == ["s = 'first \\\nsecond ① third'"]
+
+
+def test_carried_single_quote_needs_an_escaped_newline():
+    from ingest.extract import _carried_quote
+    assert _carried_quote(["s = 'a \\"]) == "'"
+    assert _carried_quote(["s = 'a \\\\"]) is None          # an escaped backslash, not an escaped newline
+    assert _carried_quote(["s = 'a \\", "b'"]) is None      # closed on the next line
+    assert _carried_quote(['s = "a \\', 'b \\']) == '"'      # still continuing
