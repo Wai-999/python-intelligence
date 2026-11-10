@@ -229,7 +229,7 @@
       "id": "model",
       "kind": "challenge",
       "title": "Challenge: a classifier that ignores units",
-      "body": "The starter gives you `fit_centroids` and `predict_centroids`. Write two functions.\n`fit_scaled_centroids(X, y)` learns each column's mean and standard deviation (dividing by `N`,\nwith 1 for a zero spread) from `X`, standardizes `X`, fits centroids to the standardized rows, and\nreturns `{'means': [...], 'stds': [...], 'centroids': {...}}` with plain lists of floats. Raise\n`ValueError` if `X` is empty or its length differs from `y`.\n`predict_scaled(model, X)` standardizes the new rows with the model's **stored** means and standard\ndeviations and returns the nearest centroid's label for each row (it must work for a single row);\nequally near centroids go to the label first in sorted order, as `predict_centroids` does.",
+      "body": "The starter gives you `fit_centroids` and `predict_centroids`. Write two functions.\n`fit_scaled_centroids(X, y)` learns each column's mean and standard deviation (dividing by `N`,\nwith 1 for a zero spread) from `X`, standardizes `X`, fits centroids to the standardized rows, and\nreturns `{'means': [...], 'stds': [...], 'centroids': {...}}` with plain lists of floats. Raise\n`ValueError` if `X` is empty or its length differs from `y`.\n`predict_scaled(model, X)` standardizes the new rows with the model's **stored** means and standard\ndeviations and returns the nearest centroid's label for each row (it must work for a single row,\nand return `[]` for no rows);\nequally near centroids go to the label first in sorted order, as `predict_centroids` does.",
       "starter": "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    return {'means': [], 'stds': [], 'centroids': fit_centroids(X, y)}\n\n\ndef predict_scaled(model, X):\n    return predict_centroids(model['centroids'], X)\n",
       "hints": [
         "Inside `fit_scaled_centroids`, compute `Z = (X - means) / stds` and call `fit_centroids(Z, y)`.",
@@ -269,7 +269,7 @@
         },
         {
           "name": "prediction uses the stored statistics",
-          "code": "model = {'means': [10.0, 0.0], 'stds': [2.0, 1.0], 'centroids': {'a': [0.0, 0.0], 'b': [1.0, 0.0]}}\ngot = predict_scaled(model, [[11.2, 0.0], [10.8, 0.0], [12.0, 0.4]])\nassert got == ['b', 'a', 'b'], f'(11.2 - 10) / 2 = 0.6 is nearer b; (10.8 - 10) / 2 = 0.4 is nearer a; got {got}'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [3.0, 3.0], 'q': [5.0, 0.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'nearest in straight-line (Euclidean) distance: p is about 4.24 away, q is 5'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [2.5, 0.0], 'q': [2.0, 2.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'p is 2.5 away, q about 2.83 (the largest-coordinate distance would pick q)'\nfor p, q in (([4.2, 0.0], [3.0, 3.0]), ([3.0, 3.0], [4.3, 0.0])):\n    model = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': p, 'q': q}}\n    assert predict_scaled(model, [[0, 0]]) == ['p'], f'p={p} is nearer than q={q} in straight-line distance (squares of the differences, not cubes or other powers)'",
+          "code": "model = {'means': [10.0, 0.0], 'stds': [2.0, 1.0], 'centroids': {'a': [0.0, 0.0], 'b': [1.0, 0.0]}}\ngot = predict_scaled(model, [[11.2, 0.0], [10.8, 0.0], [12.0, 0.4]])\nassert got == ['b', 'a', 'b'], f'(11.2 - 10) / 2 = 0.6 is nearer b; (10.8 - 10) / 2 = 0.4 is nearer a; got {got}'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [3.0, 3.0], 'q': [5.0, 0.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'nearest in straight-line (Euclidean) distance: p is about 4.24 away, q is 5'\nmodel = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': [2.5, 0.0], 'q': [2.0, 2.0]}}\nassert predict_scaled(model, [[0, 0]]) == ['p'], 'p is 2.5 away, q about 2.83 (the largest-coordinate distance would pick q)'\nfor p, q in (([4.2, 0.0], [3.0, 3.0]), ([3.0, 3.0], [4.3, 0.0]), ([4.242640587119285, 0.0], [3.0, 3.0]), ([3.0, 3.0], [4.242640787119286, 0.0])):\n    model = {'means': [0.0, 0.0], 'stds': [1.0, 1.0], 'centroids': {'p': p, 'q': q}}\n    assert predict_scaled(model, [[0, 0]]) == ['p'], f'p={p} is nearer than q={q} in straight-line distance (squares of the differences, not cubes or other powers)'",
           "concept": "train-only-statistics"
         },
         {
@@ -280,6 +280,11 @@
         {
           "name": "near the boundary, nothing is rounded",
           "code": "model = {'means': [0.0], 'stds': [1.0], 'centroids': {'a': [0.0], 'b': [1.0]}}\ngot = predict_scaled(model, [[0.5000001], [0.4999999]])\nassert got == ['b', 'a'], f'0.5000001 is nearer b and 0.4999999 nearer a: compare exact distances; got {got}'",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "no rows to predict",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nmodel = fit_scaled_centroids(X, y)\nassert predict_scaled(model, []) == [], 'predicting no rows gives an empty list'",
           "concept": "feature-scaling"
         },
         {
