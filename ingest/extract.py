@@ -180,8 +180,16 @@ def _strip_join_callouts(text, joins, quote=None):
             continue
         out.append(text[last:at])
         last = match.end()
+        # Removing the annotation must not glue two words together (return①value -> return value).
+        before, after = text[at - 1:at], text[last:last + 1]
+        if _word_char(before) and _word_char(after):
+            out.append(" ")
     out.append(text[last:])
     return "".join(out)
+
+
+def _word_char(c):
+    return bool(c) and (c.isalnum() or c == "_")
 
 
 def _visual_lines(lines):

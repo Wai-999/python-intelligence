@@ -1023,3 +1023,24 @@ def test_trailing_whitespace_does_not_stop_join_callout_removal(separate):
     if separate:
         page = _separate_blocks(page)
     assert _code_blocks(page) == ['value = 1 + 2']
+
+
+@pytest.mark.parametrize('separate', [False, True])
+def test_removing_a_join_callout_keeps_words_apart(separate):
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('return', 50, 50)],
+        [_fixture_span('①value', 86, 50)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    code, = _code_blocks(page)
+    assert code == 'return value'
+    compile('def f(value):\n    ' + code, '<words-apart>', 'exec')
+
+
+def test_removing_a_join_callout_does_not_add_space_between_symbols():
+    from ingest.extract import _strip_join_callouts
+    assert _strip_join_callouts('f(①x)', [2]) == 'f(x)'
+    assert _strip_join_callouts('a①+ 1', [1]) == 'a+ 1'
+    assert _strip_join_callouts('x①y', [1]) == 'x y'
