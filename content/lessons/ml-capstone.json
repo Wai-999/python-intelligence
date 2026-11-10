@@ -353,6 +353,11 @@
           "concept": "data-cleaning"
         },
         {
+          "name": "repeated rows are kept",
+          "code": "X, y = load_examples('a,b,c\\n1,2,x\\n1,2,x\\n3,4,z\\n1,2,y\\n', ['a', 'b'], 'c')\nassert (X, y) == ([[1.0, 2.0], [1.0, 2.0], [3.0, 4.0], [1.0, 2.0]], ['x', 'x', 'z', 'y']), f'every complete row is its own observation, even a repeat; got {(X, y)}'",
+          "concept": "data-cleaning"
+        },
+        {
           "name": "nothing left after cleaning",
           "code": "assert load_examples('a,c\\n,x\\n1,\\n', ['a'], 'c') == ([], []), 'every row has a gap: return two empty lists'\nassert load_examples('a,c\\n', ['a'], 'c') == ([], []), 'a header with no rows: return two empty lists'",
           "concept": "data-cleaning"
