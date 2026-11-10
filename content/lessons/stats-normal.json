@@ -1,0 +1,342 @@
+{
+  "id": "stats-normal",
+  "title": "The normal distribution: bell curves and probabilities",
+  "summary": "Describe measurements with a mean and a spread, turn areas under the bell curve into probabilities, and check them by simulation.",
+  "track": "statistics",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "stats-summary"
+  ],
+  "concepts": [
+    "normal-distribution",
+    "probability-density",
+    "cumulative-probability"
+  ],
+  "sources": [
+    {
+      "id": "mml-cont",
+      "source_id": "pch-mml-book",
+      "pages": [
+        184,
+        188
+      ],
+      "section": "6.2 Discrete and Continuous Probabilities",
+      "use": "reference"
+    },
+    {
+      "id": "mml-gauss",
+      "source_id": "pch-mml-book",
+      "pages": [
+        203,
+        210
+      ],
+      "section": "6.5 Gaussian Distribution",
+      "use": "reference"
+    },
+    {
+      "id": "st-normal",
+      "source_id": "pydocs-312-statistics",
+      "pages": [
+        7,
+        7
+      ],
+      "section": "NormalDist objects",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-real",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        7,
+        7
+      ],
+      "section": "Real-valued distributions",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-repro",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "Notes on Reproducibility",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "How likely is a 186 cm adult?",
+      "body": "Measure the height of thousands of adults and most land near the average, fewer further away, and very\nfew far away, in a symmetric bell shape. The same shape appears in measurement errors, test scores\nand averages of many small effects. If you know just its centre and its spread, you can answer\nquestions like \"what fraction of people are taller than 186 cm?\" without counting anyone."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Probability is area",
+      "body": "For a continuous measurement, the chance of hitting one exact value is zero; what has a probability is\na **range**. The bell curve, called a **probability density**, is drawn so that the area under it\nbetween two values is the probability of landing between them, and the whole area is 1. The\n**normal (Gaussian) distribution** is the bell with centre `μ` (the mean) and width set by `σ` (the\nstandard deviation). Roughly 68% of values fall within one `σ` of the mean, 95% within two and 99.7%\nwithin three.",
+      "cites": [
+        "mml-cont",
+        "mml-gauss"
+      ],
+      "socratic": {
+        "questions": [
+          "Can a probability density be larger than 1? (Think of a very narrow bell.)",
+          "If the mean height is 170 cm, what fraction of people are shorter than 170 cm?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a value become a z-score",
+      "body": "How many standard deviations above the mean is 186 cm, if `μ = 170` and `σ = 8`? Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def z_score(x, mu, sigma):\n    return (x - mu) / sigma\n\nprint(z_score(186, 170, 8))",
+        "frames": [
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "z_score": "<function z_score>"
+            },
+            "note": "Measure 186 cm against a mean of 170 and a spread of 8."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "z_score(186, 170, 8)"
+            ],
+            "locals": {
+              "x": "186",
+              "mu": "170",
+              "sigma": "8"
+            },
+            "note": "16 cm above the mean is two standard deviations."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "z_score": "<function z_score>"
+            },
+            "note": "Two standard deviations: only about 2.3% of values lie further above.",
+            "output": "2.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Density:** the normal distribution with mean `μ` and standard deviation `σ > 0` has density\n`p(x) = exp(−(x − μ)² / (2σ²)) / (σ √(2π))`, highest at `x = μ` and symmetric about it.\n\n**Cumulative probability:** `F(x) = P(X ≤ x)` is the area under the density to the left of `x`, so\n`P(a < X ≤ b) = F(b) − F(a)`. For a continuous distribution the endpoints don't change the answer.\n\n**In Python:** `statistics.NormalDist(mu, sigma)` gives `.pdf(x)`, `.cdf(x)` and `.inv_cdf(p)`, the\nvalue below which a fraction `p` of the distribution lies (`0 < p < 1`).\n\n**Simulation:** `random.Random(seed).gauss(mu, sigma)` draws normally distributed values; the same\nseed gives the same sequence, and the fraction of draws in a range estimates its probability, more\nclosely the more draws you make.",
+      "cites": [
+        "mml-gauss",
+        "mml-cont",
+        "st-normal",
+        "rnd-real",
+        "rnd-repro"
+      ]
+    },
+    {
+      "id": "heights",
+      "kind": "example",
+      "title": "Run it: exact answers and a simulation",
+      "body": "Adult heights modelled as normal with `μ = 170` cm and `σ = 8` cm. Predict the first number before running.",
+      "code": "import random\nfrom statistics import NormalDist\n\nheights = NormalDist(mu=170, sigma=8)\nprint(round(heights.cdf(178) - heights.cdf(162), 4))\nprint(round(1 - heights.cdf(186), 4))\nprint(round(heights.inv_cdf(0.9), 1))\n\nrng = random.Random(7)\nsample = [rng.gauss(170, 8) for _ in range(10_000)]\ninside = sum(162 < h <= 178 for h in sample) / len(sample)\nprint(round(inside, 2))\n",
+      "expected_output": "0.6827\n0.0228\n180.3\n0.68\n"
+    },
+    {
+      "id": "pdf",
+      "kind": "guided",
+      "title": "Your turn: the density from its formula",
+      "body": "Complete `normal_pdf(x, mu, sigma)` using the formula above and the `math` module (not `NormalDist`).\nRaise `ValueError` if `sigma` is not positive.",
+      "starter": "import math\n\ndef normal_pdf(x, mu, sigma):\n    return math.exp(-(x - mu) ** 2)\n",
+      "hints": [
+        "Compute `z = (x - mu) / sigma` first; the exponent is `-z * z / 2`.",
+        "Divide by `sigma * math.sqrt(2 * math.pi)` so the total area is 1.",
+        "import math\n\ndef normal_pdf(x, mu, sigma):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    z = (x - mu) / sigma\n    return math.exp(-z * z / 2) / (sigma * math.sqrt(2 * math.pi))\n"
+      ],
+      "tests": [
+        {
+          "name": "matches NormalDist",
+          "code": "from statistics import NormalDist\nfor x, mu, sigma in ((0, 0, 1), (1.5, 0, 1), (-2, 0, 1), (186, 170, 8), (3, 5, 0.25), (-7.5, -6, 2.5)):\n    got, want = normal_pdf(x, mu, sigma), NormalDist(mu, sigma).pdf(x)\n    assert abs(got - want) <= 1e-12 * want, f'normal_pdf({x}, {mu}, {sigma}) should be about {want}; got {got}'",
+          "concept": "probability-density"
+        },
+        {
+          "name": "the peak",
+          "code": "import math\ngot = normal_pdf(10, 10, 2)\nassert abs(got - 1 / (2 * math.sqrt(2 * math.pi))) < 1e-15, f'at the mean the density is 1 / (sigma * sqrt(2 pi)); got {got}'",
+          "concept": "probability-density"
+        },
+        {
+          "name": "a narrow bell is taller than 1",
+          "code": "got = normal_pdf(0, 0, 0.1)\nassert got > 3.98 and abs(got - 3.989422804014327) < 1e-12, f'a density can exceed 1; got {got}'",
+          "concept": "probability-density"
+        },
+        {
+          "name": "symmetric about the mean",
+          "code": "assert normal_pdf(4, 1, 2) == normal_pdf(-2, 1, 2), 'the same distance either side gives the same density'",
+          "concept": "normal-distribution"
+        },
+        {
+          "name": "far from the mean",
+          "code": "got = normal_pdf(30, 0, 1)\nassert 0 <= got < 1e-190, f'thirty standard deviations away the density is tiny but not negative; got {got}'",
+          "concept": "probability-density"
+        },
+        {
+          "name": "a float",
+          "code": "assert isinstance(normal_pdf(0, 0, 1), float), 'return a float'",
+          "concept": "probability-density"
+        },
+        {
+          "name": "from the formula, not NormalDist",
+          "code": "import statistics\nsaved = statistics.NormalDist.pdf\ndef refuse(self, x):\n    raise AssertionError('compute the density from its formula with math, not NormalDist.pdf')\nstatistics.NormalDist.pdf = refuse\ntry:\n    got = normal_pdf(1, 0, 1)\nfinally:\n    statistics.NormalDist.pdf = saved\nassert abs(got - 0.24197072451914337) < 1e-15, f'got {got}'",
+          "concept": "probability-density"
+        },
+        {
+          "name": "sigma must be positive",
+          "code": "for sigma in (0, -1):\n    try:\n        normal_pdf(0, 0, sigma)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for sigma={sigma}')",
+          "concept": "normal-distribution"
+        }
+      ],
+      "solution": "import math\n\ndef normal_pdf(x, mu, sigma):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    z = (x - mu) / sigma\n    return math.exp(-z * z / 2) / (sigma * math.sqrt(2 * math.pi))\n"
+    },
+    {
+      "id": "probabilities",
+      "kind": "challenge",
+      "title": "Challenge: answer probability questions",
+      "body": "Write three functions (raise `ValueError` whenever `sigma` is not positive):\n\n- `prob_between(mu, sigma, a, b)`: the exact `P(a < X ≤ b)` with `NormalDist`; `0.0` when `a >= b`.\n  `a` may be `-math.inf` and `b` may be `math.inf`.\n- `value_at(mu, sigma, p)`: the value with a fraction `p` of the distribution below it; raise\n  `ValueError` unless `0 < p < 1`.\n- `estimate_between(mu, sigma, a, b, n, seed)`: the fraction of `n` draws that land in `a < x ≤ b`,\n  drawing in order with one `random.Random(seed)` and its `.gauss(mu, sigma)`; raise `ValueError`\n  if `n < 1`.",
+      "starter": "import random\nfrom statistics import NormalDist\n\n\ndef prob_between(mu, sigma, a, b):\n    return 0.5\n\n\ndef value_at(mu, sigma, p):\n    return mu\n\n\ndef estimate_between(mu, sigma, a, b, n, seed):\n    return 0.5\n",
+      "hints": [
+        "`dist = NormalDist(mu, sigma)`; then `dist.cdf(b) - dist.cdf(a)`, and `dist.inv_cdf(p)`.",
+        "For the estimate, make `rng = random.Random(seed)` once, then call `rng.gauss(mu, sigma)` `n` times, counting `a < x <= b`.",
+        "import random\nfrom statistics import NormalDist\n\n\ndef prob_between(mu, sigma, a, b):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    if a >= b:\n        return 0.0\n    dist = NormalDist(mu, sigma)\n    return dist.cdf(b) - dist.cdf(a)\n\n\ndef value_at(mu, sigma, p):\n    if sigma <= 0 or not 0 < p < 1:\n        raise ValueError('need sigma > 0 and 0 < p < 1')\n    return NormalDist(mu, sigma).inv_cdf(p)\n\n\ndef estimate_between(mu, sigma, a, b, n, seed):\n    if sigma <= 0 or n < 1:\n        raise ValueError('need sigma > 0 and n >= 1')\n    rng = random.Random(seed)\n    hits = 0\n    for _ in range(n):\n        x = rng.gauss(mu, sigma)\n        if a < x <= b:\n            hits += 1\n    return hits / n\n"
+      ],
+      "tests": [
+        {
+          "name": "exact probabilities",
+          "code": "from statistics import NormalDist\nd = NormalDist(170, 8)\nfor a, b in ((162, 178), (154, 186), (186, 300), (100, 170.5)):\n    got, want = prob_between(170, 8, a, b), d.cdf(b) - d.cdf(a)\n    assert abs(got - want) < 1e-15, f'prob_between(170, 8, {a}, {b}) should be {want}; got {got}'\nassert abs(prob_between(0, 1, -1, 1) - 0.6826894921370859) < 1e-12",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "open-ended ranges",
+          "code": "import math\nfrom statistics import NormalDist\nassert abs(prob_between(0, 1, -math.inf, 1.5) - NormalDist().cdf(1.5)) < 1e-15, 'from minus infinity: just cdf(b)'\nassert abs(prob_between(0, 1, 2, math.inf) - (1 - NormalDist().cdf(2))) < 1e-15, 'up to infinity: 1 - cdf(a)'\nassert prob_between(5, 3, -math.inf, math.inf) == 1.0",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "an empty range",
+          "code": "assert prob_between(0, 1, 2, 2) == 0.0 and prob_between(0, 1, 3, 1) == 0.0, 'a >= b gives 0.0'",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "percentiles",
+          "code": "from statistics import NormalDist\nfor mu, sigma, p in ((170, 8, 0.9), (0, 1, 0.5), (0, 1, 0.025), (-3, 0.5, 0.999)):\n    got, want = value_at(mu, sigma, p), NormalDist(mu, sigma).inv_cdf(p)\n    assert abs(got - want) < 1e-12, f'value_at({mu}, {sigma}, {p}) should be {want}; got {got}'",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "p strictly between 0 and 1",
+          "code": "for p in (0, 1, -0.1, 1.5):\n    try:\n        value_at(0, 1, p)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for p={p}')",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "the simulation recipe",
+          "code": "import random\ndef reference(mu, sigma, a, b, n, seed):\n    rng = random.Random(seed)\n    return sum(a < rng.gauss(mu, sigma) <= b for _ in range(n)) / n\nfor args in ((170, 8, 162, 178, 2000, 7), (0, 1, -1, 1, 500, 1), (0, 1, 0, 100, 37, 3), (10, 2, 9, 9.5, 1000, 42)):\n    got, want = estimate_between(*args), reference(*args)\n    assert got == want, f'estimate_between{args}: draw n values in order from one random.Random(seed); expected {want}, got {got}'",
+          "concept": "normal-distribution"
+        },
+        {
+          "name": "endpoints: above a, at most b",
+          "code": "import random\nrng = random.Random(5)\nx = rng.gauss(0, 1)\nnone, every = estimate_between(0, 1, x, x + 1, 1, 5), estimate_between(0, 1, x - 1, x, 1, 5)\nassert none == 0.0 and isinstance(none, float), f'a value equal to a is not inside a < x (and the result is the float 0.0); got {none!r}'\nassert every == 1.0 and isinstance(every, float), f'a value equal to b is inside x <= b (and the result is the float 1.0); got {every!r}'",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "the estimate approaches the exact answer",
+          "code": "exact = prob_between(0, 1, -1, 1)\nest = estimate_between(0, 1, -1, 1, 20000, 11)\nassert abs(est - exact) < 0.02 and isinstance(est, float), f'20,000 draws should land within 0.02 of {exact}; got {est}'",
+          "concept": "normal-distribution"
+        },
+        {
+          "name": "bad input",
+          "code": "for call in (lambda: prob_between(0, 0, 1, 2), lambda: prob_between(0, -2, 1, 2), lambda: value_at(0, 0, 0.5),\n             lambda: estimate_between(0, 0, 1, 2, 10, 1), lambda: estimate_between(0, 1, 1, 2, 0, 1)):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for sigma <= 0, or n < 1')",
+          "concept": "normal-distribution"
+        }
+      ],
+      "solution": "import random\nfrom statistics import NormalDist\n\n\ndef prob_between(mu, sigma, a, b):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    if a >= b:\n        return 0.0\n    dist = NormalDist(mu, sigma)\n    return dist.cdf(b) - dist.cdf(a)\n\n\ndef value_at(mu, sigma, p):\n    if sigma <= 0 or not 0 < p < 1:\n        raise ValueError('need sigma > 0 and 0 < p < 1')\n    return NormalDist(mu, sigma).inv_cdf(p)\n\n\ndef estimate_between(mu, sigma, a, b, n, seed):\n    if sigma <= 0 or n < 1:\n        raise ValueError('need sigma > 0 and n >= 1')\n    rng = random.Random(seed)\n    hits = 0\n    for _ in range(n):\n        x = rng.gauss(mu, sigma)\n        if a < x <= b:\n            hits += 1\n    return hits / n\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Test scores are normal with mean 60 and standard deviation 10. About what fraction score between 50 and 70?",
+          "choices": [
+            "68%",
+            "95%",
+            "50%",
+            "99.7%"
+          ],
+          "answer": 0,
+          "explanation": "50 to 70 is within one standard deviation of the mean.",
+          "concept": "normal-distribution"
+        },
+        {
+          "id": "q2",
+          "prompt": "For a normal distribution with mean 0, what is `cdf(0)`?",
+          "choices": [
+            "0.5",
+            "0",
+            "1",
+            "It depends on sigma"
+          ],
+          "answer": 0,
+          "explanation": "The distribution is symmetric about its mean, so half the area lies to the left.",
+          "concept": "cumulative-probability"
+        },
+        {
+          "id": "q3",
+          "prompt": "A density curve has the value 2.5 at some x. What does that tell you?",
+          "choices": [
+            "The curve is narrow there: densities can exceed 1, only areas are probabilities",
+            "There is a 250% chance of x",
+            "The calculation is wrong",
+            "x is the mean"
+          ],
+          "answer": 0,
+          "explanation": "A density is probability per unit; a narrow bell is tall but its total area is still 1.",
+          "concept": "probability-density"
+        },
+        {
+          "id": "q4",
+          "prompt": "How do you compute P(a < X ≤ b) from the cumulative function F?",
+          "choices": [
+            "F(b) − F(a)",
+            "F(a) − F(b)",
+            "F(b) × F(a)",
+            "F(b − a)"
+          ],
+          "answer": 0,
+          "explanation": "The area left of b minus the area left of a leaves the area between them.",
+          "concept": "cumulative-probability"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Describe a normal distribution by its mean and standard deviation, and use the 68-95-99.7 rule.\n- Explain why probabilities are areas under a density, and compute the density from its formula.\n- Answer probability and percentile questions with `NormalDist`.\n- Check an exact probability with a seeded simulation."
+    }
+  ]
+}
