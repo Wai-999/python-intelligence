@@ -305,6 +305,11 @@
           "concept": "k-means"
         },
         {
+          "name": "a cluster that empties keeps its last mean",
+          "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[1], [9], [1], [2], [7]], [[2.8], [11.9], [1.2]])\nassert got['labels'] == [2, 1, 2, 2, 1], f'got {got[\"labels\"]}'\nassert close([c[0] for c in got['centroids']], [4.5, 8.0, 4 / 3]), f'centroid 0 held 2 and 7 (mean 4.5) after the first update, then lost them: it stays at 4.5, not its start 2.8; got {got[\"centroids\"]}'",
+          "concept": "k-means"
+        },
+        {
           "name": "means, not medians",
           "code": "close = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans([[0], [1], [11], [100]], [[0], [100]])\nassert got['labels'] == [0, 0, 0, 1] and close(got['centroids'][0], [4.0]), f'the mean of 0, 1 and 11 is 4; got {got}'",
           "concept": "k-means"
