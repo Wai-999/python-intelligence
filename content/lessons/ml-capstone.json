@@ -328,6 +328,11 @@
           "concept": "data-cleaning"
         },
         {
+          "name": "nothing left after cleaning",
+          "code": "assert load_examples('a,c\\n,x\\n1,\\n', ['a'], 'c') == ([], []), 'every row has a gap: return two empty lists'\nassert load_examples('a,c\\n', ['a'], 'c') == ([], []), 'a header with no rows: return two empty lists'",
+          "concept": "data-cleaning"
+        },
+        {
           "name": "only the chosen features",
           "code": "X, y = load_examples('a,b,c\\n1,,x\\n2,5,y\\n', ['a'], 'c')\nassert (X, y) == ([[1.0], [2.0]], ['x', 'y']), f'column b is not used, so its gap does not matter; got {(X, y)}'",
           "concept": "data-cleaning"
@@ -339,7 +344,7 @@
       "id": "pipeline",
       "kind": "challenge",
       "title": "Challenge: the whole pipeline",
-      "body": "The starter gives you `load_examples`, `fit_centroids` and `predict_centroids`. Write\n`run_pipeline(csv_text, features, label, test_fraction, seed)`:\n\n1. Load and clean the examples with `load_examples`.\n2. Shuffle the positions `0 … n−1` of the cleaned rows with `random.Random(seed).shuffle`; the first\n   `int(n * test_fraction)` positions are the test set and the rest the training set. Raise\n   `ValueError` if either set is empty.\n3. The baseline guess is the most common **training** label (a tie goes to the label first in sorted\n   order).\n4. Fit the centroids on the **training** rows only with `fit_centroids`, and predict the test rows with\n   `predict_centroids`.\n\nReturn a dictionary with `'n_train'`, `'n_test'`, `'baseline_label'`, and the test-set accuracies\n`'baseline'` and `'model'`, as unrounded floats.",
+      "body": "The starter gives you `load_examples`, `fit_centroids` and `predict_centroids`. Write\n`run_pipeline(csv_text, features, label, test_fraction, seed)`:\n\n1. Load and clean the examples with `load_examples`.\n2. Shuffle the positions `0 … n−1` of the cleaned rows with `random.Random(seed).shuffle`; the first\n   `int(n * test_fraction)` positions are the test set and the rest the training set. Raise\n   `ValueError` if either set is empty.\n3. The baseline guess is the most common **training** label (a tie goes to the label first in sorted\n   order; labels may be text or numbers, and numbers sort as numbers).\n4. Fit the centroids on the **training** rows only with `fit_centroids`, and predict the test rows with\n   `predict_centroids`.\n\nReturn a dictionary with `'n_train'`, `'n_test'`, `'baseline_label'`, and the test-set accuracies\n`'baseline'` and `'model'`, as unrounded floats.",
       "starter": "import io\nimport random\nimport numpy as np\nimport pandas as pd\n\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef run_pipeline(csv_text, features, label, test_fraction, seed):\n    X, y = load_examples(csv_text, features, label)\n    return {'n_train': len(y), 'n_test': 0, 'baseline_label': y[0], 'baseline': 0.0, 'model': 0.0}\n",
       "hints": [
         "Write two small helpers first: `majority_label(labels)` (the trace above) and `accuracy(predicted, actual)`.",
@@ -384,7 +389,7 @@
         },
         {
           "name": "the baseline learns from training labels",
-          "code": "got = run_pipeline('x,y\\n0,b\\n1,a\\n2,b\\n3,a\\n10,c\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 'a', f'the training labels are two a and two b: a tie goes to a; got {got}'",
+          "code": "got = run_pipeline('x,y\\n0,b\\n1,a\\n2,b\\n3,a\\n10,c\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 'a', f'the training labels are two a and two b: a tie goes to a; got {got}'\ngot = run_pipeline('x,y\\n0,10\\n1,2\\n2,10\\n3,2\\n50,7\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 2, f'number labels sort as numbers: the tie between 10 and 2 goes to 2; got {got}'",
           "concept": "baselines"
         },
         {
