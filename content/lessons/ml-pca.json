@@ -306,7 +306,7 @@
         },
         {
           "name": "inputs are not changed",
-          "code": "import numpy as np\nA = np.array([[1.5, 2.0], [3.0, 7.0], [0.5, 1.0]])\nsaved = A.copy()\nmodel = pca_fit(A, 1)\nassert np.array_equal(A, saved), 'pca_fit must not modify X'\nB = np.array([[2.0, 3.0]])\nkeep = B.copy()\npca_transform(model, B)\nassert np.array_equal(B, keep), 'pca_transform must not modify X'",
+          "code": "import numpy as np\nA = np.array([[1.5, 2.0], [3.0, 7.0], [0.5, 1.0]])\nsaved = A.copy()\nmodel = pca_fit(A, 1)\nassert np.array_equal(A, saved), 'pca_fit must not modify X'\nB = np.array([[2.0, 3.0]])\nkeep = B.copy()\npca_transform(model, B)\nassert np.array_equal(B, keep), 'pca_transform must not modify X'\nimport copy\nX = [[1.5, 2.0], [3.0, 7.0], [0.5, 1.0]]\nkeep_X = copy.deepcopy(X)\nmodel = pca_fit(X, 1)\nassert X == keep_X, 'pca_fit must not modify a list of lists'\nnew = [[2.0, 3.0], [9.0, -1.0]]\nkeep_new = copy.deepcopy(new)\npca_transform(model, new)\nassert new == keep_new, 'pca_transform must not modify a list of lists (the stored mean is not zero here)'",
           "concept": "principal-components"
         },
         {
