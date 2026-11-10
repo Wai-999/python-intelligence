@@ -111,6 +111,30 @@ def _trim_fragment(spans):
 
 
 LEADING_CALLOUTS = re.compile(r"^\s*(?:[①-⑳❶-❿]\s*)+")
+TRIPLE_QUOTES = ("'''", '"""')
+
+
+def _open_literal_or_comment(text):
+    """True if `text`, one line of code so far, ends inside a string literal or a comment."""
+    quote, i = None, 0
+    while i < len(text):
+        c = text[i]
+        if quote:
+            if c == "\\":
+                i += 2
+                continue
+            if text.startswith(quote, i):
+                i += len(quote)
+                quote = None
+                continue
+        elif c == "#":
+            return True
+        elif c in "'\"":
+            quote = text[i:i + 3] if text[i:i + 3] in TRIPLE_QUOTES else c
+            i += len(quote)
+            continue
+        i += 1
+    return quote is not None
 
 
 def _strip_leading_callouts(spans):
@@ -163,7 +187,9 @@ def _visual_lines(lines):
             limit = 24 if text.lstrip().startswith("#") else 10
             if merged is not None and gap is not None and -.1 <= gap <= limit * width:
                 had_callout = _trim_fragment(merged["spans"])
-                led_callout = _strip_leading_callouts(spans)
+                # Inside a string or comment a circled digit is content, not an annotation.
+                joined = "".join(s.get("text", "") for s in merged["spans"])
+                led_callout = not _open_literal_or_comment(joined) and _strip_leading_callouts(spans)
                 spaces = 1 if had_callout or led_callout else max(0, round(gap / width))
                 merged["spans"].append(dict(text=" " * spaces, flags=8))
                 merged["spans"].extend(spans)
@@ -260,7 +286,7 @@ def _code_blocks(page):
                     limit = 24 if text.lstrip().startswith("#") else 10
                     if same_row and -.1 <= gap <= limit * width:
                         old_text, old_origin, old_width = current[-1]
-                        lead = LEADING_CALLOUTS.match(text)
+                        lead = None if _open_literal_or_comment(old_text) else LEADING_CALLOUTS.match(text)
                         if lead:
                             text = text[lead.end():]
                         spaces = 1 if previous_callout or lead else max(0, round(gap / width))

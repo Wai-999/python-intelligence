@@ -892,3 +892,30 @@ def test_prefix_in_a_wider_font_does_not_skew_indentation():
     number['flags'] = 0
     body = _fixture_span('return 1', 70, 65)
     assert _code_blocks(_fixture_page([[first], [number, body]])) == ['def f():\n7 return 1']
+
+
+@pytest.mark.parametrize('separate', [False, True])
+@pytest.mark.parametrize('first,second,want', [
+    ("print('", "① marks it')", "print('① marks it')"),
+    ('s = "a', '❶ b"', 's = "a❶ b"'),
+    ('x = 1  # step', '② next', 'x = 1  # step② next'),
+])
+def test_callout_inside_a_split_literal_or_comment_is_kept(separate, first, second, want):
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span(first, 50, 50)],
+        [_fixture_span(second, 50 + len(first) * 6, 50)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    assert _code_blocks(page) == [want]
+
+
+@pytest.mark.parametrize('text,open_', [
+    ("print('", True), ("print('x')", False), ('s = "a\\"', True), ('s = "a\\""', False),
+    ("x = 1  # c", True), ("s = '#' + t", False), ('d = """doc', True), ('d = """doc"""', False),
+    ("f(x)", False), ("", False),
+])
+def test_open_literal_or_comment(text, open_):
+    from ingest.extract import _open_literal_or_comment
+    assert _open_literal_or_comment(text) is open_
