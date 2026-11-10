@@ -197,6 +197,11 @@
           "name": "a float",
           "code": "assert isinstance(normal_pdf(0, 0, 1), float), 'return a float'",
           "concept": "probability-density"
+        },
+        {
+          "name": "sigma must be positive",
+          "code": "for sigma in (0, -1, -0.5):\n    try:\n        normal_pdf(0, 0, sigma)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for sigma={sigma}')",
+          "concept": "normal-distribution"
         }
       ],
       "solution": "import math\n\ndef normal_pdf(x, mu, sigma):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    z = (x - mu) / sigma\n    return math.exp(-z * z / 2) / (sigma * math.sqrt(2 * math.pi))\n"
