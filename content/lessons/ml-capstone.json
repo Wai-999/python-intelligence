@@ -1,0 +1,424 @@
+{
+  "id": "ml-capstone",
+  "title": "Capstone: a prediction project from start to finish",
+  "summary": "Load a CSV with pandas, clean it, split it, beat a baseline and report honest held-out accuracy.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-classification",
+    "pd-dataframes"
+  ],
+  "concepts": [
+    "ml-pipeline",
+    "data-cleaning",
+    "baselines",
+    "data-leakage"
+  ],
+  "packages": [
+    "numpy",
+    "pandas"
+  ],
+  "sources": [
+    {
+      "id": "atbs-csv",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        343,
+        344
+      ],
+      "section": "Chapter 14: Working with CSV Files and JSON Data",
+      "use": "reference"
+    },
+    {
+      "id": "pd-csv",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        28,
+        28
+      ],
+      "section": "CSV",
+      "use": "reference"
+    },
+    {
+      "id": "pd-missing",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        11,
+        11
+      ],
+      "section": "Missing data",
+      "use": "reference"
+    },
+    {
+      "id": "pd-select",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        5,
+        8
+      ],
+      "section": "Selection",
+      "use": "reference"
+    },
+    {
+      "id": "pd-counts",
+      "source_id": "pddocs-223-10min",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "Value Counts",
+      "use": "reference"
+    },
+    {
+      "id": "mml-data",
+      "source_id": "pch-mml-book",
+      "pages": [
+        257,
+        263
+      ],
+      "section": "8.1 Data, Models, and Learning",
+      "use": "reference"
+    },
+    {
+      "id": "mml-erm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        270
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "mml-select",
+      "source_id": "pch-mml-book",
+      "pages": [
+        289,
+        294
+      ],
+      "section": "8.6 Model Selection",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-seq",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        5,
+        5
+      ],
+      "section": "Functions for sequences",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Putting the pieces together",
+      "body": "You can now load tables, measure data, split it fairly and train two kinds of classifier. A real\nproject uses all of them in one order: **load** the raw data, **clean** it, **split** it, set a\n**baseline**, **train** on the training part only, then **evaluate** on the held-out part. Each step\nis small. The project goes wrong when a step is skipped or done in the wrong order."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Two habits that keep the result honest",
+      "body": "First, always compare against a **baseline**: the score of a model that does something trivial, such\nas always guessing the most common class. If your model can't beat that, it hasn't learned anything\nuseful, whatever its accuracy looks like. Second, treat the test set as sealed: everything the model\nlearns, including the class averages and even the baseline's guess, comes from the training data.\nUsing the test rows while training is called **data leakage**, and it makes results look better than\nthey will be on new data.",
+      "cites": [
+        "mml-erm",
+        "mml-select"
+      ],
+      "socratic": {
+        "questions": [
+          "Why might a model that scores 70% be worse than useless?",
+          "If you fill missing values with the average of the whole table, test rows included, which habit have you broken?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch the baseline pick its guess",
+      "body": "The majority baseline counts the training labels and guesses the most common one. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def majority_label(labels):\n    counts = {}\n    for label in labels:\n        counts[label] = counts.get(label, 0) + 1\n    return max(sorted(counts), key=counts.get)\n\nprint(majority_label(['palm', 'fern', 'palm']))",
+        "frames": [
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "majority_label": "<function majority_label>"
+            },
+            "note": "Find the most common training label."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "majority_label(['palm', 'fern', 'palm'])"
+            ],
+            "locals": {
+              "labels": "['palm', 'fern', 'palm']"
+            },
+            "note": "Start with no counts."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "majority_label(['palm', 'fern', 'palm'])"
+            ],
+            "locals": {
+              "labels": "['palm', 'fern', 'palm']",
+              "counts": "{}"
+            },
+            "note": "Visit each label in turn."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "majority_label(['palm', 'fern', 'palm'])"
+            ],
+            "locals": {
+              "labels": "['palm', 'fern', 'palm']",
+              "counts": "{}",
+              "label": "'palm'"
+            },
+            "note": "First time we see 'palm': get() returns the default 0."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "majority_label(['palm', 'fern', 'palm'])"
+            ],
+            "locals": {
+              "labels": "['palm', 'fern', 'palm']",
+              "counts": "{'palm': 1}",
+              "label": "'fern'"
+            },
+            "note": "'fern' gets its first count."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "majority_label(['palm', 'fern', 'palm'])"
+            ],
+            "locals": {
+              "labels": "['palm', 'fern', 'palm']",
+              "counts": "{'palm': 1, 'fern': 1}",
+              "label": "'palm'"
+            },
+            "note": "'palm' is seen again."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "majority_label(['palm', 'fern', 'palm'])"
+            ],
+            "locals": {
+              "labels": "['palm', 'fern', 'palm']",
+              "counts": "{'palm': 2, 'fern': 1}",
+              "label": "'palm'"
+            },
+            "note": "max() looks at the labels in sorted order, so a tie would go to the label that sorts first."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "majority_label": "<function majority_label>"
+            },
+            "note": "The baseline always guesses 'palm'.",
+            "output": "palm"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Load:** a CSV file is plain text, one row per line, with values separated by commas and the column\nnames in the first line. `pd.read_csv` reads one into a DataFrame; `io.StringIO(text)` lets it read\nfrom a string instead of a file.\n\n**Clean:** `df.isna()` marks missing values. `df.dropna(subset=columns)` drops only the rows that\nare missing one of the columns you will use, so a gap in an unused column costs you nothing. Select\nthe feature columns with `df[columns]`.\n\n**Split:** shuffle the row positions with a seeded `random.Random(seed).shuffle`, then hold out the\nfirst `int(n × test_fraction)` positions as the test set (the recipe from the evaluation lesson).\n\n**Baseline:** the majority baseline always predicts the most common training label. `value_counts()`\nshows the counts.\n\n**Train and evaluate:** fit the model on the training rows only, then report accuracy on the test\nrows, next to the baseline's accuracy on the same rows. This is an estimate of how the model will do\non data it has never seen.",
+      "cites": [
+        "atbs-csv",
+        "pd-csv",
+        "pd-missing",
+        "pd-select",
+        "pd-counts",
+        "rnd-seq",
+        "mml-data",
+        "mml-erm",
+        "mml-select"
+      ]
+    },
+    {
+      "id": "inspect",
+      "kind": "example",
+      "title": "Run it: inspect the raw data",
+      "body": "A small survey of plants. Before predicting how many rows survive cleaning, look at which values are missing.",
+      "code": "import io\nimport pandas as pd\n\nPLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\n\ndf = pd.read_csv(io.StringIO(PLANTS))\nprint(df.shape)\nprint(df.isna().sum().to_dict())\n\nclean = df.dropna(subset=['height', 'leaf', 'species'])\nprint(clean.shape)\nprint(clean['species'].value_counts().sort_index().to_dict())\n",
+      "expected_output": "(13, 4)\n{'height': 0, 'leaf': 1, 'site': 2, 'species': 0}\n(12, 4)\n{'fern': 5, 'moss': 2, 'palm': 5}\n"
+    },
+    {
+      "id": "load",
+      "kind": "guided",
+      "title": "Your turn: from CSV text to examples",
+      "body": "Complete `load_examples(csv_text, features, label)`. Read the CSV with pandas, drop the rows missing\nany of the `features` columns or the `label` column (keep rows that are only missing other\ncolumns), and return `(X, y)`: `X` is a list with one list of floats per row, in the order the\n`features` are given, and `y` is the list of labels.",
+      "starter": "import io\nimport pandas as pd\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    return df[features].values.tolist(), df[label].tolist()\n",
+      "hints": [
+        "`df.dropna(subset=features + [label])` drops only the rows with a gap in those columns.",
+        "`df[features].astype(float).values.tolist()` turns the selected columns into a list of lists of floats.",
+        "import io\nimport pandas as pd\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n"
+      ],
+      "tests": [
+        {
+          "name": "drops only rows a model can't use",
+          "code": "PLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\nX, y = load_examples(PLANTS, ['height', 'leaf'], 'species')\nassert len(X) == len(y) == 12, f'only the row missing a leaf value is dropped: expected 12 rows, got {len(X)}'\nassert X[1] == [14.5, 2.8] and y[1] == 'fern', 'the row missing only its site is kept'\nassert X[3] == [28.4, 8.1] and y[3] == 'palm', 'rows keep their file order after the dropped one'",
+          "concept": "data-cleaning"
+        },
+        {
+          "name": "features in the order given",
+          "code": "X, y = load_examples('a,b,c\\n1,2,x\\n3,4,y\\n', ['b', 'a'], 'c')\nassert X == [[2.0, 1.0], [4.0, 3.0]], f'columns b then a; got {X}'\nassert y == ['x', 'y']",
+          "concept": "data-cleaning"
+        },
+        {
+          "name": "floats, in plain lists",
+          "code": "X, y = load_examples('a,b,c\\n1,2,x\\n3,4,y\\n', ['a', 'b'], 'c')\nassert type(X) is list and all(type(r) is list for r in X), 'X is a list of lists'\nassert all(type(v) is float for r in X for v in r), 'every feature value is a Python float'\nassert type(y) is list, 'y is a list'",
+          "concept": "data-cleaning"
+        },
+        {
+          "name": "a missing label drops the row",
+          "code": "X, y = load_examples('a,c\\n1,x\\n2,\\n3,z\\n', ['a'], 'c')\nassert (X, y) == ([[1.0], [3.0]], ['x', 'z']), f'got {(X, y)}'",
+          "concept": "data-cleaning"
+        },
+        {
+          "name": "only the chosen features",
+          "code": "X, y = load_examples('a,b,c\\n1,,x\\n2,5,y\\n', ['a'], 'c')\nassert (X, y) == ([[1.0], [2.0]], ['x', 'y']), f'column b is not used, so its gap does not matter; got {(X, y)}'",
+          "concept": "data-cleaning"
+        }
+      ],
+      "solution": "import io\nimport pandas as pd\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n"
+    },
+    {
+      "id": "pipeline",
+      "kind": "challenge",
+      "title": "Challenge: the whole pipeline",
+      "body": "The starter gives you `load_examples`, `fit_centroids` and `predict_centroids`. Write\n`run_pipeline(csv_text, features, label, test_fraction, seed)`:\n\n1. Load and clean the examples with `load_examples`.\n2. Shuffle the positions `0 … n−1` of the cleaned rows with `random.Random(seed).shuffle`; the first\n   `int(n * test_fraction)` positions are the test set and the rest the training set. Raise\n   `ValueError` if either set is empty.\n3. The baseline guess is the most common **training** label (a tie goes to the label first in sorted\n   order).\n4. Fit the centroids on the **training** rows only and predict the test rows.\n\nReturn a dictionary with `'n_train'`, `'n_test'`, `'baseline_label'`, and the test-set accuracies\n`'baseline'` and `'model'`, as unrounded floats.",
+      "starter": "import io\nimport random\nimport numpy as np\nimport pandas as pd\n\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef run_pipeline(csv_text, features, label, test_fraction, seed):\n    X, y = load_examples(csv_text, features, label)\n    return {'n_train': len(y), 'n_test': 0, 'baseline_label': y[0], 'baseline': 0.0, 'model': 0.0}\n",
+      "hints": [
+        "Write two small helpers first: `majority_label(labels)` (the trace above) and `accuracy(predicted, actual)`.",
+        "Build the four lists `X_train`, `y_train`, `X_test`, `y_test` from the shuffled positions, and never pass a test row to `fit_centroids` or `majority_label`.",
+        "import io\nimport random\nimport numpy as np\nimport pandas as pd\n\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef majority_label(labels):\n    counts = {}\n    for label in labels:\n        counts[label] = counts.get(label, 0) + 1\n    return max(sorted(counts), key=counts.get)\n\n\ndef accuracy(predicted, actual):\n    return sum(p == a for p, a in zip(predicted, actual)) / len(actual)\n\n\ndef run_pipeline(csv_text, features, label, test_fraction, seed):\n    X, y = load_examples(csv_text, features, label)\n    positions = list(range(len(y)))\n    random.Random(seed).shuffle(positions)\n    cut = int(len(y) * test_fraction)\n    test, train = positions[:cut], positions[cut:]\n    if not test or not train:\n        raise ValueError('both the training set and the test set need at least one example')\n    X_train, y_train = [X[i] for i in train], [y[i] for i in train]\n    X_test, y_test = [X[i] for i in test], [y[i] for i in test]\n    guess = majority_label(y_train)\n    model = fit_centroids(X_train, y_train)\n    return {'n_train': len(train), 'n_test': len(test), 'baseline_label': guess,\n            'baseline': accuracy([guess] * len(y_test), y_test),\n            'model': accuracy(predict_centroids(model, X_test), y_test)}\n"
+      ],
+      "tests": [
+        {
+          "name": "the reference run",
+          "code": "PLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\ngot = run_pipeline(PLANTS, ['height', 'leaf'], 'species', 0.4, 33)\nwant = {'n_train': 8, 'n_test': 4, 'baseline_label': 'palm', 'baseline': 0.0, 'model': 0.5}\nassert got == want, f'clean, shuffle positions with random.Random(33), test = first int(12 * 0.4) = 4; expected {want}, got {got}'",
+          "concept": "ml-pipeline"
+        },
+        {
+          "name": "another seed",
+          "code": "PLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\ngot = run_pipeline(PLANTS, ['height', 'leaf'], 'species', 0.4, 1)\nwant = {'n_train': 8, 'n_test': 4, 'baseline_label': 'palm', 'baseline': 0.25, 'model': 0.75}\nassert got == want, f'seed 1 gives a different split; expected {want}, got {got}'",
+          "concept": "ml-pipeline"
+        },
+        {
+          "name": "unrounded accuracies",
+          "code": "PLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\ngot = run_pipeline(PLANTS, ['height', 'leaf'], 'species', 0.3, 21)\nwant = {'n_train': 9, 'n_test': 3, 'baseline_label': 'palm', 'baseline': 0.0, 'model': 0.6666666666666666}\nassert got == want, f'int(12 * 0.3) = 3 test rows; 2 of 3 right is 2/3, unrounded; expected {want}, got {got}'",
+          "concept": "ml-pipeline"
+        },
+        {
+          "name": "the test set stays sealed",
+          "code": "PLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\ngot = run_pipeline(PLANTS, ['leaf'], 'species', 0.5, 4)\nwant = {'n_train': 6, 'n_test': 6, 'baseline_label': 'fern', 'baseline': 0.3333333333333333, 'model': 0.5}\nassert got == want, f'using only the leaf feature, fitting on every row would score 1.0: fit on the training rows only; expected {want}, got {got}'",
+          "concept": "data-leakage"
+        },
+        {
+          "name": "the baseline learns from training labels",
+          "code": "got = run_pipeline('x,y\\n0,b\\n1,a\\n2,b\\n3,a\\n10,c\\n', ['x'], 'y', 0.2, 7)\nassert got['n_test'] == 1 and got['baseline_label'] == 'a', f'the training labels are two a and two b: a tie goes to a; got {got}'",
+          "concept": "baselines"
+        },
+        {
+          "name": "empty sets are rejected",
+          "code": "for csv, frac in (('x,y\\n1,a\\n2,b\\n', 0.0), ('x,y\\n1,a\\n2,b\\n', 1.0), ('x,y\\n1,a\\n', 0.5), ('x,y\\n1,a\\n,b\\n', 0.5)):\n    try:\n        run_pipeline(csv, ['x'], 'y', frac, 0)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when the training or test set is empty (test_fraction={frac})')",
+          "concept": "ml-pipeline"
+        }
+      ],
+      "solution": "import io\nimport random\nimport numpy as np\nimport pandas as pd\n\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef majority_label(labels):\n    counts = {}\n    for label in labels:\n        counts[label] = counts.get(label, 0) + 1\n    return max(sorted(counts), key=counts.get)\n\n\ndef accuracy(predicted, actual):\n    return sum(p == a for p, a in zip(predicted, actual)) / len(actual)\n\n\ndef run_pipeline(csv_text, features, label, test_fraction, seed):\n    X, y = load_examples(csv_text, features, label)\n    positions = list(range(len(y)))\n    random.Random(seed).shuffle(positions)\n    cut = int(len(y) * test_fraction)\n    test, train = positions[:cut], positions[cut:]\n    if not test or not train:\n        raise ValueError('both the training set and the test set need at least one example')\n    X_train, y_train = [X[i] for i in train], [y[i] for i in train]\n    X_test, y_test = [X[i] for i in test], [y[i] for i in test]\n    guess = majority_label(y_train)\n    model = fit_centroids(X_train, y_train)\n    return {'n_train': len(train), 'n_test': len(test), 'baseline_label': guess,\n            'baseline': accuracy([guess] * len(y_test), y_test),\n            'model': accuracy(predict_centroids(model, X_test), y_test)}\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Your model scores 0.72 on the test set. The majority baseline scores 0.80 on the same rows. What does that tell you?",
+          "choices": [
+            "The model is worse than always guessing the most common class",
+            "The model is good: 0.72 is high",
+            "The test set is too small to say anything",
+            "The baseline must be overfitting"
+          ],
+          "answer": 0,
+          "explanation": "A model only earns its keep by beating the trivial baseline on the same data.",
+          "concept": "baselines"
+        },
+        {
+          "id": "q2",
+          "prompt": "Which of these is data leakage?",
+          "choices": [
+            "Computing the class centroids from all the rows, then testing on some of them",
+            "Shuffling the rows before splitting",
+            "Dropping rows with missing labels",
+            "Using a seeded random generator"
+          ],
+          "answer": 0,
+          "explanation": "The test rows influenced the model, so the test score is no longer an honest estimate.",
+          "concept": "data-leakage"
+        },
+        {
+          "id": "q3",
+          "prompt": "A CSV has 50 rows. 4 are missing a feature you use and 3 others are missing only a column you don't use. How many rows does `dropna(subset=...)` keep with your columns?",
+          "choices": [
+            "46",
+            "43",
+            "50",
+            "47"
+          ],
+          "answer": 0,
+          "explanation": "Only the 4 rows missing a used column are dropped.",
+          "concept": "data-cleaning"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why fix the seed when splitting?",
+          "choices": [
+            "So the same split, and the same reported score, can be reproduced",
+            "So the model trains faster",
+            "So the test set is always the last rows",
+            "So the classes are balanced"
+          ],
+          "answer": 0,
+          "explanation": "With a fixed seed anyone can rerun the pipeline and get identical numbers.",
+          "concept": "ml-pipeline"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Run a full project: load, clean, split, baseline, train and evaluate.\n- Read CSV data with pandas and drop only the rows a model can't use.\n- Judge a model against a majority baseline on the same held-out rows.\n- Keep the test set sealed, so the reported accuracy is honest."
+    }
+  ]
+}
