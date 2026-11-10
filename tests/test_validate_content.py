@@ -87,3 +87,22 @@ def test_undeclared_package_imports_are_rejected():
     assert errs == ["step ch: imports pandas but the lesson does not declare it in packages"]
     lesson["packages"] = ["numpy", "pandas"]
     assert vc.check_packages(lesson, dict(vc.PACKAGES)) == []
+
+
+def test_packages_whose_import_name_differs(monkeypatch):
+    # e.g. scikit-learn is imported as sklearn: the gate must map the import back to the package to declare.
+    monkeypatch.setattr(vc, "PACKAGES", {"numpy": "2.0.2", "scikit-learn": "1.5.2"})
+    monkeypatch.setattr(vc, "IMPORT_NAMES", {"numpy": "numpy", "scikit-learn": "sklearn"})
+    installed = dict(vc.PACKAGES)
+    lesson = {"packages": ["numpy"], "steps": [{"id": "ex", "code": "from sklearn.linear_model import LinearRegression"}]}
+    assert vc.check_packages(lesson, installed) == ["step ex: imports sklearn but the lesson does not declare 'scikit-learn' in packages"]
+    lesson["packages"] = ["numpy", "scikit-learn"]
+    assert vc.check_packages(lesson, installed) == []
+    # Importing a module literally named like the package (but not its import name) is not that package.
+    assert vc.check_packages({"steps": [{"id": "x", "code": "import scikit_learn"}]}, installed) == []
+
+
+def test_shipped_import_names_cover_only_supported_packages():
+    meta = vc._PKG_MANIFEST.get("_import_names", {})
+    assert isinstance(meta, dict) and set(meta) <= set(vc.PACKAGES)
+    assert set(vc.IMPORT_NAMES) == set(vc.PACKAGES)

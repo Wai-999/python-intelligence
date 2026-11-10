@@ -31,7 +31,10 @@ from provenance import ExtractIndex, HashedIndex, load_index, strings_in, write_
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "content" / "sources.json"
 SECTIONS = ROOT / "content" / "source_sections.json"
-PACKAGES = {k: v for k, v in json.loads((ROOT / "src" / "py" / "packages.json").read_text()).items() if not k.startswith("_")}
+_PKG_MANIFEST = json.loads((ROOT / "src" / "py" / "packages.json").read_text())
+PACKAGES = {k: v for k, v in _PKG_MANIFEST.items() if not k.startswith("_")}
+# The module a learner imports for each package (the same as the package name unless _import_names says otherwise).
+IMPORT_NAMES = {pkg: _PKG_MANIFEST.get("_import_names", {}).get(pkg, pkg) for pkg in PACKAGES}
 # Interpreter for lesson snippets: the browser runs CPython 3.12 (Pyodide 0.27.8), so prefer a matching 3.12
 # environment (PI_CONTENT_PYTHON, else the project's .venv312) over whatever runs this script.
 CONTENT_PY = os.environ.get("PI_CONTENT_PYTHON") or (
@@ -216,9 +219,11 @@ def check_packages(lesson: dict, installed: dict[str, str | None] | None) -> lis
         used: set[str] = set()
         for code in (s.get("code"), s.get("solution"), s.get("starter"), (s.get("visual") or {}).get("code"),
                      *[t.get("code") for t in s.get("tests", [])]):
-            used |= imported_roots(code or "") & set(PACKAGES)
-        errs += [f"step {s.get('id')}: imports {mod} but the lesson does not declare it in packages"
-                 for mod in sorted(used - declared)]
+            roots = imported_roots(code or "")
+            used |= {pkg for pkg, mod in IMPORT_NAMES.items() if mod in roots}
+        errs += [f"step {s.get('id')}: imports {IMPORT_NAMES[pkg]} but the lesson does not declare "
+                 + ("it" if IMPORT_NAMES[pkg] == pkg else repr(pkg)) + " in packages"
+                 for pkg in sorted(used - declared)]
     for x in pk:
         if x in PACKAGES and installed is not None and installed.get(x) != PACKAGES[x]:
             errs.append(f"needs {x}=={PACKAGES[x]} (the browser's version) to validate, found {installed.get(x)}; "

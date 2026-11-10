@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
 // Runs Pyodide off the main thread. NOTE: this is isolation for responsiveness, not a security
 // boundary: learner code runs with the page's origin inside the worker (no DOM, no host access).
-import packages from "./packages.json";
+import manifest from "./packages.json";
+import { packageRules } from "./packages";
 import harness from "./harness.py?raw";
 import { PYODIDE_INDEX, type FromWorker, type ToWorker } from "./protocol";
 
@@ -21,8 +22,9 @@ interface Pyodide {
 }
 
 const post = (m: FromWorker) => self.postMessage(m);
-let currentId = 0;
-const loadedPackages = new Set<string>();
+const rules = packageRules(manifest);
+let currentId = 0;              // the run whose stdout/stderr Pyodide is producing
+const imported = new Set<string>(); // modules already imported once (first-import cost paid)
 
 const ready: Promise<Pyodide> = (async () => {
   const mod = await import(/* @vite-ignore */ `${PYODIDE_INDEX}pyodide.mjs`);
@@ -39,13 +41,23 @@ ready.then(
   (e) => post({ type: "load-error", message: String(e?.message ?? e) }),
 );
 
-self.onmessage = async (ev: MessageEvent<ToWorker>) => {
+// One run at a time: a message that arrives while another run awaits package loading waits its turn, so
+// output is always attributed to the run that produced it and the same package is never loaded twice at once.
+let queue: Promise<void> = Promise.resolve();
+self.onmessage = (ev: MessageEvent<ToWorker>) => {
   const msg = ev.data;
   if (msg.type !== "run") return;
+  queue = queue.then(() => handle(msg)).catch((e) => {
+    const message = `Python worker error: ${String(e?.message ?? e)}`;
+    post({ id: msg.id, type: "result", result: { ok: false, tests: [], error: { type: "WorkerError", message, summary: message, line: null } } });
+  });
+};
+
+async function handle(msg: ToWorker) {
   const py = await ready;
   currentId = msg.id;
   const requested = [...new Set(msg.packages ?? [])];
-  const unsupported = requested.filter((name) => name === "_note" || !Object.hasOwn(packages, name));
+  const unsupported = rules.unsupported(requested);
   if (unsupported.length) {
     const message = `Unsupported lesson packages: ${unsupported.join(", ")}`;
     post({ id: msg.id, type: "result", result: { ok: false, tests: [], error: {
@@ -54,11 +66,12 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
     return;
   }
   try {
-    const missing = requested.filter((name) => !loadedPackages.has(name));
-    if (missing.length) {
-      post({ id: msg.id, type: "packages-loading" });
+    // Dependencies count as loaded (pandas brings numpy), so they are not downloaded again.
+    const { toLoad, toImport } = rules.plan(requested, py.loadedPackages, imported);
+    if (toLoad.length || toImport.length) post({ id: msg.id, type: "packages-loading" });
+    if (toLoad.length) {
       const errors: string[] = [];
-      await py.loadPackage(missing, {
+      await py.loadPackage(toLoad, {
         messageCallback: (message) => post({ id: msg.id, type: "packages-loading", message }),
         errorCallback: (message) => { errors.push(message); },
       });
@@ -66,9 +79,11 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       if (notLoaded.length || errors.length) {
         throw new Error(`Missing packages: ${notLoaded.join(", ") || "none"}. ${errors.join("; ")}`);
       }
-      // Import initialization belongs to loading, outside the learner code timeout.
-      missing.forEach((name) => py.runPython(`import ${name}`));
-      missing.forEach((name) => loadedPackages.add(name));
+    }
+    // Import initialization belongs to loading, outside the learner code timeout.
+    for (const mod of toImport) {
+      py.runPython(`import ${mod}`);
+      imported.add(mod);
     }
   } catch (e) {
     const message = `Lesson packages failed to load. Check your connection and run again. ${String(e)}`;
@@ -79,6 +94,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
   }
   post({ id: msg.id, type: "packages-ready" });
   const runJson = py.globals.get("run_json");
+  currentId = msg.id;
   const result = JSON.parse(runJson(msg.code, JSON.stringify(msg.tests)));
   post({ id: msg.id, type: "result", result });
-};
+}

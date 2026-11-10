@@ -70,3 +70,37 @@ test("the pandas lesson runs in the browser and its challenge checks pass", asyn
   await page.getByRole("button", { name: "▶ Run checks" }).click();
   await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
 });
+
+test("runs sent while packages load wait their turn and keep their own output", async ({ page }) => {
+  test.setTimeout(240_000);
+  let workerUrl = "";
+  page.on("request", (request) => {
+    if (/\/assets\/worker-[^/]+\.js$/.test(new URL(request.url()).pathname)) workerUrl = request.url();
+  });
+  await page.goto("./#/lesson/np-arrays/4");
+  await page.getByRole("button", { name: "▶ Run", exact: true }).click();
+  await expect.poll(() => workerUrl, { timeout: 120_000 }).not.toBe("");
+  const seen = await page.evaluate((url) => new Promise<{ order: number[]; out: Record<number, string> }>((resolve, reject) => {
+    const worker = new Worker(url, { type: "module" });
+    const out: Record<number, string> = { 1: "", 2: "", 3: "" };
+    const order: number[] = [];
+    const timer = setTimeout(() => { worker.terminate(); reject(new Error("timed out")); }, 180_000);
+    worker.onmessage = ({ data }) => {
+      if (data.type === "ready") {
+        // Run 2 arrives while run 1 is still downloading pandas; run 3 needs numpy, which pandas already brought.
+        worker.postMessage({ id: 1, type: "run", packages: ["pandas"], code: "import pandas as pd\nprint('one', pd.Series([1, 2]).sum())", tests: [] });
+        worker.postMessage({ id: 2, type: "run", packages: [], code: "print('two')", tests: [] });
+        worker.postMessage({ id: 3, type: "run", packages: ["numpy"], code: "import numpy as np\nprint('three', np.arange(3).sum())", tests: [] });
+      }
+      if (data.type === "stdout") out[data.id] += data.text;
+      if (data.type === "result") {
+        if (!data.result.ok) { clearTimeout(timer); worker.terminate(); reject(new Error(JSON.stringify(data))); return; }
+        order.push(data.id);
+        if (order.length === 3) { clearTimeout(timer); worker.terminate(); resolve({ order, out }); }
+      }
+    };
+    worker.onerror = (event) => { clearTimeout(timer); worker.terminate(); reject(new Error(event.message)); };
+  }), workerUrl);
+  expect(seen.order).toEqual([1, 2, 3]);
+  expect(seen.out).toEqual({ 1: "one 3", 2: "two", 3: "three 3" });
+});

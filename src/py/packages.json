@@ -1,5 +1,6 @@
 {
- "_note": "Packages lessons may declare in \"packages\". Versions must equal those shipped by Pyodide 0.27.8 (pyodide-lock.json); the content gate and CI install exactly these.",
+ "_note": "Packages lessons may declare in \"packages\". Versions must equal those shipped by Pyodide 0.27.8 (pyodide-lock.json); the content gate and CI install exactly these. Keys starting with _ are metadata. _import_names maps a package to its import name when the two differ (e.g. \"scikit-learn\": \"sklearn\").",
+ "_import_names": {},
  "numpy": "2.0.2",
  "pandas": "2.2.3"
 }
