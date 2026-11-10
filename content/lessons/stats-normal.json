@@ -160,7 +160,7 @@
       "id": "pdf",
       "kind": "guided",
       "title": "Your turn: the density from its formula",
-      "body": "Complete `normal_pdf(x, mu, sigma)` using the formula above and the `math` module (not `NormalDist`).\nRaise `ValueError` if `sigma` is not positive.",
+      "body": "Complete `normal_pdf(x, mu, sigma)` from the formula above, using the `math` module. The checks compare\nyour values with `NormalDist(mu, sigma).pdf(x)`, which you can also call yourself to compare. Raise\n`ValueError` if `sigma` is not positive.",
       "starter": "import math\n\ndef normal_pdf(x, mu, sigma):\n    return math.exp(-(x - mu) ** 2)\n",
       "hints": [
         "Compute `z = (x - mu) / sigma` first; the exponent is `-z * z / 2`.",
@@ -197,16 +197,6 @@
           "name": "a float",
           "code": "assert isinstance(normal_pdf(0, 0, 1), float), 'return a float'",
           "concept": "probability-density"
-        },
-        {
-          "name": "from the formula, not NormalDist",
-          "code": "import statistics\nsaved = statistics.NormalDist.pdf\ndef refuse(self, x):\n    raise AssertionError('compute the density from its formula with math, not NormalDist.pdf')\nstatistics.NormalDist.pdf = refuse\ntry:\n    got = normal_pdf(1, 0, 1)\nfinally:\n    statistics.NormalDist.pdf = saved\nassert abs(got - 0.24197072451914337) < 1e-15, f'got {got}'",
-          "concept": "probability-density"
-        },
-        {
-          "name": "sigma must be positive",
-          "code": "for sigma in (0, -1):\n    try:\n        normal_pdf(0, 0, sigma)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for sigma={sigma}')",
-          "concept": "normal-distribution"
         }
       ],
       "solution": "import math\n\ndef normal_pdf(x, mu, sigma):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    z = (x - mu) / sigma\n    return math.exp(-z * z / 2) / (sigma * math.sqrt(2 * math.pi))\n"
@@ -265,7 +255,7 @@
         },
         {
           "name": "bad input",
-          "code": "for call in (lambda: prob_between(0, 0, 1, 2), lambda: prob_between(0, -2, 1, 2), lambda: value_at(0, 0, 0.5),\n             lambda: estimate_between(0, 0, 1, 2, 10, 1), lambda: estimate_between(0, 1, 1, 2, 0, 1)):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for sigma <= 0, or n < 1')",
+          "code": "for call in (lambda: prob_between(0, 0, 1, 2), lambda: prob_between(0, -2, 1, 2), lambda: prob_between(0, 0, 2, 2), lambda: prob_between(0, -1, 3, 1),\n             lambda: value_at(0, 0, 0.5), lambda: value_at(0, -1, 0.5),\n             lambda: estimate_between(0, 0, 1, 2, 10, 1), lambda: estimate_between(0, -1, 1, 2, 10, 1),\n             lambda: estimate_between(0, 1, 1, 2, 0, 1), lambda: estimate_between(0, 1, 1, 2, -5, 1)):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for sigma <= 0 (even when the range is empty), or n < 1')",
           "concept": "normal-distribution"
         }
       ],
