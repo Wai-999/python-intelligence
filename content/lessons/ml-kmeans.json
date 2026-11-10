@@ -265,6 +265,11 @@
           "concept": "k-means"
         },
         {
+          "name": "stop when no assignment changes, at any scale",
+          "code": "X = [[1, 1], [1.5, 2], [3, 4], [5, 7], [3.5, 5], [4.5, 5], [3.5, 4.5]]\ntiny = [[v * 1e-12 for v in row] for row in X]\ngot = kmeans(tiny, [[1e-12, 1e-12], [5e-12, 7e-12]])\nassert got['labels'] == [0, 0, 1, 1, 1, 1, 1], f'centroids moving only 1e-12 is not a reason to stop: keep going until no label changes; got {got[\"labels\"]}'\nwant = [[1.25e-12, 1.5e-12], [3.9e-12, 5.1e-12]]\nassert all(abs(a - b) < 1e-24 for c, w in zip(got['centroids'], want) for a, b in zip(c, w)), f'expected about {want}; got {got[\"centroids\"]}'",
+          "concept": "k-means"
+        },
+        {
           "name": "exactly one iteration",
           "code": "X = [[1, 1], [1.5, 2], [3, 4], [5, 7], [3.5, 5], [4.5, 5], [3.5, 4.5]]\nclose = lambda a, b: len(a) == len(b) and all(abs(x - y) < 1e-9 for x, y in zip(a, b))\ngot = kmeans(X, [[1, 1], [5, 7]], max_iter=1)\nassert got['labels'] == [0, 0, 0, 1, 1, 1, 1], f'the first assignment puts (3, 4) with (1, 1); got {got[\"labels\"]}'\nassert close(got['centroids'][0], [11 / 6, 7 / 3]) and close(got['centroids'][1], [4.125, 5.375]), f'centroids after one update; got {got[\"centroids\"]}'\nassert abs(got['inertia'] - 12.208333333333332) < 1e-9, f'inertia of those labels and centroids; got {got[\"inertia\"]}'",
           "concept": "k-means"
