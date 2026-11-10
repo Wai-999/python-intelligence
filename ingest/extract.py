@@ -271,7 +271,9 @@ def _code_blocks(page):
                     span["text"] = "".join(c["c"] for c in span["chars"])
             raw = "".join(span.get("text", "") for span in spans)
             text = _normalize(raw)
-            joins = line.get("joins", []) if text == raw else []   # offsets are only valid in unchanged text
+            # _normalize only trims trailing whitespace from a single line, which leaves earlier offsets valid;
+            # NULs or line breaks would shift them, so then no join is judged.
+            joins = [] if any(c in raw for c in "\x00\r\n") else line.get("joins", [])
             if not CALLOUTS.sub("", text).strip():
                 continue
             total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)

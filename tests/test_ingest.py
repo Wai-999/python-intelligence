@@ -1011,3 +1011,15 @@ def test_open_quote_does_not_leak_into_the_next_listing(separate, x, y):
     if separate:
         page = _separate_blocks(page)
     assert _code_blocks(page) == ['s = """open', 'x = 1 + 2']
+
+
+@pytest.mark.parametrize('separate', [False, True])
+def test_trailing_whitespace_does_not_stop_join_callout_removal(separate):
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('value = 1', 50, 50)],
+        [_fixture_span('① + 2   ', 110, 50)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    assert _code_blocks(page) == ['value = 1 + 2']
