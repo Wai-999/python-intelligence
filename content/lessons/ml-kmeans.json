@@ -266,7 +266,7 @@
         },
         {
           "name": "stop when no assignment changes, at any scale",
-          "code": "X = [[1, 1], [1.5, 2], [3, 4], [5, 7], [3.5, 5], [4.5, 5], [3.5, 4.5]]\ntiny = [[v * 1e-12 for v in row] for row in X]\ngot = kmeans(tiny, [[1e-12, 1e-12], [5e-12, 7e-12]])\nassert got['labels'] == [0, 0, 1, 1, 1, 1, 1], f'centroids moving only 1e-12 is not a reason to stop: keep going until no label changes; got {got[\"labels\"]}'\nwant = [[1.25e-12, 1.5e-12], [3.9e-12, 5.1e-12]]\nassert all(abs(a - b) < 1e-24 for c, w in zip(got['centroids'], want) for a, b in zip(c, w)), f'expected about {want}; got {got[\"centroids\"]}'",
+          "code": "P = [[v * 1e-12] for v in (0, 1, 2, 3, 10, 11)]\ngot = kmeans(P, [[0.0], [1e-12]])\nassert got['labels'] == [0, 0, 0, 0, 1, 1], f'centroids moving only about 1e-12 is not a reason to stop: keep going until no label changes; got {got[\"labels\"]}'\nassert abs(got['centroids'][0][0] - 1.5e-12) < 1e-24 and abs(got['centroids'][1][0] - 10.5e-12) < 1e-24, f'got {got[\"centroids\"]}'",
           "concept": "k-means"
         },
         {
