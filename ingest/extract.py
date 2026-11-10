@@ -110,7 +110,6 @@ def _trim_fragment(spans):
     return had_callout
 
 
-LEADING_CALLOUTS = re.compile(r"^\s*(?:[①-⑳❶-❿]\s*)+")
 TRIPLE_QUOTES = ("'''", '"""')
 
 
@@ -162,28 +161,34 @@ def _open_literal_or_comment(text, quote=None):
     return end is not None or comment
 
 
-def _strip_leading_callouts(spans):
-    # A fragment joined onto a line must not carry an annotation into the middle of the code.
-    text = "".join(s.get("text", "") for s in spans)
-    match = LEADING_CALLOUTS.match(text)
-    if not match:
-        return False
-    cut = match.end()
-    for span in spans:
-        original = span.get("text", "")
-        take = min(cut, len(original))
-        span["text"] = original[take:]
-        if "chars" in span:
-            span["chars"] = span["chars"][take:]
-        cut -= take
-    return True
+JOIN_CALLOUTS = re.compile(r"\s*(?:[①-⑳❶-❿]\s*)+")
 
 
-def _visual_lines(lines, carry=lambda: None):
+def _strip_join_callouts(text, joins, quote=None):
+    """Drop callouts that begin the fragments joined at offsets `joins` of one code line.
+
+    A fragment joined onto a line must not carry an annotation into the middle of the code, but inside a string
+    or a comment a circled digit is content. `quote` is the quote left open by the listing's earlier lines; the
+    caller decides listing boundaries first, so the state never leaks in from a previous listing.
+    """
+    out, last = [], 0
+    for at in sorted(set(joins)):
+        if at < last or at >= len(text):
+            continue
+        match = JOIN_CALLOUTS.match(text, at)
+        if not match or not CALLOUTS.search(match.group()) or _open_literal_or_comment(text[:at], quote):
+            continue
+        out.append(text[last:at])
+        last = match.end()
+    out.append(text[last:])
+    return "".join(out)
+
+
+def _visual_lines(lines):
     """Reassemble raw fragments by baseline proximity, then x position.
 
-    `carry()` gives the triple quote left open by the code lines already accepted, so a joined fragment that
-    continues a multi-line string keeps its content.
+    Each merged line records in "joins" the text offsets where a later fragment begins, so callouts there can
+    be judged once the line's place in a listing (and so its string state) is known.
     """
     groups = []
     for raw in lines:
@@ -216,10 +221,9 @@ def _visual_lines(lines, carry=lambda: None):
             limit = 24 if text.lstrip().startswith("#") else 10
             if merged is not None and gap is not None and -.1 <= gap <= limit * width:
                 had_callout = _trim_fragment(merged["spans"])
-                # Inside a string or comment a circled digit is content, not an annotation.
+                spaces = 1 if had_callout else max(0, round(gap / width))
                 joined = "".join(s.get("text", "") for s in merged["spans"])
-                led_callout = not _open_literal_or_comment(joined, carry()) and _strip_leading_callouts(spans)
-                spaces = 1 if had_callout or led_callout else max(0, round(gap / width))
+                merged.setdefault("joins", []).append(len(joined) + spaces)
                 merged["spans"].append(dict(text=" " * spaces, flags=8))
                 merged["spans"].extend(spans)
                 old = merged["bbox"]
@@ -260,12 +264,14 @@ def _code_blocks(page):
         "".join(c["c"] for c in s["chars"]) if "chars" in s else s.get("text", "")
         for s in line.get("spans", [])).strip() in {"•", "◦", "▪", "–"}]
     for block in layout["blocks"]:
-        for line in _visual_lines(block.get("lines", []), carry=lambda: _carried_quote(t for t, _, _ in current)):
+        for line in _visual_lines(block.get("lines", [])):
             spans = [dict(span) for span in line.get("spans", [])]
             for span in spans:
                 if "chars" in span:
                     span["text"] = "".join(c["c"] for c in span["chars"])
-            text = _normalize("".join(span.get("text", "") for span in spans))
+            raw = "".join(span.get("text", "") for span in spans)
+            text = _normalize(raw)
+            joins = line.get("joins", []) if text == raw else []   # offsets are only valid in unchanged text
             if not CALLOUTS.sub("", text).strip():
                 continue
             total = sum(sum(not c.isspace() for c in CALLOUTS.sub("", s["text"])) for s in spans)
@@ -315,14 +321,14 @@ def _code_blocks(page):
                     limit = 24 if text.lstrip().startswith("#") else 10
                     if same_row and -.1 <= gap <= limit * width:
                         old_text, old_origin, old_width = current[-1]
-                        inside = _open_literal_or_comment(old_text, _carried_quote(t for t, _, _ in current[:-1]))
-                        lead = None if inside else LEADING_CALLOUTS.match(text)
-                        if lead:
-                            text = text[lead.end():]
-                        spaces = 1 if previous_callout or lead else max(0, round(gap / width))
+                        spaces = 1 if previous_callout else max(0, round(gap / width))
                         if old_text[-1:].isidentifier() and text[:1].isidentifier():
                             spaces = max(1, spaces)
-                        current[-1] = (old_text + " " * spaces + text, old_origin, old_width)
+                        # The row continues: judge this fragment's callouts with the state the row has reached.
+                        at = len(old_text) + spaces
+                        joined = _strip_join_callouts(old_text + " " * spaces + text, [at] + [at + j for j in joins],
+                                                      _carried_quote(t for t, _, _ in current[:-1]))
+                        current[-1] = (joined, old_origin, old_width)
                         previous = (previous[0], min(previous[1], bbox[1]), _ink_box(line)[2],
                                     max(previous[3], bbox[3]))
                         previous_callout = trailing_callout
@@ -342,6 +348,8 @@ def _code_blocks(page):
                         flush()
                     elif delta <= 1.5 * fallback:
                         pitches.append(delta)
+                # Listing boundaries are settled (any flush happened above), so the carried state is this listing's.
+                text = _strip_join_callouts(text, joins, _carried_quote(t for t, _, _ in current))
                 current.append((text, origin, width or 1))
                 previous = _ink_box(line)
                 previous_baseline = _baseline(line) if _has_origin(line) else None

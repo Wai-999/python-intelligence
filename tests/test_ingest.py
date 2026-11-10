@@ -978,3 +978,36 @@ def test_carried_single_quote_needs_an_escaped_newline():
     assert _carried_quote(["s = 'a \\\\"]) is None          # an escaped backslash, not an escaped newline
     assert _carried_quote(["s = 'a \\", "b'"]) is None      # closed on the next line
     assert _carried_quote(['s = "a \\', 'b \\']) == '"'      # still continuing
+
+
+def _blocks_page(blocks):
+    class Page:
+        mediabox = pymupdf.Rect(0, 0, 600, 800)
+        def get_text(self, kind):
+            return {'blocks': [{'lines': [dict(bbox=spans[0]['bbox'], spans=spans) for spans in block]}
+                               for block in blocks]}
+    return Page()
+
+
+def test_row_continued_from_an_earlier_block_keeps_its_string_state():
+    # The row starts in one block (opening a string) and continues in the next, which joins its own fragments.
+    from ingest.extract import _code_blocks
+    page = _blocks_page([
+        [[_fixture_span('s = "a', 50, 50)]],
+        [[_fixture_span('b', 92, 50)], [_fixture_span('① c"', 104, 50)]],
+    ])
+    assert _code_blocks(page) == ['s = "a b ① c"']
+
+
+@pytest.mark.parametrize('separate', [False, True])
+@pytest.mark.parametrize('x,y', [(50, 300), (350, 50)])   # a vertical gap, or a jump to another column
+def test_open_quote_does_not_leak_into_the_next_listing(separate, x, y):
+    from ingest.extract import _code_blocks
+    page = _fixture_page([
+        [_fixture_span('s = """open', 50, 30)],
+        [_fixture_span('x = 1', x, y)],
+        [_fixture_span('① + 2', x + 36, y)],
+    ])
+    if separate:
+        page = _separate_blocks(page)
+    assert _code_blocks(page) == ['s = """open', 'x = 1 + 2']
