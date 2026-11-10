@@ -203,6 +203,11 @@
           "concept": "feature-scaling"
         },
         {
+          "name": "a tiny spread is still a spread",
+          "code": "tr, te = standardize([[1e-12, 5], [2e-12, 5], [3e-12, 7]], [[4e-12, 6]])\nimport statistics\ncols = [[1e-12, 2e-12, 3e-12], [5, 5, 7]]\nm = [statistics.fmean(c) for c in cols]\ns = [statistics.pstdev(c) for c in cols]\nz = lambda row: [(v - m[j]) / s[j] for j, v in enumerate(row)]\nwant_tr, want_te = [z(r) for r in [[1e-12, 5], [2e-12, 5], [3e-12, 7]]], [z([4e-12, 6])]\nassert all(abs(a - b) < 1e-9 for got, want in ((tr, want_tr), (te, want_te)) for gr, wr in zip(got, want) for a, b in zip(gr, wr)), f'a spread of about 8e-13 is not 0: only an exactly constant column is divided by 1; expected about {want_tr} and {want_te}, got {tr} and {te}'",
+          "concept": "standardization"
+        },
+        {
           "name": "an empty test set is fine",
           "code": "tr, te = standardize([[1, 2], [3, 4]], [])\nassert te == [], f'got {te}'\nassert tr == [[-1.0, -1.0], [1.0, 1.0]]",
           "concept": "feature-scaling"
@@ -265,6 +270,11 @@
         {
           "name": "units don't matter",
           "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nnew = [[20.6, 2.5], [15.0, 5.2], [27.0, 3.0], [21.0, 4.0]]\ncm = predict_scaled(fit_scaled_centroids(X, y), new)\nmm = predict_scaled(fit_scaled_centroids([[h * 10, l] for h, l in X], y), [[h * 10, l] for h, l in new])\nassert cm == mm, f'centimetres {cm} vs millimetres {mm}: standardized values have no units'\nassert cm[0] == 'fern', f'(20.6, 2.5) is a fern once both features count; got {cm}'",
+          "concept": "standardization"
+        },
+        {
+          "name": "tiny units don't matter either",
+          "code": "X = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nnew = [[20.6, 2.5], [15.0, 5.2], [27.0, 3.0], [21.0, 4.0]]\ncm = predict_scaled(fit_scaled_centroids(X, y), new)\ntiny = fit_scaled_centroids([[h * 1e-12, l] for h, l in X], y)\nassert abs(tiny['stds'][0] / fit_scaled_centroids(X, y)['stds'][0] - 1e-12) < 1e-21, f'the stored spread shrinks with the unit, it does not become 1; got {tiny[\"stds\"]}'\nassert predict_scaled(tiny, [[h * 1e-12, l] for h, l in new]) == cm, 'heights in units a trillion times larger give the same predictions'",
           "concept": "standardization"
         },
         {
