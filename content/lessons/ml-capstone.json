@@ -333,6 +333,16 @@
           "concept": "data-cleaning"
         },
         {
+          "name": "number labels stay numbers",
+          "code": "X, y = load_examples('a,c\\n1,10\\n2,2\\n3,0.5\\n', ['a'], 'c')\nassert y == [10, 2, 0.5] and not any(isinstance(v, str) for v in y), f'keep labels as the numbers they are; got {y}'",
+          "concept": "data-cleaning"
+        },
+        {
+          "name": "quoted fields",
+          "code": "QUOTED = 'a,b,label\\n\"1.5\",2,\"red, ripe\"\\n3,4,\"two\\nlines\"\\n'\nX, y = load_examples(QUOTED, ['a', 'b'], 'label')\nassert (X, y) == ([[1.5, 2.0], [3.0, 4.0]], ['red, ripe', 'two\\nlines']), f'a quoted field can hold a comma or a line break; got {(X, y)}'",
+          "concept": "data-cleaning"
+        },
+        {
           "name": "nothing left after cleaning",
           "code": "assert load_examples('a,c\\n,x\\n1,\\n', ['a'], 'c') == ([], []), 'every row has a gap: return two empty lists'\nassert load_examples('a,c\\n', ['a'], 'c') == ([], []), 'a header with no rows: return two empty lists'",
           "concept": "data-cleaning"
