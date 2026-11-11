@@ -300,6 +300,46 @@
     "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what kNN is and how k trades noise against boundary detail; the lesson does not use scikit-learn."
    },
    "sha256": "0b44e970ea6a5f9a7e2d146b18b5f575f1beb6aa82731d7d3a806f00defbeeb3"
+  },
+  {
+   "source_id": "skdocs-15-linear-model",
+   "title": "scikit-learn 1.5 User Guide: Linear Models",
+   "short": "scikit-learn 1.5 docs, Linear Models",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/linear_model.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-10",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what logistic regression models (a probability through the logistic function) and the log loss it minimises; the lesson does not use scikit-learn."
+   },
+   "sha256": "c5219ba7fa89456b6af2336311409c3a40e2a416fcfe030bd2f56eb471c08287"
+  },
+  {
+   "source_id": "pydocs-312-math",
+   "title": "Python 3.12 Library Reference: math — Mathematical functions",
+   "short": "Python 3.12 docs, math",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/math.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-10",
+    "basis": "Official Python documentation (PSF licence). Cited for math.exp and math.log, and for OverflowError/ValueError on out-of-range arguments."
+   },
+   "sha256": "1f356c2ceef5e5f776b6fe6cdad2b51ed0a646b683a6dcbc9774ab978e498365"
   }
  ]
 }

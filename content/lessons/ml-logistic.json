@@ -1,0 +1,419 @@
+{
+  "id": "ml-logistic",
+  "title": "Logistic regression: classifying with probabilities",
+  "summary": "Turn a linear score into a probability with the logistic sigmoid, measure it with the log loss, and fit it by gradient descent.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-classification",
+    "ml-linear-regression"
+  ],
+  "concepts": [
+    "logistic-regression",
+    "sigmoid",
+    "log-loss"
+  ],
+  "sources": [
+    {
+      "id": "mml-chain",
+      "source_id": "pch-mml-book",
+      "pages": [
+        151,
+        151
+      ],
+      "section": "5.1 Differentiation of Univariate Functions",
+      "use": "reference"
+    },
+    {
+      "id": "mml-sigmoid",
+      "source_id": "pch-mml-book",
+      "pages": [
+        219,
+        219
+      ],
+      "section": "6.6 Conjugacy and the Exponential Family",
+      "use": "reference"
+    },
+    {
+      "id": "mml-gd",
+      "source_id": "pch-mml-book",
+      "pages": [
+        233,
+        238
+      ],
+      "section": "7.1 Optimization Using Gradient Descent",
+      "use": "reference"
+    },
+    {
+      "id": "mml-mle",
+      "source_id": "pch-mml-book",
+      "pages": [
+        271,
+        273
+      ],
+      "section": "8.3 Parameter Estimation",
+      "use": "reference"
+    },
+    {
+      "id": "mml-glm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        321,
+        322
+      ],
+      "section": "9.5 Further Reading",
+      "use": "reference"
+    },
+    {
+      "id": "math-exp",
+      "source_id": "pydocs-312-math",
+      "pages": [
+        3,
+        3
+      ],
+      "section": "Power and logarithmic functions",
+      "use": "reference"
+    },
+    {
+      "id": "math-errors",
+      "source_id": "pydocs-312-math",
+      "pages": [
+        8,
+        8
+      ],
+      "section": "Constants",
+      "use": "reference"
+    },
+    {
+      "id": "sk-logreg",
+      "source_id": "skdocs-15-linear-model",
+      "pages": [
+        25,
+        25
+      ],
+      "section": "1.1.11. Logistic regression",
+      "use": "reference"
+    },
+    {
+      "id": "sk-binary",
+      "source_id": "skdocs-15-linear-model",
+      "pages": [
+        26,
+        26
+      ],
+      "section": "1.1.11.1. Binary Case",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "How sure is the model?",
+      "body": "A spam filter that says \"spam\" is useful; one that says \"97% likely spam\" is more useful, because\nyou can decide how sure it must be before an email disappears. The linear classifier from an earlier\nlesson gives a score `w · x + b` whose sign picks the class, but the score itself can be any number.\n**Logistic regression** keeps the same linear score and turns it into a probability between 0 and 1.\nDespite its name, it is a classifier."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Squashing a score into a probability",
+      "body": "The **logistic sigmoid** `σ(z) = 1 / (1 + e^(−z))` maps any real `z` into the open interval (0, 1):\n`σ(0) = 0.5`, large positive scores come out close to 1 and large negative ones close to 0. Read\n`p = σ(w · x + b)` as the model's probability that the label is 1. Since `σ` only increases,\n`p ≥ 0.5` exactly when `w · x + b ≥ 0`: thresholding at 0.5 gives the same boundary as the linear\nclassifier, and the probability says how far from that boundary, and on which side, an example lies.\n\nTo fit `w` and `b`, measure how surprised the model is by the true labels. Predicting `p = 0.9` for an\nexample that really is 1 costs `−log 0.9 ≈ 0.11`; predicting `p = 0.01` for it costs `−log 0.01 ≈ 4.6`.\nConfident mistakes are punished hardest.",
+      "cites": [
+        "mml-sigmoid",
+        "mml-glm",
+        "sk-logreg",
+        "sk-binary"
+      ],
+      "socratic": {
+        "questions": [
+          "If w · x + b = 0 for some example, what probability does the model give it?",
+          "Doubling both w and b keeps the boundary where it is. What happens to the probabilities either side of it?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a negative score become a probability",
+      "body": "This `sigmoid` never hands `math.exp` a positive number, so it can't overflow. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import math\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\nprint(round(sigmoid(-3), 4))",
+        "frames": [
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "math": "<module 'math' (built-in)>",
+              "sigmoid": "<function sigmoid>"
+            },
+            "note": "What probability does a score of −3 give?"
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "sigmoid(-3)"
+            ],
+            "locals": {
+              "z": "-3"
+            },
+            "note": "The score is negative, so skip the first formula."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>",
+              "sigmoid(-3)"
+            ],
+            "locals": {
+              "z": "-3"
+            },
+            "note": "e^(−3) is small and safe to compute; for z = −1000 it would simply be 0.0."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>",
+              "sigmoid(-3)"
+            ],
+            "locals": {
+              "z": "-3",
+              "e": "0.049787068367863944"
+            },
+            "note": "e / (1 + e) is the same value as 1 / (1 + e^3), multiplied top and bottom by e^(−3)."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "math": "<module 'math' (built-in)>",
+              "sigmoid": "<function sigmoid>"
+            },
+            "note": "About a 5% chance that the label is 1.",
+            "output": "0.0474"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Model:** for an example `x` with label `y ∈ {0, 1}`, the score is `z = w · x + b` and the predicted\nprobability that `y = 1` is `p = σ(z) = 1 / (1 + e^(−z))`. To predict a class, threshold `p` (this\nlesson uses 0.5, which means `z ≥ 0` gives class 1).\n\n**Computing σ safely:** `math.exp` raises `OverflowError` when the result is too large for a float\n(`math.exp(1000)` does). For `z ≥ 0` use `1 / (1 + e^(−z))`; for `z < 0` use the equal expression\n`e^z / (1 + e^z)`. Then `math.exp` only ever sees a number that is zero or below, and its result is at\nmost 1.\n\n**Log loss:** over `N` examples, `L = −(1/N) Σ [yᵢ log pᵢ + (1 − yᵢ) log(1 − pᵢ)]` (natural logarithm).\nEach term is the negative log-probability the model gave the label that really happened, so `L` is the\nnegative log-likelihood of the labels averaged over the examples. `math.log(0.0)` raises `ValueError`,\nso every `pᵢ` must lie strictly between 0 and 1.\n\n**Gradient:** with `σ′(z) = σ(z)(1 − σ(z))` and the chain rule, the gradient of `L` simplifies to\n`∂L/∂wⱼ = (1/N) Σ (pᵢ − yᵢ) xᵢⱼ` and `∂L/∂b = (1/N) Σ (pᵢ − yᵢ)`: the same shape as for least squares,\nwith `p` in place of the prediction and no factor 2. Gradient descent starts from `w = 0`, `b = 0` and\nrepeats `θ ← θ − γ · gradient`, computing every gradient from the same old parameters before updating\nany of them.",
+      "cites": [
+        "sk-binary",
+        "mml-chain",
+        "mml-gd",
+        "mml-mle",
+        "math-exp",
+        "math-errors"
+      ]
+    },
+    {
+      "id": "fit",
+      "kind": "example",
+      "title": "Run it: hours of study and passing",
+      "body": "Ten students, the hours each studied and whether they passed. Watch the log loss fall from `log 2`\n(every probability 0.5) and see where the model puts its 50% point.",
+      "code": "import math\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\nhours = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]\npassed = [0, 0, 0, 1, 0, 1, 0, 1, 1, 1]\nw, b, lr = 0.0, 0.0, 0.1\n\nfor step in range(3001):\n    p = [sigmoid(w * x + b) for x in hours]\n    if step in (0, 10, 100, 1000, 3000):\n        loss = -sum(math.log(q) if y else math.log(1 - q) for q, y in zip(p, passed)) / len(p)\n        print(step, round(loss, 4))\n    dw = sum((q - y) * x for q, y, x in zip(p, passed, hours)) / len(p)\n    db = sum(q - y for q, y in zip(p, passed)) / len(p)\n    w, b = w - lr * dw, b - lr * db\n\nprint('w', round(w, 2), 'b', round(b, 2), '50% at', round(-b / w, 2), 'hours')\nfor x in (1.0, 2.75, 4.5):\n    print(x, 'hours:', round(sigmoid(w * x + b), 2))\n",
+      "expected_output": "0 0.6931\n10 0.6355\n100 0.5357\n1000 0.4351\n3000 0.4335\nw 1.35 b -3.71 50% at 2.75 hours\n1.0 hours: 0.09\n2.75 hours: 0.5\n4.5 hours: 0.91\n"
+    },
+    {
+      "id": "probs",
+      "kind": "guided",
+      "title": "Your turn: the sigmoid and the log loss",
+      "body": "Complete two functions.\n\n`sigmoid(z)` returns `1 / (1 + e^(−z))` as a float, accurately and without raising for any finite float\n`z` (try `-1000` and `1000`).\n\n`log_loss(y, p)` takes a list of labels and a list of predicted probabilities and returns the mean log\nloss as a float. Raise `ValueError` if the lists are empty or differ in length, if any label isn't 0 or 1,\nor if any probability isn't strictly between 0 and 1.",
+      "starter": "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef log_loss(y, p):\n    return sum(abs(label - prob) for label, prob in zip(y, p))\n",
+      "hints": [
+        "Split on the sign of `z`: for negative `z`, compute `e = math.exp(z)` and return `e / (1 + e)`.",
+        "Check every pair before adding `label * math.log(prob) + (1 - label) * math.log(1 - prob)`; divide by `len(y)` at the end.",
+        "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef log_loss(y, p):\n    if not y or len(y) != len(p):\n        raise ValueError('need one probability per label, and at least one')\n    total = 0.0\n    for label, prob in zip(y, p):\n        if label not in (0, 1) or not 0 < prob < 1:\n            raise ValueError('labels must be 0 or 1 and probabilities strictly between 0 and 1')\n        total -= label * math.log(prob) + (1 - label) * math.log(1 - prob)\n    return total / len(y)\n"
+      ],
+      "tests": [
+        {
+          "name": "the sigmoid at a few scores",
+          "code": "import math\nfor z, want in ((0, 0.5), (2, 0.8807970779778823), (-2, 0.11920292202211755), (0.5, 0.6224593312018546), (-3, 0.04742587317756678)):\n    got = sigmoid(z)\n    assert isinstance(got, float) and abs(got - want) <= 1e-12, f'sigmoid({z}) should be {want}, got {got!r}'",
+          "concept": "sigmoid"
+        },
+        {
+          "name": "large scores don't overflow",
+          "code": "for z, want in ((1000, 1.0), (-1000, 0.0), (1e308, 1.0), (-1e308, 0.0), (710, 1.0), (-800, 0.0)):\n    got = sigmoid(z)\n    assert got == want, f'sigmoid({z}) should be {want}, got {got!r}'",
+          "concept": "sigmoid"
+        },
+        {
+          "name": "tiny probabilities stay accurate",
+          "code": "import math\nfor z in (-40, -50, -300, -700, -710):\n    got, want = sigmoid(z), math.exp(z) / (1 + math.exp(z))\n    assert want > 0 and abs(got - want) <= 1e-12 * want, f'sigmoid({z}) should be about {want!r}, got {got!r}'",
+          "concept": "sigmoid"
+        },
+        {
+          "name": "symmetry",
+          "code": "for z in (0.25, 1, 3.5, 12):\n    assert abs(sigmoid(-z) - (1 - sigmoid(z))) <= 1e-12, f'sigmoid(-{z}) should equal 1 - sigmoid({z})'",
+          "concept": "sigmoid"
+        },
+        {
+          "name": "log loss by hand",
+          "code": "import math\ngot = log_loss([1, 0, 1], [0.9, 0.2, 0.4])\nwant = -(math.log(0.9) + math.log(0.8) + math.log(0.4)) / 3\nassert isinstance(got, float) and abs(got - want) <= 1e-12, f'mean of -log 0.9, -log 0.8 and -log 0.4 is {want}; got {got!r}'\nassert abs(log_loss([1], [0.5]) - math.log(2)) <= 1e-12, 'one example at p = 0.5 costs log 2 (natural log)'\nassert abs(log_loss([0, 0], [0.25, 0.75]) - (-(math.log(0.75) + math.log(0.25)) / 2)) <= 1e-12, 'a label 0 is scored by log(1 - p)'",
+          "concept": "log-loss"
+        },
+        {
+          "name": "confident mistakes cost most",
+          "code": "assert log_loss([1], [0.01]) > 4.6 > log_loss([1], [0.4]) > log_loss([1], [0.9]) > 0, 'the further p is from the true label, the bigger the loss'\nassert abs(log_loss([0], [0.99]) - log_loss([1], [0.01])) <= 1e-12, 'p = 0.99 for a 0 is as bad as p = 0.01 for a 1'",
+          "concept": "log-loss"
+        },
+        {
+          "name": "a mean, not a sum",
+          "code": "import math\nassert abs(log_loss([1, 1, 1, 1], [0.5] * 4) - math.log(2)) <= 1e-12, 'four examples at p = 0.5 still average log 2'",
+          "concept": "log-loss"
+        },
+        {
+          "name": "bad input",
+          "code": "import math\nfor y, p in (([], []), ([1], []), ([], [0.5]), ([1, 0], [0.5]), ([1], [0.5, 0.5]), ([2], [0.5]), ([-1], [0.5]), ([0.5], [0.5]), ([1, 0, 3], [0.5, 0.5, 0.5]),\n             ([1], [0.0]), ([0], [0.0]), ([1], [1.0]), ([0], [1.0]), ([1], [1.5]), ([0], [-0.5]), ([1], [math.nan]), ([0, 1], [0.5, 1.0])):\n    try:\n        log_loss(y, p)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for y={y}, p={p}')",
+          "concept": "log-loss"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "y, p = [1, 0], [0.7, 0.4]\nlog_loss(y, p)\nassert (y, p) == ([1, 0], [0.7, 0.4]), 'do not modify the inputs'",
+          "concept": "log-loss"
+        }
+      ],
+      "solution": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef log_loss(y, p):\n    if not y or len(y) != len(p):\n        raise ValueError('need one probability per label, and at least one')\n    total = 0.0\n    for label, prob in zip(y, p):\n        if label not in (0, 1) or not 0 < prob < 1:\n            raise ValueError('labels must be 0 or 1 and probabilities strictly between 0 and 1')\n        total -= label * math.log(prob) + (1 - label) * math.log(1 - prob)\n    return total / len(y)\n"
+    },
+    {
+      "id": "train",
+      "kind": "challenge",
+      "title": "Challenge: fit by gradient descent",
+      "body": "The starter gives you `sigmoid`. Write `fit_logistic(X, y, lr=0.1, steps=1000)`, where `X` is a list of\nrows (each a list of numbers) and `y` a list of 0/1 labels. Start from `w = [0.0, ...]` (one weight per\nfeature) and `b = 0.0`, and take exactly `steps` gradient descent steps on the mean log loss with\nlearning rate `lr`, computing all the gradients from the old values before updating. Return `(w, b)`:\n`w` a list of floats and `b` a float. Raise `ValueError` if there are no rows, `X` and `y` differ in\nlength, the rows differ in length, a label isn't 0 or 1, `lr <= 0` or `steps < 0`.",
+      "starter": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef fit_logistic(X, y, lr=0.1, steps=1000):\n    w, b = [0.0] * len(X[0]), 0.0\n    return w, b\n",
+      "hints": [
+        "Each step: `err = [sigmoid(w · row + b) - label ...]`, then `dw[j]` is the mean of `err[i] * X[i][j]` and `db` the mean of `err`.",
+        "Build the new `w` from the old `w` and `dw`, and the new `b` from the old `b` and `db`, only after both gradients exist.",
+        "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef fit_logistic(X, y, lr=0.1, steps=1000):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    if any(label not in (0, 1) for label in y) or lr <= 0 or steps < 0:\n        raise ValueError('labels must be 0 or 1, lr positive and steps not negative')\n    n, d = len(X), len(X[0])\n    w, b = [0.0] * d, 0.0\n    for _ in range(steps):\n        err = [sigmoid(sum(wj * xj for wj, xj in zip(w, row)) + b) - label for row, label in zip(X, y)]\n        dw = [sum(e * row[j] for e, row in zip(err, X)) / n for j in range(d)]\n        db = sum(err) / n\n        w = [wj - lr * g for wj, g in zip(w, dw)]\n        b = b - lr * db\n    return w, float(b)\n"
+      ],
+      "tests": [
+        {
+          "name": "one step by hand",
+          "code": "w, b = fit_logistic([[1], [2], [3], [4]], [0, 0, 1, 1], lr=0.1, steps=1)\nassert isinstance(w, list) and len(w) == 1 and abs(w[0] - 0.05) <= 1e-12 and abs(b) <= 1e-12 and isinstance(b, float), f'every p starts at 0.5, so dw = mean((0.5 - y) * x) = -0.5 and db = 0; got {(w, b)}'",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "several steps, one feature",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX, y = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0]], [0, 0, 0, 1, 0, 1, 0, 1, 1, 1]\nfor lr, steps in ((0.1, 2), (0.1, 3000), (0.5, 40)):\n    _close(fit_logistic(X, y, lr=lr, steps=steps), _ref(X, y, lr, steps), f'lr={lr}, steps={steps}')",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "both updates use the old values",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX, y = [[1], [2], [3]], [1, 0, 0]\n_close(fit_logistic(X, y, lr=1.0, steps=2), _ref(X, y, 1.0, 2), 'compute db from the old w, before updating it')",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "several features",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX = [[1, 0, 2], [0, 1, -1], [2, 1, 0], [-1, 3, 1], [0.5, -2, 4], [1, 1, 1]]\ny = [1, 0, 1, 0, 1, 0]\n_close(fit_logistic(X, y, lr=0.2, steps=60), _ref(X, y, 0.2, 60), 'every feature has its own weight')\nX2 = [[0, 0, 5], [0, 0, -5], [0, 0, 4], [0, 0, -4]]\nw, b = fit_logistic(X2, [1, 0, 1, 0], lr=0.1, steps=50)\nassert w[0] == w[1] == 0.0 and w[2] > 0, f'only the third feature varies, so only its weight should move; got {w}'",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "the default lr and steps",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX, y = [[0.5], [1.0], [2.0], [3.0], [3.5]], [0, 1, 0, 1, 1]\n_close(fit_logistic(X, y), _ref(X, y, 0.1, 1000), 'defaults lr=0.1, steps=1000')",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "zero steps",
+          "code": "w, b = fit_logistic([[1, 2], [3, 4]], [0, 1], lr=0.1, steps=0)\nassert (w, b) == ([0.0, 0.0], 0.0) and isinstance(w, list) and all(isinstance(v, float) for v in w + [b]), f'no steps: the starting point, as floats; got {(w, b)!r}'",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "big scores don't overflow",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX, y = [[1000], [-1000], [900]], [1, 0, 0]\n_close(fit_logistic(X, y, lr=0.1, steps=3), _ref(X, y, 0.1, 3), 'scores of thousands must not raise OverflowError')",
+          "concept": "sigmoid"
+        },
+        {
+          "name": "the loss goes down",
+          "code": "import math\nX, y = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0]], [0, 0, 0, 1, 0, 1, 0, 1, 1, 1]\ndef loss(w, b):\n    ps = [1 / (1 + math.exp(-(w[0] * r[0] + b))) for r in X]\n    return -sum(math.log(p) if t else math.log(1 - p) for p, t in zip(ps, y)) / len(y)\na, c = fit_logistic(X, y, lr=0.1, steps=10), fit_logistic(X, y, lr=0.1, steps=3000)\nassert abs(loss(*a) - 0.6354631422592064) <= 1e-9 and abs(loss(*c) - 0.433512871675351) <= 1e-9, 'the example lesson: 0.6355 after 10 steps, 0.4335 after 3000'",
+          "concept": "log-loss"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nX, y = [[1, 2], [3, 1], [0, 0]], [1, 0, 1]\nkeep = copy.deepcopy((X, y))\nfit_logistic(X, y, lr=0.1, steps=5)\nassert (X, y) == keep, 'do not modify the inputs'",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "bad input",
+          "code": "for args in (([], []), ([[1]], []), ([[1], [2]], [1]), ([[1]], [1, 0]), ([[1, 2], [3]], [0, 1]), ([[1], [2, 3]], [0, 1]), ([[1], [2], [3, 4]], [0, 1, 0]), ([[1], [2]], [0, 2]), ([[1], [2]], [-1, 1]), ([[1], [2]], [0, 0.5])):\n    try:\n        fit_logistic(*args, lr=0.1, steps=1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X, y = {args}')\nfor lr, steps in ((0, 1), (-0.1, 1), (0.1, -1), (0, 0), (0.1, -5)):\n    try:\n        fit_logistic([[1], [2]], [0, 1], lr=lr, steps=steps)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for lr={lr}, steps={steps}')",
+          "concept": "logistic-regression"
+        }
+      ],
+      "solution": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef fit_logistic(X, y, lr=0.1, steps=1000):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    if any(label not in (0, 1) for label in y) or lr <= 0 or steps < 0:\n        raise ValueError('labels must be 0 or 1, lr positive and steps not negative')\n    n, d = len(X), len(X[0])\n    w, b = [0.0] * d, 0.0\n    for _ in range(steps):\n        err = [sigmoid(sum(wj * xj for wj, xj in zip(w, row)) + b) - label for row, label in zip(X, y)]\n        dw = [sum(e * row[j] for e, row in zip(err, X)) / n for j in range(d)]\n        db = sum(err) / n\n        w = [wj - lr * g for wj, g in zip(w, dw)]\n        b = b - lr * db\n    return w, float(b)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "A model's score for an example is w · x + b = 0. What probability does logistic regression give it?",
+          "choices": [
+            "0.5",
+            "0",
+            "1",
+            "It depends on w"
+          ],
+          "answer": 0,
+          "explanation": "σ(0) = 1 / (1 + 1) = 0.5: the example sits on the decision boundary.",
+          "concept": "sigmoid"
+        },
+        {
+          "id": "q2",
+          "prompt": "Thresholding p at 0.5, which examples are predicted as class 1?",
+          "choices": [
+            "Those with w · x + b ≥ 0",
+            "Those with w · x + b ≥ 0.5",
+            "Those with p above the mean of p",
+            "It depends on the log loss"
+          ],
+          "answer": 0,
+          "explanation": "σ(z) ≥ 0.5 exactly when z ≥ 0, so the boundary is the same hyperplane as the linear classifier's.",
+          "concept": "logistic-regression"
+        },
+        {
+          "id": "q3",
+          "prompt": "An example's true label is 1. Which prediction gives the larger log loss?",
+          "choices": [
+            "p = 0.01",
+            "p = 0.4",
+            "p = 0.9",
+            "They cost the same"
+          ],
+          "answer": 0,
+          "explanation": "−log 0.01 ≈ 4.6, against ≈ 0.92 for 0.4 and ≈ 0.11 for 0.9: confident mistakes cost most.",
+          "concept": "log-loss"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why compute σ(z) for negative z as e^z / (1 + e^z)?",
+          "choices": [
+            "So math.exp never overflows, for example at z = −1000",
+            "Because it is a different, better function",
+            "To make σ(0) equal 0.5",
+            "Because math.log needs it"
+          ],
+          "answer": 0,
+          "explanation": "It is the same value; the naive form would call math.exp(1000), which raises OverflowError.",
+          "concept": "sigmoid"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Turn a linear score into a probability with the logistic sigmoid, and compute it without overflow.\n- Explain why thresholding at 0.5 gives the same boundary as the linear classifier.\n- Compute the log loss and say why it punishes confident mistakes hardest.\n- Fit logistic regression by gradient descent, with gradients `mean((p − y) · x)` and `mean(p − y)`."
+    }
+  ]
+}

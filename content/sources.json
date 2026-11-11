@@ -581,6 +581,89 @@
     "20": "training",
     "21": "transform"
    }
+  },
+  "skdocs-15-linear-model": {
+   "title": "scikit-learn 1.5 User Guide: Linear Models",
+   "short": "scikit-learn 1.5 docs, Linear Models",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "official_url": "https://scikit-learn.org/1.5/modules/linear_model.html",
+   "kind": "web",
+   "sha256": "c5219ba7fa89456b6af2336311409c3a40e2a416fcfe030bd2f56eb471c08287",
+   "page_count": 41,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "linear-models",
+    "2": "ordinary-least-squares",
+    "3": "non-negative-least-squares",
+    "4": "ordinary-least-squares-complexity",
+    "5": "ridge-regression-and-classification",
+    "6": "regression",
+    "7": "classification",
+    "8": "ridge-complexity",
+    "9": "setting-the-regularization-parameter-leave-one-out-cross-validation",
+    "10": "lasso",
+    "11": "setting-regularization-parameter",
+    "12": "using-cross-validation",
+    "13": "information-criteria-based-model-selection",
+    "14": "aic-and-bic-criteria",
+    "15": "comparison-with-the-regularization-parameter-of-svm",
+    "16": "multi-task-lasso",
+    "17": "elastic-net",
+    "18": "multi-task-elastic-net",
+    "19": "least-angle-regression",
+    "20": "lars-lasso",
+    "21": "orthogonal-matching-pursuit-omp",
+    "22": "bayesian-regression",
+    "23": "bayesian-ridge-regression",
+    "24": "automatic-relevance-determination-ard",
+    "25": "logistic-regression",
+    "26": "binary-case",
+    "27": "multinomial-case",
+    "28": "solvers",
+    "29": "differences-between-solvers",
+    "30": "generalized-linear-models",
+    "31": "usage",
+    "32": "stochastic-gradient-descent-sgd",
+    "33": "perceptron",
+    "34": "passive-aggressive-algorithms",
+    "35": "robustness-regression-outliers-and-modeling-errors",
+    "36": "different-scenario-and-useful-concepts",
+    "37": "ransac-random-sample-consensus",
+    "38": "theil-sen-estimator-generalized-median-based-estimator",
+    "39": "huber-regression",
+    "40": "quantile-regression",
+    "41": "polynomial-regression-extending-linear-models-with-basis-functions"
+   }
+  },
+  "pydocs-312-math": {
+   "title": "Python 3.12 Library Reference: math — Mathematical functions",
+   "short": "Python 3.12 docs, math",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/library/math.html",
+   "kind": "web",
+   "sha256": "1f356c2ceef5e5f776b6fe6cdad2b51ed0a646b683a6dcbc9774ab978e498365",
+   "page_count": 8,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "module-math",
+    "2": "number-theoretic-and-representation-functions",
+    "3": "power-and-logarithmic-functions",
+    "4": "trigonometric-functions",
+    "5": "angular-conversion",
+    "6": "hyperbolic-functions",
+    "7": "special-functions",
+    "8": "constants"
+   }
   }
  }
 }

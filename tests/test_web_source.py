@@ -18,6 +18,7 @@ PINNED_DOC_PREFIXES = (
 # each must be named here, so a new library can't slip in unpinned.
 CONCEPT_ONLY_PREFIXES = {
     "skdocs-15-neighbors": "https://scikit-learn.org/1.5/",
+    "skdocs-15-linear-model": "https://scikit-learn.org/1.5/",
 }
 
 PAGE = """<html><head><script>var x = "not text";</script></head><body>
