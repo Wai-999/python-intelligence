@@ -827,6 +827,24 @@
     "6": "categorical-naive-bayes",
     "7": "out-of-core-naive-bayes-model-fitting"
    }
+  },
+  "pydocs-312-fractions": {
+   "title": "Python 3.12 Library Reference: fractions — Rational numbers",
+   "short": "Python 3.12 docs, fractions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/library/fractions.html",
+   "kind": "web",
+   "sha256": "359d550b41e647bbea4cc7b1de4019c2f479c68ec24aab28b976954f22bb374f",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "module-fractions"
+   }
   }
  }
 }

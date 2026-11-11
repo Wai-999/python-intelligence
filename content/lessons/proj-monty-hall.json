@@ -1,0 +1,315 @@
+{
+  "id": "proj-monty-hall",
+  "title": "Project: the Monty Hall problem",
+  "summary": "Simulate the famous game-show puzzle with a reproducible random recipe, then compute the exact odds for any number of doors with fractions.",
+  "track": "projects",
+  "level": 3,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "stats-bayes"
+  ],
+  "concepts": [
+    "monty-hall-problem",
+    "monte-carlo-estimates",
+    "exact-probabilities"
+  ],
+  "sources": [
+    {
+      "id": "bb-monty",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        266,
+        272
+      ],
+      "section": "Project #48: Monty Hall Problem",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-int",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "Functions for integers",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-seq",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        5,
+        5
+      ],
+      "section": "Functions for sequences",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-repro",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "Notes on Reproducibility",
+      "use": "reference"
+    },
+    {
+      "id": "py-fractions",
+      "source_id": "pydocs-312-fractions",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "fractions — Rational numbers",
+      "use": "reference"
+    },
+    {
+      "id": "mml-rules",
+      "source_id": "pch-mml-book",
+      "pages": [
+        189,
+        192
+      ],
+      "section": "6.3 Sum Rule, Product Rule, and Bayes' Theorem",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Stick or switch?",
+      "body": "Behind one of three doors is a car; behind the other two, goats. You pick a door. The host, who knows\nwhere the car is, opens one of the *other* doors to show a goat, then offers you the chance to switch to\nthe last closed door. Most people say it makes no difference: two doors left, so 50–50. They are wrong,\nand the clearest way to convince yourself is to play the game thousands of times in code."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "What the host's choice tells you",
+      "body": "Your first pick is right 1 time in 3, and nothing the host does changes that, so staying wins 1/3 of the\ntime. The other 2 times in 3 the car is behind one of the doors you didn't pick, and the host, who must\nshow a goat, opens the *other* one of those two. Switching then lands on the car. So switching wins 2/3.\n\nThe host's choice carries information because it isn't random: it depends on where the car is. With\nmore doors the effect grows. A **Monte Carlo estimate** (play many random games and count) approximates\nthese odds; **exact** reasoning with fractions gives them precisely.",
+      "cites": [
+        "bb-monty",
+        "mml-rules"
+      ],
+      "socratic": {
+        "questions": [
+          "If the host opened a door at random and it happened to show a goat, would switching still win 2/3 of the time?",
+          "With 100 doors, where the host opens 98 goat doors you didn't pick, how often does switching win?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch the host choose",
+      "body": "The car is behind door 2 and you picked door 0. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "car, pick = 2, 0\ngoats = [d for d in range(3) if d != pick and d != car]\nprint(goats, 3 - pick - goats[0])",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "Doors are numbered 0, 1 and 2."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "car": "2",
+              "pick": "0"
+            },
+            "note": "The host may open any door that is neither yours nor the car's."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "car": "2",
+              "pick": "0",
+              "goats": "[1]"
+            },
+            "note": "Only door 1 qualifies, so the host's choice is forced. Doors 0 + 1 + 2 = 3, so the last closed door is 3 − 0 − 1 = 2: switching wins.",
+            "output": "[1] 2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**One game, reproducibly:** with a `random.Random` generator `rng`, draw `car = rng.randrange(3)`, then\n`pick = rng.randrange(3)`, then `host = rng.choice(goats)` where `goats` lists, in increasing order, the doors\nthat are neither `pick` nor `car` (always call `rng.choice`, even when only one door qualifies, so every game\nuses the generator the same way). To switch, move to the one remaining closed door, `3 − pick − host`.\n\n**Simulation:** one generator `random.Random(seed)` for all `n` games, in order; the win rate is wins / `n`.\n\n**Exactly, with more doors:** with `d` doors and a host who opens `k` goat doors you didn't pick\n(`0 ≤ k ≤ d − 2`), staying wins with probability `1/d`. Switching to one of the other `d − 1 − k` closed\ndoors at random wins with probability `(d − 1)/d · 1/(d − 1 − k)`: the car is elsewhere with probability\n`(d − 1)/d`, and then it is behind one of the remaining closed doors. Python's `fractions.Fraction` keeps\nthese exact (`Fraction(2, 3)`, not `0.6666…`).",
+      "cites": [
+        "rnd-int",
+        "rnd-seq",
+        "rnd-repro",
+        "py-fractions",
+        "mml-rules"
+      ]
+    },
+    {
+      "id": "doors",
+      "kind": "example",
+      "title": "Run it: 30,000 games each way",
+      "body": "The same seed plays the same 30,000 games for both strategies, so every game stay wins, switch loses, and\nthe other way round: the two win counts add up to exactly 30,000.",
+      "code": "import random\nfrom fractions import Fraction\n\ndef play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\nfor switch in (False, True):\n    rng = random.Random(2024)\n    wins = sum(play(rng, switch) for _ in range(30_000))\n    print('switch' if switch else 'stay  ', wins, 'wins of 30000:', round(wins / 30_000, 3))\nprint('exact:', Fraction(1, 3), 'and', Fraction(2, 3))\n",
+      "expected_output": "stay   10008 wins of 30000: 0.334\nswitch 19992 wins of 30000: 0.666\nexact: 1/3 and 2/3\n"
+    },
+    {
+      "id": "simulate",
+      "kind": "guided",
+      "title": "Your turn: play and simulate",
+      "body": "Complete two functions by the precise rules.\n\n`play(rng, switch)` plays one game with the generator `rng` and returns `True` if the player wins.\n\n`simulate(n, switch, seed)` plays `n` games with one `random.Random(seed)` and returns the win rate as a\nfloat. Raise `ValueError` if `n < 1`.",
+      "starter": "import random\n\n\ndef play(rng, switch):\n    return rng.randrange(3) == 0\n\n\ndef simulate(n, switch, seed):\n    return 0.5\n",
+      "hints": [
+        "`host = rng.choice([d for d in range(3) if d != pick and d != car])`, even when the list has one door.",
+        "Create the generator once in `simulate` and pass the same one to every `play` call.",
+        "import random\n\n\ndef play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\n\ndef simulate(n, switch, seed):\n    if n < 1:\n        raise ValueError('play at least one game')\n    rng = random.Random(seed)\n    return sum(play(rng, switch) for _ in range(n)) / n\n"
+      ],
+      "tests": [
+        {
+          "name": "one game follows the recipe",
+          "code": "import random as _r\n\ndef _play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\nfor seed in range(40):\n    for switch in (False, True):\n        a, b = _r.Random(seed), _r.Random(seed)\n        got, want = play(a, switch), _play(b, switch)\n        assert got is want, f'seed {seed}, switch={switch}: expected {want}, got {got}'\n        assert a.random() == b.random(), f'seed {seed}: draw car, pick, then the host with rng.choice, nothing more'",
+          "concept": "monte-carlo-estimates"
+        },
+        {
+          "name": "a forced host still draws",
+          "code": "import random as _r\n\ndef _play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\nrng, ref = _r.Random(5), _r.Random(5)\nfor _ in range(200):\n    assert play(rng, True) is _play(ref, True)\nassert rng.random() == ref.random(), 'call rng.choice even when only one goat door qualifies'",
+          "concept": "monte-carlo-estimates"
+        },
+        {
+          "name": "switching moves to the last closed door",
+          "code": "class Fixed:\n    def __init__(self, car, pick, host):\n        self.ints = [car, pick]\n        self.host = host\n    def randrange(self, n):\n        return self.ints.pop(0)\n    def choice(self, seq):\n        assert self.host in seq, f'the host may open {seq}'\n        return self.host\n\nassert play(Fixed(2, 0, 1), True) is True and play(Fixed(2, 0, 1), False) is False\nassert play(Fixed(1, 1, 2), True) is False and play(Fixed(1, 1, 0), False) is True\nassert play(Fixed(0, 2, 1), True) is True",
+          "concept": "monty-hall-problem"
+        },
+        {
+          "name": "the host never opens your door or the car's",
+          "code": "class Spy:\n    def __init__(self, seed):\n        import random\n        self.r = random.Random(seed)\n        self.seen = []\n    def randrange(self, n):\n        v = self.r.randrange(n)\n        self.seen.append(v)\n        return v\n    def choice(self, seq):\n        car, pick = self.seen[-2:]\n        assert list(seq) == sorted(seq) and car not in seq and pick not in seq and len(seq) == (1 if car != pick else 2), f'car {car}, pick {pick}: offered {seq}'\n        return self.r.choice(seq)\n\nfor seed in range(30):\n    play(Spy(seed), seed % 2 == 0)",
+          "concept": "monty-hall-problem"
+        },
+        {
+          "name": "simulation",
+          "code": "import random as _r\n\ndef _play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\nfor n, switch, seed in ((30000, False, 2024), (30000, True, 2024), (1, True, 3), (777, False, 11)):\n    g = _r.Random(seed)\n    want = sum(_play(g, switch) for _ in range(n)) / n\n    got = simulate(n, switch, seed)\n    assert isinstance(got, float) and got == want, f'n={n}, switch={switch}, seed={seed}: {want}; got {got!r}'\nassert simulate(30000, False, 2024) == 10008 / 30000 and simulate(30000, True, 2024) == 19992 / 30000, 'the example'\n_r.seed(42)\nsimulate(50, True, 1)\nassert _r.random() == _r.Random(42).random(), 'use your own random.Random(seed), not the shared random module'",
+          "concept": "monte-carlo-estimates"
+        },
+        {
+          "name": "bad input",
+          "code": "for n in (0, -5):\n    try:\n        simulate(n, True, 1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for n={n}')",
+          "concept": "monte-carlo-estimates"
+        }
+      ],
+      "solution": "import random\n\n\ndef play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\n\ndef simulate(n, switch, seed):\n    if n < 1:\n        raise ValueError('play at least one game')\n    rng = random.Random(seed)\n    return sum(play(rng, switch) for _ in range(n)) / n\n"
+    },
+    {
+      "id": "exact",
+      "kind": "challenge",
+      "title": "Challenge: exact odds for any number of doors",
+      "body": "Write `exact_win(doors, opened, switch)` returning the exact probability of winning as a\n`fractions.Fraction`, for a game with `doors` doors where the host opens `opened` goat doors you didn't pick\nand a switching player moves to one of the other closed doors at random. Raise `ValueError` unless\n`doors >= 3` and `0 <= opened <= doors - 2`. You may reason it out or enumerate every case.",
+      "starter": "from fractions import Fraction\n\n\ndef exact_win(doors, opened, switch):\n    return Fraction(1, 2)\n",
+      "hints": [
+        "Staying never benefits from what the host shows: `Fraction(1, doors)`.",
+        "Switching: the car is elsewhere with probability `(doors - 1)/doors`, then among `doors - 1 - opened` closed doors.",
+        "from fractions import Fraction\n\n\ndef exact_win(doors, opened, switch):\n    if doors < 3 or not 0 <= opened <= doors - 2:\n        raise ValueError('need at least 3 doors and 0 <= opened <= doors - 2')\n    if not switch:\n        return Fraction(1, doors)\n    return Fraction(doors - 1, doors) * Fraction(1, doors - 1 - opened)\n"
+      ],
+      "tests": [
+        {
+          "name": "three doors",
+          "code": "from fractions import Fraction\nassert exact_win(3, 1, True) == Fraction(2, 3) and exact_win(3, 1, False) == Fraction(1, 3)\nassert isinstance(exact_win(3, 1, True), Fraction) and isinstance(exact_win(3, 1, False), Fraction), 'return Fractions, not floats'",
+          "concept": "exact-probabilities"
+        },
+        {
+          "name": "more doors",
+          "code": "from fractions import Fraction\nfor d, k, want in ((4, 1, Fraction(3, 8)), (4, 2, Fraction(3, 4)), (10, 8, Fraction(9, 10)), (100, 98, Fraction(99, 100)), (6, 3, Fraction(5, 12)), (5, 0, Fraction(1, 5))):\n    got = exact_win(d, k, True)\n    assert got == want, f'{d} doors, {k} opened, switching: {want}; got {got}'\nfor d in (3, 4, 7, 100):\n    for k in range(d - 1):\n        assert exact_win(d, k, False) == Fraction(1, d), 'staying wins 1/doors, whatever the host opens'",
+          "concept": "exact-probabilities"
+        },
+        {
+          "name": "against an enumeration",
+          "code": "from fractions import Fraction\nfrom itertools import combinations\ndef enum(d, k, switch):\n    total = Fraction(0)\n    for car in range(d):\n        for pick in range(d):\n            goats = [x for x in range(d) if x != pick and x != car]\n            opens = list(combinations(goats, k))\n            for shown in opens:\n                closed = [x for x in range(d) if x != pick and x not in shown]\n                if not switch:\n                    total += Fraction(1, d * d * len(opens)) * (pick == car)\n                else:\n                    total += Fraction(1, d * d * len(opens)) * Fraction(closed.count(car), len(closed))\n    return total\nfor d in (3, 4, 5, 6):\n    for k in range(d - 1):\n        for switch in (False, True):\n            assert exact_win(d, k, switch) == enum(d, k, switch), f'd={d}, opened={k}, switch={switch}: {enum(d, k, switch)}'",
+          "concept": "exact-probabilities"
+        },
+        {
+          "name": "bad input",
+          "code": "for d, k in ((2, 0), (1, 0), (3, 2), (3, -1), (5, 4), (0, 0)):\n    for switch in (False, True):\n        try:\n            exact_win(d, k, switch)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(f'raise ValueError for doors={d}, opened={k}, switch={switch}')",
+          "concept": "exact-probabilities"
+        }
+      ],
+      "solution": "from fractions import Fraction\n\n\ndef exact_win(doors, opened, switch):\n    if doors < 3 or not 0 <= opened <= doors - 2:\n        raise ValueError('need at least 3 doors and 0 <= opened <= doors - 2')\n    if not switch:\n        return Fraction(1, doors)\n    return Fraction(doors - 1, doors) * Fraction(1, doors - 1 - opened)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "With three doors, how often does switching win?",
+          "choices": [
+            "2/3 of the time",
+            "1/2 of the time",
+            "1/3 of the time",
+            "It depends on the door you pick"
+          ],
+          "answer": 0,
+          "explanation": "Switching wins exactly when the first pick was wrong, which happens 2 times in 3.",
+          "concept": "monty-hall-problem"
+        },
+        {
+          "id": "q2",
+          "prompt": "Why does the host's choice give you information?",
+          "choices": [
+            "The host must avoid the car, so the door left closed depends on where it is",
+            "The host always opens door 1",
+            "The host opens a door at random",
+            "It doesn't; the odds become 50–50"
+          ],
+          "answer": 0,
+          "explanation": "A forced choice reveals something; a random one that happens to show a goat would not help in the same way.",
+          "concept": "monty-hall-problem"
+        },
+        {
+          "id": "q3",
+          "prompt": "A simulation of 30,000 games gives 0.666 for switching. What is it?",
+          "choices": [
+            "An estimate of 2/3 that would vary a little with another seed",
+            "Exactly 2/3",
+            "Proof the exact answer is 0.666",
+            "A rounding error"
+          ],
+          "answer": 0,
+          "explanation": "Monte Carlo estimates converge on the exact value but carry sampling noise.",
+          "concept": "monte-carlo-estimates"
+        },
+        {
+          "id": "q4",
+          "prompt": "With 4 doors and one goat door opened, what does switching win?",
+          "choices": [
+            "3/8",
+            "3/4",
+            "1/4",
+            "1/2"
+          ],
+          "answer": 0,
+          "explanation": "(3/4) · (1/2): the car is elsewhere 3 times in 4, then behind one of the 2 other closed doors.",
+          "concept": "exact-probabilities"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Simulate a game reproducibly by fixing the order in which random numbers are drawn.\n- Explain why switching wins 2/3 of the time, and why the host's knowledge matters.\n- Compute exact probabilities with `fractions.Fraction` and compare them with simulation.\n- Generalise a puzzle and check the general answer against the special case."
+    }
+  ]
+}

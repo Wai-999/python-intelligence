@@ -460,6 +460,26 @@
     "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for the naive (conditional independence) assumption and multinomial naive Bayes with Laplace smoothing; the lesson does not use scikit-learn."
    },
    "sha256": "cf9d916bd44f54a60d01d707cde5e364e5ff145c0614a53a7a551f0888f38aec"
+  },
+  {
+   "source_id": "pydocs-312-fractions",
+   "title": "Python 3.12 Library Reference: fractions — Rational numbers",
+   "short": "Python 3.12 docs, fractions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/fractions.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for exact rational arithmetic with fractions.Fraction."
+   },
+   "sha256": "359d550b41e647bbea4cc7b1de4019c2f479c68ec24aab28b976954f22bb374f"
   }
  ]
 }
