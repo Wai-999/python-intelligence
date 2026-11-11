@@ -242,12 +242,12 @@
         },
         {
           "name": "large scores don't overflow",
-          "code": "for z, want in ((1000, 1.0), (-1000, 0.0), (1e308, 1.0), (-1e308, 0.0), (710, 1.0), (-800, 0.0)):\n    got = sigmoid(z)\n    assert got == want, f'sigmoid({z}) should be {want}, got {got!r}'",
+          "code": "for z, want in ((1000, 1.0), (-1000, 0.0), (1e308, 1.0), (-1e308, 0.0), (710, 1.0), (-800, 0.0)):\n    got = sigmoid(z)\n    assert isinstance(got, float) and got == want, f'sigmoid({z}) should be the float {want}, got {got!r}'",
           "concept": "sigmoid"
         },
         {
           "name": "tiny probabilities stay accurate",
-          "code": "import math\nfor z in (-40, -50, -300, -700, -710):\n    got, want = sigmoid(z), math.exp(z) / (1 + math.exp(z))\n    assert want > 0 and abs(got - want) <= 1e-12 * want, f'sigmoid({z}) should be about {want!r}, got {got!r}'",
+          "code": "import math\nfor z in (-40, -50, -300, -700, -710):\n    got, want = sigmoid(z), math.exp(z) / (1 + math.exp(z))\n    assert isinstance(got, float) and want > 0 and abs(got - want) <= 1e-12 * want, f'sigmoid({z}) should be about {want!r}, got {got!r}'",
           "concept": "sigmoid"
         },
         {
