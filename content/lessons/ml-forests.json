@@ -237,7 +237,7 @@
         },
         {
           "name": "vote leaves its list alone",
-          "code": "labels = ['c', 'a', 'c', 'b']\nvote(labels)\nassert labels == ['c', 'a', 'c', 'b'], 'do not change (or sort) the list'\ntry:\n    vote([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError for an empty list')",
+          "code": "for labels in (['c', 'a', 'c', 'b'], ['b', 'a', 'b', 'a', 'c'], ['c', 'b'], [10, 2, 10, 2]):\n    keep = list(labels)\n    vote(labels)\n    assert labels == keep, f'do not change (or sort) the list, tie or no tie: {keep} became {labels}'\ntry:\n    vote([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError for an empty list')",
           "concept": "ensembles"
         }
       ],
@@ -272,7 +272,7 @@
         },
         {
           "name": "vote ties across trees",
-          "code": "tie = [({'leaf': 'b'}, []), ({'leaf': 'a'}, []), ({'feature': 0, 'threshold': 0.5, 'left': {'leaf': 'a'}, 'right': {'leaf': 'b'}}, [])]\nassert predict_forest(tie, [[0], [1]]) == ['a', 'b'], 'two trees to one at each row'\nassert predict_forest(tie[:2], [[0]]) == ['a'], 'one vote each: a, first in sorted order'",
+          "code": "tie = [({'leaf': 'b'}, []), ({'leaf': 'a'}, []), ({'feature': 0, 'threshold': 0.5, 'left': {'leaf': 'a'}, 'right': {'leaf': 'b'}}, [])]\nassert predict_forest(tie, [[0], [1]]) == ['a', 'b'], 'two trees to one at each row'\nassert predict_forest(tie[:2], [[0]]) == ['a'], 'one vote each: a, first in sorted order'\nnums = [({'leaf': 10}, [0]), ({'leaf': 2}, [0])]\nassert predict_forest(nums, [[0], [5]]) == [2, 2], 'numbers sort as numbers: 2 before 10'",
           "concept": "ensembles"
         },
         {
@@ -282,7 +282,7 @@
         },
         {
           "name": "out-of-bag by hand",
-          "code": "f = [({'leaf': 'a'}, [0, 2]), ({'leaf': 'b'}, [2]), ({'leaf': 'b'}, [1])]\ngot = oob_accuracy(f, [[0], [1], [2], [3]], ['a', 'a', 'b', 'b'])\nassert got == 1 / 3, f'row 0: a (right); row 1: b (wrong); row 2: a and b tie, a (wrong); row 3 is skipped: 1/3; got {got!r}'\nassert oob_accuracy([({'leaf': 'a'}, [])], [[0]], ['a']) is None, 'no out-of-bag rows: None'\nassert oob_accuracy([({'leaf': 'a'}, [0])], [[0]], ['a']) == 1.0",
+          "code": "f = [({'leaf': 'a'}, [0, 2]), ({'leaf': 'b'}, [2]), ({'leaf': 'b'}, [1])]\ngot = oob_accuracy(f, [[0], [1], [2], [3]], ['a', 'a', 'b', 'b'])\nassert got == 1 / 3, f'row 0: a (right); row 1: b (wrong); row 2: a and b tie, a (wrong); row 3 is skipped: 1/3; got {got!r}'\nassert oob_accuracy([({'leaf': 'a'}, [])], [[0]], ['a']) is None, 'no out-of-bag rows: None'\nassert oob_accuracy([({'leaf': 'a'}, [0])], [[0]], ['a']) == 1.0\nnums = [({'leaf': 10}, [0]), ({'leaf': 2}, [0])]\nassert oob_accuracy(nums, [[0]], [2]) == 1.0 and oob_accuracy(nums, [[0]], [10]) == 0.0, 'an out-of-bag tie between 2 and 10 goes to 2'",
           "concept": "bagging"
         },
         {
