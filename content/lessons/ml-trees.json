@@ -240,7 +240,7 @@
         },
         {
           "name": "midpoints of distinct values",
-          "code": "got = best_split([[1], [1], [4], [4]], ['a', 'a', 'b', 'b'])\nassert got[:2] == (0, 2.5) and abs(got[2]) <= 1e-12, f'between 1 and 4 the threshold is 2.5; got {got}'\ngot = best_split([[10], [2], [7], [2]], ['b', 'a', 'b', 'a'])\nassert got[:2] == (0, 4.5) and abs(got[2]) <= 1e-12, f'rows in any order: sort the distinct values 2, 7, 10; got {got}'",
+          "code": "got = best_split([[1], [1], [4], [4]], ['a', 'a', 'b', 'b'])\nassert got[:2] == (0, 2.5) and abs(got[2]) <= 1e-12, f'between 1 and 4 the threshold is 2.5; got {got}'\ngot = best_split([[10], [2], [7], [2]], ['b', 'a', 'b', 'a'])\nassert got[:2] == (0, 4.5) and abs(got[2]) <= 1e-12, f'rows in any order: sort the distinct values 2, 7, 10; got {got}'\ngot = best_split([[0], [1], [2]], ['a', 'a', 'b'])\nassert got[:2] == (0, 1.5) and abs(got[2]) <= 1e-12, f'the last neighbouring pair is a candidate too; got {got}'\ngot = best_split([[5], [0], [9], [3]], ['b', 'a', 'c', 'a'])\nassert got[:2] == (0, 4.0) and abs(got[2] - 0.25) <= 1e-12, f'every neighbouring pair, from the first (0, 3) to the last (5, 9); got {got}'",
           "concept": "decision-trees"
         },
         {
