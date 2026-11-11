@@ -48,6 +48,16 @@
       "use": "reference"
     },
     {
+      "id": "mml-rank",
+      "source_id": "pch-mml-book",
+      "pages": [
+        50,
+        53
+      ],
+      "section": "2.6 Basis and Rank",
+      "use": "reference"
+    },
+    {
       "id": "py-matmul",
       "source_id": "pydocs-312-expressions",
       "pages": [
@@ -152,10 +162,11 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Shapes:** an `m × n` matrix has `m` rows and `n` columns. `A B` needs `A` to be `m × n` and `B` to be\n`n × p`; the product is `m × p` with entry `(i, j) = Σₖ A[i][k] · B[k][j]`. Matrix multiplication is\nassociative but not, in general, commutative. The identity `I` (ones on the diagonal, zeros elsewhere)\nleaves a matrix unchanged, and an inverse `A⁻¹` satisfies `A⁻¹ A = I`. In NumPy, `A @ B` is the matrix\nproduct and `np.linalg.solve(A, b)` solves a square system, raising `LinAlgError` if `A` is singular.\n\n**Gaussian elimination with partial pivoting (this lesson's method):** work on the rows `[A | b]`. For\neach column `k`, choose as **pivot** the row from `k` down with the largest absolute value in column `k`\nand swap it into row `k`; this never divides by zero when a non-zero choice exists. Then subtract\n`M[i][k] / M[k][k]` times row `k` from every row below. Finally **back-substitute** from the last row up:\n`x[i] = (M[i][n] − Σⱼ₍ⱼ>ᵢ₎ M[i][j] x[j]) / M[i][i]`.\n\n**Singular:** this lesson calls `A` singular if at some column the best pivot's absolute value is at most\n`1e-12` times the largest absolute entry of `A` (relative, so scaling every entry doesn't change the\nverdict; an all-zero matrix is singular).",
+      "body": "**Shapes:** an `m × n` matrix has `m` rows and `n` columns. `A B` needs `A` to be `m × n` and `B` to be\n`n × p`; the product is `m × p` with entry `(i, j) = Σₖ A[i][k] · B[k][j]`. Matrix multiplication is\nassociative but not, in general, commutative. The identity `I` (ones on the diagonal, zeros elsewhere)\nleaves a matrix unchanged, and an inverse `A⁻¹` satisfies `A⁻¹ A = I`. In NumPy, `A @ B` is the matrix\nproduct and `np.linalg.solve(A, b)` solves a square system. NumPy's documentation says it raises `LinAlgError`\nfor a singular `A`, but in this course's browser build it returns `nan` values without an error, so check\nyourself: `np.linalg.matrix_rank(A)` below `n` (fewer independent rows than rows) means singular.\n\n**Gaussian elimination with partial pivoting (this lesson's method):** work on the rows `[A | b]`. For\neach column `k`, choose as **pivot** the row from `k` down with the largest absolute value in column `k`\nand swap it into row `k`; this never divides by zero when a non-zero choice exists. Then subtract\n`M[i][k] / M[k][k]` times row `k` from every row below. Finally **back-substitute** from the last row up:\n`x[i] = (M[i][n] − Σⱼ₍ⱼ>ᵢ₎ M[i][j] x[j]) / M[i][i]`.\n\n**Singular:** this lesson calls `A` singular if at some column the best pivot's absolute value is at most\n`1e-12` times the largest absolute entry of `A` (relative, so scaling every entry doesn't change the\nverdict; an all-zero matrix is singular).",
       "cites": [
         "mml-mat",
         "mml-solve",
+        "mml-rank",
         "py-matmul",
         "np-matmul",
         "np-solve"
@@ -165,9 +176,9 @@
       "id": "solve-it",
       "kind": "example",
       "title": "Run it: order matters, and solving",
-      "body": "`S` swaps things: on the right it swaps the columns of `A`, on the left its rows. Then the shopping puzzle,\nand a system with no single answer.",
-      "code": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nS = np.array([[0.0, 1.0], [1.0, 0.0]])\nprint(A @ S)\nprint(S @ A)\n\nb = np.array([5.0, 10.0])\nx = np.linalg.solve(A, b)\nprint(x, A @ x, np.allclose(A @ x, b))\n\ntry:\n    np.linalg.solve(np.array([[1.0, 2.0], [2.0, 4.0]]), b)\nexcept np.linalg.LinAlgError as err:\n    print('LinAlgError:', err)\n",
-      "expected_output": "[[1. 2.]\n [3. 1.]]\n[[1. 3.]\n [2. 1.]]\n[1. 3.] [ 5. 10.] True\nLinAlgError: Singular matrix\n"
+      "body": "`S` swaps things: on the right it swaps the columns of `A`, on the left its rows. Then the shopping puzzle,\nand the rank of a matrix with no single answer: one independent row instead of two.",
+      "code": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nS = np.array([[0.0, 1.0], [1.0, 0.0]])\nprint(A @ S)\nprint(S @ A)\n\nb = np.array([5.0, 10.0])\nx = np.linalg.solve(A, b)\nprint(x, A @ x, np.allclose(A @ x, b))\n\nprint('rank', np.linalg.matrix_rank(A), np.linalg.matrix_rank(np.array([[1.0, 2.0], [2.0, 4.0]])))\n",
+      "expected_output": "[[1. 2.]\n [3. 1.]]\n[[1. 3.]\n [2. 1.]]\n[1. 3.] [ 5. 10.] True\nrank 2 1\n"
     },
     {
       "id": "multiply",
@@ -349,7 +360,7 @@
       "id": "recap",
       "kind": "summary",
       "title": "What you can do now",
-      "body": "- Multiply matrices by the row-times-column rule, checking that the shapes fit.\n- Explain why `A B` and `B A` can differ, and what the identity and an inverse do.\n- Solve `A x = b` by Gaussian elimination with partial pivoting and back substitution.\n- Recognise a singular system, and use `np.linalg.solve` in practice."
+      "body": "- Multiply matrices by the row-times-column rule, checking that the shapes fit.\n- Explain why `A B` and `B A` can differ, and what the identity and an inverse do.\n- Solve `A x = b` by Gaussian elimination with partial pivoting and back substitution.\n- Recognise a singular system (its rank is below n), and use `np.linalg.solve` in practice."
     }
   ]
 }
