@@ -153,6 +153,15 @@ describe("hint fading and restoration", () => {
     expect(state([ev(at(0), "loops", "quiz", false), ev(at(0, 1), "loops", "quiz", false)]).hintTier).toBe(3);
   });
 
+  it("eases off only after consecutive independent successes: an assisted success of any kind breaks the streak", () => {
+    for (const helped of [ev(at(0, 1), "loops", "exercise", true, 2, "h"), ev(at(0, 1), "loops", "quiz", true, 1, "hq"), ev(at(0, 1), "loops", "review", true, 3, "hr")]) {
+      const log = [ev(at(0), "loops", "exercise", true, 0, "a"), helped, ev(at(0, 2), "loops", "exercise", true, 0, "b")];
+      expect(state(log).hintTier).toBe(2);
+      log.push(ev(at(0, 3), "loops", "exercise", true, 0, "c"));
+      expect(state(log).hintTier).toBe(1);
+    }
+  });
+
   it("needs consecutive results: an assisted success breaks a streak", () => {
     expect(state([ev(at(0), "loops", "exercise", false), ev(at(0, 1), "loops", "exercise", true, 2), ev(at(0, 2), "loops", "exercise", false)]).hintTier).toBe(2);
   });
