@@ -220,7 +220,7 @@
         },
         {
           "name": "repeated names keep every row",
-          "code": "got = read_scores('name,score\\nAda,7\\nBo,2\\nAda,9\\n')\nassert got == [{'name': 'Ada', 'score': 7}, {'name': 'Bo', 'score': 2}, {'name': 'Ada', 'score': 9}], f'every row, in file order; got {got}'",
+          "code": "got = read_scores('name,score\\nAda,7\\nBo,2\\nAda,9\\n')\nassert got == [{'name': 'Ada', 'score': 7}, {'name': 'Bo', 'score': 2}, {'name': 'Ada', 'score': 9}], f'every row, in file order; got {got}'\ngot = read_scores('name,score\\nAda,7\\nAda,7\\nBo,1\\nAda,7\\n')\nassert got == [{'name': 'Ada', 'score': 7}] * 2 + [{'name': 'Bo', 'score': 1}, {'name': 'Ada', 'score': 7}], f'identical rows are separate rows; got {got}'",
           "concept": "csv-files"
         },
         {
@@ -265,7 +265,7 @@
         },
         {
           "name": "quoted teams and no rows",
-          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}\nassert json.loads(team_report('team,score\\nice,-4\\nice,-2\\nmix,-3\\nmix,5\\n')) == {'ice': {'count': 2, 'mean': -3.0}, 'mix': {'count': 2, 'mean': 1.0}}, 'negative scores average too'\nassert json.loads(team_report('team,score\\nred,4\\nred,4\\nred,1\\n')) == {'red': {'count': 3, 'mean': 3.0}}, 'identical rows each count'\nassert json.loads(team_report('team,score\\n\"red\\nnorth\",6\\n')) == {'red\\nnorth': {'count': 1, 'mean': 6.0}}, 'a quoted team name keeps its line break'",
+          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}\nassert json.loads(team_report('team,score\\nice,-4\\nice,-2\\nmix,-3\\nmix,5\\n')) == {'ice': {'count': 2, 'mean': -3.0}, 'mix': {'count': 2, 'mean': 1.0}}, 'negative scores average too'\nassert json.loads(team_report('team,score\\nred,4\\nred,4\\nred,1\\n')) == {'red': {'count': 3, 'mean': 3.0}}, 'identical rows each count'\nassert json.loads(team_report('score,team,notes\\n8,blue,x\\n2,red,\\n4,blue,\\\"a, b\\\"\\n')) == {'blue': {'count': 2, 'mean': 6.0}, 'red': {'count': 1, 'mean': 2.0}}, 'columns in any order, extra columns ignored'\nassert json.loads(team_report('team,score\\n\"red\\nnorth\",6\\n')) == {'red\\nnorth': {'count': 1, 'mean': 6.0}}, 'a quoted team name keeps its line break'",
           "concept": "csv-files"
         },
         {
