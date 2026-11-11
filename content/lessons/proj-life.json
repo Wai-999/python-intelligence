@@ -1,0 +1,329 @@
+{
+  "id": "proj-life",
+  "title": "Project: Conway's Game of Life",
+  "summary": "Simulate a grid of cells that live or die by their neighbours: nested lists, wraparound with %, updating every cell at once, and spotting when the pattern repeats.",
+  "track": "projects",
+  "level": 3,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "proj-caesar",
+    "py-comprehensions"
+  ],
+  "concepts": [
+    "nested-lists",
+    "cellular-automata",
+    "cycle-detection"
+  ],
+  "sources": [
+    {
+      "id": "bb-life",
+      "source_id": "pch-bigbooksmallpythonprojects",
+      "pages": [
+        87,
+        90
+      ],
+      "section": "Project #13: Conway’s Game of Life",
+      "use": "reference"
+    },
+    {
+      "id": "tp-mod",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        61,
+        61
+      ],
+      "section": "Floor division and modulus",
+      "use": "reference"
+    },
+    {
+      "id": "tp-alias",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        118,
+        118
+      ],
+      "section": "Aliasing",
+      "use": "reference"
+    },
+    {
+      "id": "tp-dict-tuple",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        142,
+        142
+      ],
+      "section": "Dictionaries and tuples",
+      "use": "reference"
+    },
+    {
+      "id": "std-seq",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        14,
+        14
+      ],
+      "section": "Common Sequence Operations",
+      "use": "reference"
+    },
+    {
+      "id": "std-dict",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        30,
+        30
+      ],
+      "section": "Mapping Types — dict",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "A universe in a grid",
+      "body": "In 1970 the mathematician John Conway described a \"game\" with no players: a grid of cells, each alive\nor dead, and one rule for what happens next, applied to every cell at the same moment. From that rule\ncome blinking lights, still blocks and gliders that crawl across the grid. You'll build it in a few dozen\nlines, and along the way meet a classic Python trap with nested lists."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Neighbours decide",
+      "body": "Each cell has eight neighbours: the cells touching it across a side or a corner. Count how many are alive.\nA live cell survives if two or three neighbours are alive; it dies of loneliness with fewer and of\novercrowding with more. A dead cell comes alive with exactly three. The edges wrap around, as on a torus,\nso the top row's upper neighbours are in the bottom row: the remainder operator does this, since\n`(0 - 1) % 4` is `3`.\n\nThe catch is *simultaneously*: every cell's fate depends on the grid as it was. If you overwrite cells while\nyou are still counting, later cells see a half-updated grid. Build the next generation as a new grid.",
+      "cites": [
+        "bb-life",
+        "tp-mod"
+      ],
+      "socratic": {
+        "questions": [
+          "A horizontal line of three live cells: which cells live in the next generation, and which are born?",
+          "If you updated the grid in place, row by row, which cells would see the wrong neighbour counts?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch one change appear twice",
+      "body": "Multiplying a list copies references, not the list inside it. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "rows = [[0] * 3] * 2\nrows[0][0] = 1\nprint(rows)",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "Build two rows of three zeros, or so it seems."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "rows": "[[0, 0, 0], [0, 0, 0]]"
+            },
+            "note": "Set one cell in the first row."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "rows": "[[1, 0, 0], [1, 0, 0]]"
+            },
+            "note": "Both rows changed: they are one list, referenced twice.",
+            "output": "[[1, 0, 0], [1, 0, 0]]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Grid:** a list of rows, each a list of `0` (dead) and `1` (alive); every row has the same length. This\nlesson needs at least 3 rows and 3 columns, so a cell's eight neighbours are eight different cells.\n\n**Neighbours with wraparound:** the neighbours of `(r, c)` are `((r + dr) % rows, (c + dc) % cols)` for every\n`dr` and `dc` in `-1, 0, 1` except both 0. Use `rows` for the row index and `cols` for the column index.\n\n**Next generation:** with `n` live neighbours, a cell is alive next if `n == 3`, or if it is alive now and\n`n == 2`; otherwise it is dead. Every cell is decided from the current grid, so build a new grid. Make new\nrows with a loop or comprehension: `[[0] * cols] * rows` repeats one row object, so changing one cell\nchanges a whole column.\n\n**Spotting a repeat:** lists can't be dictionary keys, but tuples of numbers can. Turn each generation into\n`tuple(tuple(row) for row in grid)` and remember the step at which you first saw it.",
+      "cites": [
+        "bb-life",
+        "tp-mod",
+        "tp-alias",
+        "std-seq",
+        "tp-dict-tuple",
+        "std-dict"
+      ]
+    },
+    {
+      "id": "count",
+      "kind": "example",
+      "title": "Run it: neighbour counts that wrap",
+      "body": "Three live cells in the top row of a 4 × 5 grid. Each line prints a row, then each cell's live-neighbour\ncount. Notice the bottom row: its neighbours below are the top row. Which cells will be alive next?",
+      "code": "def neighbours(grid, r, c):\n    rows, cols = len(grid), len(grid[0])\n    return sum(grid[(r + dr) % rows][(c + dc) % cols]\n               for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n\ngrid = [[0] * 5 for _ in range(4)]\nfor c in (1, 2, 3):\n    grid[0][c] = 1\n\nfor r in range(4):\n    print(''.join('#' if v else '.' for v in grid[r]), [neighbours(grid, r, c) for c in range(5)])\n",
+      "expected_output": ".###. [1, 1, 2, 1, 1]\n..... [1, 2, 3, 2, 1]\n..... [0, 0, 0, 0, 0]\n..... [1, 2, 3, 2, 1]\n"
+    },
+    {
+      "id": "next",
+      "kind": "guided",
+      "title": "Your turn: one generation",
+      "body": "Write `step(grid)`, returning the next generation as a new list of new rows, by the precise rules. Don't\nchange `grid`, and don't reuse its rows. Raise `ValueError` if the grid has fewer than 3 rows or 3\ncolumns, the rows differ in length, or a cell isn't 0 or 1.",
+      "starter": "def step(grid):\n    return grid\n",
+      "hints": [
+        "Count with `sum(grid[(r + dr) % rows][(c + dc) % cols] for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))`.",
+        "Build each new row in its own list and append it, reading only from `grid`.",
+        "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n"
+      ],
+      "tests": [
+        {
+          "name": "a blinker turns",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\ngot = step(g(5, 5, [(2, 1), (2, 2), (2, 3)]))\nassert got == g(5, 5, [(1, 2), (2, 2), (3, 2)]), f'a horizontal line of three becomes vertical; got {got}'\nassert step(got) == g(5, 5, [(2, 1), (2, 2), (2, 3)]), 'and back again'",
+          "concept": "cellular-automata"
+        },
+        {
+          "name": "still lifes stay put",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nblock = g(4, 4, [(1, 1), (1, 2), (2, 1), (2, 2)])\nassert step(block) == block, 'a 2 x 2 block: each cell has 3 neighbours'\nbeehive = g(5, 6, [(1, 2), (1, 3), (2, 1), (2, 4), (3, 2), (3, 3)])\nassert step(beehive) == beehive, 'a beehive: every live cell has 2 or 3 neighbours, no dead cell has 3'",
+          "concept": "cellular-automata"
+        },
+        {
+          "name": "birth, survival and death",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\ngot = step(g(5, 5, [(1, 1), (1, 3), (3, 2)]))\nassert got == g(5, 5, [(2, 2)]), f'three corners around (2, 2): it is born, the three die alone; got {got}'\ngot = step(g(5, 5, [(2, 2), (1, 2), (3, 2), (2, 1), (2, 3)]))\nassert got[2][2] == 0, 'four live neighbours: overcrowded'\nassert got == g(5, 5, [(1, 1), (1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2), (3, 3)]), f'got {got}'",
+          "concept": "cellular-automata"
+        },
+        {
+          "name": "edges wrap around",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\ngot = step(g(4, 5, [(0, 1), (0, 2), (0, 3)]))\nassert got == g(4, 5, [(3, 2), (0, 2), (1, 2)]), f'the top row\\'s upper neighbours are in the bottom row; got {got}'\ncorners = g(4, 4, [(0, 0), (0, 3), (3, 0), (3, 3)])\nassert step(corners) == corners, 'four corners form a block across the wrap'\ngot = step(g(5, 4, [(1, 0), (2, 0), (3, 0)]))\nassert got == g(5, 4, [(2, 3), (2, 0), (2, 1)]), f'left and right edges wrap too; got {got}'",
+          "concept": "cellular-automata"
+        },
+        {
+          "name": "rows and columns are not swapped",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nglider = g(5, 7, [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)])\ngot = step(step(step(step(glider))))\nassert got == g(5, 7, [(1, 2), (2, 3), (3, 1), (3, 2), (3, 3)]), f'after 4 steps a glider has moved one down and one right; got {got}'",
+          "concept": "nested-lists"
+        },
+        {
+          "name": "every cell decided from the old grid",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\ngot = step(g(3, 5, [(1, 1), (1, 2), (1, 3)]))\nassert got == g(3, 5, [(0, 2), (1, 2), (2, 2)]), f'update in place and later cells see the wrong counts; got {got}'\nfull = [[1] * 3 for _ in range(3)]\nassert step(full) == [[0] * 3 for _ in range(3)], 'on a full 3 x 3 grid every cell has 8 neighbours'",
+          "concept": "cellular-automata"
+        },
+        {
+          "name": "a new grid of new rows",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\ngrid = g(4, 4, [(1, 1), (1, 2), (2, 1)])\nkeep = [row[:] for row in grid]\nrows = list(grid)\nnew = step(grid)\nassert grid == keep and all(a is b for a, b in zip(grid, rows)), 'do not change the input grid'\nassert new is not grid and all(n is not o for n in new for o in grid), 'return new row lists'\nassert len({id(row) for row in new}) == len(new), 'each row must be its own list, not one row repeated'\nnew[0][0] = 7\nassert new[1][0] != 7 and grid[0][0] == 0, 'changing one cell must change only that cell'\nassert all(type(v) is int and v in (0, 1) for row in step(grid) for v in row), 'cells are the ints 0 and 1'",
+          "concept": "nested-lists"
+        },
+        {
+          "name": "bad input",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nragged = g(3, 3, [])\nragged[2].pop()\nlong_row = g(3, 3, [])\nlong_row[1].append(0)\ntwo = g(3, 3, [])\ntwo[1][1] = 2\nneg = g(3, 3, [])\nneg[2][2] = -1\nfor grid in (g(2, 2, []), g(2, 3, []), g(3, 2, []), ragged, long_row, two, neg, [], [[]]):\n    try:\n        step(grid)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for {grid}')",
+          "concept": "nested-lists"
+        }
+      ],
+      "solution": "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n"
+    },
+    {
+      "id": "cycle",
+      "kind": "challenge",
+      "title": "Challenge: when does it repeat?",
+      "body": "The starter gives you `step`. Write `find_cycle(grid, max_steps)`. Number the generations: `grid` is step 0,\n`step(grid)` is step 1, and so on up to step `max_steps`. Find the first step whose grid equals an earlier\none, and return `(start, period)`: `start` is the step at which that grid first appeared and `period` the\nnumber of steps between the two. Return `None` if no grid among steps 0 to `max_steps` repeats. Raise\n`ValueError` if `max_steps` is negative or the grid is invalid (as `step` would), even when `max_steps` is 0.",
+      "starter": "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n\n\ndef find_cycle(grid, max_steps):\n    return None\n",
+      "hints": [
+        "Keep a dictionary from each grid (as a tuple of tuples) to the step where you first saw it.",
+        "Check the current grid before stepping; `range(max_steps + 1)` visits steps 0 to `max_steps`.",
+        "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n\n\ndef find_cycle(grid, max_steps):\n    if max_steps < 0:\n        raise ValueError('max_steps must not be negative')\n    step(grid)  # validates the grid, even when max_steps is 0\n    seen = {}\n    for k in range(max_steps + 1):\n        key = tuple(tuple(row) for row in grid)\n        if key in seen:\n            return seen[key], k - seen[key]\n        seen[key] = k\n        grid = step(grid)\n    return None\n"
+      ],
+      "tests": [
+        {
+          "name": "still life and blinker",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nassert find_cycle(g(4, 4, [(1, 1), (1, 2), (2, 1), (2, 2)]), 5) == (0, 1), 'a block repeats straight away'\nassert find_cycle(g(5, 5, [(2, 1), (2, 2), (2, 3)]), 5) == (0, 2), 'a blinker returns every 2 steps'",
+          "concept": "cycle-detection"
+        },
+        {
+          "name": "only as far as max_steps",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nb = g(5, 5, [(2, 1), (2, 2), (2, 3)])\nassert find_cycle(b, 1) is None, 'steps 0 and 1 differ: no repeat yet'\nassert find_cycle(b, 2) == (0, 2), 'step 2 repeats step 0'\nglider = g(5, 5, [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)])\nassert find_cycle(glider, 19) is None and find_cycle(glider, 20) == (0, 20), 'on a 5 x 5 grid a glider comes home after 20 steps'\nassert find_cycle(g(3, 4, []), 0) is None, 'a single generation can not repeat'",
+          "concept": "cycle-detection"
+        },
+        {
+          "name": "a cycle that starts later",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nassert find_cycle(g(3, 3, [(1, 1)]), 5) == (1, 1), 'a lone cell dies at step 1; the empty grid then repeats'\ngrid = [[0, 0, 1, 1, 0], [1, 0, 1, 0, 1], [0, 0, 1, 1, 1], [1, 0, 0, 0, 0], [0, 0, 0, 1, 1], [1, 0, 0, 1, 0], [1, 0, 1, 1, 0]]\nassert find_cycle(grid, 19) is None, 'the repeat only shows at step 20'\ngot = find_cycle(grid, 300)\nassert got == (18, 2), f'step 20 equals step 18: start 18, period 2; got {got}'\nassert find_cycle(g(6, 6, [(2, 3), (2, 4), (3, 2), (3, 3), (4, 3)]), 100) == (11, 1), 'this one settles into a still life at step 11'",
+          "concept": "cycle-detection"
+        },
+        {
+          "name": "the input grid is not changed",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\ngrid = g(5, 5, [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)])\nkeep = [row[:] for row in grid]\nrows = list(grid)\nassert find_cycle(grid, 3) is None\nassert grid == keep and all(a is b for a, b in zip(grid, rows)), 'do not change the input grid or its rows'",
+          "concept": "nested-lists"
+        },
+        {
+          "name": "bad input",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nthree = g(3, 3, [])\nthree[1][1] = 3\nragged = g(3, 3, [])\nragged[1].pop()\nfor grid, k in ((g(5, 5, []), -1), (g(2, 2, []), 3), (g(2, 2, []), 0), (three, 0), (ragged, 0), (g(3, 3, []), -2)):\n    try:\n        find_cycle(grid, k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for grid={grid}, max_steps={k}')",
+          "concept": "cycle-detection"
+        }
+      ],
+      "solution": "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n\n\ndef find_cycle(grid, max_steps):\n    if max_steps < 0:\n        raise ValueError('max_steps must not be negative')\n    step(grid)  # validates the grid, even when max_steps is 0\n    seen = {}\n    for k in range(max_steps + 1):\n        key = tuple(tuple(row) for row in grid)\n        if key in seen:\n            return seen[key], k - seen[key]\n        seen[key] = k\n        grid = step(grid)\n    return None\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "A dead cell has exactly three live neighbours. What happens to it?",
+          "choices": [
+            "It comes alive",
+            "It stays dead",
+            "It dies",
+            "It depends on its own state"
+          ],
+          "answer": 0,
+          "explanation": "Exactly three live neighbours bring a dead cell to life.",
+          "concept": "cellular-automata"
+        },
+        {
+          "id": "q2",
+          "prompt": "On a grid with 4 rows, which row holds the upper neighbours of row 0?",
+          "choices": [
+            "Row 3, since (0 - 1) % 4 is 3",
+            "Row 1",
+            "There are none",
+            "Row -1, which Python can't index"
+          ],
+          "answer": 0,
+          "explanation": "The remainder wraps -1 round to the last row.",
+          "concept": "cellular-automata"
+        },
+        {
+          "id": "q3",
+          "prompt": "After grid = [[0] * 3] * 3 and grid[1][1] = 1, how many cells are 1?",
+          "choices": [
+            "3",
+            "1",
+            "9",
+            "0"
+          ],
+          "answer": 0,
+          "explanation": "All three rows are the same list, so column 1 is 1 in every row.",
+          "concept": "nested-lists"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why turn each grid into a tuple of tuples before storing it in a dictionary?",
+          "choices": [
+            "Dictionary keys must be hashable, and lists aren't",
+            "Tuples are faster to print",
+            "To copy the grid",
+            "Dictionaries sort tuples"
+          ],
+          "answer": 0,
+          "explanation": "A tuple of numbers is hashable, so it can be a key; a list of lists can't.",
+          "concept": "cycle-detection"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Build a grid of independent rows, and explain why `[[0] * n] * m` doesn't.\n- Count neighbours with wraparound using `%`.\n- Update every cell at once by building the next generation as a new grid.\n- Detect when a process repeats, by remembering states as hashable tuples."
+    }
+  ]
+}
