@@ -380,6 +380,46 @@
     "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for bagging, bootstrap samples, random forests and out-of-bag estimates; the lesson does not use scikit-learn."
    },
    "sha256": "884c74295ce9e23c3ac0f2d8aa3b30a310782192bc83eb113429a5a06a2d3732"
+  },
+  {
+   "source_id": "npdocs-20-solve",
+   "title": "NumPy 2.0 API reference: numpy.linalg.solve",
+   "short": "NumPy 2.0 docs, numpy.linalg.solve",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.solve.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for solving a square linear system and the error raised for a singular matrix."
+   },
+   "sha256": "d338d32f4edcc5246237a2fe28d8acc80ec63178ccf56e1dd5884d1bfea88aa7"
+  },
+  {
+   "source_id": "npdocs-20-matmul",
+   "title": "NumPy 2.0 API reference: numpy.matmul",
+   "short": "NumPy 2.0 docs, numpy.matmul",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.matmul.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for the matrix product, the @ operator and shape rules."
+   },
+   "sha256": "25bf62f9577328d3f39998ad7777246e2e54c47493bcf6637a81189eb8d60ce4"
   }
  ]
 }

@@ -748,6 +748,42 @@
     "37": "adaboost",
     "38": "id35"
    }
+  },
+  "npdocs-20-solve": {
+   "title": "NumPy 2.0 API reference: numpy.linalg.solve",
+   "short": "NumPy 2.0 docs, numpy.linalg.solve",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "official_url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.solve.html",
+   "kind": "web",
+   "sha256": "d338d32f4edcc5246237a2fe28d8acc80ec63178ccf56e1dd5884d1bfea88aa7",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "numpy-linalg-solve"
+   }
+  },
+  "npdocs-20-matmul": {
+   "title": "NumPy 2.0 API reference: numpy.matmul",
+   "short": "NumPy 2.0 docs, numpy.matmul",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "official_url": "https://numpy.org/doc/2.0/reference/generated/numpy.matmul.html",
+   "kind": "web",
+   "sha256": "25bf62f9577328d3f39998ad7777246e2e54c47493bcf6637a81189eb8d60ce4",
+   "page_count": 1,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "numpy-matmul"
+   }
   }
  }
 }

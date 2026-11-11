@@ -1,0 +1,355 @@
+{
+  "id": "ml-matrices",
+  "title": "Matrices: multiplying them and solving A x = b",
+  "summary": "Multiply matrices by the row-times-column rule, see why the order matters, and solve a system of linear equations by Gaussian elimination.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-vectors"
+  ],
+  "concepts": [
+    "matrices",
+    "matrix-multiplication",
+    "linear-systems"
+  ],
+  "packages": [
+    "numpy"
+  ],
+  "sources": [
+    {
+      "id": "mml-sys",
+      "source_id": "pch-mml-book",
+      "pages": [
+        25,
+        27
+      ],
+      "section": "2.1 Systems of Linear Equations",
+      "use": "reference"
+    },
+    {
+      "id": "mml-mat",
+      "source_id": "pch-mml-book",
+      "pages": [
+        28,
+        32
+      ],
+      "section": "2.2 Matrices",
+      "use": "reference"
+    },
+    {
+      "id": "mml-solve",
+      "source_id": "pch-mml-book",
+      "pages": [
+        33,
+        40
+      ],
+      "section": "2.3 Solving Systems of Linear Equations",
+      "use": "reference"
+    },
+    {
+      "id": "py-matmul",
+      "source_id": "pydocs-312-expressions",
+      "pages": [
+        26,
+        26
+      ],
+      "section": "6.7. Binary arithmetic operations",
+      "use": "reference"
+    },
+    {
+      "id": "np-matmul",
+      "source_id": "npdocs-20-matmul",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "numpy.matmul",
+      "use": "reference"
+    },
+    {
+      "id": "np-solve",
+      "source_id": "npdocs-20-solve",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "numpy.linalg.solve",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Many equations at once",
+      "body": "Two apples and a banana cost 5; an apple and three bananas cost 10. What does each cost? Puzzles like\nthis, with hundreds of unknowns instead of two, sit inside linear regression, physics simulations and\ncomputer graphics. A **matrix** packs the numbers of such a system into one table, and two operations do\nthe work: multiplying matrices, and solving `A x = b` for `x`."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Rows meet columns",
+      "body": "Write the puzzle as `A x = b` with `A = [[2, 1], [1, 3]]`, `x = [apple, banana]` and `b = [5, 10]`. Each\nentry of `A x` is one row of `A` dotted with `x`: the cost of one shopping list. Multiplying two\nmatrices does this for every column of the second one, so entry `(i, j)` of `A B` is row `i` of `A`\ndotted with column `j` of `B`. That only works when `A` has as many columns as `B` has rows, and in\ngeneral `A B` and `B A` differ.\n\nTo solve `A x = b`, eliminate: subtract multiples of one equation from the others until the last\nequation has one unknown, then substitute back upwards. If the equations aren't independent (one is a\nmultiple of another, say) there is no single answer, and the matrix is called **singular**.",
+      "cites": [
+        "mml-sys",
+        "mml-mat",
+        "mml-solve"
+      ],
+      "socratic": {
+        "questions": [
+          "What is the shape of A B if A is 2 × 3 and B is 3 × 4? Can you form B A?",
+          "What goes wrong in elimination if the number you need to divide by is 0?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch rows meet a vector",
+      "body": "The shopping puzzle with apples at 1 and bananas at 3. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def matvec(A, x):\n    return [sum(a * b for a, b in zip(row, x)) for row in A]\n\nprint(matvec([[2, 1], [1, 3]], [1, 3]))",
+        "frames": [
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "matvec": "<function matvec>"
+            },
+            "note": "Price two shopping lists with apples at 1 and bananas at 3."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "matvec([[2, 1], [1, 3]], [1, 3])"
+            ],
+            "locals": {
+              "A": "[[2, 1], [1, 3]]",
+              "x": "[1, 3]"
+            },
+            "note": "Row [2, 1] gives 2·1 + 1·3 = 5; row [1, 3] gives 1·1 + 3·3 = 10."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "matvec": "<function matvec>"
+            },
+            "note": "Exactly b: apples cost 1 and bananas 3.",
+            "output": "[5, 10]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Shapes:** an `m × n` matrix has `m` rows and `n` columns. `A B` needs `A` to be `m × n` and `B` to be\n`n × p`; the product is `m × p` with entry `(i, j) = Σₖ A[i][k] · B[k][j]`. Matrix multiplication is\nassociative but not, in general, commutative. The identity `I` (ones on the diagonal, zeros elsewhere)\nleaves a matrix unchanged, and an inverse `A⁻¹` satisfies `A⁻¹ A = I`. In NumPy, `A @ B` is the matrix\nproduct and `np.linalg.solve(A, b)` solves a square system, raising `LinAlgError` if `A` is singular.\n\n**Gaussian elimination with partial pivoting (this lesson's method):** work on the rows `[A | b]`. For\neach column `k`, choose as **pivot** the row from `k` down with the largest absolute value in column `k`\nand swap it into row `k`; this never divides by zero when a non-zero choice exists. Then subtract\n`M[i][k] / M[k][k]` times row `k` from every row below. Finally **back-substitute** from the last row up:\n`x[i] = (M[i][n] − Σⱼ₍ⱼ>ᵢ₎ M[i][j] x[j]) / M[i][i]`.\n\n**Singular:** this lesson calls `A` singular if at some column the best pivot's absolute value is at most\n`1e-12` times the largest absolute entry of `A` (relative, so scaling every entry doesn't change the\nverdict; an all-zero matrix is singular).",
+      "cites": [
+        "mml-mat",
+        "mml-solve",
+        "py-matmul",
+        "np-matmul",
+        "np-solve"
+      ]
+    },
+    {
+      "id": "solve-it",
+      "kind": "example",
+      "title": "Run it: order matters, and solving",
+      "body": "`S` swaps things: on the right it swaps the columns of `A`, on the left its rows. Then the shopping puzzle,\nand a system with no single answer.",
+      "code": "import numpy as np\n\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nS = np.array([[0.0, 1.0], [1.0, 0.0]])\nprint(A @ S)\nprint(S @ A)\n\nb = np.array([5.0, 10.0])\nx = np.linalg.solve(A, b)\nprint(x, A @ x, np.allclose(A @ x, b))\n\ntry:\n    np.linalg.solve(np.array([[1.0, 2.0], [2.0, 4.0]]), b)\nexcept np.linalg.LinAlgError as err:\n    print('LinAlgError:', err)\n",
+      "expected_output": "[[1. 2.]\n [3. 1.]]\n[[1. 3.]\n [2. 1.]]\n[1. 3.] [ 5. 10.] True\nLinAlgError: Singular matrix\n"
+    },
+    {
+      "id": "multiply",
+      "kind": "guided",
+      "title": "Your turn: multiply two matrices",
+      "body": "Write `matmul(A, B)` for matrices given as lists of rows, without NumPy. Return a new `m × p` list of\nlists whose entry `(i, j)` is the sum of `A[i][k] * B[k][j]`. Raise `ValueError` if either matrix is\nempty or has an empty row, if a matrix's rows differ in length, or if `A`'s columns don't match `B`'s\nrows. Don't change the inputs.",
+      "starter": "def matmul(A, B):\n    return [[0] * len(B[0]) for _ in A]\n",
+      "hints": [
+        "Column `j` of `B` is `[B[k][j] for k in range(len(B))]`; dot it with row `i` of `A`.",
+        "A nested comprehension builds the rows: `[[... for j in range(p)] for i in range(m)]`.",
+        "def matmul(A, B):\n    if not A or not B or not A[0] or not B[0]:\n        raise ValueError('need non-empty matrices')\n    if any(len(row) != len(A[0]) for row in A) or any(len(row) != len(B[0]) for row in B):\n        raise ValueError('every row of a matrix must have the same length')\n    if len(A[0]) != len(B):\n        raise ValueError('columns of A must match rows of B')\n    return [[sum(A[i][k] * B[k][j] for k in range(len(B))) for j in range(len(B[0]))] for i in range(len(A))]\n"
+      ],
+      "tests": [
+        {
+          "name": "a 2 x 3 times a 3 x 2",
+          "code": "got = matmul([[2, 0, 1], [1, 3, -1]], [[1, 4], [2, -1], [5, 0]])\nassert got == [[7, 8], [2, 1]], f'entry (0, 0) is 2·1 + 0·2 + 1·5 = 7; got {got}'",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "name": "order matters",
+          "code": "A, S = [[2, 1], [1, 3]], [[0, 1], [1, 0]]\nassert matmul(A, S) == [[1, 2], [3, 1]] and matmul(S, A) == [[1, 3], [2, 1]], 'S on the right swaps columns, on the left swaps rows'",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "name": "the identity changes nothing",
+          "code": "A = [[2, -1, 0], [4, 5, 7]]\nI2, I3 = [[1, 0], [0, 1]], [[1, 0, 0], [0, 1, 0], [0, 0, 1]]\nassert matmul(I2, A) == A and matmul(A, I3) == A",
+          "concept": "matrices"
+        },
+        {
+          "name": "vectors as one-column and one-row matrices",
+          "code": "assert matmul([[2, 1], [1, 3]], [[1], [3]]) == [[5], [10]], 'a matrix times a column: the shopping lists'\nassert matmul([[1, 2, 3]], [[4], [5], [6]]) == [[32]], 'a row times a column is a dot product'\nassert matmul([[1], [2]], [[3, 4, 5]]) == [[3, 4, 5], [6, 8, 10]], 'a column times a row is a whole table'",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "name": "floats and negatives",
+          "code": "got = matmul([[0.5, -1.5], [2.0, 0.25]], [[4.0, -2.0], [1.0, 8.0]])\nwant = [[0.5, -13.0], [8.25, -2.0]]\nassert all(abs(g - w) <= 1e-12 for gr, wr in zip(got, want) for g, w in zip(gr, wr)) and len(got) == 2 and all(len(r) == 2 for r in got), f'got {got}'",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "name": "every term of the sum",
+          "code": "got = matmul([[1, 1, 1, 1]], [[1], [2], [3], [4]])\nassert got == [[10]], f'sum over all four k, not just the first ones; got {got}'",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "name": "a new matrix of new rows",
+          "code": "A, B = [[1, 2], [3, 4]], [[1, 0], [0, 1]]\nkeep = ([r[:] for r in A], [r[:] for r in B])\nC = matmul(A, B)\nassert (A, B) == keep, 'do not change the inputs'\nassert all(c is not a for c in C for a in A + B) and C[0] is not C[1], 'return new, separate rows'\nC[0][0] = 99\nassert A[0][0] == 1 and C[1][0] == 3",
+          "concept": "matrices"
+        },
+        {
+          "name": "bad input",
+          "code": "for A, B in (([], [[1]]), ([[1]], []), ([[]], [[1]]), ([[1]], [[]]), ([[1, 2], [3]], [[1], [2]]), ([[1, 2]], [[1], [2, 3]]), ([[1, 2]], [[1, 2]]), ([[1, 2, 3]], [[1], [2]]), ([[1]], [[1], [2]])):\n    try:\n        matmul(A, B)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for A={A}, B={B}')",
+          "concept": "matrices"
+        }
+      ],
+      "solution": "def matmul(A, B):\n    if not A or not B or not A[0] or not B[0]:\n        raise ValueError('need non-empty matrices')\n    if any(len(row) != len(A[0]) for row in A) or any(len(row) != len(B[0]) for row in B):\n        raise ValueError('every row of a matrix must have the same length')\n    if len(A[0]) != len(B):\n        raise ValueError('columns of A must match rows of B')\n    return [[sum(A[i][k] * B[k][j] for k in range(len(B))) for j in range(len(B[0]))] for i in range(len(A))]\n"
+    },
+    {
+      "id": "eliminate",
+      "kind": "challenge",
+      "title": "Challenge: Gaussian elimination",
+      "body": "Write `solve(A, b)` by Gaussian elimination with partial pivoting and back substitution, following the\nprecise rules. `A` is a square list of rows and `b` a list; return `x` as a list of floats. Raise\n`ValueError` if `A` isn't a non-empty square matrix, `b` has the wrong length, or `A` is singular by\nthe lesson's rule. Don't change `A` or `b` (work on a copy).",
+      "starter": "def solve(A, b):\n    return [0.0 for _ in b]\n",
+      "hints": [
+        "Copy into `M = [list(map(float, row)) + [float(bi)] for row, bi in zip(A, b)]`, the augmented matrix.",
+        "Pick `p = max(range(k, n), key=lambda i: abs(M[i][k]))`, check it against `1e-12 * scale`, swap, then eliminate below.",
+        "def solve(A, b):\n    n = len(A)\n    if n == 0 or any(len(row) != n for row in A) or len(b) != n:\n        raise ValueError('need a square n x n matrix and n right-hand values')\n    scale = max(abs(v) for row in A for v in row)\n    M = [[float(v) for v in row] + [float(bi)] for row, bi in zip(A, b)]\n    for k in range(n):\n        p = max(range(k, n), key=lambda i: abs(M[i][k]))\n        if abs(M[p][k]) <= 1e-12 * scale:\n            raise ValueError('the matrix is singular')\n        M[k], M[p] = M[p], M[k]\n        for i in range(k + 1, n):\n            f = M[i][k] / M[k][k]\n            for j in range(k, n + 1):\n                M[i][j] -= f * M[k][j]\n    x = [0.0] * n\n    for i in reversed(range(n)):\n        x[i] = (M[i][n] - sum(M[i][j] * x[j] for j in range(i + 1, n))) / M[i][i]\n    return x\n"
+      ],
+      "tests": [
+        {
+          "name": "the shopping puzzle",
+          "code": "import numpy as np\n\ndef close(got, A, b):\n    want = np.linalg.solve(np.array(A, dtype=float), np.array(b, dtype=float))\n    assert isinstance(got, list) and len(got) == len(b) and all(isinstance(v, float) for v in got), f'return a list of floats; got {got!r}'\n    for g, w in zip(got, want):\n        assert abs(g - w) <= 1e-9 * max(1.0, abs(w)), f'expected {want.tolist()}, got {got}'\n\nclose(solve([[2, 1], [1, 3]], [5, 10]), [[2, 1], [1, 3]], [5, 10])\ngot = solve([[2, 1], [1, 3]], [5, 10])\nassert abs(got[0] - 1) <= 1e-12 and abs(got[1] - 3) <= 1e-12, f'apples 1, bananas 3; got {got}'",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "bigger systems",
+          "code": "import numpy as np\n\ndef close(got, A, b):\n    want = np.linalg.solve(np.array(A, dtype=float), np.array(b, dtype=float))\n    assert isinstance(got, list) and len(got) == len(b) and all(isinstance(v, float) for v in got), f'return a list of floats; got {got!r}'\n    for g, w in zip(got, want):\n        assert abs(g - w) <= 1e-9 * max(1.0, abs(w)), f'expected {want.tolist()}, got {got}'\n\nfor A, b in (([[4, -2, 1], [-2, 4, -2], [1, -2, 4]], [11, -16, 17]), ([[1, 2, 3, 4], [2, 1, 0, -1], [0, 3, 1, 2], [5, 0, 2, 1]], [10, 2, 6, 8]),\n             ([[3.5]], [7.0]), ([[0, 2, 1], [1, 1, 0], [3, 0, 2]], [5, 2, 9])):\n    close(solve(A, b), A, b)",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "a zero where a pivot would go",
+          "code": "import numpy as np\n\ndef close(got, A, b):\n    want = np.linalg.solve(np.array(A, dtype=float), np.array(b, dtype=float))\n    assert isinstance(got, list) and len(got) == len(b) and all(isinstance(v, float) for v in got), f'return a list of floats; got {got!r}'\n    for g, w in zip(got, want):\n        assert abs(g - w) <= 1e-9 * max(1.0, abs(w)), f'expected {want.tolist()}, got {got}'\n\nclose(solve([[0, 1], [1, 0]], [2, 3]), [[0, 1], [1, 0]], [2, 3])\nclose(solve([[0, 0, 1], [0, 1, 0], [1, 0, 0]], [7, 8, 9]), [[0, 0, 1], [0, 1, 0], [1, 0, 0]], [7, 8, 9])\nA = [[1, 1, 1], [1, 1, 2], [1, 2, 2]]\nclose(solve(A, [3, 4, 5]), A, [3, 4, 5])",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "partial pivoting keeps accuracy",
+          "code": "got = solve([[1e-20, 1], [1, 1]], [1, 2])\nassert abs(got[0] - 1) <= 1e-9 and abs(got[1] - 1) <= 1e-9, f'pivot on the largest entry: dividing by 1e-20 would wreck x[0]; got {got}'",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "scale doesn't decide singularity",
+          "code": "import numpy as np\n\ndef close(got, A, b):\n    want = np.linalg.solve(np.array(A, dtype=float), np.array(b, dtype=float))\n    assert isinstance(got, list) and len(got) == len(b) and all(isinstance(v, float) for v in got), f'return a list of floats; got {got!r}'\n    for g, w in zip(got, want):\n        assert abs(g - w) <= 1e-9 * max(1.0, abs(w)), f'expected {want.tolist()}, got {got}'\n\nA = [[2e-13, 1e-13], [1e-13, 3e-13]]\nclose(solve(A, [5e-13, 1e-12]), A, [5e-13, 1e-12])\nB = [[2e13, 1e13], [1e13, 3e13]]\nclose(solve(B, [5e13, 1e14]), B, [5e13, 1e14])",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "the 1e-12 threshold",
+          "code": "got = solve([[1, 1], [1, 1 + 1e-9]], [2, 2 + 1e-9])\nassert abs(got[0] - 1) <= 1e-5 and abs(got[1] - 1) <= 1e-5, f'a pivot of 1e-9 (relative) is small but above 1e-12: solve it; got {got}'\ngot = solve([[1, 1], [1, 1 + 3e-12]], [2, 2 + 3e-12])\nassert abs(got[0] - 1) <= 1e-2 and abs(got[1] - 1) <= 1e-2, f'3e-12 is still above the threshold: solve it (roughly 1, 1); got {got}'\ntry:\n    solve([[1, 1], [1, 1 + 5e-13]], [2, 2])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('a pivot of about 5e-13 of the largest entry is below the 1e-12 threshold: singular')",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "singular systems",
+          "code": "for A, b in (([[1, 2], [2, 4]], [5, 10]), ([[2, 3, 4], [5, 6, 7], [8, 9, 10]], [1, 2, 3]), ([[0, 0], [0, 0]], [0, 0]), ([[0]], [1]),\n             ([[1e-13, 2e-13], [2e-13, 4e-13]], [1, 2]), ([[1, 1, 1], [1, 1, 1], [2, 3, 4]], [1, 1, 1]),\n             ([[0.3, 0.9], [0.1, 0.3]], [1, 1]), ([[1.1, 2.2, 3.3], [0.7, 1.4, 2.1], [2, 5, 1]], [1, 1, 1])):\n    try:\n        solve(A, b)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'{A} is singular (rounding may leave a tiny pivot rather than 0): raise ValueError')",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "A, b = [[0, 2, 1], [1, 1, 0], [3, 0, 2]], [5, 2, 9]\nkeep = ([r[:] for r in A], b[:])\nrows = list(A)\nsolve(A, b)\nassert (A, b) == keep and all(x is y for x, y in zip(A, rows)), 'work on a copy: do not swap or change the rows of A, or b'",
+          "concept": "matrices"
+        },
+        {
+          "name": "bad input",
+          "code": "for A, b in (([], []), ([[1, 2]], [1]), ([[1, 2], [3, 4], [5, 6]], [1, 2, 3]), ([[1, 2], [3]], [1, 2]), ([[1, 2], [3, 4]], [1]), ([[1, 2], [3, 4]], [1, 2, 3]), ([[1]], [])):\n    try:\n        solve(A, b)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for A={A}, b={b}')",
+          "concept": "matrices"
+        }
+      ],
+      "solution": "def solve(A, b):\n    n = len(A)\n    if n == 0 or any(len(row) != n for row in A) or len(b) != n:\n        raise ValueError('need a square n x n matrix and n right-hand values')\n    scale = max(abs(v) for row in A for v in row)\n    M = [[float(v) for v in row] + [float(bi)] for row, bi in zip(A, b)]\n    for k in range(n):\n        p = max(range(k, n), key=lambda i: abs(M[i][k]))\n        if abs(M[p][k]) <= 1e-12 * scale:\n            raise ValueError('the matrix is singular')\n        M[k], M[p] = M[p], M[k]\n        for i in range(k + 1, n):\n            f = M[i][k] / M[k][k]\n            for j in range(k, n + 1):\n                M[i][j] -= f * M[k][j]\n    x = [0.0] * n\n    for i in reversed(range(n)):\n        x[i] = (M[i][n] - sum(M[i][j] * x[j] for j in range(i + 1, n))) / M[i][i]\n    return x\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "A is 2 × 3 and B is 3 × 4. What is the shape of A @ B?",
+          "choices": [
+            "2 × 4",
+            "3 × 3",
+            "4 × 2",
+            "It can't be formed"
+          ],
+          "answer": 0,
+          "explanation": "The inner sizes (3 and 3) match and disappear; the outer ones remain.",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "id": "q2",
+          "prompt": "For two square matrices A and B, what is true in general?",
+          "choices": [
+            "A @ B and B @ A can differ",
+            "A @ B always equals B @ A",
+            "A @ B is always the identity",
+            "B @ A is the transpose of A @ B"
+          ],
+          "answer": 0,
+          "explanation": "The example's swap matrix S gives different results on each side of A.",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "id": "q3",
+          "prompt": "Why does elimination swap rows to bring up a pivot?",
+          "choices": [
+            "To avoid dividing by zero (and by tiny numbers)",
+            "To sort the equations",
+            "Because NumPy requires it",
+            "To make the matrix symmetric"
+          ],
+          "answer": 0,
+          "explanation": "Partial pivoting divides by the largest available entry, never by a zero one when a non-zero one exists.",
+          "concept": "linear-systems"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does it mean that [[1, 2], [2, 4]] is singular?",
+          "choices": [
+            "Its rows are dependent, so A x = b has no single solution",
+            "It has only one row",
+            "Its inverse is itself",
+            "Its entries are all even"
+          ],
+          "answer": 0,
+          "explanation": "The second row is twice the first: two equations carry only one equation's information.",
+          "concept": "linear-systems"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Multiply matrices by the row-times-column rule, checking that the shapes fit.\n- Explain why `A B` and `B A` can differ, and what the identity and an inverse do.\n- Solve `A x = b` by Gaussian elimination with partial pivoting and back substitution.\n- Recognise a singular system, and use `np.linalg.solve` in practice."
+    }
+  ]
+}
