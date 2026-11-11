@@ -331,6 +331,11 @@
           "concept": "logistic-regression"
         },
         {
+          "name": "rows with no features",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX, y = [[], [], []], [0, 1, 1]\n_close(fit_logistic(X, y, lr=0.5, steps=7), _ref(X, y, 0.5, 7), 'with no features only b is learned')\nw, b = fit_logistic(X, y, lr=0.5, steps=0)\nassert w == [] and b == 0.0 and isinstance(b, float), f'no features, no steps; got {(w, b)!r}'",
+          "concept": "logistic-regression"
+        },
+        {
           "name": "zero steps",
           "code": "w, b = fit_logistic([[1, 2], [3, 4]], [0, 1], lr=0.1, steps=0)\nassert (w, b) == ([0.0, 0.0], 0.0) and isinstance(w, list) and all(isinstance(v, float) for v in w + [b]), f'no steps: the starting point, as floats; got {(w, b)!r}'",
           "concept": "logistic-regression"
