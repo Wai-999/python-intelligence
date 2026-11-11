@@ -1,0 +1,336 @@
+{
+  "id": "ml-boosting",
+  "title": "Gradient boosting: many small trees, each fixing the last one's mistakes",
+  "summary": "Build a regression model as a sum of decision stumps, each fitted to the residuals left by the ones before it, and see how the learning rate and the number of rounds trade fit against overfitting.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-forests",
+    "ml-derivatives"
+  ],
+  "concepts": [
+    "boosting",
+    "residuals",
+    "shrinkage"
+  ],
+  "sources": [
+    {
+      "id": "mml-erm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        270
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "sk-ens",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "1.11. Ensembles: Gradient boosting, random forests, bagging, voting, stacking",
+      "use": "reference"
+    },
+    {
+      "id": "sk-gb",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        12,
+        12
+      ],
+      "section": "1.11.1.2. GradientBoostingClassifier and GradientBoostingRegressor",
+      "use": "reference"
+    },
+    {
+      "id": "sk-gb-math",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        15,
+        15
+      ],
+      "section": "1.11.1.2.3. Mathematical formulation",
+      "use": "reference"
+    },
+    {
+      "id": "sk-shrink",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "1.11.1.2.5. Shrinkage via learning rate",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Learning from mistakes",
+      "body": "A random forest grows many trees independently and lets them vote. **Boosting** works the other way\nround: it grows small trees one after another, and each new tree studies where the model so far is\nstill wrong and corrects a little of it. Gradient-boosted trees are among the most accurate methods\nfor tables of data, and the core idea fits in a few lines of Python."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Fit the leftovers",
+      "body": "Start with the simplest prediction: the mean of the targets. Its **residuals**, target minus prediction,\nare what is still unexplained. Fit a tiny tree, a **stump** with a single question, to the residuals, and\nadd its predictions to the model. The residuals shrink; fit another stump to them; repeat. The model is\nthe starting mean plus the sum of all the stumps.\n\nFor squared error, the residuals are (up to a factor 2) the negative gradient of the loss with respect to\nthe predictions, so each round is a step of gradient descent taken in the space of functions: that is\nthe \"gradient\" in gradient boosting. Adding only a fraction `lr` of each stump (**shrinkage**, the\nlearning rate) takes smaller steps, so more rounds are needed. With enough rounds the model fits its\ntraining data almost perfectly, noise included, so the number of rounds is a hyperparameter to choose\non validation data.",
+      "cites": [
+        "sk-ens",
+        "sk-gb",
+        "sk-gb-math",
+        "sk-shrink",
+        "mml-erm"
+      ],
+      "socratic": {
+        "questions": [
+          "After one round with lr = 1, what is the mean of the new residuals on each side of the stump's split?",
+          "Why does a smaller learning rate need more rounds to reach the same training error?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch the residuals appear",
+      "body": "Three targets, and a model that predicts 6 for all of them so far. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "y, F = [3.0, 5.0, 10.0], [6.0, 6.0, 6.0]\nr = [t - p for t, p in zip(y, F)]\nprint(r)",
+        "frames": [
+          {
+            "line": 1,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {},
+            "note": "The targets and the current predictions."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "y": "[3.0, 5.0, 10.0]",
+              "F": "[6.0, 6.0, 6.0]"
+            },
+            "note": "Residual = target − prediction."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "y": "[3.0, 5.0, 10.0]",
+              "F": "[6.0, 6.0, 6.0]",
+              "r": "[-3.0, -1.0, 4.0]"
+            },
+            "note": "The next stump learns to predict these: a little lower for the first two, much higher for the third.",
+            "output": "[-3.0, -1.0, 4.0]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Regression stump:** for each feature `f` and each midpoint `t` between neighbouring distinct values (as in\nthe decision-tree lesson), rows with `x[f] <= t` go left. Each side predicts the mean of its targets, and\nthe split's error is the sum of squared differences from those means (SSE). Choose the lowest SSE; this\nlesson treats every candidate within `1e-9` of the lowest as tied and keeps the first of them: lowest\nfeature, then lowest threshold. If no feature has two distinct values there is no stump.\n\n**Boosting for squared error:** start with `F₀(x) = mean(y)`. For round `m = 1, 2, …`: compute the residuals\n`rᵢ = yᵢ − F_{m−1}(xᵢ)`, fit a stump `h_m` to them, and update `F_m(x) = F_{m−1}(x) + lr · h_m(x)` with\na learning rate `lr > 0`. Stop after the requested number of rounds, or earlier if no stump can be fitted.\nThe final model predicts `F₀ + lr · Σ h_m(x)`.",
+      "cites": [
+        "sk-gb-math",
+        "sk-shrink"
+      ]
+    },
+    {
+      "id": "rounds",
+      "kind": "example",
+      "title": "Run it: training and validation error by round",
+      "body": "One feature, a hump-shaped target, and six validation points. Each entry is `round: training MSE /\nvalidation MSE`, for a full step (`lr = 1.0`) and a shrunken one (`lr = 0.3`). Where would you stop?",
+      "code": "x = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nxv = [0.75, 1.75, 2.75, 3.75, 4.75, 5.75]\nyv = [1.6, 3.4, 4.9, 5.3, 4.0, 2.4]\n\ndef stump(x, r):\n    best = None\n    for a, b in zip(sorted(x), sorted(x)[1:]):\n        t = (a + b) / 2\n        L = [ri for xi, ri in zip(x, r) if xi <= t]\n        R = [ri for xi, ri in zip(x, r) if xi > t]\n        ml, mr = sum(L) / len(L), sum(R) / len(R)\n        sse = sum((v - ml) * (v - ml) for v in L) + sum((v - mr) * (v - mr) for v in R)\n        if best is None or sse < best[0]:\n            best = (sse, t, ml, mr)\n    return best[1:]\n\ndef mse(pred, target):\n    return sum((p - t) * (p - t) for p, t in zip(pred, target)) / len(target)\n\nfor lr in (1.0, 0.3):\n    base = sum(y) / len(y)\n    F, Fv = [base] * len(y), [base] * len(yv)\n    line = []\n    for k in range(1, 101):\n        t, ml, mr = stump(x, [yi - fi for yi, fi in zip(y, F)])\n        F = [fi + lr * (ml if xi <= t else mr) for xi, fi in zip(x, F)]\n        Fv = [fi + lr * (ml if xi <= t else mr) for xi, fi in zip(xv, Fv)]\n        if k in (1, 5, 10, 30, 100):\n            line.append(f'{k}: {mse(F, y):.3f}/{mse(Fv, yv):.3f}')\n    print('lr', lr, ' '.join(line))\n",
+      "expected_output": "lr 1.0 1: 0.963/0.904 5: 0.164/0.083 10: 0.095/0.077 30: 0.009/0.088 100: 0.000/0.121\nlr 0.3 1: 1.379/1.286 5: 0.687/0.607 10: 0.325/0.380 30: 0.031/0.140 100: 0.000/0.121\n"
+    },
+    {
+      "id": "stump",
+      "kind": "guided",
+      "title": "Your turn: a regression stump",
+      "body": "Complete two functions by the precise rules.\n\n`fit_stump(X, r)` takes rows (lists of numbers) and their targets and returns `(feature, threshold,\nleft_mean, right_mean)`, or `None` if no feature has two distinct values. Raise `ValueError` if there are\nno rows, `X` and `r` differ in length, or the rows differ in length. Don't change the inputs.\n\n`predict_stump(stump, x)` returns the stump's prediction for one row.",
+      "starter": "def fit_stump(X, r):\n    m = sum(r) / len(r)\n    return 0, X[0][0], m, m\n\n\ndef predict_stump(stump, x):\n    return stump[2]\n",
+      "hints": [
+        "Collect `(sse, f, t, left_mean, right_mean)` for every candidate, then find the lowest SSE.",
+        "`next(c for c in candidates if c[0] <= low + 1e-9)` keeps the first candidate tied with the lowest.",
+        "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n"
+      ],
+      "tests": [
+        {
+          "name": "the best split and its means",
+          "code": "got = fit_stump([[1.0], [2.0], [3.0], [4.0]], [1.0, 1.0, 5.0, 7.0])\nassert got[:2] == (0, 2.5) and abs(got[2] - 1.0) <= 1e-12 and abs(got[3] - 6.0) <= 1e-12, f'2.5 separates the 1s from 5 and 7 (SSE 2); got {got}'\nassert all(isinstance(v, float) for v in got[1:]), 'threshold and means are floats'",
+          "concept": "residuals"
+        },
+        {
+          "name": "squared error decides, not the gap in means",
+          "code": "got = fit_stump([[0], [1], [2], [3], [4]], [0.0, 0.0, 0.0, 10.0, 11.0])\nassert got[:2] == (0, 2.5), f'SSE: 2.5 leaves 0 + 0.5; 3.5 leaves 75 + 0; got {got}'\ngot = fit_stump([[0], [1], [2], [3], [4], [5]], [4.0, 6.0, 4.0, 6.0, 8.0, 6.0])\nassert got[:2] == (0, 2.5) and abs(got[2] - 14 / 3) <= 1e-12 and abs(got[3] - 20 / 3) <= 1e-12, f'the total squared error is lowest at 2.5 (not the biggest gap between means, nor the smallest average error per side, both at 0.5); got {got}'",
+          "concept": "residuals"
+        },
+        {
+          "name": "several features",
+          "code": "X = [[5, 1, 0], [5, 2, 9], [5, 3, 1], [5, 4, 8]]\ngot = fit_stump(X, [0.0, 4.0, 0.5, 4.5])\nassert got[:2] == (2, 4.5) and abs(got[2] - 0.25) <= 1e-12 and abs(got[3] - 4.25) <= 1e-12, f'feature 2 separates the small and large targets; got {got}'",
+          "concept": "residuals"
+        },
+        {
+          "name": "ties within 1e-9 of the lowest SSE",
+          "code": "got = fit_stump([[1, 1], [2, 2], [3, 3], [4, 4]], [0.0, 0.0, 1.0, 1.0])\nassert got[:2] == (0, 2.5), f'both features split perfectly: keep feature 0; got {got}'\ngot = fit_stump([[0], [1], [2], [3]], [1.0, 0.0, 0.0, 1.0])\nassert got[:2] == (0, 0.5), f'0.5 and 2.5 both leave SSE 2/3: keep the lowest threshold; got {got}'\nX = [[0, 0], [0, 1], [1, 0], [1, 1]]\nassert fit_stump(X, [0.0, 1.0, 1.0 - 2.5e-10, 2.0])[0] == 0, 'feature 1 is lower by only 5e-10: within 1e-9 that is a tie, so feature 0'\nassert fit_stump(X, [0.0, 1.0, 1.0 - 2.5e-9, 2.0])[0] == 1, 'feature 1 is lower by 5e-9: a real difference, so feature 1'",
+          "concept": "residuals"
+        },
+        {
+          "name": "no split possible",
+          "code": "assert fit_stump([[2, 7], [2, 7]], [1.0, 3.0]) is None and fit_stump([[4]], [2.0]) is None",
+          "concept": "residuals"
+        },
+        {
+          "name": "predicting with a stump",
+          "code": "s = (1, 2.5, -1.0, 3.0)\nassert predict_stump(s, [9, 2.5]) == -1.0 and predict_stump(s, [0, 2.6]) == 3.0, 'x[f] <= t goes left'\ns = fit_stump([[1.0], [2.0], [3.0], [4.0]], [1.0, 1.0, 5.0, 7.0])\nassert [predict_stump(s, [v]) for v in (0, 2, 3, 99)] == [1.0, 1.0, 6.0, 6.0]",
+          "concept": "residuals"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nX, r = [[3, 1], [1, 2], [2, 2]], [1.0, 2.0, 3.0]\nkeep = copy.deepcopy((X, r))\nfit_stump(X, r)\nassert (X, r) == keep",
+          "concept": "residuals"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, r in (([], []), ([[1]], []), ([[1], [2]], [1.0]), ([[1]], [1.0, 2.0]), ([[1, 2], [3]], [1.0, 2.0]), ([[1], [2], [3, 4]], [1.0, 2.0, 3.0])):\n    try:\n        fit_stump(X, r)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, r={r}')",
+          "concept": "residuals"
+        }
+      ],
+      "solution": "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n"
+    },
+    {
+      "id": "boost",
+      "kind": "challenge",
+      "title": "Challenge: boost the stumps",
+      "body": "The starter gives you `fit_stump` and `predict_stump`. Write `fit_boost(X, y, rounds, lr)`, returning a\nmodel in any form you like, and `predict_boost(model, X)`, returning a list of predictions, by the precise\nrules. Raise `ValueError` if `rounds < 0`, unless `lr > 0`, or if `X` and `y` are invalid (as for\n`fit_stump`), even when `rounds` is 0. Don't change the inputs.",
+      "starter": "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n\n\ndef fit_boost(X, y, rounds, lr):\n    return {'base': sum(y) / len(y)}\n\n\ndef predict_boost(model, X):\n    return [model['base'] for _ in X]\n",
+      "hints": [
+        "Keep `F`, the current predictions on the training rows; each round fit a stump to `[t - p for t, p in zip(y, F)]`.",
+        "Store the starting mean, `lr` and the list of stumps; predicting adds `lr * predict_stump(s, row)` for each stump.",
+        "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n\n\ndef fit_boost(X, y, rounds, lr):\n    if rounds < 0 or not lr > 0:\n        raise ValueError('need rounds >= 0 and lr > 0')\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return {'base': base, 'lr': lr, 'stumps': stumps}\n\n\ndef predict_boost(model, X):\n    return [model['base'] + sum(model['lr'] * predict_stump(s, row) for s in model['stumps']) for row in X]\n"
+      ],
+      "tests": [
+        {
+          "name": "zero rounds is the mean",
+          "code": "def _ref(X, y, rounds, lr):\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return lambda Z: [base + sum(lr * predict_stump(s, row) for s in stumps) for row in Z]\n\nX = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5], [6.0]]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nZ = [[0.75], [1.75], [2.75], [3.75], [4.75], [5.75], [-1.0], [9.0]]\n\ndef close(a, b):\n    return len(a) == len(b) and all(abs(p - q) <= 1e-9 * max(1.0, abs(q)) for p, q in zip(a, b))\n\nm = fit_boost(X, y, 0, 0.5)\ngot = predict_boost(m, Z)\nassert close(got, [sum(y) / len(y)] * len(Z)), f'no rounds: predict the mean of y; got {got}'",
+          "concept": "boosting"
+        },
+        {
+          "name": "one round by hand",
+          "code": "m = fit_boost([[1.0], [2.0], [3.0], [4.0]], [1.0, 1.0, 5.0, 7.0], 1, 1.0)\ngot = predict_boost(m, [[1.5], [3.5]])\nassert abs(got[0] - 1.0) <= 1e-12 and abs(got[1] - 6.0) <= 1e-12, f'mean 3.5, residuals -2.5, -2.5, 1.5, 3.5: the stump at 2.5 adds -2.5 or +2.5; got {got}'\nm = fit_boost([[1.0], [2.0], [3.0], [4.0]], [1.0, 1.0, 5.0, 7.0], 1, 0.5)\ngot = predict_boost(m, [[1.5], [3.5]])\nassert abs(got[0] - 2.25) <= 1e-12 and abs(got[1] - 4.75) <= 1e-12, f'with lr = 0.5 only half of each correction is added; got {got}'",
+          "concept": "shrinkage"
+        },
+        {
+          "name": "many rounds follow the recipe",
+          "code": "def _ref(X, y, rounds, lr):\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return lambda Z: [base + sum(lr * predict_stump(s, row) for s in stumps) for row in Z]\n\nX = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5], [6.0]]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nZ = [[0.75], [1.75], [2.75], [3.75], [4.75], [5.75], [-1.0], [9.0]]\n\ndef close(a, b):\n    return len(a) == len(b) and all(abs(p - q) <= 1e-9 * max(1.0, abs(q)) for p, q in zip(a, b))\n\nfor rounds, lr in ((1, 1.0), (5, 1.0), (30, 0.3), (100, 0.1), (12, 2.0)):\n    got, want = predict_boost(fit_boost(X, y, rounds, lr), Z), _ref(X, y, rounds, lr)(Z)\n    assert close(got, want), f'rounds={rounds}, lr={lr}: expected {want}, got {got}'",
+          "concept": "boosting"
+        },
+        {
+          "name": "residuals shrink on the training rows",
+          "code": "def _ref(X, y, rounds, lr):\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return lambda Z: [base + sum(lr * predict_stump(s, row) for s in stumps) for row in Z]\n\nX = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5], [6.0]]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nZ = [[0.75], [1.75], [2.75], [3.75], [4.75], [5.75], [-1.0], [9.0]]\n\ndef close(a, b):\n    return len(a) == len(b) and all(abs(p - q) <= 1e-9 * max(1.0, abs(q)) for p, q in zip(a, b))\n\nmse = lambda m: sum((p - t) * (p - t) for p, t in zip(predict_boost(m, X), y)) / len(y)\nerrs = [mse(fit_boost(X, y, k, 1.0)) for k in (0, 1, 5, 30)]\nassert errs == sorted(errs, reverse=True) and errs[-1] < 0.01, f'training MSE falls with rounds; got {errs}'\nassert abs(mse(fit_boost(X, y, 10, 1.0)) - 0.0951) <= 1e-3, 'the example: about 0.095 after 10 full rounds'",
+          "concept": "residuals"
+        },
+        {
+          "name": "several features",
+          "code": "def _ref(X, y, rounds, lr):\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return lambda Z: [base + sum(lr * predict_stump(s, row) for s in stumps) for row in Z]\n\nX = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5], [6.0]]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nZ = [[0.75], [1.75], [2.75], [3.75], [4.75], [5.75], [-1.0], [9.0]]\n\ndef close(a, b):\n    return len(a) == len(b) and all(abs(p - q) <= 1e-9 * max(1.0, abs(q)) for p, q in zip(a, b))\n\nX2 = [[1, 9], [2, 8], [3, 7], [4, 1], [5, 2], [6, 3]]\ny2 = [5.0, 4.0, 3.5, 1.0, 1.5, 0.5]\ngot, want = predict_boost(fit_boost(X2, y2, 8, 0.5), X2), _ref(X2, y2, 8, 0.5)(X2)\nassert close(got, want), f'expected {want}, got {got}'",
+          "concept": "boosting"
+        },
+        {
+          "name": "stop when no stump fits",
+          "code": "m = fit_boost([[3], [3], [3]], [1.0, 2.0, 6.0], 50, 1.0)\ngot = predict_boost(m, [[3], [0]])\nassert got == [3.0, 3.0], f'identical rows: no split, so the model stays at the mean; got {got}'",
+          "concept": "boosting"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "def _ref(X, y, rounds, lr):\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return lambda Z: [base + sum(lr * predict_stump(s, row) for s in stumps) for row in Z]\n\nX = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5], [6.0]]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nZ = [[0.75], [1.75], [2.75], [3.75], [4.75], [5.75], [-1.0], [9.0]]\n\ndef close(a, b):\n    return len(a) == len(b) and all(abs(p - q) <= 1e-9 * max(1.0, abs(q)) for p, q in zip(a, b))\n\nimport copy\nkeep = copy.deepcopy((X, y))\nm = fit_boost(X, y, 5, 0.5)\nrows = [[1.0], [2.0]]\npredict_boost(m, rows)\nassert (X, y) == keep and rows == [[1.0], [2.0]], 'do not change the inputs'",
+          "concept": "boosting"
+        },
+        {
+          "name": "bad input",
+          "code": "def _ref(X, y, rounds, lr):\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return lambda Z: [base + sum(lr * predict_stump(s, row) for s in stumps) for row in Z]\n\nX = [[0.5], [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5], [6.0]]\ny = [1.2, 1.9, 3.1, 3.9, 4.6, 5.2, 5.4, 5.1, 4.4, 3.6, 2.9, 2.0]\nZ = [[0.75], [1.75], [2.75], [3.75], [4.75], [5.75], [-1.0], [9.0]]\n\ndef close(a, b):\n    return len(a) == len(b) and all(abs(p - q) <= 1e-9 * max(1.0, abs(q)) for p, q in zip(a, b))\n\nfor args in ((X, y, -1, 0.5), (X, y, 3, 0), (X, y, 3, -0.1), (X, y, 0, 0), (X, y, 3, float('nan')), ([], [], 0, 0.5), (X, y[:-1], 0, 0.5), ([[1, 2], [3]], [1.0, 2.0], 0, 0.5)):\n    try:\n        fit_boost(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for rounds={args[2]}, lr={args[3]}, {len(args[0])} rows, {len(args[1])} targets')",
+          "concept": "boosting"
+        }
+      ],
+      "solution": "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n\n\ndef fit_boost(X, y, rounds, lr):\n    if rounds < 0 or not lr > 0:\n        raise ValueError('need rounds >= 0 and lr > 0')\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return {'base': base, 'lr': lr, 'stumps': stumps}\n\n\ndef predict_boost(model, X):\n    return [model['base'] + sum(model['lr'] * predict_stump(s, row) for s in model['stumps']) for row in X]\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does each new stump in gradient boosting (squared error) learn to predict?",
+          "choices": [
+            "The residuals of the model so far",
+            "The original targets",
+            "A random bootstrap sample",
+            "The previous stump's predictions"
+          ],
+          "answer": 0,
+          "explanation": "Each stump fits what is still unexplained, target minus current prediction.",
+          "concept": "residuals"
+        },
+        {
+          "id": "q2",
+          "prompt": "How does boosting differ from bagging?",
+          "choices": [
+            "Boosting builds its trees one after another, each correcting the last; bagging builds them independently",
+            "Boosting uses deeper trees",
+            "Bagging uses residuals",
+            "They are the same"
+          ],
+          "answer": 0,
+          "explanation": "Bagging averages independent trees; boosting adds trees in sequence.",
+          "concept": "boosting"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does a smaller learning rate do?",
+          "choices": [
+            "Adds a smaller fraction of each stump, so more rounds are needed",
+            "Makes each stump deeper",
+            "Removes the starting mean",
+            "Stops training immediately"
+          ],
+          "answer": 0,
+          "explanation": "Shrinkage scales each step; the number of rounds has to grow to compensate.",
+          "concept": "shrinkage"
+        },
+        {
+          "id": "q4",
+          "prompt": "Training error keeps falling with more rounds but validation error starts rising. What is happening?",
+          "choices": [
+            "The model is starting to fit noise in the training data",
+            "The learning rate is too small",
+            "The stumps are broken",
+            "The validation data is wrong"
+          ],
+          "answer": 0,
+          "explanation": "Stop where validation error is lowest: the number of rounds is a hyperparameter.",
+          "concept": "boosting"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Fit a regression stump by minimising the squared error of its two sides.\n- Build a boosted model: start from the mean and add stumps fitted to residuals.\n- Explain the learning rate as shrinkage, and why it needs more rounds.\n- Choose the number of rounds on validation data, because training error always keeps falling."
+    }
+  ]
+}
