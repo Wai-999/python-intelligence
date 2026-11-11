@@ -285,7 +285,7 @@
         },
         {
           "name": "inputs are not changed",
-          "code": "import copy\nX, y = [[3, 1], [1, 2], [2, 2]], ['b', 'a', 'a']\nkeep = copy.deepcopy((X, y))\nbest_split(X, y)\nassert (X, y) == keep, 'do not modify (or sort) the inputs'",
+          "code": "import copy\nX, y = [[3, 1], [1, 2], [2, 2]], ['b', 'a', 'a']\nkeep = copy.deepcopy((X, y))\nbest_split(X, y)\nassert (X, y) == keep, 'do not modify (or sort) the inputs'\nlabels = ['c', 'a', 'b', 'a']\ngini(labels)\nassert labels == ['c', 'a', 'b', 'a'], 'gini must not modify (or sort) its list'",
           "concept": "decision-trees"
         },
         {
