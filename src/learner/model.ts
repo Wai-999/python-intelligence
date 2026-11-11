@@ -176,7 +176,13 @@ function observe(r: Running, e: LearnerEvent, t: number) {
   if (r.streakOk >= 2) { r.tier = Math.max(0, r.tier - 1); r.streakOk = 0; }
   if (r.streakFail >= 2) { r.tier = Math.min(MAX_AUTO_HINT_TIER, r.tier + 1); r.streakFail = 0; }
 
-  if (e.passed) { r.lastSuccess = e.at; r.recentFailures = 0; r.successes += 1; if (independent) r.independentSuccesses += 1; }
+  if (e.passed) {
+    r.lastSuccess = e.at;
+    r.recentFailures = 0;
+    r.successes += 1;
+    if (independent) r.independentSuccesses += 1;
+    else r.assisted += 1; // any kind of task: exercise, quiz or review
+  }
   else {
     r.failures += 1;
     r.recentFailures += 1;
@@ -184,7 +190,9 @@ function observe(r: Running, e: LearnerEvent, t: number) {
   }
   if (e.confidence !== undefined) { r.rated += 1; r.ratedConfidence += (e.confidence - 1) / 4; r.ratedPassed += e.passed ? 1 : 0; }
 
-  if (e.task === "review" && r.completedAt !== null && r.due !== null) {
+  if (e.task === "review") {
+    // Before completion a review is only practice: it is not evidence for the advancement gate.
+    if (r.completedAt === null || r.due === null) return;
     // An early review passed without help is practice and doesn't move the schedule; an early lapse still counts.
     if (t < r.due && independent) return;
     if (independent) {
@@ -201,9 +209,9 @@ function observe(r: Running, e: LearnerEvent, t: number) {
     }
     return;
   }
-  if (e.passed && e.task === "quiz") r.explanation = true;
-  else if (independent) r.independent.add(`${e.lessonId}:${e.stepId}`);
-  else if (e.passed) r.assisted += 1;
+  // The explanation check and the gate's task evidence count only when earned without help.
+  if (independent && e.task === "quiz") r.explanation = true;
+  else if (independent && e.task === "exercise") r.independent.add(`${e.lessonId}:${e.stepId}`);
 }
 
 const ready = (r: Running) => r.independent.size >= INDEPENDENT_NEEDED && r.explanation;

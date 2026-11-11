@@ -37,6 +37,18 @@ describe("evidence and the advancement gate", () => {
     expect(state([...noQuiz, ev(at(0, 3), "loops", "quiz", false)]).completedAt).toBeNull();
   });
 
+  it("counts neither reviews before completion nor an assisted quiz towards the gate", () => {
+    const early = [ev(at(0), "loops", "review", true, 0, "r1"), ev(at(0, 1), "loops", "review", true, 0, "r2"), ev(at(0, 2), "loops", "quiz", true)];
+    expect([state(early).independentTasks, state(early).completedAt, state(early).status]).toEqual([[], null, "learning"]);
+    const helpedQuiz = [ev(at(0), "loops", "exercise", true, 0, "a"), ev(at(0, 1), "loops", "exercise", true, 0, "b"), ev(at(0, 2), "loops", "quiz", true, 1)];
+    expect([state(helpedQuiz).explanationChecked, state(helpedQuiz).completedAt]).toEqual([false, null]);
+  });
+
+  it("counts assisted successes of every kind of task", () => {
+    const log = [...evidence("loops"), ev(at(0, 3), "loops", "quiz", true, 2), ev(at(1, 3), "loops", "review", true, 1), ev(at(1, 4), "loops", "exercise", true, 4, "c")];
+    expect(state(log).assistedSuccesses).toBe(3);
+  });
+
   it("completes on two independent tasks plus an explanation check, in either order", () => {
     const s = state([ev(at(0), "loops", "quiz", true), ev(at(0, 1), "loops", "exercise", true, 0, "a"), ev(at(0, 2), "loops", "exercise", true, 0, "b")]);
     expect([s.status, s.completedAt, s.reviewDue, s.durable]).toEqual(["complete", at(0, 2), at(1, 2), false]);
@@ -104,6 +116,12 @@ describe("spaced reviews: a replay over seven weeks", () => {
   it("treats a review recalled only with help as a lapse", () => {
     const s = state([...evidence("loops"), ev(at(1, 3), "loops", "review", true, 3)]);
     expect([s.reviewStage, s.successfulReviews, s.reviewDue]).toEqual([0, 0, at(2, 3)]);
+  });
+
+  it("puts the most overdue review first, whatever the names", () => {
+    const log = [...evidence("loops"), ...evidence("functions", 1)];
+    // loops is due on day 1, functions (completed on day 1) on day 2: loops first, although "functions" sorts first.
+    expect(dueReviews(model(log), at(3)).map((s) => s.concept)).toEqual(["loops", "functions"]);
   });
 
   it("orders reviews by how overdue they are", () => {
