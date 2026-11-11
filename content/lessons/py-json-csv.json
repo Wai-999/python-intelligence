@@ -235,7 +235,7 @@
         },
         {
           "name": "bad input",
-          "code": "for text in ('', 'name,points\\nAda,3\\n', 'player,score\\nAda,3\\n', 'name,score\\nAda\\n', 'name,score\\nAda,seven\\n', 'name,score\\nAda,7.5\\n', 'name,score\\nAda,\\n'):\n    try:\n        read_scores(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for {text!r}')",
+          "code": "for text in ('', 'name,points\\n', 'player,score\\n', 'name,points\\nAda,3\\n', 'player,score\\nAda,3\\n', 'name,score\\nAda\\n', 'name,score\\nAda,seven\\n', 'name,score\\nAda,7.5\\n', 'name,score\\nAda,\\n'):\n    try:\n        read_scores(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for {text!r}')",
           "concept": "csv-files"
         }
       ],
@@ -275,7 +275,7 @@
         },
         {
           "name": "bad input",
-          "code": "for text in ('', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n', 'team,score\\nred,2.5\\n', 'team,score\\nred,\\n', 'score,team\\n5\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": ', '42', 'true', 'null'):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
+          "code": "for text in ('', 'team,points\\n', 'player,score\\n', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n', 'team,score\\nred,2.5\\n', 'team,score\\nred,\\n', 'score,team\\n5\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": ', '42', 'true', 'null'):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
           "concept": "serialization"
         }
       ],
