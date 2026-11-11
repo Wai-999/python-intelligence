@@ -92,6 +92,15 @@ describe("spaced reviews: a replay over seven weeks", () => {
     expect([s.reviewStage, s.successfulReviews, s.durable, s.status, s.reviewDue]).toEqual([0, 0, false, "complete", at(87)]);
   });
 
+  it("counts an early failed or assisted review as a lapse, even after mastery", () => {
+    const mastered = [...evidence("loops"), ev(at(1, 3), "loops", "review", true), ev(at(4, 5), "loops", "review", true)];
+    expect(state(mastered).status).toBe("mastered");
+    for (const lapse of [ev(at(6), "loops", "review", false), ev(at(6), "loops", "review", true, 2)]) {
+      const s = state([...mastered, lapse]);
+      expect([s.status, s.durable, s.reviewStage, s.successfulReviews, s.reviewDue]).toEqual(["complete", false, 0, 0, at(7)]);
+    }
+  });
+
   it("treats a review recalled only with help as a lapse", () => {
     const s = state([...evidence("loops"), ev(at(1, 3), "loops", "review", true, 3)]);
     expect([s.reviewStage, s.successfulReviews, s.reviewDue]).toEqual([0, 0, at(2, 3)]);
@@ -119,6 +128,13 @@ describe("hint fading and restoration", () => {
     expect(MAX_AUTO_HINT_TIER).toBe(3);
   });
 
+  it("restores only after two comparable failures (the same kind of task)", () => {
+    const mixed = [ev(at(0), "loops", "exercise", false), ev(at(0, 1), "loops", "quiz", false), ev(at(0, 2), "loops", "exercise", false), ev(at(0, 3), "loops", "review", false)];
+    expect(state(mixed).hintTier).toBe(2);
+    expect(state([ev(at(0), "loops", "exercise", false, 0, "a"), ev(at(0, 1), "loops", "exercise", false, 0, "b")]).hintTier).toBe(3);
+    expect(state([ev(at(0), "loops", "quiz", false), ev(at(0, 1), "loops", "quiz", false)]).hintTier).toBe(3);
+  });
+
   it("needs consecutive results: an assisted success breaks a streak", () => {
     expect(state([ev(at(0), "loops", "exercise", false), ev(at(0, 1), "loops", "exercise", true, 2), ev(at(0, 2), "loops", "exercise", false)]).hintTier).toBe(2);
   });
@@ -132,8 +148,37 @@ describe("the heuristic estimate", () => {
     expect(one.masteryEstimate).toBeCloseTo(0.15);
     expect(two.masteryEstimate).toBeCloseTo(0.05);
     expect(state(fails(9)).masteryEstimate).toBe(0);
+    const recovered = state([ev(at(0), "loops", "exercise", true, 0, "a"), ...fails(2).map((e, i) => ({ ...e, at: at(0, 1 + i) })), ev(at(0, 4), "loops", "exercise", true, 0, "b")]);
+    expect([recovered.recentFailures, recovered.masteryEstimate]).toEqual([0, 0.5]);
+    const helped = state([ev(at(0), "loops", "exercise", true, 0, "a"), ...fails(2).map((e, i) => ({ ...e, at: at(0, 1 + i) })), ev(at(0, 4), "loops", "exercise", true, 2, "b")]);
+    expect([helped.recentFailures, helped.masteryEstimate]).toEqual([0, 0.3]);
     expect(state([...evidence("loops"), ev(at(1, 3), "loops", "review", true), ev(at(4, 3), "loops", "review", true)]).masteryEstimate).toBe(0.9);
     expect([state(fails(1)).evidence, state(fails(1)).uncertainty, state(fails(4)).uncertainty, state(fails(6)).uncertainty]).toEqual([1, "high", "medium", "low"]);
+  });
+});
+
+describe("diagnostics the master prompt asks for", () => {
+  it("reports hint dependency as the share of successes that needed help, unknown before any success", () => {
+    expect(state([ev(at(0), "loops", "exercise", false)]).hintDependency).toBeNull();
+    expect(state([ev(at(0), "loops", "exercise", true, 0, "a"), ev(at(0, 1), "loops", "exercise", true, 3, "b"), ev(at(0, 2), "loops", "exercise", true, 4, "c"),
+      ev(at(0, 3), "loops", "exercise", true, 1, "d")]).hintDependency).toBe(0.75);
+  });
+
+  it("reports a misconception tag only when it recurs on failures, never from one slip", () => {
+    const tagged = (when: string, passed: boolean, tags: string[]) => ({ ...ev(when, "loops", "exercise", passed), tags });
+    expect(state([tagged(at(0), false, ["off-by-one"])]).misconceptionTags).toEqual([]);
+    expect(state([tagged(at(0), false, ["off-by-one", "off-by-one"])]).misconceptionTags).toEqual([]);
+    expect(state([tagged(at(0), false, ["off-by-one"]), tagged(at(0, 1), true, ["off-by-one"])]).misconceptionTags).toEqual([]);
+    const log = [tagged(at(0), false, ["typo"]), tagged(at(0, 1), false, ["off-by-one"]), tagged(at(0, 2), false, ["off-by-one", "scope"]), tagged(at(0, 3), false, ["scope"]), tagged(at(0, 4), false, ["off-by-one"])];
+    expect(state(log).misconceptionTags).toEqual(["off-by-one", "scope"]);
+  });
+
+  it("compares self-rated confidence with results, unknown without ratings", () => {
+    expect(state([ev(at(0), "loops", "exercise", true)]).confidenceCalibration).toBeNull();
+    const rated = (when: string, passed: boolean, confidence: 1 | 2 | 3 | 4 | 5) => ({ ...ev(when, "loops", "exercise", passed), confidence });
+    expect(state([rated(at(0), false, 5), rated(at(0, 1), false, 5)]).confidenceCalibration).toBe(1);
+    expect(state([rated(at(0), true, 1), rated(at(0, 1), true, 1)]).confidenceCalibration).toBe(-1);
+    expect(state([rated(at(0), true, 5), rated(at(0, 1), false, 1), ev(at(0, 2), "loops", "exercise", false)]).confidenceCalibration).toBe(0);
   });
 });
 
@@ -160,7 +205,7 @@ describe("validation and replay", () => {
     const good = ev(at(0), "loops", "exercise", true);
     for (const bad of [{ ...good, at: "2026-01-05 09:00" }, { ...good, at: "2026-01-05T09:00:00" }, { ...good, at: "2026-02-30T09:00:00Z" },
       { ...good, at: "yesterday" }, { ...good, passed: "yes" }, { ...good, assistance: 5 }, { ...good, assistance: 1.5 }, { ...good, task: "test" },
-      { ...good, id: "" }, null, 7]) {
+      { ...good, id: "" }, { ...good, tags: "typo" }, { ...good, tags: [""] }, { ...good, confidence: 0 }, { ...good, confidence: 3.5 }, null, 7]) {
       expect(() => model([bad])).toThrow(LearnerDataError);
     }
     expect(() => dueReviews(model([]), "now")).toThrow(LearnerDataError);

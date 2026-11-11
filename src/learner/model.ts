@@ -15,6 +15,8 @@ export const REVIEWS_FOR_MASTERY = 2;
 export const START_HINT_TIER = 2;
 /** Automatic restoration stops at tier 3; a full worked example (tier 4) needs the learner's explicit request. */
 export const MAX_AUTO_HINT_TIER = 3;
+/** A diagnostic tag must recur on this many failures before it is reported as a misconception (never from one slip). */
+export const MISCONCEPTION_REPEATS = 2;
 
 /** 0 = no help; 1–3 = that many hints seen; 4 = the worked solution was shown. */
 export type Assistance = 0 | 1 | 2 | 3 | 4;
@@ -32,6 +34,10 @@ export interface LearnerEvent {
   passed: boolean;
   assistance: Assistance;
   policy: string;
+  /** Optional diagnostic labels for this attempt (e.g. an error class); a tag counts as a misconception only when repeated. */
+  tags?: string[];
+  /** Optional self-rated confidence before the attempt, 1 (guessing) to 5 (certain). */
+  confidence?: 1 | 2 | 3 | 4 | 5;
 }
 
 export class LearnerDataError extends Error {
@@ -51,6 +57,13 @@ export interface ConceptState {
   /** Failures since the last success (feeds the estimate's penalty). */
   recentFailures: number;
   lastSuccess: string | null;
+  /** Share of successes that needed help (hints or the solution); null until there is a success. */
+  hintDependency: number | null;
+  /** Diagnostic tags seen on at least MISCONCEPTION_REPEATS failed attempts, most frequent first. */
+  misconceptionTags: string[];
+  /** Mean self-rated confidence (scaled to 0..1) minus the success rate on the same attempts; null without ratings.
+   *  Positive = over-confident, negative = under-confident. */
+  confidenceCalibration: number | null;
   /** Own evidence (independent tasks + explanation) is in place. */
   evidenceReady: boolean;
   /** When the full gate (evidence + every prerequisite complete) was first met; starts the review schedule. */
@@ -90,12 +103,20 @@ interface Running {
   tier: number;
   streakOk: number;
   streakFail: number;
+  /** Task kind of the current failure streak: only failures on the same kind of task are comparable (§4). */
+  failKind: Task | null;
   evidence: number;
+  successes: number;
+  independentSuccesses: number;
+  tagCounts: Map<string, number>;
+  rated: number;
+  ratedConfidence: number;
+  ratedPassed: number;
 }
 
 const fresh = (): Running => ({ independent: new Set(), assisted: 0, explanation: false, failures: 0, recentFailures: 0,
   lastSuccess: null, completedAt: null, stage: 0, due: null, reviews: 0, durable: false, tier: START_HINT_TIER,
-  streakOk: 0, streakFail: 0, evidence: 0 });
+  streakOk: 0, streakFail: 0, failKind: null, evidence: 0, successes: 0, independentSuccesses: 0, tagCounts: new Map(), rated: 0, ratedConfidence: 0, ratedPassed: 0 });
 
 const ISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(?:Z|[+-](\d{2}):(\d{2}))$/;
 /** Milliseconds since the epoch for an ISO-8601 timestamp with an explicit offset; throws otherwise (incl. 2026-02-30). */
@@ -119,6 +140,10 @@ function validate(e: unknown, i: number): LearnerEvent {
   if (typeof v.passed !== "boolean") throw bad("passed must be a boolean");
   if (!Number.isInteger(v.assistance) || (v.assistance as number) < 0 || (v.assistance as number) > 4) throw bad("assistance must be 0..4");
   parseTime(v.at, `event ${i} at`);
+  if (v.tags !== undefined && (!Array.isArray(v.tags) || !v.tags.every((x) => typeof x === "string" && x.length > 0)))
+    throw bad("tags must be a list of nonempty strings");
+  if (v.confidence !== undefined && !(Number.isInteger(v.confidence) && (v.confidence as number) >= 1 && (v.confidence as number) <= 5))
+    throw bad("confidence must be 1..5");
   return v as unknown as LearnerEvent;
 }
 
@@ -139,18 +164,29 @@ export function ordered(events: readonly unknown[]): LearnerEvent[] {
 function observe(r: Running, e: LearnerEvent, t: number) {
   r.evidence += 1;
   const independent = e.passed && e.assistance === 0;
-  // Hint fading: two independent successes in a row ease off one tier; two failures in a row restore one (up to 3).
-  if (independent) { r.streakOk += 1; r.streakFail = 0; }
-  else if (!e.passed) { r.streakFail += 1; r.streakOk = 0; }
-  else { r.streakOk = 0; r.streakFail = 0; }
+  // Hint fading: two independent successes in a row ease off one tier; two comparable failures in a row (the same kind
+  // of task) restore one, up to tier 3. A failure on a different kind of task starts a new comparison.
+  if (independent) { r.streakOk += 1; r.streakFail = 0; r.failKind = null; }
+  else if (!e.passed) {
+    r.streakOk = 0;
+    r.streakFail = r.failKind === e.task ? r.streakFail + 1 : 1;
+    r.failKind = e.task;
+  }
+  else { r.streakOk = 0; r.streakFail = 0; r.failKind = null; }
   if (r.streakOk >= 2) { r.tier = Math.max(0, r.tier - 1); r.streakOk = 0; }
   if (r.streakFail >= 2) { r.tier = Math.min(MAX_AUTO_HINT_TIER, r.tier + 1); r.streakFail = 0; }
 
-  if (e.passed) { r.lastSuccess = e.at; r.recentFailures = 0; }
-  else { r.failures += 1; r.recentFailures += 1; }
+  if (e.passed) { r.lastSuccess = e.at; r.recentFailures = 0; r.successes += 1; if (independent) r.independentSuccesses += 1; }
+  else {
+    r.failures += 1;
+    r.recentFailures += 1;
+    for (const tag of new Set(e.tags ?? [])) r.tagCounts.set(tag, (r.tagCounts.get(tag) ?? 0) + 1);
+  }
+  if (e.confidence !== undefined) { r.rated += 1; r.ratedConfidence += (e.confidence - 1) / 4; r.ratedPassed += e.passed ? 1 : 0; }
 
   if (e.task === "review" && r.completedAt !== null && r.due !== null) {
-    if (t < r.due) return; // an early review is practice: it doesn't move the schedule
+    // An early review passed without help is practice and doesn't move the schedule; an early lapse still counts.
+    if (t < r.due && independent) return;
     if (independent) {
       r.reviews += 1;
       if (r.reviews >= REVIEWS_FOR_MASTERY) r.durable = true;
@@ -221,6 +257,9 @@ export function buildModel(lessons: Lesson[], events: readonly unknown[]): Learn
     concepts.set(concept, {
       concept, lessonId: owner.get(concept)!.id, independentTasks: [...r.independent].sort(), assistedSuccesses: r.assisted,
       explanationChecked: r.explanation, failures: r.failures, recentFailures: r.recentFailures, lastSuccess: r.lastSuccess,
+      hintDependency: r.successes === 0 ? null : Math.round(((r.successes - r.independentSuccesses) / r.successes) * 100) / 100,
+      misconceptionTags: [...r.tagCounts].filter(([, k]) => k >= MISCONCEPTION_REPEATS).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).map(([tag]) => tag),
+      confidenceCalibration: r.rated === 0 ? null : Math.round(((r.ratedConfidence - r.ratedPassed) / r.rated) * 100) / 100,
       evidenceReady: ready(r), completedAt: r.completedAt === null ? null : new Date(r.completedAt).toISOString(),
       reviewStage: r.stage, reviewDue: r.due === null ? null : new Date(r.due).toISOString(), successfulReviews: r.reviews,
       durable: r.durable, hintTier: r.tier, masteryEstimate: estimate(r),
