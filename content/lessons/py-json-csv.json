@@ -265,7 +265,7 @@
         },
         {
           "name": "quoted teams and no rows",
-          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}\nassert json.loads(team_report('team,score\\nice,-4\\nice,-2\\nmix,-3\\nmix,5\\n')) == {'ice': {'count': 2, 'mean': -3.0}, 'mix': {'count': 2, 'mean': 1.0}}, 'negative scores average too'",
+          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}\nassert json.loads(team_report('team,score\\nice,-4\\nice,-2\\nmix,-3\\nmix,5\\n')) == {'ice': {'count': 2, 'mean': -3.0}, 'mix': {'count': 2, 'mean': 1.0}}, 'negative scores average too'\nassert json.loads(team_report('team,score\\nred,4\\nred,4\\nred,1\\n')) == {'red': {'count': 3, 'mean': 3.0}}, 'identical rows each count'\nassert json.loads(team_report('team,score\\n\"red\\nnorth\",6\\n')) == {'red\\nnorth': {'count': 1, 'mean': 6.0}}, 'a quoted team name keeps its line break'",
           "concept": "csv-files"
         },
         {
