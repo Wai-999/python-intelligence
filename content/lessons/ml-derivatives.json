@@ -241,7 +241,7 @@
         },
         {
           "name": "the default tolerance is 1e-6",
-          "code": "line = lambda p: p[0]\nok, worst = check_gradient(line, lambda p: [1.0 + 9e-7], [2.0], h=0.5)\nassert ok is True and 8e-7 < worst < 1e-6, f'about 9e-7 is within the default 1e-6; got {(ok, worst)}'\nok, worst = check_gradient(line, lambda p: [1.0 + 1.5e-6], [2.0], h=0.5)\nassert ok is False and 1e-6 < worst < 2e-6, f'about 1.5e-6 is outside the default 1e-6; got {(ok, worst)}'\nassert check_gradient(line, lambda p: [1.0 + 1.5e-6], [2.0], h=0.5, tol=2e-6)[0] is True, 'but within an explicit tol of 2e-6'",
+          "code": "line = lambda p: p[0]\nok, worst = check_gradient(line, lambda p: [1.0 + 9e-7], [2.0], h=0.5)\nassert ok is True and 8e-7 < worst < 1e-6, f'about 9e-7 is within the default 1e-6; got {(ok, worst)}'\nok, worst = check_gradient(line, lambda p: [1.0 + 1.5e-6], [2.0], h=0.5)\nassert ok is False and 1e-6 < worst < 2e-6, f'about 1.5e-6 is outside the default 1e-6; got {(ok, worst)}'\nassert check_gradient(line, lambda p: [1.0 + 1.5e-6], [2.0], h=0.5, tol=2e-6)[0] is True, 'but within an explicit tol of 2e-6'\nfor tol in (1e-7, 1e-9, 0.0):\n    ok, worst = check_gradient(line, lambda p: [1.0 + 2e-7], [2.0], h=0.5, tol=tol)\n    assert ok is False and 1e-7 < worst < 3e-7, f'an error of about 2e-7 fails a smaller explicit tol={tol}; got {(ok, worst)}'",
           "concept": "gradient-checking"
         },
         {
@@ -251,7 +251,7 @@
         },
         {
           "name": "bad input",
-          "code": "import math\n\ndef f(p):\n    return p[0] * p[0] * p[1] + math.sin(p[1]) - 2 * p[0]\n\ndef good(p):\n    return [2 * p[0] * p[1] - 2, p[0] * p[0] + math.cos(p[1])]\n\nfor call in (lambda: check_gradient(f, good, [1.0, 2.0], tol=-1e-6), lambda: check_gradient(f, lambda p: [1.0], [1.0, 2.0]),\n             lambda: check_gradient(f, lambda p: [1.0, 2.0, 3.0], [1.0, 2.0]), lambda: check_gradient(f, good, [1.0, 2.0], h=0), lambda: check_gradient(sum, lambda p: [], [])):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for a negative tol, a gradient of the wrong length, h <= 0 or an empty point')",
+          "code": "import math\n\ndef f(p):\n    return p[0] * p[0] * p[1] + math.sin(p[1]) - 2 * p[0]\n\ndef good(p):\n    return [2 * p[0] * p[1] - 2, p[0] * p[0] + math.cos(p[1])]\n\nfor call in (lambda: check_gradient(f, good, [1.0, 2.0], tol=-1e-6), lambda: check_gradient(f, lambda p: [1.0], [1.0, 2.0]),\n             lambda: check_gradient(f, lambda p: [1.0, 2.0, 3.0], [1.0, 2.0]), lambda: check_gradient(f, good, [1.0, 2.0], h=0), lambda: check_gradient(sum, lambda p: [], []),\n             lambda: check_gradient(f, good, [1.0, 2.0], h=-1e-5), lambda: check_gradient(f, good, [1.0, 2.0], h=float('nan'))):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for a negative tol, a gradient of the wrong length, h <= 0 or an empty point')",
           "concept": "gradient-checking"
         }
       ],
