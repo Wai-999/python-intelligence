@@ -107,7 +107,7 @@
       "id": "picture",
       "kind": "intuition",
       "title": "Purer and purer groups",
-      "body": "Growing a tree means choosing questions. A good question splits the examples into two groups that\nare each mostly one label. **Gini impurity** measures how mixed a group is: it is the chance that two\nlabels drawn at random (with replacement) from the group differ, `0` for a pure group and `0.5` for an\neven mix of two labels. A split is scored by the impurity of its two sides, each weighted by its share\nof the examples, and the tree picks the lowest score. Then it does the same inside each side.\n\nThis is **greedy**: each question is the best one *right now*, which is fast but can miss a better tree\noverall. And a tree allowed to keep going will split until each leaf is pure, memorising noise in the\ntraining data; limiting the **depth** (the most questions on any path) is the simplest cure, and the\nbest depth is a hyperparameter chosen on validation data.",
+      "body": "Growing a tree means choosing questions. A good question splits the examples into two groups that\nare each mostly one label. **Gini impurity** measures how mixed a group is: it is the chance that two\nlabels drawn at random (with replacement) from the group differ, `0` for a pure group and `0.5` for an\neven mix of two labels. A split is scored by the impurity of its two sides, each weighted by its share\nof the examples, and the tree picks the lowest score. Then it does the same inside each side.\n\nThis is **greedy**: each question is the best one *right now*, which is fast but can miss a better tree\noverall. And a tree allowed to keep going splits until every leaf is pure (or holds identical rows with\ndifferent labels, which no question can separate), memorising noise in the training data; limiting the **depth** (the most questions on any path) is the simplest cure, and the\nbest depth is a hyperparameter chosen on validation data.",
       "cites": [
         "sk-trees",
         "sk-tips",
@@ -259,6 +259,16 @@
           "concept": "decision-trees"
         },
         {
+          "name": "the 1e-9 tolerance",
+          "code": "def rows(nx, ny, f0, f1):\n    X, y = [], []\n    for i in range(nx):\n        X.append([0 if i < f0[0] else 1, 0 if i < f1[0] else 1])\n        y.append('x')\n    for j in range(ny):\n        X.append([0 if j < f0[1] else 1, 0 if j < f1[1] else 1])\n        y.append('y')\n    return X, y\n\nnear_tie = rows(1500, 1300, (1314, 77), (111, 1153))\nclear_gap = rows(900, 700, (99, 656), (837, 77))\ngot = best_split(*near_tie)\nassert got[0] == 0, f'feature 1 scores only about 5e-10 lower: within 1e-9 that is a tie, so keep feature 0; got {got}'\ngot = best_split(*clear_gap)\nassert got[0] == 1, f'feature 1 scores about 5e-9 lower: more than 1e-9, so it wins; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "pure labels still have a best split",
+          "code": "got = best_split([[3], [1], [2]], ['a', 'a', 'a'])\nassert got is not None and got[:2] == (0, 1.5) and abs(got[2]) <= 1e-12, f'every split scores 0; keep the first; got {got}'\ngot = best_split([[5, 1], [5, 2]], ['b', 'b'])\nassert got is not None and got[:2] == (1, 1.5), f'feature 0 never varies; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
           "name": "a split that doesn't help is still a split",
           "code": "got = best_split([[0, 0], [0, 1], [1, 0], [1, 1]], ['red', 'blue', 'blue', 'red'])\nassert got is not None and got[:2] == (0, 0.5) and abs(got[2] - 0.5) <= 1e-12, f'no single question helps with this pattern, but the best (first) split exists; got {got}'",
           "concept": "decision-trees"
@@ -329,6 +339,11 @@
           "concept": "decision-trees"
         },
         {
+          "name": "the 1e-9 tolerance picks the root",
+          "code": "def rows(nx, ny, f0, f1):\n    X, y = [], []\n    for i in range(nx):\n        X.append([0 if i < f0[0] else 1, 0 if i < f1[0] else 1])\n        y.append('x')\n    for j in range(ny):\n        X.append([0 if j < f0[1] else 1, 0 if j < f1[1] else 1])\n        y.append('y')\n    return X, y\n\nnear_tie = rows(1500, 1300, (1314, 77), (111, 1153))\nclear_gap = rows(900, 700, (99, 656), (837, 77))\nassert build_tree(*near_tie, 1)['feature'] == 0, 'a 5e-10 difference is a tie: feature 0'\nassert build_tree(*clear_gap, 1)['feature'] == 1, 'a 5e-9 difference is real: feature 1'",
+          "concept": "decision-trees"
+        },
+        {
           "name": "prediction follows <= to the left",
           "code": "tree = {'feature': 1, 'threshold': 2.5, 'left': {'leaf': 'L'}, 'right': {'feature': 0, 'threshold': 0.0, 'left': {'leaf': 'RL'}, 'right': {'leaf': 'RR'}}}\ngot = predict_tree(tree, [[9, 2.5], [9, 2.6], [0.0, 3], [-1, 9], [0.1, 3]])\nassert got == ['L', 'RR', 'RL', 'RL', 'RR'], f'equal to the threshold goes left; got {got}'\nassert predict_tree({'leaf': 7}, [[1], [2]]) == [7, 7] and predict_tree(tree, []) == [], 'a single leaf predicts the same for every row'",
           "concept": "decision-trees"
@@ -383,13 +398,13 @@
           "id": "q3",
           "prompt": "Why limit max_depth?",
           "choices": [
-            "An unlimited tree keeps splitting until it fits the noise in its training data",
+            "An unlimited tree keeps splitting to fit its training data, noise included",
             "Deep trees can't be used for prediction",
             "Gini impurity stops working below depth 3",
             "To make the tree greedy"
           ],
           "answer": 0,
-          "explanation": "Training accuracy keeps climbing with depth; validation accuracy tells you where to stop.",
+          "explanation": "Training accuracy keeps climbing with depth (up to 100%, unless identical rows carry different labels); validation accuracy tells you where to stop.",
           "concept": "tree-depth"
         },
         {
