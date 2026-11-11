@@ -1,0 +1,347 @@
+{
+  "id": "py-json-csv",
+  "title": "JSON and CSV: data that other programs can read",
+  "summary": "Read and write CSV tables with the csv module and structured data with json, and know what each format keeps and what it loses.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "py-files",
+    "py-dicts"
+  ],
+  "concepts": [
+    "json",
+    "csv-files",
+    "serialization"
+  ],
+  "sources": [
+    {
+      "id": "ab-csv",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        344,
+        347
+      ],
+      "section": "The csv Module",
+      "use": "reference"
+    },
+    {
+      "id": "ab-json",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        352,
+        353
+      ],
+      "section": "The json Module",
+      "use": "reference"
+    },
+    {
+      "id": "pj-basic",
+      "source_id": "pydocs-312-json",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Basic Usage",
+      "use": "reference"
+    },
+    {
+      "id": "pj-codec",
+      "source_id": "pydocs-312-json",
+      "pages": [
+        3,
+        3
+      ],
+      "section": "Encoders and Decoders",
+      "use": "reference"
+    },
+    {
+      "id": "pj-errors",
+      "source_id": "pydocs-312-json",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "Exceptions",
+      "use": "reference"
+    },
+    {
+      "id": "pc-module",
+      "source_id": "pydocs-312-csv",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Module Contents",
+      "use": "reference"
+    },
+    {
+      "id": "pc-reader",
+      "source_id": "pydocs-312-csv",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "Reader Objects",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Talking to other programs",
+      "body": "A spreadsheet exports your class's marks; a web service sends back the weather; a game saves its settings.\nNone of these can hand your Python program a dictionary directly. They write **text** in an agreed\nformat, and your program turns it back into Python values. The two formats you'll meet most often are\n**CSV** (tables, one row per line) and **JSON** (nested lists and dictionaries). Python reads and writes\nboth with its standard library."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "What survives the trip",
+      "body": "Turning values into text is **serialization**; reading them back is parsing. Each format keeps some things\nand loses others. **CSV** is a table of strings: every value comes back as text, so `'7'` must be\nconverted with `int` before you add to it. A value containing a comma is wrapped in double quotes, and the\n`csv` module handles that for you; splitting each line on commas by hand breaks on `\"Lovelace, A.\"`.\n\n**JSON** keeps structure: objects, arrays, strings, numbers, `true`/`false` and `null` become dictionaries,\nlists, strings, numbers, `True`/`False` and `None`. But it isn't Python: a tuple comes back as a list, and\ndictionary keys are always strings in JSON, so the key `1` comes back as `'1'`.",
+      "cites": [
+        "ab-csv",
+        "ab-json",
+        "pj-codec",
+        "pc-module"
+      ],
+      "socratic": {
+        "questions": [
+          "Why can't `line.split(',')` read every CSV file correctly?",
+          "After `json.loads(json.dumps({1: 'a'}))`, does `d[1]` still work? Why not?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch JSON text become Python values",
+      "body": "A record arrives as text. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import json\n\nraw = '{\"name\": \"Ada\", \"scores\": [7, 9]}'\nrecord = json.loads(raw)\nprint(record['scores'][1] + 1)",
+        "frames": [
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "json": "<module 'json'>"
+            },
+            "note": "The data arrives as one string of text."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "json": "<module 'json'>",
+              "raw": "'{\"name\": \"Ada\", \"scores\": [7, 9]}'"
+            },
+            "note": "json.loads parses the text into Python values."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "json": "<module 'json'>",
+              "raw": "'{\"name\": \"Ada\", \"scores\": [7, 9]}'",
+              "record": "{'name': 'Ada', 'scores': [7, 9]}"
+            },
+            "note": "A real dictionary holding a real list of ints: no conversion needed."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "json": "<module 'json'>",
+              "raw": "'{\"name\": \"Ada\", \"scores\": [7, 9]}'",
+              "record": "{'name': 'Ada', 'scores': [7, 9]}"
+            },
+            "note": "9 + 1.",
+            "output": "10"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**CSV:** `csv.reader(f)` yields each row as a list of strings; `csv.DictReader(f)` uses the first row as the\nheader and yields a dictionary per row, keyed by column name (a short row fills missing fields with `None`).\n`csv.writer(f).writerow(values)` writes one row, quoting values that need it. Open CSV files with\n`newline=''`; to read CSV from a string, wrap it in `io.StringIO(text)`.\n\n**JSON:** `json.dumps(value)` turns a value into a JSON string and `json.loads(text)` parses one; `json.dump`\nand `json.load` do the same with a file. `sort_keys=True` sorts object keys and `indent=2` makes the text\nreadable. Dictionaries, lists, tuples, strings, numbers, booleans and `None` can be encoded; keys become\nstrings. Invalid JSON raises `json.JSONDecodeError`, a subclass of `ValueError`.",
+      "cites": [
+        "pc-module",
+        "pc-reader",
+        "pj-basic",
+        "pj-codec",
+        "pj-errors"
+      ]
+    },
+    {
+      "id": "round-trip",
+      "kind": "example",
+      "title": "Run it: a CSV table and a JSON round trip",
+      "body": "Read a three-row table, including a name with a comma in it, then send a dictionary through JSON and back.",
+      "code": "import csv\nimport io\nimport json\n\ntext = 'name,team,score\\nAda,red,7\\n\"Lovelace, A.\",blue,9\\nGrace,red,8\\n'\nrows = list(csv.DictReader(io.StringIO(text)))\nprint(rows[1])\nprint(type(rows[0]['score']).__name__, '->', int(rows[0]['score']) + 1)\n\ndata = {'teams': ('red', 'blue'), 1: True, 'best': None}\nencoded = json.dumps(data)\nprint(encoded)\nprint(json.loads(encoded))\n",
+      "expected_output": "{'name': 'Lovelace, A.', 'team': 'blue', 'score': '9'}\nstr -> 8\n{\"teams\": [\"red\", \"blue\"], \"1\": true, \"best\": null}\n{'teams': ['red', 'blue'], '1': True, 'best': None}\n"
+    },
+    {
+      "id": "read",
+      "kind": "guided",
+      "title": "Your turn: read a CSV table",
+      "body": "Write `read_scores(text)`. `text` is CSV whose header names a `name` column and a `score` column (in any order,\nperhaps among others). Return a list of `{'name': ..., 'score': ...}` dictionaries in file order, with the\nscore converted to an `int` and the name exactly as in the file. Raise `ValueError` if the header lacks\neither column (or there is no header at all), if a row has no score, or if a score isn't a whole number.",
+      "starter": "import csv\nimport io\n\n\ndef read_scores(text):\n    return [line.split(',') for line in text.splitlines()[1:]]\n",
+      "hints": [
+        "`csv.DictReader(io.StringIO(text))` handles the header, quoting and blank lines.",
+        "`reader.fieldnames` is the header (or `None` for empty text); a short row's missing score is `None`.",
+        "import csv\nimport io\n\n\ndef read_scores(text):\n    reader = csv.DictReader(io.StringIO(text))\n    if reader.fieldnames is None or 'name' not in reader.fieldnames or 'score' not in reader.fieldnames:\n        raise ValueError('the header must name a name and a score column')\n    out = []\n    for row in reader:\n        if row['score'] is None:\n            raise ValueError(f'row {reader.line_num} has no score')\n        out.append({'name': row['name'], 'score': int(row['score'])})\n    return out\n"
+      ],
+      "tests": [
+        {
+          "name": "a simple table",
+          "code": "assert read_scores('name,score\\nAda,7\\nGrace,9\\n') == [{'name': 'Ada', 'score': 7}, {'name': 'Grace', 'score': 9}]",
+          "concept": "csv-files"
+        },
+        {
+          "name": "quoted values and extra columns",
+          "code": "got = read_scores('team,name,score,notes\\nred,\"Lovelace, A.\",9,\"likes, commas\"\\nblue,Grace,8,\\n')\nassert got == [{'name': 'Lovelace, A.', 'score': 9}, {'name': 'Grace', 'score': 8}], f'the csv module keeps quoted commas inside one field; got {got}'",
+          "concept": "csv-files"
+        },
+        {
+          "name": "columns in any order",
+          "code": "assert read_scores('score,name\\n3,Bo\\n-2,Cy\\n') == [{'name': 'Bo', 'score': 3}, {'name': 'Cy', 'score': -2}]",
+          "concept": "csv-files"
+        },
+        {
+          "name": "scores are ints, names as written",
+          "code": "got = read_scores('name,score\\n Ada ,10\\n')\nassert got == [{'name': ' Ada ', 'score': 10}] and type(got[0]['score']) is int, f'got {got!r}'",
+          "concept": "serialization"
+        },
+        {
+          "name": "blank lines and no rows",
+          "code": "assert read_scores('name,score\\n\\nAda,1\\n\\n') == [{'name': 'Ada', 'score': 1}], 'blank lines are skipped'\nassert read_scores('name,score\\n') == []",
+          "concept": "csv-files"
+        },
+        {
+          "name": "bad input",
+          "code": "for text in ('', 'name,points\\nAda,3\\n', 'player,score\\nAda,3\\n', 'name,score\\nAda\\n', 'name,score\\nAda,seven\\n', 'name,score\\nAda,7.5\\n'):\n    try:\n        read_scores(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for {text!r}')",
+          "concept": "csv-files"
+        }
+      ],
+      "solution": "import csv\nimport io\n\n\ndef read_scores(text):\n    reader = csv.DictReader(io.StringIO(text))\n    if reader.fieldnames is None or 'name' not in reader.fieldnames or 'score' not in reader.fieldnames:\n        raise ValueError('the header must name a name and a score column')\n    out = []\n    for row in reader:\n        if row['score'] is None:\n            raise ValueError(f'row {reader.line_num} has no score')\n        out.append({'name': row['name'], 'score': int(row['score'])})\n    return out\n"
+    },
+    {
+      "id": "report",
+      "kind": "challenge",
+      "title": "Challenge: a team report in JSON",
+      "body": "Write `team_report(text)`: from CSV with `team` and `score` columns, return a JSON string mapping each team to\n`{\"count\": rows, \"mean\": average score}`, with the keys sorted (`sort_keys=True`). Raise `ValueError` if a\ncolumn is missing, a row is incomplete or a score isn't a whole number.\n\nThen write `best_team(report_json)`, which parses such a report and returns the team with the highest mean\n(a tie goes to the team first in sorted order). Raise `ValueError` for text that isn't JSON (the parser's own\nerror already is one) or isn't a non-empty JSON object.",
+      "starter": "import csv\nimport io\nimport json\n\n\ndef team_report(text):\n    return '{}'\n\n\ndef best_team(report_json):\n    return ''\n",
+      "hints": [
+        "Accumulate `(count, total)` per team in a dictionary, then build the report and `json.dumps(report, sort_keys=True)`.",
+        "`json.JSONDecodeError` is a `ValueError`, so you only need to check the parsed value's type yourself.",
+        "import csv\nimport io\nimport json\n\n\ndef team_report(text):\n    reader = csv.DictReader(io.StringIO(text))\n    if reader.fieldnames is None or 'team' not in reader.fieldnames or 'score' not in reader.fieldnames:\n        raise ValueError('the header must name a team and a score column')\n    totals = {}\n    for row in reader:\n        if row['team'] is None or row['score'] is None:\n            raise ValueError(f'row {reader.line_num} is incomplete')\n        count, total = totals.get(row['team'], (0, 0))\n        totals[row['team']] = (count + 1, total + int(row['score']))\n    report = {team: {'count': c, 'mean': t / c} for team, (c, t) in totals.items()}\n    return json.dumps(report, sort_keys=True)\n\n\ndef best_team(report_json):\n    report = json.loads(report_json)\n    if not isinstance(report, dict) or not report:\n        raise ValueError('expected a non-empty JSON object')\n    top = max(v['mean'] for v in report.values())\n    return min(team for team, v in report.items() if v['mean'] == top)\n"
+      ],
+      "tests": [
+        {
+          "name": "the report",
+          "code": "import json\ntext = 'name,team,score\\nAda,red,7\\nBo,blue,9\\nGrace,red,8\\n'\nout = team_report(text)\nassert isinstance(out, str), 'return a JSON string'\nassert json.loads(out) == {'blue': {'count': 1, 'mean': 9.0}, 'red': {'count': 2, 'mean': 7.5}}, f'got {out}'",
+          "concept": "json"
+        },
+        {
+          "name": "keys are sorted",
+          "code": "out = team_report('team,score\\nzeta,1\\nalpha,2\\nmid,3\\n')\nassert out.index('alpha') < out.index('mid') < out.index('zeta') and out.index('count') < out.index('mean'), f'use sort_keys=True; got {out}'",
+          "concept": "json"
+        },
+        {
+          "name": "quoted teams and no rows",
+          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}",
+          "concept": "csv-files"
+        },
+        {
+          "name": "the best team",
+          "code": "import json\nassert best_team(team_report('team,score\\nred,7\\nblue,9\\nred,8\\n')) == 'blue'\nassert best_team(json.dumps({'b': {'count': 1, 'mean': 5}, 'a': {'count': 3, 'mean': 5}, 'c': {'count': 2, 'mean': 4}})) == 'a', 'a tie goes to the first team in sorted order'",
+          "concept": "json"
+        },
+        {
+          "name": "bad input",
+          "code": "for text in ('', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": '):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
+          "concept": "serialization"
+        }
+      ],
+      "solution": "import csv\nimport io\nimport json\n\n\ndef team_report(text):\n    reader = csv.DictReader(io.StringIO(text))\n    if reader.fieldnames is None or 'team' not in reader.fieldnames or 'score' not in reader.fieldnames:\n        raise ValueError('the header must name a team and a score column')\n    totals = {}\n    for row in reader:\n        if row['team'] is None or row['score'] is None:\n            raise ValueError(f'row {reader.line_num} is incomplete')\n        count, total = totals.get(row['team'], (0, 0))\n        totals[row['team']] = (count + 1, total + int(row['score']))\n    report = {team: {'count': c, 'mean': t / c} for team, (c, t) in totals.items()}\n    return json.dumps(report, sort_keys=True)\n\n\ndef best_team(report_json):\n    report = json.loads(report_json)\n    if not isinstance(report, dict) or not report:\n        raise ValueError('expected a non-empty JSON object')\n    top = max(v['mean'] for v in report.values())\n    return min(team for team, v in report.items() if v['mean'] == top)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does json.dumps({1: (2, 3)}) return?",
+          "choices": [
+            "'{\"1\": [2, 3]}'",
+            "'{1: (2, 3)}'",
+            "'{\"1\": (2, 3)}'",
+            "An error"
+          ],
+          "answer": 0,
+          "explanation": "Keys become strings and tuples become arrays.",
+          "concept": "json"
+        },
+        {
+          "id": "q2",
+          "prompt": "You read a CSV with csv.DictReader. What type is row['score'] for a score of 42?",
+          "choices": [
+            "str",
+            "int",
+            "float",
+            "It depends on the file"
+          ],
+          "answer": 0,
+          "explanation": "CSV has no types: every field is text until you convert it.",
+          "concept": "csv-files"
+        },
+        {
+          "id": "q3",
+          "prompt": "Why use the csv module instead of line.split(',')?",
+          "choices": [
+            "It handles quoted values that contain commas (and newlines)",
+            "It is the only way to open files",
+            "split doesn't work on strings",
+            "It converts numbers automatically"
+          ],
+          "answer": 0,
+          "explanation": "\"Lovelace, A.\" is one field, not two.",
+          "concept": "csv-files"
+        },
+        {
+          "id": "q4",
+          "prompt": "json.loads('not json') raises json.JSONDecodeError. Which except clause also catches it?",
+          "choices": [
+            "except ValueError",
+            "except TypeError",
+            "except KeyError",
+            "except SyntaxError"
+          ],
+          "answer": 0,
+          "explanation": "JSONDecodeError is a subclass of ValueError.",
+          "concept": "serialization"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Read CSV tables with `csv.reader` and `csv.DictReader`, converting text fields yourself.\n- Write and read JSON with `json.dumps` and `json.loads` (and their file versions).\n- Predict what a round trip changes: tuples become lists and keys become strings.\n- Handle bad input by catching `ValueError`, which covers `JSONDecodeError`."
+    }
+  ]
+}

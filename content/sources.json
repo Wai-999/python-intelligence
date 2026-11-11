@@ -845,6 +845,58 @@
    "anchors": {
     "1": "module-fractions"
    }
+  },
+  "pydocs-312-json": {
+   "title": "Python 3.12 Library Reference: json — JSON encoder and decoder",
+   "short": "Python 3.12 docs, json",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/library/json.html",
+   "kind": "web",
+   "sha256": "61534059deb718a77f803e5d1f63203463032d24b89c204b5acbdc1d5c549f52",
+   "page_count": 12,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "module-json",
+    "2": "basic-usage",
+    "3": "encoders-and-decoders",
+    "4": "exceptions",
+    "5": "standard-compliance-and-interoperability",
+    "6": "character-encodings",
+    "7": "infinite-and-nan-number-values",
+    "8": "repeated-names-within-an-object",
+    "9": "top-level-non-object-non-array-values",
+    "10": "implementation-limitations",
+    "11": "module-json.tool",
+    "12": "command-line-options"
+   }
+  },
+  "pydocs-312-csv": {
+   "title": "Python 3.12 Library Reference: csv — CSV File Reading and Writing",
+   "short": "Python 3.12 docs, csv",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/library/csv.html",
+   "kind": "web",
+   "sha256": "837f676e4026d5087b57e137dad623d3429149c782c72b7949c565ffb430925a",
+   "page_count": 6,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "module-csv",
+    "2": "module-contents",
+    "3": "dialects-and-formatting-parameters",
+    "4": "reader-objects",
+    "5": "writer-objects",
+    "6": "examples"
+   }
   }
  }
 }
