@@ -266,6 +266,11 @@
           "concept": "log-loss"
         },
         {
+          "name": "probabilities near 0 and 1 are used as given",
+          "code": "import math\nfor y, p in (([1], [1e-100]), ([0], [1 - 1e-12]), ([1], [1e-300]), ([0], [1e-15]), ([1, 0], [1 - 1e-15, 1e-200])):\n    want = -sum(math.log(q) if t else math.log(1 - q) for t, q in zip(y, p)) / len(y)\n    got = log_loss(y, p)\n    assert abs(got - want) <= 1e-12 * max(1.0, want), f'log_loss({y}, {p}) should be {want!r} (no clipping or smoothing); got {got!r}'",
+          "concept": "log-loss"
+        },
+        {
           "name": "a mean, not a sum",
           "code": "import math\nassert abs(log_loss([1, 1, 1, 1], [0.5] * 4) - math.log(2)) <= 1e-12, 'four examples at p = 0.5 still average log 2'",
           "concept": "log-loss"
@@ -318,6 +323,11 @@
         {
           "name": "the default lr and steps",
           "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nX, y = [[0.5], [1.0], [2.0], [3.0], [3.5]], [0, 1, 0, 1, 1]\n_close(fit_logistic(X, y), _ref(X, y, 0.1, 1000), 'defaults lr=0.1, steps=1000')",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "one class only",
+          "code": "import math as _m\n\ndef _sig(z):\n    if z >= 0:\n        return 1 / (1 + _m.exp(-z))\n    e = _m.exp(z)\n    return e / (1 + e)\n\ndef _ref(X, y, lr, steps):\n    w, b = [0.0] * len(X[0]), 0.0\n    for _ in range(steps):\n        err = [_sig(sum(a * c for a, c in zip(w, r)) + b) - t for r, t in zip(X, y)]\n        w, b = [wj - lr * sum(e * r[j] for e, r in zip(err, X)) / len(X) for j, wj in enumerate(w)], b - lr * sum(err) / len(X)\n    return w, b\n\ndef _close(got, want, msg):\n    gw, gb = got\n    ww, wb = want\n    assert isinstance(gw, list) and len(gw) == len(ww) and all(isinstance(v, float) for v in gw) and isinstance(gb, float), f'return (list of floats, float); {msg}; got {got!r}'\n    for g, t in zip(gw + [gb], ww + [wb]):\n        assert abs(g - t) <= 1e-9 * max(1.0, abs(t)), f'{msg}: expected about {want}, got {got}'\n\nfor X, y in (([[1], [2], [3]], [0, 0, 0]), ([[1, -1], [0, 2]], [1, 1]), ([[2.5]], [1]), ([[-1, 4]], [0])):\n    _close(fit_logistic(X, y, lr=0.1, steps=20), _ref(X, y, 0.1, 20), f'a valid training set may hold a single class or a single row: X={X}, y={y}')",
           "concept": "logistic-regression"
         },
         {
