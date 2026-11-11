@@ -784,6 +784,25 @@
    "anchors": {
     "1": "numpy-matmul"
    }
+  },
+  "pydocs-312-floatingpoint": {
+   "title": "The Python Tutorial 3.12: Floating-Point Arithmetic: Issues and Limitations",
+   "short": "Python 3.12 docs, floating-point arithmetic",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "official_url": "https://docs.python.org/3.12/tutorial/floatingpoint.html",
+   "kind": "web",
+   "sha256": "491f3aaab334b60608c7ca9cae6d98643f96e3a8c0a49a9366005f454313c4a3",
+   "page_count": 2,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "floating-point-arithmetic-issues-and-limitations",
+    "2": "representation-error"
+   }
   }
  }
 }

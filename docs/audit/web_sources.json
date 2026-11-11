@@ -420,6 +420,26 @@
     "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for the matrix product, the @ operator and shape rules."
    },
    "sha256": "25bf62f9577328d3f39998ad7777246e2e54c47493bcf6637a81189eb8d60ce4"
+  },
+  {
+   "source_id": "pydocs-312-floatingpoint",
+   "title": "The Python Tutorial 3.12: Floating-Point Arithmetic: Issues and Limitations",
+   "short": "Python 3.12 docs, floating-point arithmetic",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/floatingpoint.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for float precision (about 17 significant digits stored, binary approximation) and rounding error."
+   },
+   "sha256": "491f3aaab334b60608c7ca9cae6d98643f96e3a8c0a49a9366005f454313c4a3"
   }
  ]
 }
