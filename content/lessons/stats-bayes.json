@@ -268,6 +268,16 @@
           "concept": "naive-bayes"
         },
         {
+          "name": "long messages don't underflow",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nm = fit_nb(docs, labels)\ndoc = ['win', 'money', 'lunch', 'noon'] * 500\ngot, want = nb_scores(m, doc), ref(docs, labels, doc)\nassert all(math.isfinite(v) for v in got.values()) and same(got, want), f'2000 words: add logs (a product of probabilities would underflow to 0); expected {want}, got {got}'\nassert predict_nb(m, doc) == max(want, key=want.get)",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "empty training documents",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\ndocs2, labels2 = [[], ['a', 'b'], [], ['b']], ['x', 'y', 'x', 'y']\nm = fit_nb(docs2, labels2)\nfor doc in ([], ['a'], ['b', 'b'], ['zzz']):\n    got, want = nb_scores(m, doc), ref(docs2, labels2, doc)\n    assert same(got, want), f'class x saw no words at all: (0 + 1) / (0 + V); {doc}: expected {want}, got {got}'\nassert predict_nb(m, []) == 'x', 'equal priors: the tie goes to x'\nassert predict_nb(m, ['b']) == 'y', 'b is 3/5 in y against 1/2 (smoothing alone) in x'\nassert predict_nb(m, ['a']) == 'x', 'a is only 2/5 in y, and smoothing gives the wordless class x 1/2 for every word'\nm = fit_nb([[], [], []], ['p', 'q', 'q'])\nassert same(nb_scores(m, ['anything']), {'p': math.log(1 / 3), 'q': math.log(2 / 3)}) and predict_nb(m, ['anything']) == 'q', 'no vocabulary: only the priors count'",
+          "concept": "naive-bayes"
+        },
+        {
           "name": "more than two classes",
           "code": "docs = [['goal', 'match'], ['vote', 'law'], ['film', 'actor'], ['goal', 'team'], ['law', 'court']]\nlabels = ['sport', 'politics', 'arts', 'sport', 'politics']\nm = fit_nb(docs, labels)\nassert set(nb_scores(m, ['goal'])) == {'sport', 'politics', 'arts'}\nassert [predict_nb(m, d) for d in (['goal'], ['court'], ['actor', 'film'])] == ['sport', 'politics', 'arts']",
           "concept": "naive-bayes"
