@@ -214,7 +214,7 @@
         },
         {
           "name": "bad input",
-          "code": "for args in ((-0.1, 0.9, 0.9), (1.1, 0.9, 0.9), (0.5, 1.5, 0.9), (0.5, 0.9, -0.2), (0, 0.9, 1), (0.5, 0, 1)):\n    try:\n        posterior(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for posterior{args}')\nfor pairs in ([], [('a', 2)]):\n    try:\n        p_given(pairs, 'a', 1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when nothing has y == 1: {pairs}')",
+          "code": "for args in ((-0.1, 0.9, 0.9), (1.1, 0.9, 0.9), (0.5, -0.1, 0.9), (0.5, 1.5, 0.9), (0.5, 0.9, -0.2), (0.5, 0.9, 1.2), (0, 0.9, 1), (0.5, 0, 1)):\n    try:\n        posterior(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for posterior{args}')\nfor pairs in ([], [('a', 2)]):\n    try:\n        p_given(pairs, 'a', 1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when nothing has y == 1: {pairs}')",
           "concept": "conditional-probability"
         }
       ],
@@ -238,6 +238,11 @@
           "concept": "naive-bayes"
         },
         {
+          "name": "repeated words in training documents count",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\ndocs2 = [['cash', 'cash', 'cash', 'now'], ['hello', 'now'], ['cash', 'hello', 'hello']]\nlabels2 = ['spam', 'ham', 'ham']\nm = fit_nb(docs2, labels2)\nfor doc in (['cash'], ['hello'], ['now', 'cash']):\n    got, want = nb_scores(m, doc), ref(docs2, labels2, doc)\n    assert same(got, want), f'count every occurrence in the training documents; {doc}: expected {want}, got {got}'",
+          "concept": "naive-bayes"
+        },
+        {
           "name": "predictions",
           "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nm = fit_nb(docs, labels)\nassert predict_nb(m, ['win', 'money']) == 'spam'\nassert predict_nb(m, ['lunch', 'at', 'noon']) == 'ham'\nassert predict_nb(m, ['money', 'prize']) == 'spam'",
           "concept": "naive-bayes"
@@ -255,6 +260,11 @@
         {
           "name": "ties go to the first class in sorted order",
           "code": "m = fit_nb([['a'], ['b']], ['y', 'x'])\nassert predict_nb(m, ['zzz']) == 'x', 'equal priors, nothing known: x sorts first'\nm = fit_nb([['a', 'b'], ['b', 'a']], [2, 10])\nassert predict_nb(m, ['a']) == 2, 'numbers sort as numbers'\nm = fit_nb([['s', 's'], ['r', 'r']], ['beta', 'alpha'])\nassert predict_nb(m, ['p', 'q', 'r', 's']) == 'alpha', 'the two scores are equal in exact arithmetic but can differ in the last digit: within 1e-9 they tie, so alpha'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "the 1e-9 tie tolerance",
+          "code": "near = fit_nb([['x'] * 63246 + ['y'], ['x'] * 63245 + ['y']], ['zed', 'abe'])\ns = nb_scores(near, ['x'])\nassert 0 < s['zed'] - s['abe'] < 1e-9, 'zed scores about 5e-10 higher'\nassert predict_nb(near, ['x']) == 'abe', 'within 1e-9 the scores tie, so the first class in sorted order wins'\nfar = fit_nb([['x'] * 20001 + ['y'], ['x'] * 20000 + ['y']], ['zed', 'abe'])\ns = nb_scores(far, ['x'])\nassert 1e-9 < s['zed'] - s['abe'] < 1e-8 and predict_nb(far, ['x']) == 'zed', 'about 5e-9 apart: a real difference, so the higher score wins'",
           "concept": "naive-bayes"
         },
         {
