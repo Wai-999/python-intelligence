@@ -247,7 +247,7 @@
         },
         {
           "name": "tiny probabilities stay accurate",
-          "code": "import math\nfor z in (-40, -50, -300, -700, -710):\n    got, want = sigmoid(z), math.exp(z) / (1 + math.exp(z))\n    assert isinstance(got, float) and want > 0 and abs(got - want) <= 1e-12 * want, f'sigmoid({z}) should be about {want!r}, got {got!r}'",
+          "code": "import math\nfor z in (-40, -50, -300, -700, -710, -720, -740):\n    got, want = sigmoid(z), math.exp(z) / (1 + math.exp(z))\n    assert isinstance(got, float) and got > 0 and abs(got - want) <= 1e-12 * want + 1e-322, f'sigmoid({z}) should be about {want!r}, got {got!r}'",
           "concept": "sigmoid"
         },
         {
