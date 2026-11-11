@@ -198,6 +198,11 @@
           "concept": "residuals"
         },
         {
+          "name": "negative residuals",
+          "code": "got = fit_stump([[1.0], [2.0], [3.0], [4.0]], [-2.5, -3.5, 1.5, 2.5])\nassert got[:2] == (0, 2.5) and abs(got[2] + 3.0) <= 1e-12 and abs(got[3] - 2.0) <= 1e-12, f'residuals can be negative: means -3 and 2; got {got}'\nassert predict_stump(got, [1.0]) == got[2] < 0 < predict_stump(got, [4.0])",
+          "concept": "residuals"
+        },
+        {
           "name": "repeated rows all count",
           "code": "got = fit_stump([[3], [3], [3], [1], [1], [2]], [7.0, 7.0, 3.0, 6.0, 5.0, 8.0])\nassert got[:2] == (0, 1.5) and abs(got[2] - 5.5) <= 1e-12 and abs(got[3] - 6.25) <= 1e-12, f'both (3, 7) rows count; dropping the duplicate would move the split to 2.5; got {got}'",
           "concept": "residuals"
