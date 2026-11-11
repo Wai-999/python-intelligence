@@ -693,6 +693,61 @@
     "11": "missing-values-support",
     "12": "minimal-cost-complexity-pruning"
    }
+  },
+  "skdocs-15-ensemble": {
+   "title": "scikit-learn 1.5 User Guide: Ensembles",
+   "short": "scikit-learn 1.5 docs, Ensembles",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "official_url": "https://scikit-learn.org/1.5/modules/ensemble.html",
+   "kind": "web",
+   "sha256": "884c74295ce9e23c3ac0f2d8aa3b30a310782192bc83eb113429a5a06a2d3732",
+   "page_count": 38,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "ensembles-gradient-boosting-random-forests-bagging-voting-stacking",
+    "2": "gradient-boosted-trees",
+    "3": "histogram-based-gradient-boosting",
+    "4": "usage",
+    "5": "missing-values-support",
+    "6": "sample-weight-support",
+    "7": "categorical-features-support",
+    "8": "monotonic-constraints",
+    "9": "interaction-constraints",
+    "10": "low-level-parallelism",
+    "11": "why-it-s-faster",
+    "12": "gradientboostingclassifier-and-gradientboostingregressor",
+    "13": "fitting-additional-weak-learners",
+    "14": "controlling-the-tree-size",
+    "15": "mathematical-formulation",
+    "16": "loss-functions",
+    "17": "shrinkage-via-learning-rate",
+    "18": "subsampling",
+    "19": "interpretation-with-feature-importance",
+    "20": "random-forests-and-other-randomized-tree-ensembles",
+    "21": "random-forests",
+    "22": "extremely-randomized-trees",
+    "23": "parameters",
+    "24": "parallelization",
+    "25": "feature-importance-evaluation",
+    "26": "totally-random-trees-embedding",
+    "27": "fitting-additional-trees",
+    "28": "bagging-meta-estimator",
+    "29": "voting-classifier",
+    "30": "majority-class-labels-majority-hard-voting",
+    "31": "id24",
+    "32": "weighted-average-probabilities-soft-voting",
+    "33": "id25",
+    "34": "voting-regressor",
+    "35": "id27",
+    "36": "stacked-generalization",
+    "37": "adaboost",
+    "38": "id35"
+   }
   }
  }
 }

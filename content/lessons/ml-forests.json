@@ -1,0 +1,369 @@
+{
+  "id": "ml-forests",
+  "title": "Bagging and random forests: many trees vote",
+  "summary": "Train many trees on bootstrap samples of the data and let them vote, then use the rows each tree never saw to estimate accuracy for free.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-trees",
+    "stats-simulation"
+  ],
+  "concepts": [
+    "ensembles",
+    "bootstrap-sampling",
+    "bagging"
+  ],
+  "sources": [
+    {
+      "id": "mml-select",
+      "source_id": "pch-mml-book",
+      "pages": [
+        289,
+        294
+      ],
+      "section": "8.6 Model Selection",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-int",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        4,
+        4
+      ],
+      "section": "Functions for integers",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-repro",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "Notes on Reproducibility",
+      "use": "reference"
+    },
+    {
+      "id": "sk-ens",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "1.11. Ensembles: Gradient boosting, random forests, bagging, voting, stacking",
+      "use": "reference"
+    },
+    {
+      "id": "sk-rf",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        21,
+        21
+      ],
+      "section": "1.11.2.1. Random Forests",
+      "use": "reference"
+    },
+    {
+      "id": "sk-params",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        23,
+        23
+      ],
+      "section": "1.11.2.3. Parameters",
+      "use": "reference"
+    },
+    {
+      "id": "sk-bag",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        28,
+        28
+      ],
+      "section": "1.11.3. Bagging meta-estimator",
+      "use": "reference"
+    },
+    {
+      "id": "sk-vote",
+      "source_id": "skdocs-15-ensemble",
+      "pages": [
+        30,
+        30
+      ],
+      "section": "1.11.4.1. Majority Class Labels (Majority/Hard Voting)",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "A crowd of trees",
+      "body": "A deep decision tree fits its training data closely, so a small change in the data can grow a quite\ndifferent tree with different mistakes. Ask many such trees, each trained on a slightly different version\nof the data, and let them vote: where their mistakes differ, the majority can outvote them. That is the\nidea behind **bagging** and **random forests**, two of the most widely used methods in machine learning."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Different data from the same data",
+      "body": "Where do the \"slightly different versions\" come from, when you only have one dataset? Draw a **bootstrap\nsample**: pick `n` rows at random *with replacement* from the `n` you have. Some rows are picked twice or\nmore, and some not at all. Train one tree per sample and combine their predictions by a majority vote:\nthat is **bagging**. A **random forest** adds a second source of randomness, choosing each split from a\nrandom subset of the features, so the trees differ even more; this lesson builds the bagging part.\n\nThe rows a tree never saw are its **out-of-bag** rows. Each row was left out by some trees, so those trees\ncan be scored on it, like a validation set that costs no extra data. Each draw misses a given row with\nchance `1 − 1/n`, so all `n` draws miss it with chance `(1 − 1/n)ⁿ`, about 0.35 for `n = 10` and close to\n`1/e ≈ 0.37` for large `n`.",
+      "cites": [
+        "sk-ens",
+        "sk-rf",
+        "sk-bag",
+        "sk-params",
+        "mml-select"
+      ],
+      "socratic": {
+        "questions": [
+          "If every tree trained on the full dataset (no bootstrap), how different would the trees in this lesson be?",
+          "Why can't a row's out-of-bag score use a tree that trained on that row?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a vote with a tie",
+      "body": "Five trees predict b, a, b, a and c. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def vote(labels):\n    return max(sorted(set(labels)), key=labels.count)\n\nprint(vote(['b', 'a', 'b', 'a', 'c']))",
+        "frames": [
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "vote": "<function vote>"
+            },
+            "note": "Two votes each for a and b, one for c."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "vote(['b', 'a', 'b', 'a', 'c'])"
+            ],
+            "locals": {
+              "labels": "['b', 'a', 'b', 'a', 'c']"
+            },
+            "note": "Sort the distinct labels to a, b, c; max keeps the first of the labels with the most votes."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "vote": "<function vote>"
+            },
+            "note": "a and b tie with 2 votes; a comes first in sorted order.",
+            "output": "a"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Bootstrap sample:** for `n` rows, draw `n` indices with `rng.randrange(n)`, one after another, from a\n`random.Random` generator; the out-of-bag indices are those never drawn, in increasing order. The same\nseed gives the same draws, in CPython and in the browser.\n\n**Vote:** the most common label; a tie goes to the label first in sorted order.\n\n**Bagged trees:** make one generator `random.Random(seed)`. For each of `n_trees` trees in turn, draw a\nbootstrap sample with that generator and grow a tree (as in the decision-tree lesson, with `max_depth`)\non the drawn rows, duplicates included. Keep each tree with its out-of-bag indices. To predict a row, every\ntree predicts and the forest votes.\n\n**Out-of-bag accuracy:** for each training row, let only the trees that left it out vote; score the\nrows that got at least one such vote. Rows that every tree saw are skipped.",
+      "cites": [
+        "rnd-int",
+        "rnd-repro",
+        "sk-bag",
+        "sk-vote",
+        "sk-params"
+      ]
+    },
+    {
+      "id": "draw",
+      "kind": "example",
+      "title": "Run it: one bootstrap sample, and many",
+      "body": "One bootstrap sample of 10 rows, then 2000 more to measure how many rows a sample usually leaves out.",
+      "code": "import random\n\nrng = random.Random(0)\nn = 10\ndraws = [rng.randrange(n) for _ in range(n)]\nprint('drawn:', draws)\nprint('out of bag:', sorted(set(range(n)) - set(draws)))\n\nleft_out = 0\nfor _ in range(2000):\n    drawn = {rng.randrange(n) for _ in range(n)}\n    left_out += n - len(drawn)\nprint('share left out:', round(left_out / (2000 * n), 3), 'formula:', round((1 - 1 / n) ** n, 3))\n",
+      "expected_output": "drawn: [6, 6, 0, 4, 8, 7, 6, 4, 7, 5]\nout of bag: [1, 2, 3, 9]\nshare left out: 0.348 formula: 0.349\n"
+    },
+    {
+      "id": "sample",
+      "kind": "guided",
+      "title": "Your turn: bootstrap and vote",
+      "body": "Complete two functions.\n\n`bootstrap(n, rng)` returns `(draws, oob)`: the `n` indices drawn with `rng.randrange(n)`, in the order\ndrawn, and the sorted list of indices never drawn. Raise `ValueError` if `n < 1`.\n\n`vote(labels)` returns the most common label, with ties going to the label first in sorted order. Raise\n`ValueError` for an empty list. Don't change the list.",
+      "starter": "def bootstrap(n, rng):\n    return list(range(n)), []\n\n\ndef vote(labels):\n    return labels[0]\n",
+      "hints": [
+        "`draws = [rng.randrange(n) for _ in range(n)]`; the out-of-bag rows are `set(range(n)) - set(draws)`, sorted.",
+        "`max(sorted(set(labels)), key=labels.count)` applies both rules of the vote.",
+        "def bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n"
+      ],
+      "tests": [
+        {
+          "name": "draws from rng.randrange, in order",
+          "code": "import random\nfor seed, n in ((0, 10), (3, 7), (11, 1), (5, 25)):\n    a, b = random.Random(seed), random.Random(seed)\n    draws, oob = bootstrap(n, a)\n    want = [b.randrange(n) for _ in range(n)]\n    assert draws == want, f'seed {seed}, n={n}: draw with rng.randrange(n), n times; got {draws}'\n    assert oob == sorted(set(range(n)) - set(want)), f'seed {seed}, n={n}: out-of-bag rows in increasing order; got {oob}'\n    assert a.random() == b.random(), 'use the generator exactly n times'",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "the example's sample",
+          "code": "import random\nassert bootstrap(10, random.Random(0)) == ([6, 6, 0, 4, 8, 7, 6, 4, 7, 5], [1, 2, 3, 9])",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "one generator, consecutive samples",
+          "code": "import random\nr, s = random.Random(9), random.Random(9)\nfirst, second = bootstrap(6, r), bootstrap(6, r)\nassert first[0] == [s.randrange(6) for _ in range(6)] and second[0] == [s.randrange(6) for _ in range(6)], 'the second sample continues from the same generator'",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "lists of ints",
+          "code": "import random\ndraws, oob = bootstrap(8, random.Random(2))\nassert type(draws) is list and type(oob) is list and all(type(i) is int for i in draws + oob), 'return two lists of ints'\nassert len(draws) == 8 and set(draws) | set(oob) == set(range(8)) and not set(draws) & set(oob), 'every index is drawn or out of bag, never both'",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "bootstrap needs rows",
+          "code": "import random\nfor n in (0, -3):\n    try:\n        bootstrap(n, random.Random(0))\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for n={n}')",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "the most votes win",
+          "code": "assert vote(['b', 'a', 'b']) == 'b'\nassert vote(['c', 'a', 'b', 'c', 'a', 'c']) == 'c'\nassert vote(['x']) == 'x'\nassert vote(['b', 'b', 'a', 'c', 'd']) == 'b', 'the most votes, even without a majority'",
+          "concept": "ensembles"
+        },
+        {
+          "name": "ties go to the label first in sorted order",
+          "code": "assert vote(['b', 'a', 'b', 'a', 'c']) == 'a'\nassert vote(['c', 'b']) == 'b'\nassert vote([10, 2, 10, 2]) == 2, 'numbers sort as numbers'\nassert vote(['b', 'c', 'c', 'b', 'a']) == 'b', 'only the tied leaders count: a has one vote'",
+          "concept": "ensembles"
+        },
+        {
+          "name": "vote leaves its list alone",
+          "code": "labels = ['c', 'a', 'c', 'b']\nvote(labels)\nassert labels == ['c', 'a', 'c', 'b'], 'do not change (or sort) the list'\ntry:\n    vote([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError for an empty list')",
+          "concept": "ensembles"
+        }
+      ],
+      "solution": "def bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n"
+    },
+    {
+      "id": "forest",
+      "kind": "challenge",
+      "title": "Challenge: a bagged forest",
+      "body": "The starter gives you `build_tree` and `predict_tree` from the decision-tree lesson, plus `bootstrap` and\n`vote`. Write three functions by the precise rules.\n\n`fit_forest(X, y, n_trees, max_depth, seed)` returns a list of `(tree, oob)` pairs, one per tree. Raise\n`ValueError` if `n_trees < 1`, or if `build_tree` would reject `X`, `y` or `max_depth` (check this on the\nfull data, before sampling: a sample might miss the bad row).\n\n`predict_forest(forest, X)` returns the forest's vote for each row of `X`; raise `ValueError` for an empty\nforest.\n\n`oob_accuracy(forest, X, y)` takes the training data the forest was fitted on and returns the out-of-bag\naccuracy as a float, or `None` if no row was left out by any tree. Raise `ValueError` for an empty forest\nor if `X` and `y` differ in length.",
+      "starter": "import random\n\n\ndef gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n\n\ndef bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n\n\ndef fit_forest(X, y, n_trees, max_depth, seed):\n    return [(build_tree(X, y, max_depth), [])]\n\n\ndef predict_forest(forest, X):\n    return predict_tree(forest[0][0], X)\n\n\ndef oob_accuracy(forest, X, y):\n    return None\n",
+      "hints": [
+        "Create `rng = random.Random(seed)` once, before the loop, and pass it to every `bootstrap` call.",
+        "For out-of-bag accuracy, collect `predict_tree(tree, [row])[0]` from the trees whose `oob` contains the row's index.",
+        "import random\n\n\ndef gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n\n\ndef bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n\n\ndef fit_forest(X, y, n_trees, max_depth, seed):\n    if n_trees < 1:\n        raise ValueError('need at least one tree')\n    build_tree(X, y, max_depth)  # the same checks as a single tree, before sampling\n    rng = random.Random(seed)\n    forest = []\n    for _ in range(n_trees):\n        draws, oob = bootstrap(len(X), rng)\n        tree = build_tree([X[i] for i in draws], [y[i] for i in draws], max_depth)\n        forest.append((tree, oob))\n    return forest\n\n\ndef predict_forest(forest, X):\n    if not forest:\n        raise ValueError('an empty forest')\n    votes = [predict_tree(tree, X) for tree, _ in forest]\n    return [vote([v[i] for v in votes]) for i in range(len(X))]\n\n\ndef oob_accuracy(forest, X, y):\n    if not forest or len(X) != len(y):\n        raise ValueError('need a forest and one label per row')\n    right = counted = 0\n    for i, row in enumerate(X):\n        labels = [predict_tree(tree, [row])[0] for tree, oob in forest if i in oob]\n        if labels:\n            counted += 1\n            right += vote(labels) == y[i]\n    return right / counted if counted else None\n"
+      ],
+      "tests": [
+        {
+          "name": "the recipe: one generator, a tree per sample",
+          "code": "import random as _r\n\ndef _ref(X, y, n_trees, max_depth, seed):\n    g = _r.Random(seed)\n    out = []\n    for _ in range(n_trees):\n        d = [g.randrange(len(X)) for _ in range(len(X))]\n        out.append((build_tree([X[i] for i in d], [y[i] for i in d], max_depth), sorted(set(range(len(X))) - set(d))))\n    return out\n\nX = [[1.0, 5.0], [2.0, 1.0], [2.5, 4.0], [3.0, 2.0], [4.0, 4.5], [5.0, 1.5], [6.0, 3.0], [7.0, 5.0], [8.0, 2.5], [9.0, 4.0]]\ny = ['a', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b']\n\nfor n_trees, depth, seed in ((1, 2, 0), (5, 2, 1), (7, 10, 3)):\n    got, want = fit_forest(X, y, n_trees, depth, seed), _ref(X, y, n_trees, depth, seed)\n    assert got == want, f'n_trees={n_trees}, max_depth={depth}, seed={seed}: expected {want}, got {got}'\n    assert type(got) is list and all(type(p) is tuple and len(p) == 2 for p in got), 'a list of (tree, oob) tuples'\n_r.seed(99)\nfit_forest(X, y, 3, 2, 0)\nassert _r.random() == _r.Random(99).random(), 'use your own random.Random(seed), not the shared random module'",
+          "concept": "bagging"
+        },
+        {
+          "name": "trees train on the drawn rows, duplicates included",
+          "code": "import random as _r\n\ndef _ref(X, y, n_trees, max_depth, seed):\n    g = _r.Random(seed)\n    out = []\n    for _ in range(n_trees):\n        d = [g.randrange(len(X)) for _ in range(len(X))]\n        out.append((build_tree([X[i] for i in d], [y[i] for i in d], max_depth), sorted(set(range(len(X))) - set(d))))\n    return out\n\nX = [[1.0, 5.0], [2.0, 1.0], [2.5, 4.0], [3.0, 2.0], [4.0, 4.5], [5.0, 1.5], [6.0, 3.0], [7.0, 5.0], [8.0, 2.5], [9.0, 4.0]]\ny = ['a', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b']\n\nforest = fit_forest(X, y, 4, 0, 2)\nwant = _ref(X, y, 4, 0, 2)\nassert [t for t, _ in forest] == [t for t, _ in want], 'with max_depth 0 each tree is the majority of its own sample, duplicates counted'\nassert len({str(t) for t, _ in fit_forest(X, y, 6, 3, 5)}) > 1, 'different samples should grow different trees'",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "the forest votes",
+          "code": "import random as _r\n\ndef _ref(X, y, n_trees, max_depth, seed):\n    g = _r.Random(seed)\n    out = []\n    for _ in range(n_trees):\n        d = [g.randrange(len(X)) for _ in range(len(X))]\n        out.append((build_tree([X[i] for i in d], [y[i] for i in d], max_depth), sorted(set(range(len(X))) - set(d))))\n    return out\n\nX = [[1.0, 5.0], [2.0, 1.0], [2.5, 4.0], [3.0, 2.0], [4.0, 4.5], [5.0, 1.5], [6.0, 3.0], [7.0, 5.0], [8.0, 2.5], [9.0, 4.0]]\ny = ['a', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b']\n\nforest = fit_forest(X, y, 9, 3, 4)\nrows = [[1.5, 2.0], [8.5, 4.5], [5.5, 3.5], [3.0, 4.2]]\neach = [predict_tree(t, rows) for t, _ in forest]\nwant = []\nfor i in range(len(rows)):\n    labels = [p[i] for p in each]\n    want.append(max(sorted(set(labels)), key=labels.count))\nassert predict_forest(forest, rows) == want, f'expected {want}'\nassert predict_forest(forest, []) == []",
+          "concept": "ensembles"
+        },
+        {
+          "name": "vote ties across trees",
+          "code": "tie = [({'leaf': 'b'}, []), ({'leaf': 'a'}, []), ({'feature': 0, 'threshold': 0.5, 'left': {'leaf': 'a'}, 'right': {'leaf': 'b'}}, [])]\nassert predict_forest(tie, [[0], [1]]) == ['a', 'b'], 'two trees to one at each row'\nassert predict_forest(tie[:2], [[0]]) == ['a'], 'one vote each: a, first in sorted order'",
+          "concept": "ensembles"
+        },
+        {
+          "name": "out-of-bag accuracy",
+          "code": "import random as _r\n\ndef _ref(X, y, n_trees, max_depth, seed):\n    g = _r.Random(seed)\n    out = []\n    for _ in range(n_trees):\n        d = [g.randrange(len(X)) for _ in range(len(X))]\n        out.append((build_tree([X[i] for i in d], [y[i] for i in d], max_depth), sorted(set(range(len(X))) - set(d))))\n    return out\n\nX = [[1.0, 5.0], [2.0, 1.0], [2.5, 4.0], [3.0, 2.0], [4.0, 4.5], [5.0, 1.5], [6.0, 3.0], [7.0, 5.0], [8.0, 2.5], [9.0, 4.0]]\ny = ['a', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b']\n\nforest = fit_forest(X, y, 8, 2, 6)\nright = counted = 0\nfor i, row in enumerate(X):\n    labels = [predict_tree(t, [row])[0] for t, oob in forest if i in oob]\n    if labels:\n        counted += 1\n        right += max(sorted(set(labels)), key=labels.count) == y[i]\ngot = oob_accuracy(forest, X, y)\nassert isinstance(got, float) and got == right / counted, f'expected {right}/{counted}, got {got!r}'",
+          "concept": "bagging"
+        },
+        {
+          "name": "out-of-bag by hand",
+          "code": "f = [({'leaf': 'a'}, [0, 2]), ({'leaf': 'b'}, [2]), ({'leaf': 'b'}, [1])]\ngot = oob_accuracy(f, [[0], [1], [2], [3]], ['a', 'a', 'b', 'b'])\nassert got == 1 / 3, f'row 0: a (right); row 1: b (wrong); row 2: a and b tie, a (wrong); row 3 is skipped: 1/3; got {got!r}'\nassert oob_accuracy([({'leaf': 'a'}, [])], [[0]], ['a']) is None, 'no out-of-bag rows: None'\nassert oob_accuracy([({'leaf': 'a'}, [0])], [[0]], ['a']) == 1.0",
+          "concept": "bagging"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import random as _r\n\ndef _ref(X, y, n_trees, max_depth, seed):\n    g = _r.Random(seed)\n    out = []\n    for _ in range(n_trees):\n        d = [g.randrange(len(X)) for _ in range(len(X))]\n        out.append((build_tree([X[i] for i in d], [y[i] for i in d], max_depth), sorted(set(range(len(X))) - set(d))))\n    return out\n\nX = [[1.0, 5.0], [2.0, 1.0], [2.5, 4.0], [3.0, 2.0], [4.0, 4.5], [5.0, 1.5], [6.0, 3.0], [7.0, 5.0], [8.0, 2.5], [9.0, 4.0]]\ny = ['a', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b']\n\nimport copy\nkeep = copy.deepcopy((X, y))\nforest = fit_forest(X, y, 3, 2, 1)\nsnap = copy.deepcopy(forest)\npredict_forest(forest, X)\noob_accuracy(forest, X, y)\nassert (X, y) == keep and forest == snap, 'do not change the data or the forest'",
+          "concept": "bagging"
+        },
+        {
+          "name": "bad input",
+          "code": "import random as _r\n\ndef _ref(X, y, n_trees, max_depth, seed):\n    g = _r.Random(seed)\n    out = []\n    for _ in range(n_trees):\n        d = [g.randrange(len(X)) for _ in range(len(X))]\n        out.append((build_tree([X[i] for i in d], [y[i] for i in d], max_depth), sorted(set(range(len(X))) - set(d))))\n    return out\n\nX = [[1.0, 5.0], [2.0, 1.0], [2.5, 4.0], [3.0, 2.0], [4.0, 4.5], [5.0, 1.5], [6.0, 3.0], [7.0, 5.0], [8.0, 2.5], [9.0, 4.0]]\ny = ['a', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b']\n\nragged = [row[:] for row in X]\nragged[7] = [7.0]  # with seed 2 the first sample never draws row 7\nfor args in ((X, y, 0, 2, 0), (X, y, -1, 2, 0), ([], [], 3, 2, 0), (X, y[:-1], 3, 2, 0), (X, y, 3, -1, 0), (ragged, y, 3, 2, 0), (ragged, y, 1, 2, 2)):\n    try:\n        fit_forest(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'fit_forest should raise ValueError for n_trees={args[2]}, max_depth={args[3]}, {len(args[0])} rows, {len(args[1])} labels')\nfor call in (lambda: predict_forest([], X), lambda: predict_forest([], []), lambda: oob_accuracy([], X, y), lambda: oob_accuracy(fit_forest(X, y, 2, 1, 0), X, y[:-1])):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError for an empty forest or mismatched X and y')",
+          "concept": "bagging"
+        }
+      ],
+      "solution": "import random\n\n\ndef gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n\n\ndef bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n\n\ndef fit_forest(X, y, n_trees, max_depth, seed):\n    if n_trees < 1:\n        raise ValueError('need at least one tree')\n    build_tree(X, y, max_depth)  # the same checks as a single tree, before sampling\n    rng = random.Random(seed)\n    forest = []\n    for _ in range(n_trees):\n        draws, oob = bootstrap(len(X), rng)\n        tree = build_tree([X[i] for i in draws], [y[i] for i in draws], max_depth)\n        forest.append((tree, oob))\n    return forest\n\n\ndef predict_forest(forest, X):\n    if not forest:\n        raise ValueError('an empty forest')\n    votes = [predict_tree(tree, X) for tree, _ in forest]\n    return [vote([v[i] for v in votes]) for i in range(len(X))]\n\n\ndef oob_accuracy(forest, X, y):\n    if not forest or len(X) != len(y):\n        raise ValueError('need a forest and one label per row')\n    right = counted = 0\n    for i, row in enumerate(X):\n        labels = [predict_tree(tree, [row])[0] for tree, oob in forest if i in oob]\n        if labels:\n            counted += 1\n            right += vote(labels) == y[i]\n    return right / counted if counted else None\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "A bootstrap sample of 10 rows is drawn. Which is possible?",
+          "choices": [
+            "Row 3 appears twice and row 7 not at all",
+            "Every row appears exactly once, always",
+            "It has fewer than 10 rows",
+            "It contains rows not in the data"
+          ],
+          "answer": 0,
+          "explanation": "Drawing with replacement repeats some rows and leaves others out.",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "id": "q2",
+          "prompt": "Why does bagging use bootstrap samples instead of the full data for every tree?",
+          "choices": [
+            "Identical data would grow identical trees, and their votes would add nothing",
+            "Bootstrap samples are smaller and faster",
+            "To remove duplicate rows",
+            "To make each tree deeper"
+          ],
+          "answer": 0,
+          "explanation": "The trees need to differ for the vote to cancel some of their mistakes.",
+          "concept": "bagging"
+        },
+        {
+          "id": "q3",
+          "prompt": "Five trees vote c, a, c, a, b. What does the forest predict?",
+          "choices": [
+            "a",
+            "c",
+            "b",
+            "No prediction: it's a tie"
+          ],
+          "answer": 0,
+          "explanation": "a and c both have 2 votes; the tie goes to a, first in sorted order.",
+          "concept": "ensembles"
+        },
+        {
+          "id": "q4",
+          "prompt": "What does the out-of-bag accuracy measure?",
+          "choices": [
+            "Each training row scored only by trees that never saw it",
+            "Accuracy on the bootstrap samples",
+            "Accuracy of the first tree",
+            "Accuracy on a separate test set"
+          ],
+          "answer": 0,
+          "explanation": "Like a validation score, but computed from the training data alone.",
+          "concept": "bagging"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Draw a reproducible bootstrap sample and find its out-of-bag rows.\n- Combine many trees by majority vote, with a stated tie rule.\n- Explain why trees trained on different samples make better voters than identical ones.\n- Estimate accuracy from out-of-bag rows, without a separate validation set."
+    }
+  ]
+}

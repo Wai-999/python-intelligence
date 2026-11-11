@@ -20,6 +20,7 @@ CONCEPT_ONLY_PREFIXES = {
     "skdocs-15-neighbors": "https://scikit-learn.org/1.5/",
     "skdocs-15-linear-model": "https://scikit-learn.org/1.5/",
     "skdocs-15-tree": "https://scikit-learn.org/1.5/",
+    "skdocs-15-ensemble": "https://scikit-learn.org/1.5/",
 }
 
 PAGE = """<html><head><script>var x = "not text";</script></head><body>

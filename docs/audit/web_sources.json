@@ -360,6 +360,26 @@
     "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for how a classification tree splits on thresholds, the Gini impurity criterion, and depth limits against overfitting; the lesson does not use scikit-learn."
    },
    "sha256": "065ab2b6c609c37c57aaf33cf4afb48701a665038fcc4a107c716e60f72a12d6"
+  },
+  {
+   "source_id": "skdocs-15-ensemble",
+   "title": "scikit-learn 1.5 User Guide: Ensembles",
+   "short": "scikit-learn 1.5 docs, Ensembles",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/ensemble.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-11",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for bagging, bootstrap samples, random forests and out-of-bag estimates; the lesson does not use scikit-learn."
+   },
+   "sha256": "884c74295ce9e23c3ac0f2d8aa3b30a310782192bc83eb113429a5a06a2d3732"
   }
  ]
 }
