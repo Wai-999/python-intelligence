@@ -203,7 +203,7 @@
         },
         {
           "name": "bad input",
-          "code": "for n in (0, -5):\n    try:\n        simulate(n, True, 1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for n={n}')",
+          "code": "for n in (0, -5):\n    for switch in (False, True):\n        try:\n            simulate(n, switch, 1)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(f'raise ValueError for n={n}, switch={switch}')",
           "concept": "monte-carlo-estimates"
         }
       ],
