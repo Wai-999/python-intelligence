@@ -207,7 +207,7 @@
       "id": "scan",
       "kind": "example",
       "title": "Run it: every threshold on one feature",
-      "body": "Eight examples on one feature, with one `no` among the `yes`s. Each line shows a threshold, the Gini of\neach side and the weighted score. Predict which threshold wins before you run it.",
+      "body": "Eight examples on one feature, four of each label; a `yes` at 4 and a `no` at 5 break up the clean runs.\nEach line shows a threshold, the Gini of each side and the weighted score. Predict which threshold wins before you run it.",
       "code": "def gini(labels):\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\nx = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]\ny = ['no', 'no', 'no', 'yes', 'no', 'yes', 'yes', 'yes']\nprint('root', round(gini(y), 3))\n\nbest = None\nfor a, b in zip(x, x[1:]):\n    t = (a + b) / 2\n    left = [l for v, l in zip(x, y) if v <= t]\n    right = [l for v, l in zip(x, y) if v > t]\n    score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n    print(t, round(gini(left), 3), round(gini(right), 3), round(score, 3))\n    if best is None or score < best[1] - 1e-9:\n        best = (t, score)\nprint('best threshold', best[0])\n",
       "expected_output": "root 0.5\n1.5 0.0 0.49 0.429\n2.5 0.0 0.444 0.333\n3.5 0.0 0.32 0.2\n4.5 0.375 0.375 0.375\n5.5 0.32 0.0 0.2\n6.5 0.444 0.0 0.333\n7.5 0.49 0.0 0.429\nbest threshold 3.5\n"
     },
@@ -325,7 +325,7 @@
         },
         {
           "name": "leaves when nothing can split",
-          "code": "assert build_tree([[1], [2], [3]], ['a', 'a', 'a'], 5) == {'leaf': 'a'}, 'a pure node is a leaf'\nassert build_tree([[3], [3], [3]], ['b', 'a', 'b'], 5) == {'leaf': 'b'}, 'identical rows: no split, so a majority leaf'",
+          "code": "assert build_tree([[1], [2], [3]], ['a', 'a', 'a'], 5) == {'leaf': 'a'}, 'a pure node is a leaf'\nassert build_tree([[3], [3], [3]], ['b', 'a', 'b'], 5) == {'leaf': 'b'}, 'identical rows: no split, so a majority leaf'\nassert build_tree([[3], [3], [3]], ['a', 'b', 'b'], 5) == {'leaf': 'b'}, 'no split: the most common label, not the first one'\nassert build_tree([[3, 1], [3, 1]], ['b', 'a'], 5) == {'leaf': 'a'}, 'no split and a tie: the label first in sorted order'",
           "concept": "decision-trees"
         },
         {
