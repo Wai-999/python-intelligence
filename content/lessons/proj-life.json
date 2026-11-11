@@ -257,7 +257,7 @@
         },
         {
           "name": "bad input",
-          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nthree = g(3, 3, [])\nthree[1][1] = 3\nragged = g(3, 3, [])\nragged[1].pop()\nfor grid, k in ((g(5, 5, []), -1), (g(2, 2, []), 3), (g(2, 2, []), 0), (three, 0), (ragged, 0), (g(3, 3, []), -2)):\n    try:\n        find_cycle(grid, k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for grid={grid}, max_steps={k}')",
+          "code": "def g(rows, cols, cells):\n    out = [[0] * cols for _ in range(rows)]\n    for r, c in cells:\n        out[r][c] = 1\n    return out\n\nragged = g(3, 3, [])\nragged[2].pop()\nlong_row = g(3, 3, [])\nlong_row[1].append(0)\ntwo = g(3, 3, [])\ntwo[1][1] = 2\nneg = g(3, 3, [])\nneg[2][2] = -1\nhalf = g(3, 3, [])\nhalf[0][1] = 0.5\ntext = g(3, 3, [])\ntext[1][0] = '1'\ncases = [(grid, k) for grid in (g(2, 2, []), g(2, 3, []), g(3, 2, []), ragged, long_row, two, neg, half, text, [], [[]]) for k in (0, 3)]\nfor grid, k in cases + [(g(5, 5, []), -1), (g(3, 3, []), -2)]:\n    try:\n        find_cycle(grid, k)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for grid={grid}, max_steps={k}')",
           "concept": "cycle-detection"
         }
       ],
