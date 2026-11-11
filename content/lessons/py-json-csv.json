@@ -219,6 +219,11 @@
           "concept": "csv-files"
         },
         {
+          "name": "repeated names keep every row",
+          "code": "got = read_scores('name,score\\nAda,7\\nBo,2\\nAda,9\\n')\nassert got == [{'name': 'Ada', 'score': 7}, {'name': 'Bo', 'score': 2}, {'name': 'Ada', 'score': 9}], f'every row, in file order; got {got}'",
+          "concept": "csv-files"
+        },
+        {
           "name": "scores are ints, names as written",
           "code": "got = read_scores('name,score\\n Ada ,10\\n')\nassert got == [{'name': ' Ada ', 'score': 10}] and type(got[0]['score']) is int, f'got {got!r}'",
           "concept": "serialization"
@@ -260,7 +265,7 @@
         },
         {
           "name": "quoted teams and no rows",
-          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}",
+          "code": "import json\nassert json.loads(team_report('team,score\\n\"red, north\",4\\n\"red, north\",6\\n')) == {'red, north': {'count': 2, 'mean': 5.0}}\nassert json.loads(team_report('team,score\\n')) == {}\nassert json.loads(team_report('team,score\\nice,-4\\nice,-2\\nmix,-3\\nmix,5\\n')) == {'ice': {'count': 2, 'mean': -3.0}, 'mix': {'count': 2, 'mean': 1.0}}, 'negative scores average too'",
           "concept": "csv-files"
         },
         {
@@ -270,7 +275,7 @@
         },
         {
           "name": "bad input",
-          "code": "for text in ('', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n', 'team,score\\nred,2.5\\n', 'team,score\\nred,\\n', 'score,team\\n5\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": '):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
+          "code": "for text in ('', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n', 'team,score\\nred,2.5\\n', 'team,score\\nred,\\n', 'score,team\\n5\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": ', '42', 'true', 'null'):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
           "concept": "serialization"
         }
       ],
