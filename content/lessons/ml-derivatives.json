@@ -181,7 +181,7 @@
         },
         {
           "name": "the point is not changed",
-          "code": "point = [1.0, 2.0]\nseen = []\ndef f(p):\n    seen.append(p)\n    return p[0] * p[1]\ngradient(f, point)\nassert point == [1.0, 2.0], 'do not change the point'\nassert all(p is not point for p in seen), 'perturb copies of the point, not the point itself'",
+          "code": "point = [1.0, 2.0]\nseen = []\ndef f(p):\n    seen.append(p)\n    return p[0] * p[1]\ngradient(f, point)\nassert point == [1.0, 2.0], 'do not change the point'\nassert all(p is not point for p in seen), 'perturb copies of the point, not the point itself'\nclass Locked(list):\n    def __setitem__(self, i, v):\n        raise AssertionError('never write to the original point, not even temporarily')\ngot = gradient(lambda p: p[0] * p[1], Locked([3.0, 4.0]), 0.5)\nassert got == [4.0, 3.0], f'got {got}'",
           "concept": "derivatives"
         },
         {
@@ -236,7 +236,7 @@
         },
         {
           "name": "the tolerance and the step",
-          "code": "import math\n\ndef f(p):\n    return p[0] * p[0] * p[1] + math.sin(p[1]) - 2 * p[0]\n\ndef good(p):\n    return [2 * p[0] * p[1] - 2, p[0] * p[0] + math.cos(p[1])]\n\nbad = lambda p: [2 * p[0] * p[1] - 2 + 1e-4, p[0] * p[0] + math.cos(p[1])]\nassert check_gradient(f, bad, [1.5, 0.3])[0] is False and check_gradient(f, bad, [1.5, 0.3], tol=1e-3)[0] is True, 'passed is worst <= tol'\nok, worst = check_gradient(lambda p: p[0] * p[0] * p[0], lambda p: [3 * p[0] * p[0]], [1.0], h=0.1)\nassert ok is False and abs(worst - 0.01 / 3.01) <= 1e-9, f'with h = 0.1 the estimate is 3.01, so the error shows; got {(ok, worst)}'\nassert check_gradient(lambda p: p[0], lambda p: [1.0], [2.0], h=0.5, tol=0.0) == (True, 0.0), 'with h = 0.5 the estimate for a line is exact, and an exact match passes even with tol = 0'",
+          "code": "import math\n\ndef f(p):\n    return p[0] * p[0] * p[1] + math.sin(p[1]) - 2 * p[0]\n\ndef good(p):\n    return [2 * p[0] * p[1] - 2, p[0] * p[0] + math.cos(p[1])]\n\nbad = lambda p: [2 * p[0] * p[1] - 2 + 1e-4, p[0] * p[0] + math.cos(p[1])]\nassert check_gradient(f, bad, [1.5, 0.3])[0] is False and check_gradient(f, bad, [1.5, 0.3], tol=1e-3)[0] is True, 'passed is worst <= tol'\nok, worst = check_gradient(lambda p: p[0] * p[0] * p[0], lambda p: [3 * p[0] * p[0]], [1.0], h=0.1)\nassert ok is False and abs(worst - 0.01 / 3.01) <= 1e-9, f'with h = 0.1 the estimate is 3.01, so the error shows; got {(ok, worst)}'\nassert check_gradient(lambda p: p[0], lambda p: [2.0], [3.0], h=0.5, tol=0.5) == (True, 0.5), 'worst equal to tol passes: |2 - 1| / 2 = 0.5 <= 0.5'\nassert check_gradient(lambda p: p[0], lambda p: [1.0], [2.0], h=0.5, tol=0.0) == (True, 0.0), 'with h = 0.5 the estimate for a line is exact, and an exact match passes even with tol = 0'",
           "concept": "gradient-checking"
         },
         {
