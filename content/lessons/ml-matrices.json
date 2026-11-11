@@ -264,7 +264,7 @@
         },
         {
           "name": "partial pivoting keeps accuracy",
-          "code": "got = solve([[1e-20, 1], [1, 1]], [1, 2])\nassert abs(got[0] - 1) <= 1e-9 and abs(got[1] - 1) <= 1e-9, f'pivot on the largest entry: dividing by 1e-20 would wreck x[0]; got {got}'\ngot = solve([[1e-20, 1], [-1, 1]], [1, 0])\nassert abs(got[0] - 1) <= 1e-9 and abs(got[1] - 1) <= 1e-9, f'largest in absolute value: -1 beats 1e-20; got {got}'",
+          "code": "got = solve([[1e-20, 1], [1, 1]], [1, 2])\nassert abs(got[0] - 1) <= 1e-9 and abs(got[1] - 1) <= 1e-9, f'pivot on the largest entry: dividing by 1e-20 would wreck x[0]; got {got}'\ngot = solve([[1e-20, 1], [-1, 1]], [1, 0])\nassert abs(got[0] - 1) <= 1e-9 and abs(got[1] - 1) <= 1e-9, f'largest in absolute value: -1 beats 1e-20; got {got}'\ngot = solve([[1e-10, 1], [1, 1]], [1, 2])\nassert abs(got[0] - 1.0000000001) <= 1e-9 and abs(got[1] - 0.9999999999) <= 1e-9, f'always pivot on the largest entry, even when 1e-10 is above the singularity threshold; got {got}'",
           "concept": "linear-systems"
         },
         {
@@ -280,6 +280,11 @@
         {
           "name": "exactly at the threshold",
           "code": "for d in (1e-12, 5e-13):\n    try:\n        solve([[1, 0], [0, d]], [1, 1])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'a pivot of {d} with largest entry 1 is at or below 1e-12 x 1: singular')\nfor A in ([[1e-12, 1], [0, 1e-12]], [[1e-12, 0], [0, 1]], [[1e-12, 0], [3, 1]]):\n    try:\n        solve(A, [1, 1])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'{A}: the scale is the largest entry anywhere in A (1 or 3), so a 1e-12 pivot is singular')\nfor d in (2e-12, 1.5e-12):\n    got = solve([[1, 0], [0, d]], [1, 1])\n    assert abs(got[0] - 1) <= 1e-12 and abs(got[1] - 1 / d) <= 1e-9 / d, f'a pivot of {d} is above the threshold: solve it; got {got}'",
+          "concept": "linear-systems"
+        },
+        {
+          "name": "the scale is A's, not the grown entries'",
+          "code": "n = 45\nW = [[1 if i == j or j == n - 1 else (-1 if j < i else 0) for j in range(n)] for i in range(n)]\nb = [sum(row) for row in W]\ngot = solve(W, b)\nassert got == [1.0] * n, f'elimination doubles the last column up to 2**44, but every pivot is 1, far above 1e-12 x the largest entry of A (1); got {got[:3]}...'",
           "concept": "linear-systems"
         },
         {
