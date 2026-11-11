@@ -171,7 +171,7 @@
         },
         {
           "name": "the default step is 1e-5",
-          "code": "import math\nf = lambda t: math.exp(3 * t)\nassert abs(derivative(f, 1.0) - (f(1.0 + 1e-5) - f(1.0 - 1e-5)) / 2e-5) <= 1e-12 * abs(f(1.0)), 'default h=1e-5'",
+          "code": "import math\nf = lambda t: math.exp(3 * t)\nassert abs(derivative(f, 1.0) - (f(1.0 + 1e-5) - f(1.0 - 1e-5)) / 2e-5) <= 1e-12 * abs(f(1.0)), 'default h=1e-5'\ng = lambda p: math.exp(3 * p[0]) + p[1] * p[1] * p[1]\npoint = [1.0, 2.0]\ngot = gradient(g, point)\nwant = [(g([1.0 + 1e-5, 2.0]) - g([1.0 - 1e-5, 2.0])) / 2e-5, (g([1.0, 2.0 + 1e-5]) - g([1.0, 2.0 - 1e-5])) / 2e-5]\nassert all(abs(a - b) <= 1e-12 * max(1.0, abs(b)) for a, b in zip(got, want)), f'gradient also defaults to h=1e-5: {want}; got {got}'",
           "concept": "finite-differences"
         },
         {
@@ -191,7 +191,7 @@
         },
         {
           "name": "bad input",
-          "code": "for call in (lambda: derivative(abs, 1.0, 0), lambda: derivative(abs, 1.0, -1e-5), lambda: gradient(sum, [1.0], 0), lambda: gradient(sum, [1.0], -0.1), lambda: gradient(sum, [])):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError unless h > 0, and for an empty point')",
+          "code": "for call in (lambda: derivative(abs, 1.0, 0), lambda: derivative(abs, 1.0, -1e-5), lambda: gradient(sum, [1.0], 0), lambda: gradient(sum, [1.0], -0.1), lambda: gradient(sum, []),\n             lambda: derivative(abs, 1.0, float('nan')), lambda: gradient(sum, [1.0], float('nan'))):\n    try:\n        call()\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('raise ValueError unless h > 0 (NaN included), and for an empty point')",
           "concept": "finite-differences"
         }
       ],
@@ -227,6 +227,11 @@
         {
           "name": "relative for big components, absolute for small",
           "code": "f = lambda p: 5e5 * p[0] * p[0] + 1e-9 * p[1]\nok, worst = check_gradient(f, lambda p: [1e6 * p[0] + 0.5, 1e-9 + 5e-7], [1.0, 0.0])\nassert ok is True and worst <= 1e-6, f'0.5 out of a million is 5e-7 relative, and 5e-7 next to a tiny 1e-9 component is judged against 1; got {(ok, worst)}'\nok, worst = check_gradient(f, lambda p: [1e6 * p[0] + 5, 1e-9], [1.0, 0.0])\nassert ok is False and abs(worst - 5 / (1e6 + 5)) <= 1e-9, f'5 in a million is 5e-6: too far; got {(ok, worst)}'",
+          "concept": "gradient-checking"
+        },
+        {
+          "name": "negative components use absolute values",
+          "code": "f = lambda p: -5e5 * p[0] * p[0]\nn = gradient(f, [1.0])[0]\nfor a in (-2e6, -5e5, -1e6 - 5):\n    ok, worst = check_gradient(f, lambda p, a=a: [a], [1.0])\n    want = abs(a - n) / max(1.0, abs(a), abs(n))\n    assert abs(worst - want) <= 1e-12, f'analytic {a}, numerical about -1e6: relative error {want}; got {worst}'",
           "concept": "gradient-checking"
         },
         {
