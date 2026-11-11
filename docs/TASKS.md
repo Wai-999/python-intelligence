@@ -102,6 +102,26 @@ Core Python path → NumPy/pandas → probability and statistics → linear alge
 | P4-26 | Claude → Codex | `ml-boosting`: gradient boosting for regression — stumps chosen by total squared error with a max-first 1e-9 tie rule, residuals as the negative gradient of squared error, the additive model mean + lr · Σ stumps, early stopping when no stump fits, shrinkage, and the training SSE being non-increasing for 0 < lr ≤ 2 (each stump is a least-squares projection of the residuals); the example shows validation error bottoming out near round 10 (scikit-learn 1.5 Ensembles gradient-boosting sections + MML 8.2). ~35 wrong solutions probed | ✅ e2e: runs in the browser; Codex, 9 rounds of 15 findings fixed (chained and within-feature near-ties, also inside fit_boost; shuffled rows; training-error claims qualified; lr = 3 applied unchanged; unsorted inputs left unsorted; predict_stump immutability; real midpoints of fractional, negative and uneven values; separately fitted models; an independent reference stump in the boost tests; zero-feature rows; repeated observations in fit_stump and fit_boost; negative residuals); round 10 approved, 0 findings |
 | P4-7 | Claude → Codex | Data track: `np-arrays` (NumPy 2.0 docs), `pd-dataframes` (pandas 2.2.3 docs); content gate validates under CPython 3.12 + numpy 2.0.2 + pandas 2.2.3 (closes R15) | ✅ e2e: both lessons run in the browser; Codex: 7 data findings + 1 orchestrator high (shared-dir tampering) fixed, re-review approved |
 
+## Phase 6 — Master-prompt gaps (added 2026-11-11)
+
+The task plan above finished its own phases, but the master prompt also asks for double-loop feedback (its Phase 4), spiral reviews and scaffold
+fading (its Phase 5), a tutor gateway (its Phase 6, if authorized) and more curriculum paths. These rows close those gaps.
+
+| ID | Owner → Reviewer | Task | Status |
+|---|---|---|---|
+| G-1 | Claude → Codex | Learner model (`src/learner/`): per-concept evidence from an event log, independent vs assisted successes on distinct tasks, an explanation check, prerequisite status, a labelled heuristic mastery estimate, the advancement gate ("module complete" vs "durably mastered"), a spaced retention schedule (1, 3, 7, 14, 30 days; a failed review resets it), hint-tier suggestions that fade and restore; week-scale synthetic replay tests | planned |
+| G-2 | Claude → Codex | Reviews in the app: append-only event log in IndexedDB (DB v2, export v2, v1 imports still accepted), assistance recorded from hints and the solution, quiz concepts recorded, a Review page with due concepts and retrieval questions, review outcomes feeding the schedule | planned |
+| G-3 | Claude → Codex | Scaffold fading in the exercise UI: hints offered according to the suggested tier, restored after repeated failures; e2e tests | planned |
+| G-4 | Claude → Codex | Double-loop feedback: classify failures, cluster repeated structural errors (not a single typo), misconception triggers with cooldowns, a counterexample / prediction intervention, independent transfer check; controller precedence; tests | planned |
+| G-5 | Claude → Codex | Lesson metadata the master prompt requires (objective, analogy, transfer problem, rubric, common misconceptions, spaced-review metadata): schema, gate, and backfill for every lesson | planned |
+| G-6 | Claude → Codex | `py-json-csv`: reading and writing JSON and CSV with the standard library | planned |
+| G-7 | Claude → Codex | `py-testing`: assertions, `unittest`, writing tests first, debugging with tracebacks | planned |
+| G-8 | Claude → Codex | `py-generators`: iterators, generators and lazy pipelines | planned |
+| G-9 | Claude → Codex | `py-typing`: type hints, `dataclasses`, and what hints do and don't check | planned |
+| G-10 | Claude → Codex | `algo-complexity`: counting operations, big-O by experiment, choosing data structures | planned |
+| G-11 | Claude → Codex | `py-sqlite`: SQL with the standard-library `sqlite3` (in the browser if Pyodide provides it) | planned |
+| G-T ⛔ | Owner | Tutor gateway (master prompt Phase 6, "if authorized"): needs a server and API keys; GitHub Pages is static | open |
+
 ## Phase 5 — Release ✅ core done 2026-11-08
 
 | ID | Owner → Reviewer | Task | Status |
