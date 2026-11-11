@@ -240,6 +240,11 @@
           "concept": "gradient-checking"
         },
         {
+          "name": "the default tolerance is 1e-6",
+          "code": "line = lambda p: p[0]\nok, worst = check_gradient(line, lambda p: [1.0 + 9e-7], [2.0], h=0.5)\nassert ok is True and 8e-7 < worst < 1e-6, f'about 9e-7 is within the default 1e-6; got {(ok, worst)}'\nok, worst = check_gradient(line, lambda p: [1.0 + 1.5e-6], [2.0], h=0.5)\nassert ok is False and 1e-6 < worst < 2e-6, f'about 1.5e-6 is outside the default 1e-6; got {(ok, worst)}'\nassert check_gradient(line, lambda p: [1.0 + 1.5e-6], [2.0], h=0.5, tol=2e-6)[0] is True, 'but within an explicit tol of 2e-6'",
+          "concept": "gradient-checking"
+        },
+        {
           "name": "grad may return a tuple",
           "code": "ok, worst = check_gradient(lambda p: p[0] * p[1], lambda p: (p[1], p[0]), [2.0, 3.0])\nassert ok is True and worst <= 1e-9",
           "concept": "gradient-checking"
