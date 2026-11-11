@@ -344,6 +344,11 @@
           "concept": "decision-trees"
         },
         {
+          "name": "later features count, at the root and below",
+          "code": "def same(a, b):\n    if 'leaf' in a or 'leaf' in b:\n        return a == b\n    return set(a) == set(b) == {'feature', 'threshold', 'left', 'right'} and a['feature'] == b['feature'] and abs(a['threshold'] - b['threshold']) <= 1e-12 and same(a['left'], b['left']) and same(a['right'], b['right'])\n\nX = [[0, 0, 1], [0, 0, 2], [0, 0, 8], [0, 0, 9]]\ny = ['a', 'a', 'b', 'b']\ngot = build_tree(X, y, 2)\nassert same(got, {'feature': 2, 'threshold': 5.0, 'left': {'leaf': 'a'}, 'right': {'leaf': 'b'}}), f'only the third feature varies; got {got}'\nassert predict_tree(got, [[7, 7, 4], [7, 7, 6]]) == ['a', 'b']\nX = [[1, 5, 0], [1, 5, 4], [9, 5, 0], [9, 5, 4]]\ny = ['a', 'b', 'c', 'c']\ngot = build_tree(X, y, 2)\nwant = {'feature': 0, 'threshold': 5.0, 'left': {'feature': 2, 'threshold': 2.0, 'left': {'leaf': 'a'}, 'right': {'leaf': 'b'}}, 'right': {'leaf': 'c'}}\nassert same(got, want), f'the left child can only be split by the third feature; got {got}'\nassert predict_tree(got, X) == y",
+          "concept": "decision-trees"
+        },
+        {
           "name": "prediction follows <= to the left",
           "code": "tree = {'feature': 1, 'threshold': 2.5, 'left': {'leaf': 'L'}, 'right': {'feature': 0, 'threshold': 0.0, 'left': {'leaf': 'RL'}, 'right': {'leaf': 'RR'}}}\ngot = predict_tree(tree, [[9, 2.5], [9, 2.6], [0.0, 3], [-1, 9], [0.1, 3]])\nassert got == ['L', 'RR', 'RL', 'RL', 'RR'], f'equal to the threshold goes left; got {got}'\nassert predict_tree({'leaf': 7}, [[1], [2]]) == [7, 7] and predict_tree(tree, []) == [], 'a single leaf predicts the same for every row'",
           "concept": "decision-trees"
