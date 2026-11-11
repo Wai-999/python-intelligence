@@ -210,7 +210,7 @@
         },
         {
           "name": "quoted values and extra columns",
-          "code": "got = read_scores('team,name,score,notes\\nred,\"Lovelace, A.\",9,\"likes, commas\"\\nblue,Grace,8,\\n')\nassert got == [{'name': 'Lovelace, A.', 'score': 9}, {'name': 'Grace', 'score': 8}], f'the csv module keeps quoted commas inside one field; got {got}'",
+          "code": "got = read_scores('team,name,score,notes\\nred,\"Lovelace, A.\",9,\"likes, commas\"\\nblue,Grace,8,\\n')\nassert got == [{'name': 'Lovelace, A.', 'score': 9}, {'name': 'Grace', 'score': 8}], f'the csv module keeps quoted commas inside one field; got {got}'\ngot = read_scores('name,score\\n\"Ada\\nLovelace\",7\\nGrace,9\\n')\nassert got == [{'name': 'Ada\\nLovelace', 'score': 7}, {'name': 'Grace', 'score': 9}], f'a quoted field may even contain a line break; got {got!r}'",
           "concept": "csv-files"
         },
         {
@@ -230,7 +230,7 @@
         },
         {
           "name": "bad input",
-          "code": "for text in ('', 'name,points\\nAda,3\\n', 'player,score\\nAda,3\\n', 'name,score\\nAda\\n', 'name,score\\nAda,seven\\n', 'name,score\\nAda,7.5\\n'):\n    try:\n        read_scores(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for {text!r}')",
+          "code": "for text in ('', 'name,points\\nAda,3\\n', 'player,score\\nAda,3\\n', 'name,score\\nAda\\n', 'name,score\\nAda,seven\\n', 'name,score\\nAda,7.5\\n', 'name,score\\nAda,\\n'):\n    try:\n        read_scores(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for {text!r}')",
           "concept": "csv-files"
         }
       ],
@@ -265,12 +265,12 @@
         },
         {
           "name": "the best team",
-          "code": "import json\nassert best_team(team_report('team,score\\nred,7\\nblue,9\\nred,8\\n')) == 'blue'\nassert best_team(json.dumps({'b': {'count': 1, 'mean': 5}, 'a': {'count': 3, 'mean': 5}, 'c': {'count': 2, 'mean': 4}})) == 'a', 'a tie goes to the first team in sorted order'",
+          "code": "import json\nassert best_team(team_report('team,score\\nred,7\\nblue,9\\nred,8\\n')) == 'blue'\nassert best_team(json.dumps({'b': {'count': 1, 'mean': 5}, 'a': {'count': 3, 'mean': 5}, 'c': {'count': 2, 'mean': 4}})) == 'a', 'a tie goes to the first team in sorted order'\nassert best_team(json.dumps({'a': {'count': 2, 'mean': -5.0}, 'b': {'count': 1, 'mean': -2.0}, 'c': {'count': 1, 'mean': -9.5}})) == 'b', 'the highest mean can be negative'",
           "concept": "json"
         },
         {
           "name": "bad input",
-          "code": "for text in ('', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": '):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
+          "code": "for text in ('', 'team,points\\nred,3\\n', 'player,score\\nAda,3\\n', 'team,score\\nred\\n', 'team,score\\nred,x\\n', 'team,score\\nred,2.5\\n', 'team,score\\nred,\\n', 'score,team\\n5\\n'):\n    try:\n        team_report(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'team_report should raise ValueError for {text!r}')\nfor text in ('not json', '[1, 2]', '{}', '\"red\"', '{\"red\": '):\n    try:\n        best_team(text)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'best_team should raise ValueError for {text!r}')",
           "concept": "serialization"
         }
       ],
