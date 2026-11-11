@@ -1,0 +1,417 @@
+{
+  "id": "ml-trees",
+  "title": "Decision trees: learning a flowchart of questions",
+  "summary": "Grow a classification tree by choosing, at each node, the threshold question that leaves the purest groups by Gini impurity, and limit its depth to avoid fitting noise.",
+  "track": "ml",
+  "level": 4,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "ml-knn"
+  ],
+  "concepts": [
+    "decision-trees",
+    "gini-impurity",
+    "tree-depth"
+  ],
+  "sources": [
+    {
+      "id": "mml-erm",
+      "source_id": "pch-mml-book",
+      "pages": [
+        264,
+        270
+      ],
+      "section": "8.2 Empirical Risk Minimization",
+      "use": "reference"
+    },
+    {
+      "id": "mml-select",
+      "source_id": "pch-mml-book",
+      "pages": [
+        289,
+        294
+      ],
+      "section": "8.6 Model Selection",
+      "use": "reference"
+    },
+    {
+      "id": "py-seq",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        14,
+        14
+      ],
+      "section": "Common Sequence Operations",
+      "use": "reference"
+    },
+    {
+      "id": "sk-trees",
+      "source_id": "skdocs-15-tree",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "1.10. Decision Trees",
+      "use": "reference"
+    },
+    {
+      "id": "sk-classify",
+      "source_id": "skdocs-15-tree",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "1.10.1. Classification",
+      "use": "reference"
+    },
+    {
+      "id": "sk-tips",
+      "source_id": "skdocs-15-tree",
+      "pages": [
+        6,
+        6
+      ],
+      "section": "1.10.5. Tips on practical use",
+      "use": "reference"
+    },
+    {
+      "id": "sk-math",
+      "source_id": "skdocs-15-tree",
+      "pages": [
+        8,
+        8
+      ],
+      "section": "1.10.7. Mathematical formulation",
+      "use": "reference"
+    },
+    {
+      "id": "sk-gini",
+      "source_id": "skdocs-15-tree",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "1.10.7.1. Classification criteria",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Twenty questions",
+      "body": "A doctor's triage chart asks one question at a time: is the temperature above 38 °C? If so, is the\ncough more than a week old? Each answer sends you down a branch until you reach a decision. A\n**decision tree** is such a chart learned from data: every inner node asks whether one feature is\nat most some threshold, and every leaf gives a prediction. You can read the finished model and\nfollow exactly why it decided what it did."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Purer and purer groups",
+      "body": "Growing a tree means choosing questions. A good question splits the examples into two groups that\nare each mostly one label. **Gini impurity** measures how mixed a group is: it is the chance that two\nlabels drawn at random (with replacement) from the group differ, `0` for a pure group and `0.5` for an\neven mix of two labels. A split is scored by the impurity of its two sides, each weighted by its share\nof the examples, and the tree picks the lowest score. Then it does the same inside each side.\n\nThis is **greedy**: each question is the best one *right now*, which is fast but can miss a better tree\noverall. And a tree allowed to keep going will split until each leaf is pure, memorising noise in the\ntraining data; limiting the **depth** (the most questions on any path) is the simplest cure, and the\nbest depth is a hyperparameter chosen on validation data.",
+      "cites": [
+        "sk-trees",
+        "sk-tips",
+        "sk-gini",
+        "mml-erm",
+        "mml-select"
+      ],
+      "socratic": {
+        "questions": [
+          "Two features, x and 1000·x: would a tree split them differently? Does a tree need feature scaling?",
+          "Label a point 'red' when x and y are both below 5 or both above, and 'blue' otherwise. Which single first question helps?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a Gini impurity being computed",
+      "body": "Two a's and a b: how mixed is that? Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def gini(labels):\n    n = len(labels)\n    p = [labels.count(c) / n for c in sorted(set(labels))]\n    return 1 - sum(q * q for q in p)\n\nprint(round(gini(['a', 'b', 'a']), 4))",
+        "frames": [
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "gini": "<function gini>"
+            },
+            "note": "Measure the impurity of the labels a, b, a."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "gini(['a', 'b', 'a'])"
+            ],
+            "locals": {
+              "labels": "['a', 'b', 'a']"
+            },
+            "note": "Three labels in the group."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "gini(['a', 'b', 'a'])"
+            ],
+            "locals": {
+              "labels": "['a', 'b', 'a']",
+              "n": "3"
+            },
+            "note": "The share of each label: a is 2 of 3, b is 1 of 3."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "gini(['a', 'b', 'a'])"
+            ],
+            "locals": {
+              "labels": "['a', 'b', 'a']",
+              "n": "3",
+              "p": "[0.6666666666666666, 0.3333333333333333]"
+            },
+            "note": "1 − (4/9 + 1/9) = 4/9: two random draws differ 4 times in 9."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "gini": "<function gini>"
+            },
+            "note": "Well short of the 0.5 of an even two-label mix, but far from pure.",
+            "output": "0.4444"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Gini impurity** of a non-empty group of labels: `G = 1 − Σₖ pₖ²`, where `pₖ` is the share of label `k`.\n\n**Candidate splits:** for each feature `f`, sort its distinct values; for each neighbouring pair `a < b`\ntry the threshold `t = (a + b) / 2`. Rows with `x[f] <= t` go left, the rest go right. A feature with only\none distinct value offers no split.\n\n**Score:** `(nₗ · G(left) + nᵣ · G(right)) / n`, the impurity of the two sides weighted by size. Choose the\nlowest. Equal scores can differ in their last digits depending on how they were computed, so this lesson\ntreats scores within `1e-9` of each other as equal and keeps the first split found: lowest feature, then\nlowest threshold.\n\n**Growing:** a node becomes a **leaf** predicting its most common label (a tie goes to the label first in\nsorted order) if the depth limit is used up, all its labels are equal, or no split exists. Otherwise it\nsplits on the best split, even if that doesn't lower the impurity, and each side grows with one less\nlevel of depth. To predict, start at the root and follow `x[f] <= t` left, otherwise right, to a leaf.",
+      "cites": [
+        "sk-math",
+        "sk-gini",
+        "sk-classify",
+        "py-seq"
+      ]
+    },
+    {
+      "id": "scan",
+      "kind": "example",
+      "title": "Run it: every threshold on one feature",
+      "body": "Eight examples on one feature, with one `no` among the `yes`s. Each line shows a threshold, the Gini of\neach side and the weighted score. Predict which threshold wins before you run it.",
+      "code": "def gini(labels):\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\nx = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]\ny = ['no', 'no', 'no', 'yes', 'no', 'yes', 'yes', 'yes']\nprint('root', round(gini(y), 3))\n\nbest = None\nfor a, b in zip(x, x[1:]):\n    t = (a + b) / 2\n    left = [l for v, l in zip(x, y) if v <= t]\n    right = [l for v, l in zip(x, y) if v > t]\n    score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n    print(t, round(gini(left), 3), round(gini(right), 3), round(score, 3))\n    if best is None or score < best[1] - 1e-9:\n        best = (t, score)\nprint('best threshold', best[0])\n",
+      "expected_output": "root 0.5\n1.5 0.0 0.49 0.429\n2.5 0.0 0.444 0.333\n3.5 0.0 0.32 0.2\n4.5 0.375 0.375 0.375\n5.5 0.32 0.0 0.2\n6.5 0.444 0.0 0.333\n7.5 0.49 0.0 0.429\nbest threshold 3.5\n"
+    },
+    {
+      "id": "split",
+      "kind": "guided",
+      "title": "Your turn: Gini and the best split",
+      "body": "Complete two functions.\n\n`gini(labels)` returns the Gini impurity of a non-empty list of labels as a float, and raises\n`ValueError` for an empty list.\n\n`best_split(X, y)` takes rows (lists of numbers) and their labels and returns `(feature, threshold,\nscore)` for the best split under the precise rules, including the `1e-9` tie rule; return `None` if no\nfeature has two distinct values. Raise `ValueError` if there are no rows, `X` and `y` differ in length\nor the rows differ in length. Don't change the inputs.",
+      "starter": "def gini(labels):\n    return 0.0\n\n\ndef best_split(X, y):\n    return None\n",
+      "hints": [
+        "`1 - sum((labels.count(c) / n) ** 2 for c in set(labels))` is the whole Gini formula.",
+        "Loop over features, then over `zip(values, values[1:])` of the sorted distinct values; replace the best only when `score < best_score - 1e-9`.",
+        "def gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n"
+      ],
+      "tests": [
+        {
+          "name": "gini values",
+          "code": "for labels, want in ((['a', 'b', 'a'], 4 / 9), (['a', 'a', 'b', 'b'], 0.5), (['x'], 0.0), (['a', 'b', 'c'], 2 / 3), ([1, 1, 1, 2], 0.375), (['a'] * 5, 0.0)):\n    got = gini(labels)\n    assert isinstance(got, float) and abs(got - want) <= 1e-12, f'gini({labels}) should be {want}, got {got!r}'",
+          "concept": "gini-impurity"
+        },
+        {
+          "name": "gini of nothing",
+          "code": "try:\n    gini([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('raise ValueError for an empty list')",
+          "concept": "gini-impurity"
+        },
+        {
+          "name": "the example's best threshold",
+          "code": "got = best_split([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0], [7.0], [8.0]], ['no', 'no', 'no', 'yes', 'no', 'yes', 'yes', 'yes'])\nassert got[:2] == (0, 3.5) and abs(got[2] - 0.2) <= 1e-12, f'3.5 and 5.5 both score 0.2; keep the first; got {got}'",
+          "concept": "gini-impurity"
+        },
+        {
+          "name": "midpoints of distinct values",
+          "code": "got = best_split([[1], [1], [4], [4]], ['a', 'a', 'b', 'b'])\nassert got[:2] == (0, 2.5) and abs(got[2]) <= 1e-12, f'between 1 and 4 the threshold is 2.5; got {got}'\ngot = best_split([[10], [2], [7], [2]], ['b', 'a', 'b', 'a'])\nassert got[:2] == (0, 4.5) and abs(got[2]) <= 1e-12, f'rows in any order: sort the distinct values 2, 7, 10; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "sides weighted by size",
+          "code": "got = best_split([[0], [1], [2], [3], [4], [5]], ['a', 'b', 'a', 'a', 'a', 'a'])\nassert got[:2] == (0, 1.5) and abs(got[2] - 2 * 0.5 / 6) <= 1e-12, f'a 2-row mixed side outweighs nothing: score (2·0.5 + 4·0) / 6; got {got}'",
+          "concept": "gini-impurity"
+        },
+        {
+          "name": "the best feature",
+          "code": "X = [[5, 1, 0], [5, 2, 9], [5, 3, 1], [5, 4, 8]]\ny = ['lo', 'hi', 'lo', 'hi']\ngot = best_split(X, y)\nassert got[:2] == (2, 4.5) and abs(got[2]) <= 1e-12, f'feature 0 never varies, feature 1 mixes, feature 2 separates; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "ties go to the lowest feature, then the lowest threshold",
+          "code": "got = best_split([[1, 1], [2, 2], [3, 3], [4, 4]], ['a', 'a', 'b', 'b'])\nassert got[:2] == (0, 2.5), f'both features split perfectly at 2.5: keep feature 0; got {got}'\ngot = best_split([[0], [1], [2], [3], [4], [5], [6], [7], [8]], ['b', 'c', 'b', 'c', 'c', 'b', 'c', 'c', 'c'])\nassert got[:2] == (0, 0.5) and abs(got[2] - 1 / 3) <= 1e-12, f'0.5, 2.5 and 5.5 all score 1/3 (2.5 a hair lower in floating point): within 1e-9 they tie, so 0.5; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "a split that doesn't help is still a split",
+          "code": "got = best_split([[0, 0], [0, 1], [1, 0], [1, 1]], ['red', 'blue', 'blue', 'red'])\nassert got is not None and got[:2] == (0, 0.5) and abs(got[2] - 0.5) <= 1e-12, f'no single question helps with this pattern, but the best (first) split exists; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "no split possible",
+          "code": "assert best_split([[3, 1], [3, 1], [3, 1]], ['a', 'b', 'a']) is None, 'identical rows offer no threshold'\nassert best_split([[2]], ['a']) is None, 'one row offers no threshold'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "three labels",
+          "code": "got = best_split([[1], [2], [3], [4], [5], [6]], ['a', 'a', 'b', 'b', 'c', 'c'])\nassert got[:2] == (0, 2.5) and abs(got[2] - 1 / 3) <= 1e-12, f'2.5 and 4.5 both leave one pure side of 2 and a 50/50 side of 4; got {got}'",
+          "concept": "gini-impurity"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nX, y = [[3, 1], [1, 2], [2, 2]], ['b', 'a', 'a']\nkeep = copy.deepcopy((X, y))\nbest_split(X, y)\nassert (X, y) == keep, 'do not modify (or sort) the inputs'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, y in (([], []), ([[1]], []), ([[1], [2]], ['a']), ([[1]], ['a', 'b']), ([[1, 2], [3]], ['a', 'b']), ([[1], [2], [3, 4]], ['a', 'b', 'a']), ([[1], [1]], ['a'])):\n    try:\n        best_split(X, y)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X={X}, y={y}')",
+          "concept": "decision-trees"
+        }
+      ],
+      "solution": "def gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n"
+    },
+    {
+      "id": "grow",
+      "kind": "challenge",
+      "title": "Challenge: grow and use a tree",
+      "body": "The starter gives you `gini` and `best_split`. Write `build_tree(X, y, max_depth)`, returning nested\ndictionaries: a leaf is `{'leaf': label}` and a split is `{'feature': f, 'threshold': t, 'left': ...,\n'right': ...}`, grown by the precise rules. Raise `ValueError` if there are no rows, `X` and `y` differ in\nlength, the rows differ in length or `max_depth < 0`, even when `max_depth` is 0.\n\nThen write `predict_tree(tree, X)`, returning the list of predictions for the rows of `X`.",
+      "starter": "def gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    return {'leaf': y[0]}\n\n\ndef predict_tree(tree, X):\n    return [tree['leaf'] for _ in X]\n",
+      "hints": [
+        "Decide first whether this node is a leaf: `max_depth == 0`, one distinct label, or `best_split` returned `None`.",
+        "Otherwise split the row positions by `row[f] <= t` and call `build_tree` on each side with `max_depth - 1`.",
+        "def gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n"
+      ],
+      "tests": [
+        {
+          "name": "one split",
+          "code": "def same(a, b):\n    if 'leaf' in a or 'leaf' in b:\n        return a == b\n    return set(a) == set(b) == {'feature', 'threshold', 'left', 'right'} and a['feature'] == b['feature'] and abs(a['threshold'] - b['threshold']) <= 1e-12 and same(a['left'], b['left']) and same(a['right'], b['right'])\n\ngot = build_tree([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0], [7.0], [8.0]], ['no', 'no', 'no', 'yes', 'no', 'yes', 'yes', 'yes'], 1)\nwant = {'feature': 0, 'threshold': 3.5, 'left': {'leaf': 'no'}, 'right': {'leaf': 'yes'}}\nassert same(got, want), f'got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "deeper trees fit the noise",
+          "code": "def same(a, b):\n    if 'leaf' in a or 'leaf' in b:\n        return a == b\n    return set(a) == set(b) == {'feature', 'threshold', 'left', 'right'} and a['feature'] == b['feature'] and abs(a['threshold'] - b['threshold']) <= 1e-12 and same(a['left'], b['left']) and same(a['right'], b['right'])\n\nX, y = [[1.0], [2.0], [3.0], [4.0], [5.0], [6.0], [7.0], [8.0]], ['no', 'no', 'no', 'yes', 'no', 'yes', 'yes', 'yes']\ngot = build_tree(X, y, 3)\nwant = {'feature': 0, 'threshold': 3.5, 'left': {'leaf': 'no'}, 'right': {'feature': 0, 'threshold': 5.5,\n        'left': {'feature': 0, 'threshold': 4.5, 'left': {'leaf': 'yes'}, 'right': {'leaf': 'no'}}, 'right': {'leaf': 'yes'}}}\nassert same(got, want), f'got {got}'\nassert predict_tree(got, X) == y, 'depth 3 fits every training example'\nassert same(build_tree(X, y, 10), want), 'pure leaves stop growing, whatever the depth limit'",
+          "concept": "tree-depth"
+        },
+        {
+          "name": "depth 0 is a single leaf",
+          "code": "assert build_tree([[1], [2], [3]], ['b', 'a', 'b'], 0) == {'leaf': 'b'}, 'the most common label'\nassert build_tree([[1], [2]], ['b', 'a'], 0) == {'leaf': 'a'}, 'a tie goes to the label first in sorted order'\nassert build_tree([[1], [2], [3], [4]], [10, 2, 2, 10], 0) == {'leaf': 2}, 'numbers sort as numbers'",
+          "concept": "tree-depth"
+        },
+        {
+          "name": "leaves when nothing can split",
+          "code": "assert build_tree([[1], [2], [3]], ['a', 'a', 'a'], 5) == {'leaf': 'a'}, 'a pure node is a leaf'\nassert build_tree([[3], [3], [3]], ['b', 'a', 'b'], 5) == {'leaf': 'b'}, 'identical rows: no split, so a majority leaf'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "splits that don't help at first",
+          "code": "def same(a, b):\n    if 'leaf' in a or 'leaf' in b:\n        return a == b\n    return set(a) == set(b) == {'feature', 'threshold', 'left', 'right'} and a['feature'] == b['feature'] and abs(a['threshold'] - b['threshold']) <= 1e-12 and same(a['left'], b['left']) and same(a['right'], b['right'])\n\nX, y = [[0, 0], [0, 1], [1, 0], [1, 1]], ['red', 'blue', 'blue', 'red']\nassert same(build_tree(X, y, 1), {'feature': 0, 'threshold': 0.5, 'left': {'leaf': 'blue'}, 'right': {'leaf': 'blue'}}), 'depth 1: the split exists even though both sides are 50/50'\nt = build_tree(X, y, 2)\nassert predict_tree(t, X) == y, f'depth 2 gets every point of this pattern right; got {t}'\nassert same(t, {'feature': 0, 'threshold': 0.5, 'left': {'feature': 1, 'threshold': 0.5, 'left': {'leaf': 'red'}, 'right': {'leaf': 'blue'}},\n                'right': {'feature': 1, 'threshold': 0.5, 'left': {'leaf': 'blue'}, 'right': {'leaf': 'red'}}}), f'got {t}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "each side uses only its own rows",
+          "code": "def same(a, b):\n    if 'leaf' in a or 'leaf' in b:\n        return a == b\n    return set(a) == set(b) == {'feature', 'threshold', 'left', 'right'} and a['feature'] == b['feature'] and abs(a['threshold'] - b['threshold']) <= 1e-12 and same(a['left'], b['left']) and same(a['right'], b['right'])\n\nX = [[8, 2], [1, 5], [9, 7], [2, 1], [10, 3], [3, 9]]\ny = ['c', 'a', 'd', 'a', 'c', 'b']\nwant = {'feature': 0, 'threshold': 2.5, 'left': {'leaf': 'a'}, 'right': {'feature': 1, 'threshold': 5.0, 'left': {'leaf': 'c'},\n        'right': {'feature': 0, 'threshold': 6.0, 'left': {'leaf': 'b'}, 'right': {'leaf': 'd'}}}}\ngot = build_tree(X, y, 3)\nassert same(got, want), f'the right side splits its own four rows (labels c, d, c, b); got {got}'\nassert predict_tree(got, X) == y, 'depth 3 fits every row'\ngot = build_tree(X, y, 2)\nassert got['right']['right'] == {'leaf': 'b'}, f'at depth 2 the last pair (d and b) becomes a tie leaf: b; got {got}'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "prediction follows <= to the left",
+          "code": "tree = {'feature': 1, 'threshold': 2.5, 'left': {'leaf': 'L'}, 'right': {'feature': 0, 'threshold': 0.0, 'left': {'leaf': 'RL'}, 'right': {'leaf': 'RR'}}}\ngot = predict_tree(tree, [[9, 2.5], [9, 2.6], [0.0, 3], [-1, 9], [0.1, 3]])\nassert got == ['L', 'RR', 'RL', 'RL', 'RR'], f'equal to the threshold goes left; got {got}'\nassert predict_tree({'leaf': 7}, [[1], [2]]) == [7, 7] and predict_tree(tree, []) == [], 'a single leaf predicts the same for every row'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import copy\nX, y = [[3, 1], [1, 2], [2, 2], [0, 5]], ['b', 'a', 'a', 'b']\nkeep = copy.deepcopy((X, y))\nt = build_tree(X, y, 3)\nkeep_t = copy.deepcopy(t)\npredict_tree(t, X)\nassert (X, y) == keep and t == keep_t, 'do not modify the inputs or the tree'",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "bad input",
+          "code": "for X, y, d in (([], [], 1), ([[1]], [], 1), ([[1], [2]], ['a'], 1), ([[1]], ['a', 'b'], 1), ([[1, 2], [3]], ['a', 'b'], 1), ([[1], [2], [3, 4]], ['a', 'b', 'a'], 1), ([[1]], ['a'], -1), ([[1], [2]], ['a', 'b'], -2)):\n    for depth in sorted({d, 0} if d >= 0 else {d}):\n        try:\n            build_tree(X, y, depth)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(f'raise ValueError for X={X}, y={y}, max_depth={depth}')",
+          "concept": "tree-depth"
+        }
+      ],
+      "solution": "def gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What is the Gini impurity of the labels a, a, b, b?",
+          "choices": [
+            "0.5",
+            "0",
+            "1",
+            "0.25"
+          ],
+          "answer": 0,
+          "explanation": "Each share is 1/2, so 1 − (1/4 + 1/4) = 0.5.",
+          "concept": "gini-impurity"
+        },
+        {
+          "id": "q2",
+          "prompt": "A split leaves 4 pure examples on the left and 4 examples with Gini 0.5 on the right. What is its score?",
+          "choices": [
+            "0.25",
+            "0.5",
+            "0.125",
+            "0"
+          ],
+          "answer": 0,
+          "explanation": "(4 · 0 + 4 · 0.5) / 8 = 0.25: each side counts by its share of the examples.",
+          "concept": "gini-impurity"
+        },
+        {
+          "id": "q3",
+          "prompt": "Why limit max_depth?",
+          "choices": [
+            "An unlimited tree keeps splitting until it fits the noise in its training data",
+            "Deep trees can't be used for prediction",
+            "Gini impurity stops working below depth 3",
+            "To make the tree greedy"
+          ],
+          "answer": 0,
+          "explanation": "Training accuracy keeps climbing with depth; validation accuracy tells you where to stop.",
+          "concept": "tree-depth"
+        },
+        {
+          "id": "q4",
+          "prompt": "You multiply one feature by 1000 in every row and regrow the tree. What happens to its predictions?",
+          "choices": [
+            "Nothing: the same rows fall on each side, only the thresholds scale",
+            "They change completely",
+            "The tree gets deeper",
+            "That feature is ignored"
+          ],
+          "answer": 0,
+          "explanation": "A threshold question only depends on the order of the values, so no scaling is needed.",
+          "concept": "decision-trees"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Compute Gini impurity and score a split by the weighted impurity of its sides.\n- Find the best threshold split, with a stated rule for ties.\n- Grow a tree greedily with a depth limit, and predict by following its questions.\n- Explain why depth is a hyperparameter: deep trees memorise noise, so choose it on validation data."
+    }
+  ]
+}

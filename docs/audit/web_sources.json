@@ -340,6 +340,26 @@
     "basis": "Official Python documentation (PSF licence). Cited for math.exp and math.log, and for OverflowError/ValueError on out-of-range arguments."
    },
    "sha256": "1f356c2ceef5e5f776b6fe6cdad2b51ed0a646b683a6dcbc9774ab978e498365"
+  },
+  {
+   "source_id": "skdocs-15-tree",
+   "title": "scikit-learn 1.5 User Guide: Decision Trees",
+   "short": "scikit-learn 1.5 docs, Decision Trees",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/tree.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-11",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for how a classification tree splits on thresholds, the Gini impurity criterion, and depth limits against overfitting; the lesson does not use scikit-learn."
+   },
+   "sha256": "065ab2b6c609c37c57aaf33cf4afb48701a665038fcc4a107c716e60f72a12d6"
   }
  ]
 }

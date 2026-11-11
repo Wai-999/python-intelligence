@@ -13,6 +13,7 @@ import kmeans from "../content/lessons/ml-kmeans.json" with { type: "json" };
 import normal from "../content/lessons/stats-normal.json" with { type: "json" };
 import knn from "../content/lessons/ml-knn.json" with { type: "json" };
 import logistic from "../content/lessons/ml-logistic.json" with { type: "json" };
+import trees from "../content/lessons/ml-trees.json" with { type: "json" };
 
 // The lessons that combine all five books (and the statistics/ML path built on them): each runs in the browser exactly as the CPython 3.12 gate checked it.
 type L = { steps: { id: string; kind: string; code?: string; expected_output?: string; solution?: string }[] };
@@ -47,6 +48,7 @@ for (const [name, lesson, example, exercises] of [
   ["stats-normal", normal, "heights", ["pdf", "probabilities"]],
   ["ml-knn", knn, "pick", ["knn", "choose"]],
   ["ml-logistic", logistic, "fit", ["probs", "train"]],
+  ["ml-trees", trees, "scan", ["split", "grow"]],
 ] as const) {
   test(`${name}: example output and every exercise solution pass in the browser`, async ({ page }) => {
     test.setTimeout(240_000);

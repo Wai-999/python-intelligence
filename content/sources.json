@@ -664,6 +664,35 @@
     "7": "special-functions",
     "8": "constants"
    }
+  },
+  "skdocs-15-tree": {
+   "title": "scikit-learn 1.5 User Guide: Decision Trees",
+   "short": "scikit-learn 1.5 docs, Decision Trees",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "official_url": "https://scikit-learn.org/1.5/modules/tree.html",
+   "kind": "web",
+   "sha256": "065ab2b6c609c37c57aaf33cf4afb48701a665038fcc4a107c716e60f72a12d6",
+   "page_count": 12,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "decision-trees",
+    "2": "classification",
+    "3": "regression",
+    "4": "multi-output-problems",
+    "5": "complexity",
+    "6": "tips-on-practical-use",
+    "7": "tree-algorithms-id3-c4-5-c5-0-and-cart",
+    "8": "mathematical-formulation",
+    "9": "classification-criteria",
+    "10": "regression-criteria",
+    "11": "missing-values-support",
+    "12": "minimal-cost-complexity-pruning"
+   }
   }
  }
 }
