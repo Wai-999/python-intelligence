@@ -803,6 +803,30 @@
     "1": "floating-point-arithmetic-issues-and-limitations",
     "2": "representation-error"
    }
+  },
+  "skdocs-15-naive-bayes": {
+   "title": "scikit-learn 1.5 User Guide: Naive Bayes",
+   "short": "scikit-learn 1.5 docs, Naive Bayes",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "official_url": "https://scikit-learn.org/1.5/modules/naive_bayes.html",
+   "kind": "web",
+   "sha256": "cf9d916bd44f54a60d01d707cde5e364e5ff145c0614a53a7a551f0888f38aec",
+   "page_count": 7,
+   "page_label_offset": null,
+   "page_label_from": null,
+   "anchors": {
+    "1": "naive-bayes",
+    "2": "gaussian-naive-bayes",
+    "3": "multinomial-naive-bayes",
+    "4": "complement-naive-bayes",
+    "5": "bernoulli-naive-bayes",
+    "6": "categorical-naive-bayes",
+    "7": "out-of-core-naive-bayes-model-fitting"
+   }
   }
  }
 }

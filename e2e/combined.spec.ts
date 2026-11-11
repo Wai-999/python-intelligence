@@ -18,6 +18,7 @@ import life from "../content/lessons/proj-life.json" with { type: "json" };
 import forests from "../content/lessons/ml-forests.json" with { type: "json" };
 import matrices from "../content/lessons/ml-matrices.json" with { type: "json" };
 import derivatives from "../content/lessons/ml-derivatives.json" with { type: "json" };
+import bayes from "../content/lessons/stats-bayes.json" with { type: "json" };
 
 // The lessons that combine all five books (and the statistics/ML path built on them): each runs in the browser exactly as the CPython 3.12 gate checked it.
 type L = { steps: { id: string; kind: string; code?: string; expected_output?: string; solution?: string }[] };
@@ -57,6 +58,7 @@ for (const [name, lesson, example, exercises] of [
   ["ml-forests", forests, "draw", ["sample", "forest"]],
   ["ml-matrices", matrices, "solve-it", ["multiply", "eliminate"]],
   ["ml-derivatives", derivatives, "steps", ["estimate", "verify"]],
+  ["stats-bayes", bayes, "test", ["condition", "classify"]],
 ] as const) {
   test(`${name}: example output and every exercise solution pass in the browser`, async ({ page }) => {
     test.setTimeout(240_000);

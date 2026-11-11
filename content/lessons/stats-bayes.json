@@ -1,0 +1,345 @@
+{
+  "id": "stats-bayes",
+  "title": "Conditional probability and Bayes' rule",
+  "summary": "Compute probabilities given a condition, turn them around with Bayes' rule, and build a small naive Bayes text classifier with add-one smoothing.",
+  "track": "stats",
+  "level": 3,
+  "estimated_minutes": 45,
+  "prerequisites": [
+    "stats-simulation",
+    "py-dicts"
+  ],
+  "concepts": [
+    "conditional-probability",
+    "bayes-rule",
+    "naive-bayes"
+  ],
+  "sources": [
+    {
+      "id": "mml-rules",
+      "source_id": "pch-mml-book",
+      "pages": [
+        189,
+        192
+      ],
+      "section": "6.3 Sum Rule, Product Rule, and Bayes' Theorem",
+      "use": "reference"
+    },
+    {
+      "id": "mml-indep",
+      "source_id": "pch-mml-book",
+      "pages": [
+        199,
+        200
+      ],
+      "section": "6.4 Summary Statistics and Independence",
+      "use": "reference"
+    },
+    {
+      "id": "sk-nb",
+      "source_id": "skdocs-15-naive-bayes",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "1.9. Naive Bayes",
+      "use": "reference"
+    },
+    {
+      "id": "sk-multi",
+      "source_id": "skdocs-15-naive-bayes",
+      "pages": [
+        3,
+        3
+      ],
+      "section": "1.9.2. Multinomial Naive Bayes",
+      "use": "reference"
+    },
+    {
+      "id": "rnd-real",
+      "source_id": "pydocs-312-random",
+      "pages": [
+        7,
+        7
+      ],
+      "section": "Real-valued distributions",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "A positive test",
+      "body": "A test for a rare illness is 99% accurate on people who have it and 95% accurate on people who don't.\nYou test positive. How worried should you be? Most people guess about 95%. The true answer, for an\nillness that 1 person in 100 has, is about 17%. The gap is the difference between \"the chance of a\npositive test if ill\" and \"the chance of being ill if the test is positive\", and Bayes' rule is how to\nget from one to the other."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Shrinking the world to the condition",
+      "body": "A **conditional probability** `P(A | B)` is the chance of `A` among only the cases where `B` happened:\ncross out everything else, then count. Of 10,000 people, 100 are ill and 99 of them test positive; of the\n9,900 who are well, 5% (495) test positive too. Among the 594 positives, only 99 are ill: 1 in 6.\n\n**Bayes' rule** does that bookkeeping in one line: `P(ill | +) = P(+ | ill) · P(ill) / P(+)`, where\n`P(+)` adds up the positives from both groups. The rare base rate, the **prior**, matters as much as the\ntest's accuracy. Events are **independent** if knowing one doesn't change the chance of the other,\n`P(A | B) = P(A)`.\n\n**Naive Bayes** classifies a message by applying the rule to every word at once, *as if* the words were\nindependent given the class. They aren't, which is the \"naive\" part, but the scores often still rank the\nclasses well.",
+      "cites": [
+        "mml-rules",
+        "mml-indep",
+        "sk-nb"
+      ],
+      "socratic": {
+        "questions": [
+          "If the illness were common (half of all people), what would P(ill | positive) be with the same test?",
+          "Why is P(positive | ill) not the same as P(ill | positive)?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a conditional probability being counted",
+      "body": "Four days of weather: how often did it rain when the morning was cloudy? Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def p_given(pairs, a, b):\n    given = [x for x, y in pairs if y == b]\n    return given.count(a) / len(given)\n\nprint(p_given([('rain', 'cloudy'), ('dry', 'cloudy'), ('dry', 'sunny'), ('rain', 'cloudy')], 'rain', 'cloudy'))",
+        "frames": [
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "p_given": "<function p_given>"
+            },
+            "note": "P(rain | cloudy) from four observations."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "p_given([('rain', 'cloudy'), ('dry', 'cloudy'), ('dry', 'sunny'), ('rain', 'cloudy')], 'rain', 'cloudy')"
+            ],
+            "locals": {
+              "pairs": "[('rain', 'cloudy'), ('dry', 'cloudy'), ('dry', 'sunny'), ('rain', 'cloudy')]",
+              "a": "'rain'",
+              "b": "'cloudy'"
+            },
+            "note": "Keep only the cloudy days."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "p_given([('rain', 'cloudy'), ('dry', 'cloudy'), ('dry', 'sunny'), ('rain', 'cloudy')], 'rain', 'cloudy')"
+            ],
+            "locals": {
+              "pairs": "[('rain', 'cloudy'), ('dry', 'cloudy'), ('dry', 'sunny'), ('rain', 'cloudy')]",
+              "a": "'rain'",
+              "b": "'cloudy'",
+              "given": "['rain', 'dry', 'rain']"
+            },
+            "note": "Three cloudy days, and it rained on two."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "p_given": "<function p_given>"
+            },
+            "note": "2 of 3: the sunny day doesn't count at all.",
+            "output": "0.6666666666666666"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Conditional probability:** `P(A | B) = P(A and B) / P(B)`, defined when `P(B) > 0`; from data, count the\ncases with both and divide by the cases with `B`.\n\n**Bayes' rule:** `P(A | B) = P(B | A) · P(A) / P(B)`, with `P(B) = P(B | A) P(A) + P(B | not A) P(not A)` (the\nsum rule). For a test: `P(+ | ill)` is the **sensitivity**, `P(− | well)` the **specificity**, so\n`P(+ | well) = 1 − specificity`.\n\n**Naive Bayes for words:** for each class `c`, the prior `P(c)` is its share of the training documents.\nFor a word `w`, **add-one smoothing** gives `P(w | c) = (count of w in class c + 1) / (words in class c + V)`,\nwhere `V` is the number of distinct training words, so a word never seen in a class doesn't make the\nwhole product 0. A document's score for `c` is `log P(c) + Σ log P(w | c)` over its words (repeats count\neach time; words outside the training vocabulary are skipped). Logs turn a product of many small\nnumbers into a sum that doesn't underflow. Predict the class with the highest score; this lesson treats\nscores within `1e-9` as tied and then chooses the class first in sorted order.",
+      "cites": [
+        "mml-rules",
+        "sk-multi"
+      ]
+    },
+    {
+      "id": "test",
+      "kind": "example",
+      "title": "Run it: the positive test, worked and simulated",
+      "body": "Bayes' rule with a 1% prior, 99% sensitivity and 95% specificity, then 100,000 simulated people as a check.",
+      "code": "import random\n\nprior, sensitivity, specificity = 0.01, 0.99, 0.95\np_positive = sensitivity * prior + (1 - specificity) * (1 - prior)\nprint('P(positive) =', round(p_positive, 4))\nprint('P(ill | positive) =', round(sensitivity * prior / p_positive, 4))\n\nrng = random.Random(7)\npositives = ill_and_positive = 0\nfor _ in range(100_000):\n    ill = rng.random() < prior\n    positive = rng.random() < (sensitivity if ill else 1 - specificity)\n    if positive:\n        positives += 1\n        ill_and_positive += ill\nprint('simulated:', positives, 'positives,', ill_and_positive, 'of them ill:', round(ill_and_positive / positives, 4))\n",
+      "expected_output": "P(positive) = 0.0594\nP(ill | positive) = 0.1667\nsimulated: 5947 positives, 1018 of them ill: 0.1712\n"
+    },
+    {
+      "id": "condition",
+      "kind": "guided",
+      "title": "Your turn: conditioning and Bayes' rule",
+      "body": "Complete two functions.\n\n`posterior(prior, sensitivity, specificity)` returns `P(ill | positive)` by Bayes' rule. Raise\n`ValueError` if any argument is outside `[0, 1]`, or if a positive result is impossible (`P(+) = 0`).\n\n`p_given(pairs, a, b)` takes observations `(x, y)` and returns the fraction of those with `y == b` that\nalso have `x == a`, as a float. Raise `ValueError` if no observation has `y == b`.",
+      "starter": "def posterior(prior, sensitivity, specificity):\n    return sensitivity\n\n\ndef p_given(pairs, a, b):\n    return sum(x == a for x, y in pairs) / len(pairs)\n",
+      "hints": [
+        "`evidence = sensitivity * prior + (1 - specificity) * (1 - prior)`; the answer is `sensitivity * prior / evidence`.",
+        "`given = [x for x, y in pairs if y == b]`, then `given.count(a) / len(given)`.",
+        "def posterior(prior, sensitivity, specificity):\n    if not all(0 <= p <= 1 for p in (prior, sensitivity, specificity)):\n        raise ValueError('probabilities must lie between 0 and 1')\n    evidence = sensitivity * prior + (1 - specificity) * (1 - prior)\n    if evidence == 0:\n        raise ValueError('a positive result is impossible with these numbers')\n    return sensitivity * prior / evidence\n\n\ndef p_given(pairs, a, b):\n    given = [x for x, y in pairs if y == b]\n    if not given:\n        raise ValueError('no observations with that condition')\n    return given.count(a) / len(given)\n"
+      ],
+      "tests": [
+        {
+          "name": "the positive test",
+          "code": "got = posterior(0.01, 0.99, 0.95)\nassert isinstance(got, float) and abs(got - 0.0099 / 0.0594) <= 1e-12, f'99 of the 594 positives are ill: 1/6; got {got!r}'",
+          "concept": "bayes-rule"
+        },
+        {
+          "name": "the prior matters",
+          "code": "for prior, sens, spec in ((0.5, 0.99, 0.95), (0.001, 0.99, 0.95), (0.2, 0.8, 0.9), (0.3, 0.6, 0.7)):\n    want = sens * prior / (sens * prior + (1 - spec) * (1 - prior))\n    got = posterior(prior, sens, spec)\n    assert abs(got - want) <= 1e-12, f'prior={prior}, sensitivity={sens}, specificity={spec}: {want}; got {got}'\nassert posterior(0.5, 0.99, 0.95) > 0.95 > posterior(0.01, 0.99, 0.95), 'the same test means much more when the illness is common'",
+          "concept": "bayes-rule"
+        },
+        {
+          "name": "edge cases",
+          "code": "assert posterior(1, 0.7, 0.2) == 1.0, 'if everyone is ill, a positive person is ill'\nassert posterior(0, 0.9, 0.5) == 0.0, 'if nobody is ill, nobody positive is'\nassert posterior(0.3, 0.8, 1) == 1.0, 'with perfect specificity there are no false positives'\nassert posterior(0.4, 0, 0.5) == 0.0",
+          "concept": "bayes-rule"
+        },
+        {
+          "name": "conditioning on data",
+          "code": "pairs = [('rain', 'cloudy'), ('dry', 'cloudy'), ('dry', 'sunny'), ('rain', 'cloudy')]\nassert p_given(pairs, 'rain', 'cloudy') == 2 / 3\nassert p_given(pairs, 'rain', 'sunny') == 0.0 and p_given(pairs, 'dry', 'sunny') == 1.0\ngot = p_given([(1, 'x'), (2, 'y'), (1, 'y'), (1, 'y'), (3, 'y')], 1, 'y')\nassert isinstance(got, float) and got == 0.5, f'2 of the 4 with y == \"y\"; got {got!r}'",
+          "concept": "conditional-probability"
+        },
+        {
+          "name": "independence",
+          "code": "pairs = [(a, b) for a in ('h', 't') for b in (1, 2, 3)] * 2\nassert p_given(pairs, 'h', 2) == 0.5, 'a coin and a die: knowing the die says nothing about the coin'",
+          "concept": "conditional-probability"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "pairs = [('a', 1), ('b', 1)]\nkeep = list(pairs)\np_given(pairs, 'a', 1)\nassert pairs == keep",
+          "concept": "conditional-probability"
+        },
+        {
+          "name": "bad input",
+          "code": "for args in ((-0.1, 0.9, 0.9), (1.1, 0.9, 0.9), (0.5, 1.5, 0.9), (0.5, 0.9, -0.2), (0, 0.9, 1), (0.5, 0, 1)):\n    try:\n        posterior(*args)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for posterior{args}')\nfor pairs in ([], [('a', 2)]):\n    try:\n        p_given(pairs, 'a', 1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError when nothing has y == 1: {pairs}')",
+          "concept": "conditional-probability"
+        }
+      ],
+      "solution": "def posterior(prior, sensitivity, specificity):\n    if not all(0 <= p <= 1 for p in (prior, sensitivity, specificity)):\n        raise ValueError('probabilities must lie between 0 and 1')\n    evidence = sensitivity * prior + (1 - specificity) * (1 - prior)\n    if evidence == 0:\n        raise ValueError('a positive result is impossible with these numbers')\n    return sensitivity * prior / evidence\n\n\ndef p_given(pairs, a, b):\n    given = [x for x, y in pairs if y == b]\n    if not given:\n        raise ValueError('no observations with that condition')\n    return given.count(a) / len(given)\n"
+    },
+    {
+      "id": "classify",
+      "kind": "challenge",
+      "title": "Challenge: a naive Bayes spam filter",
+      "body": "Write three functions by the precise rules. `fit_nb(docs, labels)` learns from documents (each a list of\nwords) and their labels and returns a model in any form you like; raise `ValueError` if there are no\ndocuments or `docs` and `labels` differ in length. `nb_scores(model, doc)` returns a dictionary from each\nclass to its log score for `doc`. `predict_nb(model, doc)` returns the best class, with the lesson's tie\nrule. Don't change the inputs.",
+      "starter": "import math\n\n\ndef fit_nb(docs, labels):\n    return {'labels': labels}\n\n\ndef nb_scores(model, doc):\n    return {c: 0.0 for c in set(model['labels'])}\n\n\ndef predict_nb(model, doc):\n    return sorted(set(model['labels']))[0]\n",
+      "hints": [
+        "Store the vocabulary, each class's prior, its word counts and its total number of words.",
+        "Score with `math.log(prior)` plus `math.log((count + 1) / (total + V))` for every known word in the document.",
+        "import math\n\n\ndef fit_nb(docs, labels):\n    if not docs or len(docs) != len(labels):\n        raise ValueError('need documents, one label each')\n    vocab = {w for doc in docs for w in doc}\n    model = {'vocab': vocab, 'classes': {}}\n    for c in sorted(set(labels)):\n        words = [w for doc, l in zip(docs, labels) if l == c for w in doc]\n        model['classes'][c] = {'prior': labels.count(c) / len(labels), 'counts': {w: words.count(w) for w in vocab}, 'total': len(words)}\n    return model\n\n\ndef nb_scores(model, doc):\n    scores = {}\n    V = len(model['vocab'])\n    for c, info in model['classes'].items():\n        s = math.log(info['prior'])\n        for w in doc:\n            if w in model['vocab']:\n                s += math.log((info['counts'][w] + 1) / (info['total'] + V))\n        scores[c] = s\n    return scores\n\n\ndef predict_nb(model, doc):\n    scores = nb_scores(model, doc)\n    best = None\n    for c in sorted(scores):\n        if best is None or scores[c] > scores[best] + 1e-9:\n            best = c\n    return best\n"
+      ],
+      "tests": [
+        {
+          "name": "scores with add-one smoothing",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nm = fit_nb(docs, labels)\nfor doc in (['win', 'money'], ['lunch', 'at', 'noon'], ['money'], ['win', 'win', 'win', 'lunch']):\n    got, want = nb_scores(m, doc), ref(docs, labels, doc)\n    assert same(got, want), f'{doc}: expected {want}, got {got}'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "predictions",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nm = fit_nb(docs, labels)\nassert predict_nb(m, ['win', 'money']) == 'spam'\nassert predict_nb(m, ['lunch', 'at', 'noon']) == 'ham'\nassert predict_nb(m, ['money', 'prize']) == 'spam'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "a word unseen in one class",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nm = fit_nb(docs, labels)\ngot = nb_scores(m, ['prize'])\nassert all(math.isfinite(v) for v in got.values()), f'prize never appears in ham, but smoothing keeps its score finite; got {got}'\nassert abs(got['ham'] - (math.log(3 / 5) + math.log(1 / (9 + 10)))) <= 1e-9, f'ham: (0 + 1) / (9 ham words + 10 distinct words); got {got}'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "unknown words are skipped, repeats count",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nm = fit_nb(docs, labels)\nassert same(nb_scores(m, ['zebra', 'unicorn']), {'spam': math.log(2 / 5), 'ham': math.log(3 / 5)}), 'words outside the vocabulary change nothing'\nassert predict_nb(m, []) == 'ham', 'an empty message falls back on the priors'\none, two = nb_scores(m, ['money']), nb_scores(m, ['money', 'money'])\nassert abs((two['spam'] - one['spam']) - (one['spam'] - math.log(2 / 5))) <= 1e-9, 'a repeated word counts every time'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "ties go to the first class in sorted order",
+          "code": "m = fit_nb([['a'], ['b']], ['y', 'x'])\nassert predict_nb(m, ['zzz']) == 'x', 'equal priors, nothing known: x sorts first'\nm = fit_nb([['a', 'b'], ['b', 'a']], [2, 10])\nassert predict_nb(m, ['a']) == 2, 'numbers sort as numbers'\nm = fit_nb([['s', 's'], ['r', 'r']], ['beta', 'alpha'])\nassert predict_nb(m, ['p', 'q', 'r', 's']) == 'alpha', 'the two scores are equal in exact arithmetic but can differ in the last digit: within 1e-9 they tie, so alpha'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "more than two classes",
+          "code": "docs = [['goal', 'match'], ['vote', 'law'], ['film', 'actor'], ['goal', 'team'], ['law', 'court']]\nlabels = ['sport', 'politics', 'arts', 'sport', 'politics']\nm = fit_nb(docs, labels)\nassert set(nb_scores(m, ['goal'])) == {'sport', 'politics', 'arts'}\nassert [predict_nb(m, d) for d in (['goal'], ['court'], ['actor', 'film'])] == ['sport', 'politics', 'arts']",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "inputs are not changed",
+          "code": "import math\ndocs = [['win', 'money', 'now'], ['win', 'a', 'prize'], ['lunch', 'at', 'noon'], ['money', 'for', 'lunch'], ['meeting', 'at', 'noon']]\nlabels = ['spam', 'spam', 'ham', 'ham', 'ham']\n\ndef ref(docs, labels, doc):\n    vocab = {w for d in docs for w in d}\n    out = {}\n    for c in set(labels):\n        words = [w for d, l in zip(docs, labels) if l == c for w in d]\n        s = math.log(labels.count(c) / len(labels))\n        for w in doc:\n            if w in vocab:\n                s += math.log((words.count(w) + 1) / (len(words) + len(vocab)))\n        out[c] = s\n    return out\n\ndef same(got, want):\n    return set(got) == set(want) and all(abs(got[c] - want[c]) <= 1e-9 for c in want)\n\nimport copy\nkeep = copy.deepcopy((docs, labels))\nm = fit_nb(docs, labels)\ndoc = ['win', 'lunch']\nnb_scores(m, doc)\npredict_nb(m, doc)\nassert (docs, labels) == keep and doc == ['win', 'lunch'], 'do not change the inputs'",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "bad input",
+          "code": "for docs, labels in (([], []), ([['a']], []), ([['a'], ['b']], ['x']), ([['a']], ['x', 'y'])):\n    try:\n        fit_nb(docs, labels)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for docs={docs}, labels={labels}')",
+          "concept": "naive-bayes"
+        }
+      ],
+      "solution": "import math\n\n\ndef fit_nb(docs, labels):\n    if not docs or len(docs) != len(labels):\n        raise ValueError('need documents, one label each')\n    vocab = {w for doc in docs for w in doc}\n    model = {'vocab': vocab, 'classes': {}}\n    for c in sorted(set(labels)):\n        words = [w for doc, l in zip(docs, labels) if l == c for w in doc]\n        model['classes'][c] = {'prior': labels.count(c) / len(labels), 'counts': {w: words.count(w) for w in vocab}, 'total': len(words)}\n    return model\n\n\ndef nb_scores(model, doc):\n    scores = {}\n    V = len(model['vocab'])\n    for c, info in model['classes'].items():\n        s = math.log(info['prior'])\n        for w in doc:\n            if w in model['vocab']:\n                s += math.log((info['counts'][w] + 1) / (info['total'] + V))\n        scores[c] = s\n    return scores\n\n\ndef predict_nb(model, doc):\n    scores = nb_scores(model, doc)\n    best = None\n    for c in sorted(scores):\n        if best is None or scores[c] > scores[best] + 1e-9:\n            best = c\n    return best\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Of 20 cloudy days it rained on 8, and of 30 sunny days on 3. What is P(rain | cloudy)?",
+          "choices": [
+            "0.4",
+            "0.22",
+            "0.16",
+            "8"
+          ],
+          "answer": 0,
+          "explanation": "Only the 20 cloudy days count: 8 / 20.",
+          "concept": "conditional-probability"
+        },
+        {
+          "id": "q2",
+          "prompt": "A test is 99% sensitive and 95% specific; 1 person in 100 is ill. Roughly what is P(ill | positive)?",
+          "choices": [
+            "About 17%",
+            "About 99%",
+            "About 95%",
+            "About 1%"
+          ],
+          "answer": 0,
+          "explanation": "The many healthy people produce more false positives (495 in 10,000) than the few ill people produce true ones (99).",
+          "concept": "bayes-rule"
+        },
+        {
+          "id": "q3",
+          "prompt": "Why does naive Bayes add 1 to every word count?",
+          "choices": [
+            "So a word never seen in a class doesn't make that class's probability 0",
+            "To make the counts even",
+            "To include unknown words in the vocabulary",
+            "Because log(0) is 1"
+          ],
+          "answer": 0,
+          "explanation": "Without smoothing a single unseen word would rule a class out entirely.",
+          "concept": "naive-bayes"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why add log probabilities instead of multiplying probabilities?",
+          "choices": [
+            "A product of many small numbers underflows to 0; the sum of logs doesn't",
+            "Logs are always positive",
+            "It makes the words independent",
+            "Multiplication is slower than addition"
+          ],
+          "answer": 0,
+          "explanation": "The ranking is the same, because log is increasing, and the numbers stay usable.",
+          "concept": "naive-bayes"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Compute a conditional probability by restricting to the condition and counting.\n- Turn `P(B | A)` into `P(A | B)` with Bayes' rule, and explain why the prior matters.\n- Build a naive Bayes classifier with add-one smoothing and log scores.\n- Say what \"naive\" assumes, and why the classifier works anyway."
+    }
+  ]
+}
