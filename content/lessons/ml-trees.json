@@ -195,7 +195,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Gini impurity** of a non-empty group of labels: `G = 1 − Σₖ pₖ²`, where `pₖ` is the share of label `k`.\n\n**Candidate splits:** for each feature `f`, sort its distinct values; for each neighbouring pair `a < b`\ntry the threshold `t = (a + b) / 2`. Rows with `x[f] <= t` go left, the rest go right. A feature with only\none distinct value offers no split.\n\n**Score:** `(nₗ · G(left) + nᵣ · G(right)) / n`, the impurity of the two sides weighted by size. Choose the\nlowest. Equal scores can differ in their last digits depending on how they were computed, so this lesson\ntreats scores within `1e-9` of each other as equal and keeps the first split found: lowest feature, then\nlowest threshold.\n\n**Growing:** a node becomes a **leaf** predicting its most common label (a tie goes to the label first in\nsorted order) if the depth limit is used up, all its labels are equal, or no split exists. Otherwise it\nsplits on the best split, even if that doesn't lower the impurity, and each side grows with one less\nlevel of depth. To predict, start at the root and follow `x[f] <= t` left, otherwise right, to a leaf.",
+      "body": "**Gini impurity** of a non-empty group of labels: `G = 1 − Σₖ pₖ²`, where `pₖ` is the share of label `k`.\n\n**Candidate splits:** for each feature `f`, sort its distinct values; for each neighbouring pair `a < b`\ntry the threshold `t = (a + b) / 2`. Rows with `x[f] <= t` go left, the rest go right. A feature with only\none distinct value offers no split. (This lesson assumes everyday numbers. Near the float limits, around\n`1e308`, `a + b` can overflow, and for two floats that differ only in their last binary digit the midpoint\ncan round onto `b`, leaving one side empty.)\n\n**Score:** `(nₗ · G(left) + nᵣ · G(right)) / n`, the impurity of the two sides weighted by size. Choose the\nlowest. Equal scores can differ in their last digits depending on how they were computed, so this lesson\ntreats scores within `1e-9` of each other as equal and keeps the first split found: lowest feature, then\nlowest threshold.\n\n**Growing:** a node becomes a **leaf** predicting its most common label (a tie goes to the label first in\nsorted order) if the depth limit is used up, all its labels are equal, or no split exists. Otherwise it\nsplits on the best split, even if that doesn't lower the impurity, and each side grows with one less\nlevel of depth. To predict, start at the root and follow `x[f] <= t` left, otherwise right, to a leaf.",
       "cites": [
         "sk-math",
         "sk-gini",
@@ -215,7 +215,7 @@
       "id": "split",
       "kind": "guided",
       "title": "Your turn: Gini and the best split",
-      "body": "Complete two functions.\n\n`gini(labels)` returns the Gini impurity of a non-empty list of labels as a float, and raises\n`ValueError` for an empty list.\n\n`best_split(X, y)` takes rows (lists of numbers) and their labels and returns `(feature, threshold,\nscore)` for the best split under the precise rules, including the `1e-9` tie rule; return `None` if no\nfeature has two distinct values. Raise `ValueError` if there are no rows, `X` and `y` differ in length\nor the rows differ in length. Don't change the inputs.",
+      "body": "Complete two functions.\n\n`gini(labels)` returns the Gini impurity of a non-empty list of labels as a float, and raises\n`ValueError` for an empty list.\n\n`best_split(X, y)` takes rows (lists of numbers) and their labels and returns `(feature, threshold,\nscore)` for the best split under the precise rules, including the `1e-9` tie rule; return `None` if no\nfeature has two distinct values. Raise `ValueError` if there are no rows, `X` and `y` differ in length\nor the rows differ in length. Don't change the inputs. You may assume every midpoint lies strictly between\nits two values (everyday numbers, as in the rules).",
       "starter": "def gini(labels):\n    return 0.0\n\n\ndef best_split(X, y):\n    return None\n",
       "hints": [
         "`1 - sum((labels.count(c) / n) ** 2 for c in set(labels))` is the whole Gini formula.",
@@ -316,6 +316,11 @@
         {
           "name": "deeper trees fit the noise",
           "code": "def same(a, b):\n    if 'leaf' in a or 'leaf' in b:\n        return a == b\n    return set(a) == set(b) == {'feature', 'threshold', 'left', 'right'} and a['feature'] == b['feature'] and abs(a['threshold'] - b['threshold']) <= 1e-12 and same(a['left'], b['left']) and same(a['right'], b['right'])\n\nX, y = [[1.0], [2.0], [3.0], [4.0], [5.0], [6.0], [7.0], [8.0]], ['no', 'no', 'no', 'yes', 'no', 'yes', 'yes', 'yes']\ngot = build_tree(X, y, 3)\nwant = {'feature': 0, 'threshold': 3.5, 'left': {'leaf': 'no'}, 'right': {'feature': 0, 'threshold': 5.5,\n        'left': {'feature': 0, 'threshold': 4.5, 'left': {'leaf': 'yes'}, 'right': {'leaf': 'no'}}, 'right': {'leaf': 'yes'}}}\nassert same(got, want), f'got {got}'\nassert predict_tree(got, X) == y, 'depth 3 fits every training example'\nassert same(build_tree(X, y, 10), want), 'pure leaves stop growing, whatever the depth limit'",
+          "concept": "tree-depth"
+        },
+        {
+          "name": "as deep as it needs, and no deeper than allowed",
+          "code": "X = [[i] for i in range(9)]\ny = ['a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a']\ndef depth(t):\n    return 0 if 'leaf' in t else 1 + max(depth(t['left']), depth(t['right']))\nfor limit, d, fits in ((20, 8, True), (8, 8, True), (7, 7, False), (4, 4, False)):\n    t = build_tree(X, y, limit)\n    assert depth(t) == d and (predict_tree(t, X) == y) == fits, f'alternating labels: the greedy tree peels off one point per level and needs depth 8; with max_depth={limit} expected depth {d}, got {depth(t)}'",
           "concept": "tree-depth"
         },
         {
