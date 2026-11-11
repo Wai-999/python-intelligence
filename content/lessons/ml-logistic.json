@@ -352,7 +352,7 @@
         },
         {
           "name": "bad input",
-          "code": "for args in (([], []), ([[1]], []), ([[1], [2]], [1]), ([[1]], [1, 0]), ([[1, 2], [3]], [0, 1]), ([[1], [2, 3]], [0, 1]), ([[1], [2], [3, 4]], [0, 1, 0]), ([[1], [2]], [0, 2]), ([[1], [2]], [-1, 1]), ([[1], [2]], [0, 0.5])):\n    try:\n        fit_logistic(*args, lr=0.1, steps=1)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for X, y = {args}')\nfor lr, steps in ((0, 1), (-0.1, 1), (0.1, -1), (0, 0), (0.1, -5)):\n    try:\n        fit_logistic([[1], [2]], [0, 1], lr=lr, steps=steps)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for lr={lr}, steps={steps}')",
+          "code": "for args in (([], []), ([[1]], []), ([[1], [2]], [1]), ([[1]], [1, 0]), ([[1, 2], [3]], [0, 1]), ([[1], [2, 3]], [0, 1]), ([[1], [2], [3, 4]], [0, 1, 0]), ([[1], [2]], [0, 2]), ([[1], [2]], [-1, 1]), ([[1], [2]], [0, 0.5])):\n    for steps in (0, 1):\n        try:\n            fit_logistic(*args, lr=0.1, steps=steps)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(f'raise ValueError for X, y = {args}, even with steps={steps}')\nfor lr, steps in ((0, 1), (-0.1, 1), (0.1, -1), (0, 0), (0.1, -5)):\n    try:\n        fit_logistic([[1], [2]], [0, 1], lr=lr, steps=steps)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'raise ValueError for lr={lr}, steps={steps}')",
           "concept": "logistic-regression"
         }
       ],
