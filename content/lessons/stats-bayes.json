@@ -2,7 +2,7 @@
   "id": "stats-bayes",
   "title": "Conditional probability and Bayes' rule",
   "summary": "Compute probabilities given a condition, turn them around with Bayes' rule, and build a small naive Bayes text classifier with add-one smoothing.",
-  "track": "stats",
+  "track": "statistics",
   "level": 3,
   "estimated_minutes": 45,
   "prerequisites": [
@@ -155,10 +155,11 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Conditional probability:** `P(A | B) = P(A and B) / P(B)`, defined when `P(B) > 0`; from data, count the\ncases with both and divide by the cases with `B`.\n\n**Bayes' rule:** `P(A | B) = P(B | A) · P(A) / P(B)`, with `P(B) = P(B | A) P(A) + P(B | not A) P(not A)` (the\nsum rule). For a test: `P(+ | ill)` is the **sensitivity**, `P(− | well)` the **specificity**, so\n`P(+ | well) = 1 − specificity`.\n\n**Naive Bayes for words:** for each class `c`, the prior `P(c)` is its share of the training documents.\nFor a word `w`, **add-one smoothing** gives `P(w | c) = (count of w in class c + 1) / (words in class c + V)`,\nwhere `V` is the number of distinct training words, so a word never seen in a class doesn't make the\nwhole product 0. A document's score for `c` is `log P(c) + Σ log P(w | c)` over its words (repeats count\neach time; words outside the training vocabulary are skipped). Logs turn a product of many small\nnumbers into a sum that doesn't underflow. Predict the class with the highest score; this lesson treats\nscores within `1e-9` as tied and then chooses the class first in sorted order.",
+      "body": "**Conditional probability:** `P(A | B) = P(A and B) / P(B)`, defined when `P(B) > 0`; from data, count the\ncases with both and divide by the cases with `B`.\n\n**Bayes' rule:** `P(A | B) = P(B | A) · P(A) / P(B)`, with `P(B) = P(B | A) P(A) + P(B | not A) P(not A)` (the\nsum rule). For a test: `P(+ | ill)` is the **sensitivity**, `P(− | well)` the **specificity**, so\n`P(+ | well) = 1 − specificity`.\n\n**Checking by simulation:** `rng.random()` is uniform on `[0, 1)`, so `rng.random() < p` is true with\nprobability `p`; repeating a seeded experiment many times and counting estimates any of these probabilities.\n\n**Naive Bayes for words:** for each class `c`, the prior `P(c)` is its share of the training documents.\nFor a word `w`, **add-one smoothing** gives `P(w | c) = (count of w in class c + 1) / (words in class c + V)`,\nwhere `V` is the number of distinct training words, so a word never seen in a class doesn't make the\nwhole product 0. A document's score for `c` is `log P(c) + Σ log P(w | c)` over its words (repeats count\neach time; words outside the training vocabulary are skipped). Logs turn a product of many small\nnumbers into a sum that doesn't underflow. Predict the class with the highest score; this lesson treats\nscores within `1e-9` as tied and then chooses the class first in sorted order.",
       "cites": [
         "mml-rules",
-        "sk-multi"
+        "sk-multi",
+        "rnd-real"
       ]
     },
     {
