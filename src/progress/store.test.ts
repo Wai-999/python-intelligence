@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { openProgressStore, ValidationError } from "./store";
 import { ImportError, type LessonProgress } from "./types";
+import { POLICY_VERSION, type LearnerEvent } from "../learner/model";
 
 const lesson: LessonProgress = {
   lessonId: "functions", steps: { exercise: { passed: true, attempts: 2, score: 1, updatedAt: "2026-01-01T00:00:00.000Z" } },
@@ -182,7 +183,7 @@ describe("IndexedDB progress store", () => {
     const store = await open(name);
     await seed(store);
     const upgraded = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(name, 2);
+      const request = indexedDB.open(name, 3);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
@@ -201,7 +202,7 @@ describe("IndexedDB progress store", () => {
     try {
       const store = await open();
       await seed(store);
-      expect(spy.mock.calls[0]![1]).toBe(1);
+      expect(spy.mock.calls[0]![1]).toBe(2);
       const connection = spy.mock.results[0]!.value.result as IDBDatabase;
       connection.close();
       connection.onclose!(new Event("close"));
@@ -258,5 +259,77 @@ describe("IndexedDB progress store", () => {
     store.close();
     await expect(store.allLessons()).rejects.toThrow();
     await expect(store.putLesson(lesson)).rejects.toThrow();
+  });
+});
+
+describe("learner event log", () => {
+  const event = (id: string, at = "2026-01-05T09:00:00.000Z", passed = true): LearnerEvent =>
+    ({ id, at, lessonId: "functions", stepId: "exercise", task: "exercise", concept: "calls", passed, assistance: 0, policy: POLICY_VERSION });
+
+  it("appends, reads back in replay order, and treats an identical repeat as a no-op", async () => {
+    const store = await open();
+    await store.appendEvents([event("b", "2026-01-06T09:00:00.000Z"), event("a")]);
+    await store.appendEvents([event("a")]);
+    expect((await store.allEvents()).map((e) => e.id)).toEqual(["a", "b"]);
+  });
+
+  it("rejects a different event that reuses an id, and invalid events, leaving the log unchanged", async () => {
+    const store = await open();
+    await store.appendEvents([event("a")]);
+    await expect(store.appendEvents([event("a", undefined, false)])).rejects.toThrow("already used");
+    await expect(store.appendEvents([{ ...event("c"), at: "yesterday" }])).rejects.toThrow(ValidationError);
+    await expect(store.appendEvents([event("d"), { ...event("d"), passed: false }])).rejects.toThrow(ValidationError);
+    expect((await store.allEvents()).map((e) => e.id)).toEqual(["a"]);
+  });
+
+  it("exports, clears and imports events with the rest of the progress", async () => {
+    const store = await open();
+    await seed(store);
+    await store.appendEvents([event("a"), event("b", "2026-01-07T00:00:00+02:00")]);
+    const saved = JSON.parse(JSON.stringify(await store.exportAll()));
+    expect(saved.version).toBe(2);
+    expect(saved.events.map((e: LearnerEvent) => e.id)).toEqual(["a", "b"]);
+    await store.clear();
+    expect(await store.allEvents()).toEqual([]);
+    await store.importAll(saved);
+    expect(contents(await store.exportAll())).toEqual(contents(saved));
+    await expect(store.importAll({ ...saved, events: [{ ...saved.events[0], assistance: 9 }] })).rejects.toBeInstanceOf(ImportError);
+    await expect(store.importAll({ ...saved, events: "none" })).rejects.toBeInstanceOf(ImportError);
+    expect(contents(await store.exportAll())).toEqual(contents(saved));
+  });
+
+  it("still imports version 1 files, which have no events", async () => {
+    const store = await open();
+    await seed(store);
+    const v2 = JSON.parse(JSON.stringify(await store.exportAll()));
+    const { events: _, ...rest } = v2;
+    await store.appendEvents([event("old")]);
+    await store.importAll({ ...rest, version: 1 });
+    expect(await store.allEvents()).toEqual([]);
+    expect(await store.allLessons()).toEqual([lesson]);
+    await expect(store.importAll({ ...rest, version: 1, events: [] })).rejects.toBeInstanceOf(ImportError);
+  });
+
+  it("upgrades a version 1 database in place, keeping its progress", async () => {
+    const name = `upgrade-${Date.now()}-${serial++}`;
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open(name, 1);
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore("lessons", { keyPath: "lessonId" });
+        request.result.createObjectStore("drafts");
+        request.result.createObjectStore("meta");
+      };
+      request.onsuccess = () => {
+        const tx = request.result.transaction(["lessons"], "readwrite");
+        tx.objectStore("lessons").put(lesson);
+        tx.oncomplete = () => { request.result.close(); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      };
+      request.onerror = () => reject(request.error);
+    });
+    const store = await open(name);
+    expect(await store.allLessons()).toEqual([lesson]);
+    await store.appendEvents([event("a")]);
+    expect((await store.allEvents()).length).toBe(1);
   });
 });

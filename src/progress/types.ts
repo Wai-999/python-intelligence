@@ -1,7 +1,10 @@
 /** Learner progress model persisted in IndexedDB. No cross-device sync: export/import only. */
+import type { LearnerEvent } from "../learner/model";
 
 export const EXPORT_FORMAT = "python-intelligence-progress";
-export const EXPORT_VERSION = 1;
+/** Version 2 adds the learner event log; version 1 files still import (with no events). */
+export const EXPORT_VERSION = 2;
+export const IMPORTABLE_VERSIONS = [1, 2] as const;
 
 export interface StepResult {
   /** Exercise: all tests passed. Quiz: score >= pass_mark. Prose/example steps: viewed. */
@@ -40,6 +43,8 @@ export interface ProgressExport {
   /** Keyed by `${lessonId}:${stepId}`. */
   drafts: Record<string, string>;
   position: Position | null;
+  /** Append-only learner event log (src/learner/model.ts). */
+  events: LearnerEvent[];
 }
 
 export interface ProgressStore {
@@ -50,6 +55,9 @@ export interface ProgressStore {
   putDraft(lessonId: string, stepId: string, code: string): Promise<void>;
   getPosition(): Promise<Position | null>;
   setPosition(lessonId: string, stepIndex: number): Promise<void>;
+  /** Validates, then stores; re-adding an identical event is a no-op, a different event with a used id is rejected. */
+  appendEvents(events: LearnerEvent[]): Promise<void>;
+  allEvents(): Promise<LearnerEvent[]>;
   exportAll(): Promise<ProgressExport>;
   /** Validates fully BEFORE writing; on invalid input throws ImportError and leaves the store unchanged. */
   importAll(data: unknown): Promise<void>;

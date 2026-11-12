@@ -3,6 +3,10 @@ import { CurriculumMap } from "./components/CurriculumMap";
 import { LessonView } from "./components/LessonView";
 import { Library } from "./components/Library";
 import { ProgressPanel } from "./components/ProgressPanel";
+import { ReviewView } from "./components/ReviewView";
+import { buildModel, dueReviews, type LearnerEvent } from "./learner/model";
+import { exerciseEvents, quizEvents, reviewEvent, type Stamp } from "./learner/record";
+import { isExercise } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
 import { getRunner } from "./py/runner";
@@ -13,7 +17,10 @@ import type { LessonProgress, ProgressStore } from "./progress/types";
 
 const graph = buildGraph(LESSONS);
 
-type Route = { view: "home" } | { view: "library" } | { view: "lesson"; lessonId: string; step: number };
+type Route = { view: "home" } | { view: "library" } | { view: "review" } | { view: "lesson"; lessonId: string; step: number };
+
+const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+const stampNow = (): Stamp => ({ at: new Date().toISOString(), id: newId });
 
 function parseHash(h: string): Route {
   const m = /^#\/lesson\/([\w-]+)(?:\/(\d+))?/.exec(h);
@@ -22,6 +29,7 @@ function parseHash(h: string): Route {
     return { view: "lesson", lessonId: m[1]!, step: Math.min(max, Number(m[2] ?? 0)) };
   }
   if (/^#\/library\/?$/.test(h)) return { view: "library" };
+  if (/^#\/review\/?$/.test(h)) return { view: "review" };
   return { view: "home" };
 }
 
@@ -33,6 +41,7 @@ export function App() {
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
   const [panel, setPanel] = useState(false);
   const [ready, setReady] = useState(false);
+  const [events, setEvents] = useState<LearnerEvent[]>([]);
 
   const reload = useCallback(async (s: ProgressStore) => {
     const all = await s.allLessons();
@@ -44,6 +53,7 @@ export function App() {
       (d[lid] ??= {})[sid] = v;
     }
     setDrafts(d);
+    setEvents(exp.events);
     return exp.position;
   }, []);
 
@@ -81,6 +91,16 @@ export function App() {
       void waitForController().then(() => getRunner().warm()).catch(() => {});
   }, [route, store]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Learner events: kept in memory for the model and appended to IndexedDB (the store validates them).
+  const record = useCallback((evs: LearnerEvent[]) => {
+    if (evs.length === 0) return;
+    setEvents((prev) => [...prev, ...evs]);
+    void store?.appendEvents(evs).catch((e) => setStoreError(String(e?.message ?? e)));
+  }, [store]);
+  const now = new Date().toISOString();
+  const model = useMemo(() => buildModel(LESSONS, events), [events]);
+  const dueCount = dueReviews(model, now).length;
+
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };
   const current = route.view === "lesson" ? route.lessonId : undefined;
   const rec = useMemo(() => recommendNext(graph, progress, current), [progress, current]);
@@ -94,6 +114,9 @@ export function App() {
         <a className="brand" href="#/"><span className="logo" aria-hidden="true">py</span> Python Intelligence</a>
         <div className="top-right">
           <a className="btn ghost" href="#/library" aria-current={route.view === "library" ? "page" : undefined}>Library</a>
+          <a className="btn ghost" href="#/review" aria-current={route.view === "review" ? "page" : undefined}>
+            Review{dueCount > 0 && <> <span className="badge" aria-label={`${dueCount} due`}>{dueCount}</span></>}
+          </a>
           <span className="overall" aria-label={`${completed} of ${LESSONS.length} lessons completed`}>
             <span className="bar"><span style={{ width: `${(completed / LESSONS.length) * 100}%` }} /></span>
             {completed}/{LESSONS.length}
@@ -109,7 +132,10 @@ export function App() {
           <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} /></aside>
         )}
         <main id="main" tabIndex={-1}>
-          {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "home" ? (
+          {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
+            <ReviewView lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
+                        onAnswer={(item, correct) => record([reviewEvent(item, correct, stampNow())])} />
+          ) : route.view === "home" ? (
             <>
               <section className="hero">
                 <h1>Learn Python by running it.</h1>
@@ -136,13 +162,17 @@ export function App() {
                 setDrafts((d) => ({ ...d, [route.lessonId]: { ...d[route.lessonId], [sid]: code } }));
                 void store?.putDraft(route.lessonId, sid, code);
               }}
-              onExercise={(sid, passed, failedConcepts) => {
+              onExercise={(sid, passed, failedConcepts, detail) => {
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, failedConcepts, attempt: true }));
+                const step = l.steps.find((s) => s.id === sid);
+                if (step && isExercise(step)) record(exerciseEvents(l, step, detail.results, detail.assistance, stampNow()));
               }}
-              onQuiz={(sid, score, passed, missed) => {
+              onQuiz={(sid, score, passed, missed, correct) => {
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, score, failedConcepts: missed, attempt: true }));
+                const step = l.steps.find((s) => s.id === sid);
+                if (step?.kind === "quiz") record(quizEvents(l, step, correct, stampNow()));
               }}
             />
           )}

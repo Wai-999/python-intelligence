@@ -6,7 +6,8 @@ import { inline } from "./Prose";
 interface Props {
   step: QuizStep;
   record: StepResult | undefined;
-  onResult: (score: number, passed: boolean, missedConcepts: string[]) => void;
+  /** `correct[i]` says whether question i was answered correctly. */
+  onResult: (score: number, passed: boolean, missedConcepts: string[], correct: boolean[]) => void;
 }
 
 export function Quiz({ step, record, onResult }: Props) {
@@ -19,7 +20,7 @@ export function Quiz({ step, record, onResult }: Props) {
   const submit = () => {
     setSubmitted(true);
     const missed = step.questions.filter((q) => answers[q.id] !== q.answer).map((q) => q.concept);
-    onResult(score, score >= step.pass_mark, missed);
+    onResult(score, score >= step.pass_mark, missed, step.questions.map((q) => answers[q.id] === q.answer));
   };
 
   return (

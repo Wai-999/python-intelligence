@@ -185,3 +185,10 @@ main { min-width: 0; outline: none; }
 /* Narrow phones: the header wraps instead of overflowing, and the progress bar collapses to its count. */
 .top { flex-wrap: wrap; }
 @media (max-width: 480px) { .overall .bar { display: none; } .top-right { gap: 6px; } }
+
+/* Review page: spaced retrieval and the per-concept evidence table. */
+.review .table-scroll { overflow-x: auto; }
+.concepts { border-collapse: collapse; width: 100%; font-size: 14px; }
+.concepts th, .concepts td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.concepts thead th { color: var(--muted); font-weight: 600; }
+.concepts tbody th { font-weight: 600; }

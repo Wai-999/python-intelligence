@@ -1,9 +1,11 @@
+import { LearnerDataError, ordered, type LearnerEvent } from "../learner/model";
 import {
-  EXPORT_FORMAT, EXPORT_VERSION, ImportError,
+  EXPORT_FORMAT, EXPORT_VERSION, IMPORTABLE_VERSIONS, ImportError,
   type LessonProgress, type Position, type ProgressExport, type ProgressStore,
 } from "./types";
 
-const DB_VERSION = 1;
+/** Version 2 adds the "events" store (created on upgrade; existing data is kept). */
+const DB_VERSION = 2;
 const RELOAD_MESSAGE = "database upgraded in another tab; reload the page";
 
 export class ValidationError extends Error {
@@ -13,7 +15,8 @@ export class ValidationError extends Error {
   }
 }
 
-const stores = ["lessons", "drafts", "meta"];
+const stores = ["lessons", "drafts", "meta", "events"];
+const KEY_PATHS: Record<string, string> = { lessons: "lessonId", events: "id" };
 
 type Obj = Record<string, unknown>;
 function object(value: unknown, path: string): asserts value is Obj {
@@ -74,11 +77,23 @@ function validateDraft(key: string, code: unknown): string {
   check(typeof code === "string", `drafts.${key} must be a string`);
   return code;
 }
+/** Validated plain copies of events (same rules as the learner model), in replay order. */
+function validateEvents(value: unknown, path = "events"): LearnerEvent[] {
+  check(Array.isArray(value), `${path} must be an array`);
+  try {
+    return ordered(value).map((e) => ({ ...e, ...(e.tags ? { tags: [...e.tags] } : {}) }));
+  } catch (error) {
+    if (error instanceof LearnerDataError) throw new ValidationError(`${path}: ${error.message}`);
+    throw error;
+  }
+}
+const sameEvent = (a: LearnerEvent, b: LearnerEvent) => JSON.stringify(a, Object.keys(a).sort()) === JSON.stringify(b, Object.keys(b).sort());
 function validate(data: unknown): ProgressExport {
   object(data, "payload");
-  const { format, version, exportedAt, lessons, drafts, position } = data;
+  const { format, version, exportedAt, lessons, drafts, position, events } = data;
   check(format === EXPORT_FORMAT, "format is not supported");
-  check(version === EXPORT_VERSION, "version is not supported");
+  check((IMPORTABLE_VERSIONS as readonly unknown[]).includes(version), "version is not supported");
+  check(version === 1 ? events === undefined : true, "a version 1 file has no events");
   timestamp(exportedAt, "exportedAt");
   check(Array.isArray(lessons), "lessons must be an array");
   const ids = new Set<string>();
@@ -89,7 +104,8 @@ function validate(data: unknown): ProgressExport {
     return lesson;
   });
   object(drafts, "drafts");
-  return { format, version, exportedAt: exportedAt as string, lessons: normalizedLessons,
+  return { format, version: EXPORT_VERSION, exportedAt: exportedAt as string, lessons: normalizedLessons,
+    events: version === 1 ? [] : validateEvents(events),
     drafts: Object.fromEntries(Object.entries(drafts).map(([key, code]) => [key, validateDraft(key, code)])),
     position: position === null ? null : validatePosition(position) };
 }
@@ -109,7 +125,7 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       request.onupgradeneeded = () => {
         for (const name of stores) {
           if (!request.result.objectStoreNames.contains(name)) {
-            request.result.createObjectStore(name, name === "lessons" ? { keyPath: "lessonId" } : undefined);
+            request.result.createObjectStore(name, KEY_PATHS[name] ? { keyPath: KEY_PATHS[name] } : undefined);
           }
         }
       };
@@ -183,10 +199,30 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       const key = `${lesson}:${step}`;
       await put("drafts", validateDraft(key, code), key);
     },
+    appendEvents: async (events) => {
+      const valid = validateEvents(events);
+      let conflict: string | null = null;
+      await transact<void>(["events"], "readwrite", (tx) => {
+        const store = tx.objectStore("events");
+        for (const e of valid) {
+          const existing = store.get(e.id);
+          existing.onsuccess = () => {
+            if (conflict !== null) return;
+            if (existing.result === undefined) store.put(e);
+            else if (!sameEvent(existing.result as LearnerEvent, e)) { conflict = e.id; tx.abort(); }
+          };
+        }
+      }).catch((error) => {
+        // All or nothing: aborting the transaction keeps the log unchanged.
+        if (conflict !== null) throw new ValidationError(`event id ${conflict} is already used for a different event`);
+        throw error;
+      });
+    },
+    allEvents: async () => ordered(await read<LearnerEvent[]>("events")),
     getPosition: async () => (await read<Position | undefined>("meta", "position")) ?? null,
     setPosition: async (lessonId, stepIndex) => put("meta", validatePosition({ lessonId, stepIndex, updatedAt: new Date().toISOString() }), "position"),
     exportAll: () => transact<ProgressExport>(stores, "readonly", (tx, result) => {
-      const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null };
+      const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null, events: [] };
       const lessons = tx.objectStore("lessons").getAll();
       lessons.onsuccess = () => { output.lessons = lessons.result; };
       const cursor = tx.objectStore("drafts").openCursor();
@@ -199,6 +235,8 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       };
       const position = tx.objectStore("meta").get("position");
       position.onsuccess = () => { output.position = position.result ?? null; };
+      const events = tx.objectStore("events").getAll();
+      events.onsuccess = () => { output.events = ordered(events.result as LearnerEvent[]); };
       result(output);
     }),
     importAll: async (data) => {
@@ -213,6 +251,7 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
         for (const lesson of normalized.lessons) tx.objectStore("lessons").put(lesson);
         for (const [key, code] of Object.entries(normalized.drafts)) tx.objectStore("drafts").put(code, key);
         if (normalized.position !== null) tx.objectStore("meta").put(normalized.position, "position");
+        for (const e of normalized.events) tx.objectStore("events").put(e);
       });
     },
     clear: () => transact<void>(stores, "readwrite", (tx) => {

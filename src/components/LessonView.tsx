@@ -3,7 +3,7 @@ import { isGraded, type Lesson, type Step } from "../content/types";
 import type { Recommendation } from "../curriculum/graph";
 import type { LessonProgress } from "../progress/types";
 import { CodeCell } from "./CodeCell";
-import { Exercise } from "./Exercise";
+import { Exercise, type AttemptDetail } from "./Exercise";
 import { Prose } from "./Prose";
 import { Quiz } from "./Quiz";
 import { FurtherReading, StepSources } from "./Sources";
@@ -24,8 +24,8 @@ interface Props {
   unlocked: boolean;
   titleOf: (id: string) => string;
   go: (lessonId: string, step: number) => void;
-  onExercise: (stepId: string, passed: boolean, failedConcepts: string[]) => void;
-  onQuiz: (stepId: string, score: number, passed: boolean, missed: string[]) => void;
+  onExercise: (stepId: string, passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
+  onQuiz: (stepId: string, score: number, passed: boolean, missed: string[], correct: boolean[]) => void;
   onDraft: (stepId: string, code: string) => void;
 }
 
@@ -78,11 +78,11 @@ export function LessonView(p: Props) {
         <Exercise key={step.id} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
                   onDraft={(c) => p.onDraft(step.id, c)}
-                  onResult={(passed, fc) => p.onExercise(step.id, passed, fc)} />
+                  onResult={(passed, fc, detail) => p.onExercise(step.id, passed, fc, detail)} />
       )}
       {step.kind === "quiz" && (
         <Quiz key={step.id} step={step} record={progress?.steps[step.id]}
-              onResult={(score, passed, missed) => p.onQuiz(step.id, score, passed, missed)} />
+              onResult={(score, passed, missed, correct) => p.onQuiz(step.id, score, passed, missed, correct)} />
       )}
       {step.kind === "summary" && <NextUp {...p} />}
 

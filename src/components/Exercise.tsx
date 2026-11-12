@@ -8,6 +8,14 @@ import { Editor } from "./Editor";
 import { inline } from "./Prose";
 import { TutorNote } from "./TutorNote";
 import type { StepResult } from "../progress/types";
+import type { Assistance } from "../learner/model";
+import { assistanceFor } from "../learner/record";
+
+export interface AttemptDetail {
+  /** Each check's concept and outcome, or null when the code didn't run. */
+  results: { concept?: string; passed: boolean }[] | null;
+  assistance: Assistance;
+}
 
 interface Props {
   step: ExerciseStep;
@@ -16,7 +24,7 @@ interface Props {
   draft: string | undefined;
   record: StepResult | undefined;
   onDraft: (code: string) => void;
-  onResult: (passed: boolean, failedConcepts: string[]) => void;
+  onResult: (passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
 }
 
 /** Hints are revealed one at a time. The solution becomes available only after this many failed attempts. */
@@ -57,7 +65,10 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
         ? r.tests.filter((t) => !t.passed).map((t) => t.concept).filter((c): c is string => !!c)
         : step.tests.map((t) => t.concept).filter((c): c is string => !!c).slice(0, 1);
       if (!passed) setFailures((n) => n + 1);
-      onResult(passed, failedConcepts);
+      onResult(passed, failedConcepts, {
+        results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed })) : null,
+        assistance: assistanceFor(hintsShown, showSolution),
+      });
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,
         error: { type: "LoadError", message: String((e as Error).message), line: null, summary: String((e as Error).message) } });
