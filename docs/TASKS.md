@@ -114,7 +114,7 @@ fading (its Phase 5), a tutor gateway (its Phase 6, if authorized) and more curr
 | G-3 | Claude → Codex | Scaffold fading in the exercise UI: hints offered according to the suggested tier, restored after repeated failures; e2e tests | planned |
 | G-4 | Claude → Codex | Double-loop feedback: classify failures, cluster repeated structural errors (not a single typo), misconception triggers with cooldowns, a counterexample / prediction intervention, independent transfer check; controller precedence; tests | planned |
 | G-5 | Claude → Codex | Lesson metadata the master prompt requires (objective, analogy, transfer problem, rubric, common misconceptions, spaced-review metadata): schema, gate, and backfill for every lesson | planned |
-| G-6 | Claude → Codex | `py-json-csv`: reading and writing JSON and CSV with the standard library | planned |
+| G-6 | Claude → Codex | `py-json-csv`: reading and writing JSON and CSV with the standard library | ✅ e2e: runs in the browser; Codex, 11 rounds of 24 findings fixed (multiline and doubled-quote fields, empty, fractional and huge-integer scores converted exactly, short rows and header-only inputs, reordered and extra columns, identical and repeated rows kept, padded team names kept separate, blank lines skipped, negative and near-equal means compared unrounded, non-object JSON rejected, ties by name not row count); round 12 approved, 0 findings |
 | G-7 | Claude → Codex | `py-testing`: assertions, `unittest`, writing tests first, debugging with tracebacks | planned |
 | G-8 | Claude → Codex | `py-generators`: iterators, generators and lazy pipelines | planned |
 | G-9 | Claude → Codex | `py-typing`: type hints, `dataclasses`, and what hints do and don't check | planned |
