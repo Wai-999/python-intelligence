@@ -95,15 +95,13 @@ describe("scaffold fading", () => {
     expect(note()).toMatch(/up to 1 hint, fewer than at first since you've solved similar tasks on your own/);
   });
 
-  it("restores one tier of support per two failed runs, up to tier 3", async () => {
-    const five = { ...step, hints: ["one.", "two.", "three.", "four.", "five."] } as unknown as ExerciseStep;
-    const onResult = mount(0, five);
-    await fail(onResult, 1);
-    expect(note()).toMatch(/^Predict first/);
-    await fail(onResult, 2);
-    expect(note()).toMatch(/up to 1 hint, raised after repeated tries/);
-    for (let n = 3; n <= 8; n++) await fail(onResult, n);
-    expect(note()).toMatch(/up to 3 hints, raised/);
+  it("says when the model has restored support, and leaves restoration to the model (no local counting)", async () => {
+    mount(3, three);
+    expect(note()).toBe("Suggested support: up to 3 hints, more than at first after repeated tries. Use more or fewer as you like.");
+    cleanup();
+    const again = mount(0, three);
+    for (let n = 1; n <= 4; n++) await fail(again, n);
+    expect(note()).toMatch(/^Predict first/); // the suggestion only changes when the model's does
   });
 
   it("never suggests more hints than the exercise has", () => {

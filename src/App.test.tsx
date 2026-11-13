@@ -1,8 +1,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildModel, type LearnerEvent } from "./learner/model";
-import { quizEvents } from "./learner/record";
-import type { Lesson, QuizStep } from "./content/types";
+import { creditedConcepts, quizEvents } from "./learner/record";
+import type { ExerciseStep, Lesson, QuizStep } from "./content/types";
 import { StaleProgressError } from "./progress/store";
 import type { LessonProgress, ProgressExport, ProgressStore } from "./progress/types";
 
@@ -60,11 +60,12 @@ vi.mock("./progress/store", async (importOriginal) => ({ ...(await importOrigina
   openProgressStore: async () => { if (openFails) throw new Error("storage blocked"); return fake; } }));
 // Python runs report every check passed, tagged with the concepts of the step's own tests.
 let runTests: { name: string; concept?: string }[] = [];
+let runPasses = true;
 vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "ready", onStatus: () => () => {}, warm: async () => {},
-  run: async () => ({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: true, message: "" })) }) }) }));
+  run: async () => ({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: runPasses, message: "" })) }) }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; staleWrites = false; loads = 0; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; staleWrites = false; loads = 0; runPasses = true; });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -447,5 +448,38 @@ describe("App", () => {
     expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false);
     expect(saved).toEqual([]);
     other.close();
+  });
+
+  it("restores suggested support from tier 0 by exactly one tier per two failed runs, and keeps it on return", async () => {
+    const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+    const circle = lesson.steps.findIndex((st) => st.id === "circle");
+    const step = lesson.steps[circle] as unknown as ExerciseStep;
+    runTests = step.tests;
+    // Four independent passes ease every credited concept from tier 2 to tier 0.
+    const T = Date.now() - 3600_000;
+    history = [0, 1, 2, 3].flatMap((n) => creditedConcepts(lesson, step).map((concept, i) => ({ id: `p${n}-${i}`, at: new Date(T + n * 60_000 + i).toISOString(),
+      lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed: true, assistance: 0 as const, policy: "learner-heuristic-1" })));
+    const { App } = await import("./App");
+    location.hash = `#/lesson/py-values-names/${circle}`;
+    render(<App />);
+    const note = async () => (await screen.findByRole("note")).textContent!;
+    await waitFor(async () => expect(await note()).toMatch(/^Predict first/));
+    runPasses = false;
+    const failRun = async (n: number) => {
+      fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
+      await waitFor(() => expect(new Set(appended.filter((e) => !e.passed).map((e) => e.at)).size).toBe(n));
+    };
+    await failRun(1);
+    expect(await note()).toMatch(/^Predict first/);
+    await failRun(2);
+    await waitFor(async () => expect(await note()).toMatch(/^Suggested support: up to 1 hint,/));
+    await failRun(3);
+    await failRun(4);
+    await waitFor(async () => expect(await note()).toMatch(/^Suggested support: up to 2 hints\. /));
+    // Leaving and coming back keeps it: it comes from the recorded events, not from the exercise's own state.
+    await act(async () => { location.hash = "#/"; dispatchEvent(new HashChangeEvent("hashchange")); });
+    await act(async () => { location.hash = `#/lesson/py-values-names/${circle}`; dispatchEvent(new HashChangeEvent("hashchange")); });
+    await waitFor(async () => expect(await note()).toMatch(/^Suggested support: up to 2 hints\. /));
+    runTests = [];
   });
 });

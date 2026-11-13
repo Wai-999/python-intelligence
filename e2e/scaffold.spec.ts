@@ -25,10 +25,15 @@ test("suggested hints fade after independent successes and come back after repea
   await expect(note).toHaveText(/^Suggested support: up to 1 hint, fewer than at first/);
   await expect(page.getByRole("button", { name: /Show a hint/ })).toHaveText(/\(suggested, \d+ left\)/);
 
-  // Two failed runs restore a tier for this task; explicit help was available throughout.
+  // Two failed runs restore exactly one tier (the model's two-comparable-failures rule), and it stays on return.
   for (let i = 0; i < 2; i++) {
     await page.getByRole("button", { name: "▶ Run checks" }).click();
     await expect(page.locator(".checks li.fail").first()).toBeVisible({ timeout: 120_000 });
+    if (i === 0) await expect(note).toHaveText(/^Suggested support: up to 1 hint, fewer than at first/);
   }
-  await expect(note).toHaveText(/raised after repeated tries/);
+  const back = new RegExp(`^Suggested support: up to ${Math.min(2, step.hints.length)} hints?\\. `);
+  await expect(note).toHaveText(back);
+  await page.goto("./#/");
+  await page.goto(`./#/lesson/py-values-names/${at}`);
+  await expect(note).toHaveText(back);
 });
