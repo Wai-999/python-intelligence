@@ -57,10 +57,11 @@ export function App() {
   // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
   const [now, setNow] = useState(() => new Date().toISOString());
 
-  // Reads everything first and publishes it only if every read succeeded, so the views never mix old and new state.
+  // One exportAll (a single read transaction) gives a consistent snapshot of lessons, drafts, events and help; it is
+  // published only if every step succeeded, so the views never mix old and new state.
   const reload = useCallback(async (s: ProgressStore) => {
-    const all = await s.allLessons();
     const exp = await s.exportAll();
+    const all = exp.lessons;
     const d: Record<string, Record<string, string>> = {};
     for (const [k, v] of Object.entries(exp.drafts)) {
       const [lid, sid] = k.split(":") as [string, string];
@@ -249,7 +250,8 @@ export function App() {
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, failedConcepts, attempt: true }));
                 const step = l.steps.find((s) => s.id === sid);
                 // Another tab may have revealed help on this task: count the higher of this tab's and the stored level.
-                if (step && isExercise(step) && store) void store.getAssistance(l.id, sid).then((stored) => {
+                // Without storage (some private modes) practice is still modelled for this visit, from this tab's help alone.
+                if (step && isExercise(step)) void (store ? store.getAssistance(l.id, sid) : Promise.resolve(0)).then((stored) => {
                   if (detail.generation !== generationRef.current) return;
                   record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stampNow()));
                 });
@@ -266,7 +268,8 @@ export function App() {
                   const stamp = stampNow();
                   const startedIn = generation;
                   setAssist((a) => ({ ...a, [key]: 4 }));
-                  if (store) void store.raiseAssistance(l.id, sid, 4)
+                  const shownHere = assist[key] ?? 0;
+                  void (store ? store.raiseAssistance(l.id, sid, 4) : Promise.resolve(shownHere))
                     .then((before) => {
                       if (startedIn !== generationRef.current) return; // progress was replaced meanwhile
                       record(quizEvents(l, step, correct, stamp, before >= 4 ? 4 : 0));
