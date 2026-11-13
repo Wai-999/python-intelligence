@@ -424,4 +424,28 @@ describe("App", () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     expect((Object as unknown as Record<string, unknown>).leak).toBeUndefined();
   });
+
+  it("reads again when another tab replaces progress while a failed first load is being retried", async () => {
+    failExport = true;
+    const { App } = await import("./App");
+    location.hash = "#/";
+    render(<App />);
+    await screen.findByText(/couldn't be read back/);
+    failExport = false;
+    let open: () => void = () => {};
+    exportGate = new Promise((r) => { open = r; });
+    const before = loads;
+    fireEvent.click(screen.getByRole("button", { name: "Try loading it again" }));
+    await waitFor(() => expect(loads).toBe(before + 1)); // the retry's read has started, with the old progress
+    lessonsAfter = [completedRecord()];
+    const other = new BroadcastChannel("python-intelligence-progress");
+    other.postMessage("replaced");
+    await new Promise((r) => setTimeout(r, 30));
+    await act(async () => { open(); await Promise.resolve(); });
+    await waitFor(() => expect(loads).toBe(before + 2));
+    await waitFor(() => expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^1 of /));
+    expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false);
+    expect(saved).toEqual([]);
+    other.close();
+  });
 });

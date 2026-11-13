@@ -89,16 +89,23 @@ export function App() {
     return exp.position;
   }, []);
 
+  // Until the first load has succeeded (or a retry of it has), another tab's replacement can't reload this view yet:
+  // it is noted, and the read repeats until one completes with no replacement announced meanwhile.
+  const readUntilQuiet = async (s: ProgressStore) => {
+    let pos;
+    do {
+      remoteDuringLoad.current = false;
+      pos = await reload(s);
+    } while (!firstLoadDone.current && remoteDuringLoad.current);
+    return pos;
+  };
+
   // Open storage; resume at the exact saved position if the URL doesn't name one.
   useEffect(() => {
     openProgressStore().then(async (s) => {
       setStore(s);
       try {
-        let pos;
-        do {
-          remoteDuringLoad.current = false;
-          pos = await reload(s);
-        } while (remoteDuringLoad.current);
+        const pos = await readUntilQuiet(s);
         firstLoadDone.current = true;
         if (!location.hash && pos && graph.byId.has(pos.lessonId)) location.replace(`#/lesson/${pos.lessonId}/${pos.stepIndex}`);
         setGeneration(1);
@@ -186,7 +193,7 @@ export function App() {
   const finishReplacement = (token: number) => {
     if (!store) return;
     setReloadFailed(null);
-    reload(store).then(() => {
+    readUntilQuiet(store).then(() => {
       if (token !== generationRef.current) return;
       firstLoadDone.current = true; // also when a failed first load succeeds on retry
       setGeneration(token);
