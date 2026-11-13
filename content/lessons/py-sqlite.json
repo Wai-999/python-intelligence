@@ -217,8 +217,13 @@
           "concept": "sql-queries"
         },
         {
-          "name": "a name with a quote is stored as it is",
-          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nadd_score(con, \"O'Brien\", 7)\nassert top(con, 1) == [(\"O'Brien\", 7)]",
+          "name": "names with quotes of either kind are stored as they are",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nnames = [\"O'Brien\", 'say \"hi\"', 'both \\' and \"']\nfor k, n in enumerate(names):\n    add_score(con, n, 10 - k)\nassert top(con, 3) == [(n, 10 - k) for k, n in enumerate(names)], top(con, 3)",
+          "concept": "query-parameters"
+        },
+        {
+          "name": "the name is passed as a parameter, not inside the SQL",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nclass _Recorder:\n    def __init__(self, con):\n        self.con, self.calls = con, []\n\n    def execute(self, sql, params=()):\n        self.calls.append((sql, params))\n        return self.con.execute(sql, params)\n\n    def executemany(self, sql, rows):\n        rows = list(rows)\n        self.calls.append((sql, rows))\n        return self.con.executemany(sql, rows)\n\nrec = _Recorder(con)\nadd_score(rec, 'Zed', 4)\nassert rec.calls, 'add_score should run its INSERT through the connection it is given'\nsql, params = rec.calls[-1]\nassert 'Zed' not in sql, 'the name is part of the SQL text: pass it as a parameter with ?'\nassert 'Zed' in repr(params), 'pass the name as a parameter with ?'\nassert top(con, 1) == [('Zed', 4)]",
           "concept": "query-parameters"
         },
         {
