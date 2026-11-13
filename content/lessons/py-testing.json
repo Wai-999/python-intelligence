@@ -1,0 +1,379 @@
+{
+  "id": "py-testing",
+  "title": "Testing: checking that code does what you meant",
+  "summary": "Write assertions and unittest test cases, choose the edge cases that catch real bugs, and judge your tests by whether they catch broken code.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "py-exceptions",
+    "py-classes"
+  ],
+  "concepts": [
+    "assertions",
+    "unit-testing",
+    "edge-cases"
+  ],
+  "sources": [
+    {
+      "id": "ab-assert",
+      "source_id": "pch-automate-the-boring-stuff-with-python",
+      "pages": [
+        243,
+        245
+      ],
+      "section": "Assertions",
+      "use": "reference"
+    },
+    {
+      "id": "dip-unit",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        211,
+        213
+      ],
+      "section": "(Not) Diving In",
+      "use": "reference"
+    },
+    {
+      "id": "dip-bad",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        240,
+        244
+      ],
+      "section": "More Bad Input",
+      "use": "reference"
+    },
+    {
+      "id": "tp-debug",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        215,
+        222
+      ],
+      "section": "Debugging",
+      "use": "reference"
+    },
+    {
+      "id": "ut-basic",
+      "source_id": "pydocs-312-unittest",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Basic example",
+      "use": "reference"
+    },
+    {
+      "id": "ut-cases",
+      "source_id": "pydocs-312-unittest",
+      "pages": [
+        11,
+        11
+      ],
+      "section": "Test cases",
+      "use": "reference"
+    },
+    {
+      "id": "ut-run",
+      "source_id": "pydocs-312-unittest",
+      "pages": [
+        13,
+        13
+      ],
+      "section": "Loading and running tests",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "\"It works on my example\"",
+      "body": "You write a function, try it on one input, see the right answer and move on. A week later a classmate\ncalls it with an empty list, or a negative number, or the value right on a boundary, and it breaks. A\n**test** is a small program that checks your code for you, on the cases you might forget, every time\nyou change it. Good tests are what let you change code without fear."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A test is only as good as the bugs it catches",
+      "body": "An **assertion** states something that must be true: `assert total >= 0, 'total went negative'` stops the\nprogram with an `AssertionError` if it isn't. A **unit test** calls one function with a chosen input and\nasserts the expected output; the `unittest` module collects many such tests, runs them and reports\nfailures.\n\nPassing tests prove little on their own: a test that only tries `clamp(5, 0, 10)` passes for plenty of\nwrong code. The real question is *would this test fail if the code were wrong?* So test the **edge\ncases** where bugs hide: the boundaries themselves, empty and one-element inputs, negative numbers,\ninputs in an unusual order, and the errors bad input should raise.",
+      "cites": [
+        "ab-assert",
+        "dip-unit",
+        "dip-bad",
+        "ut-basic",
+        "tp-debug"
+      ],
+      "socratic": {
+        "questions": [
+          "Which single test would catch a clamp that forgets the upper limit?",
+          "Why is `clamp(10, 0, 10)` a better test than `clamp(7, 0, 10)`?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch an assertion stand guard",
+      "body": "The assertion checks the input before the division can go wrong. Each frame shows the variables just before the highlighted line runs; the last frame shows what that line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def average(xs):\n    assert xs, 'average of nothing'\n    return sum(xs) / len(xs)\n\nprint(average([2, 4, 9]))",
+        "frames": [
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "average": "<function average>"
+            },
+            "note": "Average three numbers."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "average([2, 4, 9])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 9]"
+            },
+            "note": "A non-empty list is truthy, so the assertion passes silently."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "average([2, 4, 9])"
+            ],
+            "locals": {
+              "xs": "[2, 4, 9]"
+            },
+            "note": "15 / 3. With an empty list the assertion would have stopped us with a clear message, before a ZeroDivisionError."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "average": "<function average>"
+            },
+            "note": "The average.",
+            "output": "5.0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Assertions:** `assert condition, message` raises `AssertionError(message)` when the condition is false.\nUse them for things that must never happen; Python can run with assertions switched off (`python -O`),\nso don't use them to validate user input in real programs.\n\n**unittest:** a test case is a class that inherits from `unittest.TestCase`; each method whose name starts\nwith `test` is one test. Inside, `self.assertEqual(a, b)` fails unless `a == b`, `self.assertTrue(x)` unless\n`x` is truthy, and `with self.assertRaises(ValueError):` fails unless the indented code raises that error.\n`unittest.main()` (or a loader and a runner) finds and runs the tests and reports failures (an assertion\nfailed) and errors (an unexpected exception).\n\n**Choosing tests:** one test per behaviour; the boundaries and just beyond them; empty and single inputs;\nthe errors that bad input must raise; and a check that inputs aren't changed when they shouldn't be.",
+      "cites": [
+        "ab-assert",
+        "ut-cases",
+        "ut-run",
+        "dip-bad"
+      ]
+    },
+    {
+      "id": "run-tests",
+      "kind": "example",
+      "title": "Run it: the same tests on two versions",
+      "body": "Three tests for `clamp`, run on a correct version and then on a buggy one. The counts are (tests run,\nfailures, errors).",
+      "code": "import unittest\n\ndef clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n\nclass TestClamp(unittest.TestCase):\n    def test_inside(self):\n        self.assertEqual(clamp(5, 0, 10), 5)\n\n    def test_below(self):\n        self.assertEqual(clamp(-3, 0, 10), 0)\n\n    def test_above(self):\n        self.assertEqual(clamp(42, 0, 10), 10)\n\ndef run(case):\n    suite = unittest.defaultTestLoader.loadTestsFromTestCase(case)\n    result = unittest.TestResult()\n    suite.run(result)\n    return result.testsRun, len(result.failures), len(result.errors)\n\nprint('correct clamp:', run(TestClamp))\nclamp = lambda x, lo, hi: min(lo, max(x, hi))   # a buggy version\nprint('buggy clamp:  ', run(TestClamp))\ntry:\n    assert clamp(5, 0, 10) == 5, 'clamp(5, 0, 10) should be 5'\nexcept AssertionError as err:\n    print('AssertionError:', err)\n",
+      "expected_output": "correct clamp: (3, 0, 0)\nbuggy clamp:   (3, 2, 0)\nAssertionError: clamp(5, 0, 10) should be 5\n"
+    },
+    {
+      "id": "testcase",
+      "kind": "guided",
+      "title": "Your turn: tests that catch bugs",
+      "body": "`clamp(x, lo, hi)` returns `x` limited to the range `lo..hi` (inclusive), and raises `ValueError` if `lo > hi`.\nThe starter gives you a correct `clamp`. Complete `TestClamp`, a `unittest.TestCase`, so that every test\npasses on the correct `clamp`, and so that at least one test fails on each of several broken versions\n(which the checks will swap in for `clamp`). Think about the boundaries, a range below zero, a range of a\nsingle value, and the error.",
+      "starter": "import unittest\n\n\ndef clamp(x, lo, hi):\n    if lo > hi:\n        raise ValueError('lo must not be greater than hi')\n    return max(lo, min(x, hi))\n\n\nclass TestClamp(unittest.TestCase):\n    def test_inside(self):\n        self.assertEqual(clamp(5, 0, 10), 5)\n",
+      "hints": [
+        "Test `clamp(0, 0, 10)` and `clamp(10, 0, 10)`: values exactly on the limits catch off-by-one bugs.",
+        "Use `with self.assertRaises(ValueError): clamp(1, 10, 0)` to require the error.",
+        "import unittest\n\n\ndef clamp(x, lo, hi):\n    if lo > hi:\n        raise ValueError('lo must not be greater than hi')\n    return max(lo, min(x, hi))\n\n\nclass TestClamp(unittest.TestCase):\n    def test_inside(self):\n        self.assertEqual(clamp(5, 0, 10), 5)\n\n    def test_below_and_above(self):\n        self.assertEqual(clamp(-3, 0, 10), 0)\n        self.assertEqual(clamp(42, 0, 10), 10)\n\n    def test_edges(self):\n        self.assertEqual(clamp(0, 0, 10), 0)\n        self.assertEqual(clamp(10, 0, 10), 10)\n        self.assertEqual(clamp(7, 7, 7), 7)\n        self.assertEqual(clamp(9, 7, 7), 7)\n\n    def test_negative_range(self):\n        self.assertEqual(clamp(0, -5, -2), -2)\n        self.assertEqual(clamp(-9, -5, -2), -5)\n\n    def test_bad_range(self):\n        with self.assertRaises(ValueError):\n            clamp(1, 10, 0)\n"
+      ],
+      "tests": [
+        {
+          "name": "your tests pass on the correct clamp",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(_good)\nassert ran >= 3, f'write at least three test methods; found {ran}'\nassert bad == 0, f'{bad} of your tests fail on a correct clamp'",
+          "concept": "unit-testing"
+        },
+        {
+          "name": "your tests catch a clamp that does no clamping at all",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: x if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that does no clamping at all\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that forgets the upper limit",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: max(lo, x) if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that forgets the upper limit\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that forgets the lower limit",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: min(x, hi) if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that forgets the lower limit\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that is off by one at the top",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: (hi - 1 if x >= hi else max(lo, x)) if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that is off by one at the top\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that is off by one at the bottom",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: (lo + 1 if x <= lo else min(x, hi)) if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that is off by one at the bottom\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that never raises",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: max(lo, min(x, hi)))\nassert bad > 0, \"none of your tests fails on a clamp that never raises\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that returns 0 for negative ranges",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: (0 if hi < 0 else max(lo, min(x, hi))) if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that returns 0 for negative ranges\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a clamp that fails on a one-value range",
+          "code": "import unittest\n\ndef _run(impl):\n    global clamp\n    saved = clamp\n    clamp = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClamp)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        clamp = saved\n\ndef _good(x, lo, hi):\n    if lo > hi:\n        raise ValueError('bad range')\n    return max(lo, min(x, hi))\n\nran, bad = _run(lambda x, lo, hi: (x if lo == hi else max(lo, min(x, hi))) if lo <= hi else (_ for _ in ()).throw(ValueError()))\nassert bad > 0, \"none of your tests fails on a clamp that fails on a one-value range\"",
+          "concept": "edge-cases"
+        }
+      ],
+      "solution": "import unittest\n\n\ndef clamp(x, lo, hi):\n    if lo > hi:\n        raise ValueError('lo must not be greater than hi')\n    return max(lo, min(x, hi))\n\n\nclass TestClamp(unittest.TestCase):\n    def test_inside(self):\n        self.assertEqual(clamp(5, 0, 10), 5)\n\n    def test_below_and_above(self):\n        self.assertEqual(clamp(-3, 0, 10), 0)\n        self.assertEqual(clamp(42, 0, 10), 10)\n\n    def test_edges(self):\n        self.assertEqual(clamp(0, 0, 10), 0)\n        self.assertEqual(clamp(10, 0, 10), 10)\n        self.assertEqual(clamp(7, 7, 7), 7)\n        self.assertEqual(clamp(9, 7, 7), 7)\n\n    def test_negative_range(self):\n        self.assertEqual(clamp(0, -5, -2), -2)\n        self.assertEqual(clamp(-9, -5, -2), -5)\n\n    def test_bad_range(self):\n        with self.assertRaises(ValueError):\n            clamp(1, 10, 0)\n"
+    },
+    {
+      "id": "median",
+      "kind": "challenge",
+      "title": "Challenge: test a function you can't see",
+      "body": "`median(xs)` should return the middle value of the sorted numbers, or the mean of the two middle values when\nthere is an even count; raise `ValueError` for an empty list; and not change `xs`. Write\n`check_median(median)`, which takes *some* implementation and returns quietly if it is correct, but raises an\nexception (normally an `AssertionError`) if it gets any of those rules wrong. The checks give it a correct\nmedian and several broken ones.",
+      "starter": "def check_median(median):\n    assert median([5, 1, 3]) == 3\n",
+      "hints": [
+        "Try an unsorted list, an even-length list whose middle values average to a fraction, and an empty list.",
+        "To require an exception: `try: median([])`, `except ValueError: pass`, `else: raise AssertionError(...)`.",
+        "def check_median(median):\n    assert median([3]) == 3, 'one value is its own median'\n    assert median([5, 1, 3]) == 3, 'sort before taking the middle'\n    assert median([4, 1, 3, 2]) == 2.5, 'an even count averages the two middle values'\n    assert median([1, 2]) == 1.5, 'not integer division'\n    assert median([-4, -1, -7]) == -4, 'negative numbers'\n    assert median([1, 2, 10]) == 2, 'the middle value, not the mean'\n    data = [9, 2, 7]\n    median(data)\n    assert data == [9, 2, 7], 'the input list must not change'\n    try:\n        median([])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('an empty list must raise ValueError')\n"
+      ],
+      "tests": [
+        {
+          "name": "passes a correct median",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ncheck_median(_good)",
+          "concept": "unit-testing"
+        },
+        {
+          "name": "catches a median that doesn't sort",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        raise ValueError()\n    m = len(xs) // 2\n    return xs[m] if len(xs) % 2 else (xs[m - 1] + xs[m]) / 2\nassert _catches(bad), \"check_median accepted a median that doesn't sort\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that takes the upper middle for even counts",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        raise ValueError()\n    return sorted(xs)[len(xs) // 2]\nassert _catches(bad), \"check_median accepted a median that takes the upper middle for even counts\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that uses integer division",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        raise ValueError()\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) // 2\nassert _catches(bad), \"check_median accepted a median that uses integer division\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that returns the mean",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        raise ValueError()\n    return sum(xs) / len(xs)\nassert _catches(bad), \"check_median accepted a median that returns the mean\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that sorts the input in place",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        raise ValueError()\n    xs.sort()\n    m = len(xs) // 2\n    return xs[m] if len(xs) % 2 else (xs[m - 1] + xs[m]) / 2\nassert _catches(bad), \"check_median accepted a median that sorts the input in place\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that returns None for an empty list",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        return None\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\nassert _catches(bad), \"check_median accepted a median that returns None for an empty list\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that raises IndexError for an empty list",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\nassert _catches(bad), \"check_median accepted a median that raises IndexError for an empty list\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "catches a median that ignores negative numbers",
+          "code": "def _good(xs):\n    if not xs:\n        raise ValueError('median of nothing')\n    s = sorted(xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\n\ndef _catches(impl):\n    try:\n        check_median(impl)\n    except Exception:\n        return True\n    return False\n\ndef bad(xs):\n    if not xs:\n        raise ValueError()\n    s = sorted(abs(v) for v in xs)\n    m = len(s) // 2\n    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2\nassert _catches(bad), \"check_median accepted a median that ignores negative numbers\"",
+          "concept": "edge-cases"
+        }
+      ],
+      "solution": "def check_median(median):\n    assert median([3]) == 3, 'one value is its own median'\n    assert median([5, 1, 3]) == 3, 'sort before taking the middle'\n    assert median([4, 1, 3, 2]) == 2.5, 'an even count averages the two middle values'\n    assert median([1, 2]) == 1.5, 'not integer division'\n    assert median([-4, -1, -7]) == -4, 'negative numbers'\n    assert median([1, 2, 10]) == 2, 'the middle value, not the mean'\n    data = [9, 2, 7]\n    median(data)\n    assert data == [9, 2, 7], 'the input list must not change'\n    try:\n        median([])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('an empty list must raise ValueError')\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Which test best catches a clamp that returns hi - 1 for values at or above hi?",
+          "choices": [
+            "clamp(10, 0, 10) == 10",
+            "clamp(5, 0, 10) == 5",
+            "clamp(-1, 0, 10) == 0",
+            "clamp(3, 0, 10) == 3"
+          ],
+          "answer": 0,
+          "explanation": "Only a value at the limit itself exercises that boundary.",
+          "concept": "edge-cases"
+        },
+        {
+          "id": "q2",
+          "prompt": "A test suite passes on your code. What does that prove?",
+          "choices": [
+            "Only that the code handles the cases the tests try",
+            "That the code has no bugs",
+            "That the tests are complete",
+            "Nothing at all"
+          ],
+          "answer": 0,
+          "explanation": "Tests show the presence of the behaviours they check, not the absence of every bug.",
+          "concept": "unit-testing"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does `with self.assertRaises(ValueError):` check?",
+          "choices": [
+            "That the indented code raises ValueError",
+            "That no ValueError happens",
+            "That the test is skipped on ValueError",
+            "That ValueError is caught and ignored"
+          ],
+          "answer": 0,
+          "explanation": "The test fails if the block finishes without raising that error.",
+          "concept": "unit-testing"
+        },
+        {
+          "id": "q4",
+          "prompt": "Why not rely on assert to validate user input in a real program?",
+          "choices": [
+            "Assertions can be switched off with python -O",
+            "assert is slower than if",
+            "assert only works in tests",
+            "assert can't show a message"
+          ],
+          "answer": 0,
+          "explanation": "Use assertions for 'this can't happen' checks; validate input with if and raise.",
+          "concept": "assertions"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- State assumptions with `assert` and read an `AssertionError`.\n- Write a `unittest.TestCase` with `assertEqual` and `assertRaises`, and run it.\n- Choose edge cases: boundaries, empty and single inputs, negatives, errors, unchanged inputs.\n- Judge tests by whether they would fail on broken code."
+    }
+  ]
+}

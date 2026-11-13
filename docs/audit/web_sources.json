@@ -1,525 +1,605 @@
 {
-  "_note": "Owner-cleared web sources (official documentation). Fetched by scripts/fetch_web_source.py into sources/extracts/ (internal). Lessons cite them as references; nothing is republished.",
-  "sources": [
-    {
-      "source_id": "pydocs-312-stdtypes",
-      "title": "The Python Standard Library 3.12: Built-in Types",
-      "short": "Python 3.12 docs, Built-in Types",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/stdtypes.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
-      },
-      "sha256": "0b10fb9e7e5b8db1d1283835b98b6a9c167871bf6475937aa5d0e1467956a352"
-    },
-    {
-      "source_id": "pydocs-312-errors",
-      "title": "The Python Tutorial 3.12: Errors and Exceptions",
-      "short": "Python 3.12 tutorial, Errors and Exceptions",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/tutorial/errors.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
-      },
-      "sha256": "f9a32af10feb2cc14ee68b193c7cecdbbf8e67a5d7267e97f7b8a857c44c4101"
-    },
-    {
-      "source_id": "pydocs-312-expressions",
-      "title": "The Python Language Reference 3.12: Expressions",
-      "short": "Python 3.12 reference, Expressions",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/reference/expressions.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
-      },
-      "sha256": "56c73f1feb16c3e223e9a52f5a9810e67858ce59692e9afad7e2e12a019605d0"
-    },
-    {
-      "source_id": "pydocs-312-inputoutput",
-      "title": "The Python Tutorial 3.12: Input and Output",
-      "short": "Python 3.12 tutorial, Input and Output",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/tutorial/inputoutput.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
-      },
-      "sha256": "bd064c24cd5fdc74cc50b0d96cf4ff0bc713ac99b4e4d6a4c0cee3d7b24f92b3"
-    },
-    {
-      "source_id": "pydocs-312-modules",
-      "title": "The Python Tutorial 3.12: Modules",
-      "short": "Python 3.12 tutorial, Modules",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/tutorial/modules.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
-      },
-      "sha256": "07b54eaa726c8495636b0094412545a05d4d3163290496c2bd3dcd7888ac5691"
-    },
-    {
-      "source_id": "pydocs-312-classes",
-      "title": "The Python Tutorial 3.12: Classes",
-      "short": "Python 3.12 tutorial, Classes",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/tutorial/classes.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
-      },
-      "sha256": "1374b3b919fe6e635079118ce80011797f5acf942d13bf8440b90b10d0e44a78"
-    },
-    {
-      "source_id": "npdocs-20-beginners",
-      "title": "NumPy 2.0 User Guide: NumPy, the absolute basics for beginners",
-      "short": "NumPy 2.0 docs, absolute basics",
-      "authors": [
-        "NumPy Developers"
-      ],
-      "url": "https://numpy.org/doc/2.0/user/absolute_beginners.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://numpy.org/doc/2.0/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official NumPy documentation; numpy.org/doc/2.0/license.html is the BSD 3-Clause licence (checked 2026-11-08). Pinned to 2.0 to match Pyodide 0.27.8's numpy 2.0.2."
-      },
-      "sha256": "111aab1bcd668f629fef7dd863eb80386397ed5ac1e256040539fdc3dccbbdc5"
-    },
-    {
-      "source_id": "pddocs-223-10min",
-      "title": "pandas 2.2.3 User Guide: 10 minutes to pandas",
-      "short": "pandas 2.2.3 docs, 10 minutes to pandas",
-      "authors": [
-        "pandas development team"
-      ],
-      "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/user_guide/10min.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session)",
-        "date": "2026-11-08",
-        "basis": "Official pandas documentation; pandas is distributed under the BSD 3-Clause licence (overview page, checked 2026-11-08). Pinned to 2.2.3 to match Pyodide 0.27.8."
-      },
-      "sha256": "d357432f960345f877fc758812328805acf477b363ab2c70696551910f5a5a20"
-    },
-    {
-      "source_id": "pydocs-312-random",
-      "title": "The Python Standard Library 3.12: random — Generate pseudo-random numbers",
-      "short": "Python 3.12 docs, random",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/random.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'combine these books and continue')",
-        "date": "2026-11-08",
-        "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
-      },
-      "sha256": "ebe62caad0756d32478ee6800f2abfb76c8367753c857b4489356f068be696af"
-    },
-    {
-      "source_id": "pydocs-312-statistics",
-      "title": "The Python Standard Library 3.12: statistics — Mathematical statistics functions",
-      "short": "Python 3.12 docs, statistics",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/statistics.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-08",
-        "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
-      },
-      "sha256": "d352eb46f10a3c30aae7e8108ca24dd0ded58158462d06ba724b150fb1f1da5f"
-    },
-    {
-      "source_id": "npdocs-20-std",
-      "title": "NumPy 2.0 API reference: numpy.std",
-      "short": "NumPy 2.0 docs, numpy.std",
-      "authors": [
-        "NumPy Developers"
-      ],
-      "url": "https://numpy.org/doc/2.0/reference/generated/numpy.std.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://numpy.org/doc/2.0/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-08",
-        "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
-      },
-      "sha256": "8de1d072cfa7328466b03adc573e69a48e99288e565534dc0b7bf0df81f97aaf"
-    },
-    {
-      "source_id": "pddocs-223-read-csv",
-      "title": "pandas 2.2.3 API reference: pandas.read_csv",
-      "short": "pandas 2.2.3 docs, read_csv",
-      "authors": [
-        "pandas development team"
-      ],
-      "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.read_csv.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-09",
-        "basis": "Official pandas API reference, BSD 3-Clause like the 10-minute guide. Pinned to 2.2.3 to match Pyodide 0.27.8."
-      },
-      "sha256": "8bb99275d7a13fb5c610b08cdff8f068be2a4c5902f74af5a8ddfad2cd075eb6"
-    },
-    {
-      "source_id": "pddocs-223-dropna",
-      "title": "pandas 2.2.3 API reference: pandas.DataFrame.dropna",
-      "short": "pandas 2.2.3 docs, DataFrame.dropna",
-      "authors": [
-        "pandas development team"
-      ],
-      "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.DataFrame.dropna.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-09",
-        "basis": "Official pandas API reference, BSD 3-Clause like the 10-minute guide. Pinned to 2.2.3 to match Pyodide 0.27.8."
-      },
-      "sha256": "4c4453e93ec24d8a4e6cf3a8b41b5148bbd863f79c3f6841f01bbc3356d68619"
-    },
-    {
-      "source_id": "npdocs-20-eigh",
-      "title": "NumPy 2.0 API reference: numpy.linalg.eigh",
-      "short": "NumPy 2.0 docs, numpy.linalg.eigh",
-      "authors": [
-        "NumPy Developers"
-      ],
-      "url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.eigh.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://numpy.org/doc/2.0/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue everything that left to do')",
-        "date": "2026-11-09",
-        "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
-      },
-      "sha256": "1de276633961adde851cfec4923c834dc529747a647d1baa2fb63a32fdcec964"
-    },
-    {
-      "source_id": "skdocs-15-neighbors",
-      "title": "scikit-learn 1.5 User Guide: Nearest Neighbors",
-      "short": "scikit-learn 1.5 docs, Nearest Neighbors",
-      "authors": [
-        "scikit-learn developers"
-      ],
-      "url": "https://scikit-learn.org/1.5/modules/neighbors.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-10",
-        "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what kNN is and how k trades noise against boundary detail; the lesson does not use scikit-learn."
-      },
-      "sha256": "0b44e970ea6a5f9a7e2d146b18b5f575f1beb6aa82731d7d3a806f00defbeeb3"
-    },
-    {
-      "source_id": "skdocs-15-linear-model",
-      "title": "scikit-learn 1.5 User Guide: Linear Models",
-      "short": "scikit-learn 1.5 docs, Linear Models",
-      "authors": [
-        "scikit-learn developers"
-      ],
-      "url": "https://scikit-learn.org/1.5/modules/linear_model.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-10",
-        "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what logistic regression models (a probability through the logistic function) and the log loss it minimises; the lesson does not use scikit-learn."
-      },
-      "sha256": "c5219ba7fa89456b6af2336311409c3a40e2a416fcfe030bd2f56eb471c08287"
-    },
-    {
-      "source_id": "pydocs-312-math",
-      "title": "Python 3.12 Library Reference: math — Mathematical functions",
-      "short": "Python 3.12 docs, math",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/math.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-10",
-        "basis": "Official Python documentation (PSF licence). Cited for math.exp and math.log, and for OverflowError/ValueError on out-of-range arguments."
-      },
-      "sha256": "1f356c2ceef5e5f776b6fe6cdad2b51ed0a646b683a6dcbc9774ab978e498365"
-    },
-    {
-      "source_id": "skdocs-15-tree",
-      "title": "scikit-learn 1.5 User Guide: Decision Trees",
-      "short": "scikit-learn 1.5 docs, Decision Trees",
-      "authors": [
-        "scikit-learn developers"
-      ],
-      "url": "https://scikit-learn.org/1.5/modules/tree.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-11",
-        "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for how a classification tree splits on thresholds, the Gini impurity criterion, and depth limits against overfitting; the lesson does not use scikit-learn."
-      },
-      "sha256": "065ab2b6c609c37c57aaf33cf4afb48701a665038fcc4a107c716e60f72a12d6"
-    },
-    {
-      "source_id": "skdocs-15-ensemble",
-      "title": "scikit-learn 1.5 User Guide: Ensembles",
-      "short": "scikit-learn 1.5 docs, Ensembles",
-      "authors": [
-        "scikit-learn developers"
-      ],
-      "url": "https://scikit-learn.org/1.5/modules/ensemble.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue')",
-        "date": "2026-11-11",
-        "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for bagging, bootstrap samples, random forests and out-of-bag estimates; the lesson does not use scikit-learn."
-      },
-      "sha256": "884c74295ce9e23c3ac0f2d8aa3b30a310782192bc83eb113429a5a06a2d3732"
-    },
-    {
-      "source_id": "npdocs-20-solve",
-      "title": "NumPy 2.0 API reference: numpy.linalg.solve",
-      "short": "NumPy 2.0 docs, numpy.linalg.solve",
-      "authors": [
-        "NumPy Developers"
-      ],
-      "url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.solve.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://numpy.org/doc/2.0/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for solving a square linear system and the error raised for a singular matrix."
-      },
-      "sha256": "d338d32f4edcc5246237a2fe28d8acc80ec63178ccf56e1dd5884d1bfea88aa7"
-    },
-    {
-      "source_id": "npdocs-20-matmul",
-      "title": "NumPy 2.0 API reference: numpy.matmul",
-      "short": "NumPy 2.0 docs, numpy.matmul",
-      "authors": [
-        "NumPy Developers"
-      ],
-      "url": "https://numpy.org/doc/2.0/reference/generated/numpy.matmul.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://numpy.org/doc/2.0/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for the matrix product, the @ operator and shape rules."
-      },
-      "sha256": "25bf62f9577328d3f39998ad7777246e2e54c47493bcf6637a81189eb8d60ce4"
-    },
-    {
-      "source_id": "pydocs-312-floatingpoint",
-      "title": "The Python Tutorial 3.12: Floating-Point Arithmetic: Issues and Limitations",
-      "short": "Python 3.12 docs, floating-point arithmetic",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/tutorial/floatingpoint.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official Python documentation (PSF licence). Cited for float precision (about 17 significant digits stored, binary approximation) and rounding error."
-      },
-      "sha256": "491f3aaab334b60608c7ca9cae6d98643f96e3a8c0a49a9366005f454313c4a3"
-    },
-    {
-      "source_id": "skdocs-15-naive-bayes",
-      "title": "scikit-learn 1.5 User Guide: Naive Bayes",
-      "short": "scikit-learn 1.5 docs, Naive Bayes",
-      "authors": [
-        "scikit-learn developers"
-      ],
-      "url": "https://scikit-learn.org/1.5/modules/naive_bayes.html",
-      "license": "BSD 3-Clause",
-      "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for the naive (conditional independence) assumption and multinomial naive Bayes with Laplace smoothing; the lesson does not use scikit-learn."
-      },
-      "sha256": "cf9d916bd44f54a60d01d707cde5e364e5ff145c0614a53a7a551f0888f38aec"
-    },
-    {
-      "source_id": "pydocs-312-fractions",
-      "title": "Python 3.12 Library Reference: fractions — Rational numbers",
-      "short": "Python 3.12 docs, fractions",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/fractions.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official Python documentation (PSF licence). Cited for exact rational arithmetic with fractions.Fraction."
-      },
-      "sha256": "359d550b41e647bbea4cc7b1de4019c2f479c68ec24aab28b976954f22bb374f"
-    },
-    {
-      "source_id": "pydocs-312-json",
-      "title": "Python 3.12 Library Reference: json — JSON encoder and decoder",
-      "short": "Python 3.12 docs, json",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/json.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official Python documentation (PSF licence). Cited for json.dumps/loads/dump/load, the Python-to-JSON conversion table and JSONDecodeError."
-      },
-      "sha256": "61534059deb718a77f803e5d1f63203463032d24b89c204b5acbdc1d5c549f52"
-    },
-    {
-      "source_id": "pydocs-312-csv",
-      "title": "Python 3.12 Library Reference: csv — CSV File Reading and Writing",
-      "short": "Python 3.12 docs, csv",
-      "authors": [
-        "Python Software Foundation"
-      ],
-      "url": "https://docs.python.org/3.12/library/csv.html",
-      "license": "PSF License v2 (code examples 0BSD)",
-      "license_url": "https://docs.python.org/3.12/license.html",
-      "rights_verified": true,
-      "allowed_to_publish": false,
-      "allowed_for_internal_extraction": true,
-      "decision": {
-        "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
-        "date": "2026-11-11",
-        "basis": "Official Python documentation (PSF licence). Cited for csv.reader/writer, DictReader/DictWriter, quoting and newline='' when opening files."
-      },
-      "sha256": "837f676e4026d5087b57e137dad623d3429149c782c72b7949c565ffb430925a"
-    }
-  ]
+ "_note": "Owner-cleared web sources (official documentation). Fetched by scripts/fetch_web_source.py into sources/extracts/ (internal). Lessons cite them as references; nothing is republished.",
+ "sources": [
+  {
+   "source_id": "pydocs-312-stdtypes",
+   "title": "The Python Standard Library 3.12: Built-in Types",
+   "short": "Python 3.12 docs, Built-in Types",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/stdtypes.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "0b10fb9e7e5b8db1d1283835b98b6a9c167871bf6475937aa5d0e1467956a352"
+  },
+  {
+   "source_id": "pydocs-312-errors",
+   "title": "The Python Tutorial 3.12: Errors and Exceptions",
+   "short": "Python 3.12 tutorial, Errors and Exceptions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/errors.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "f9a32af10feb2cc14ee68b193c7cecdbbf8e67a5d7267e97f7b8a857c44c4101"
+  },
+  {
+   "source_id": "pydocs-312-expressions",
+   "title": "The Python Language Reference 3.12: Expressions",
+   "short": "Python 3.12 reference, Expressions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/reference/expressions.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "56c73f1feb16c3e223e9a52f5a9810e67858ce59692e9afad7e2e12a019605d0"
+  },
+  {
+   "source_id": "pydocs-312-inputoutput",
+   "title": "The Python Tutorial 3.12: Input and Output",
+   "short": "Python 3.12 tutorial, Input and Output",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/inputoutput.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "bd064c24cd5fdc74cc50b0d96cf4ff0bc713ac99b4e4d6a4c0cee3d7b24f92b3"
+  },
+  {
+   "source_id": "pydocs-312-modules",
+   "title": "The Python Tutorial 3.12: Modules",
+   "short": "Python 3.12 tutorial, Modules",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/modules.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "07b54eaa726c8495636b0094412545a05d4d3163290496c2bd3dcd7888ac5691"
+  },
+  {
+   "source_id": "pydocs-312-classes",
+   "title": "The Python Tutorial 3.12: Classes",
+   "short": "Python 3.12 tutorial, Classes",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/classes.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official docs; page footer states PSF License Version 2, examples Zero Clause BSD (checked 2026-11-08). Pinned to the 3.12 docs to match Pyodide's CPython 3.12."
+   },
+   "sha256": "1374b3b919fe6e635079118ce80011797f5acf942d13bf8440b90b10d0e44a78"
+  },
+  {
+   "source_id": "npdocs-20-beginners",
+   "title": "NumPy 2.0 User Guide: NumPy, the absolute basics for beginners",
+   "short": "NumPy 2.0 docs, absolute basics",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/user/absolute_beginners.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official NumPy documentation; numpy.org/doc/2.0/license.html is the BSD 3-Clause licence (checked 2026-11-08). Pinned to 2.0 to match Pyodide 0.27.8's numpy 2.0.2."
+   },
+   "sha256": "111aab1bcd668f629fef7dd863eb80386397ed5ac1e256040539fdc3dccbbdc5"
+  },
+  {
+   "source_id": "pddocs-223-10min",
+   "title": "pandas 2.2.3 User Guide: 10 minutes to pandas",
+   "short": "pandas 2.2.3 docs, 10 minutes to pandas",
+   "authors": [
+    "pandas development team"
+   ],
+   "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/user_guide/10min.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session)",
+    "date": "2026-11-08",
+    "basis": "Official pandas documentation; pandas is distributed under the BSD 3-Clause licence (overview page, checked 2026-11-08). Pinned to 2.2.3 to match Pyodide 0.27.8."
+   },
+   "sha256": "d357432f960345f877fc758812328805acf477b363ab2c70696551910f5a5a20"
+  },
+  {
+   "source_id": "pydocs-312-random",
+   "title": "The Python Standard Library 3.12: random — Generate pseudo-random numbers",
+   "short": "Python 3.12 docs, random",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/random.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'combine these books and continue')",
+    "date": "2026-11-08",
+    "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
+   },
+   "sha256": "ebe62caad0756d32478ee6800f2abfb76c8367753c857b4489356f068be696af"
+  },
+  {
+   "source_id": "pydocs-312-statistics",
+   "title": "The Python Standard Library 3.12: statistics — Mathematical statistics functions",
+   "short": "Python 3.12 docs, statistics",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/statistics.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-08",
+    "basis": "Official docs; PSF License Version 2, examples Zero Clause BSD, as for the other 3.12 pages. Pinned to 3.12 to match Pyodide."
+   },
+   "sha256": "d352eb46f10a3c30aae7e8108ca24dd0ded58158462d06ba724b150fb1f1da5f"
+  },
+  {
+   "source_id": "npdocs-20-std",
+   "title": "NumPy 2.0 API reference: numpy.std",
+   "short": "NumPy 2.0 docs, numpy.std",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.std.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-08",
+    "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
+   },
+   "sha256": "8de1d072cfa7328466b03adc573e69a48e99288e565534dc0b7bf0df81f97aaf"
+  },
+  {
+   "source_id": "pddocs-223-read-csv",
+   "title": "pandas 2.2.3 API reference: pandas.read_csv",
+   "short": "pandas 2.2.3 docs, read_csv",
+   "authors": [
+    "pandas development team"
+   ],
+   "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.read_csv.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-09",
+    "basis": "Official pandas API reference, BSD 3-Clause like the 10-minute guide. Pinned to 2.2.3 to match Pyodide 0.27.8."
+   },
+   "sha256": "8bb99275d7a13fb5c610b08cdff8f068be2a4c5902f74af5a8ddfad2cd075eb6"
+  },
+  {
+   "source_id": "pddocs-223-dropna",
+   "title": "pandas 2.2.3 API reference: pandas.DataFrame.dropna",
+   "short": "pandas 2.2.3 docs, DataFrame.dropna",
+   "authors": [
+    "pandas development team"
+   ],
+   "url": "https://pandas.pydata.org/pandas-docs/version/2.2.3/reference/api/pandas.DataFrame.dropna.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/pandas-dev/pandas/blob/v2.2.3/LICENSE",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-09",
+    "basis": "Official pandas API reference, BSD 3-Clause like the 10-minute guide. Pinned to 2.2.3 to match Pyodide 0.27.8."
+   },
+   "sha256": "4c4453e93ec24d8a4e6cf3a8b41b5148bbd863f79c3f6841f01bbc3356d68619"
+  },
+  {
+   "source_id": "npdocs-20-eigh",
+   "title": "NumPy 2.0 API reference: numpy.linalg.eigh",
+   "short": "NumPy 2.0 docs, numpy.linalg.eigh",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.eigh.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue everything that left to do')",
+    "date": "2026-11-09",
+    "basis": "Official NumPy documentation, BSD 3-Clause like the beginners' guide. Pinned to 2.0 to match Pyodide 0.27.8 (numpy 2.0.2)."
+   },
+   "sha256": "1de276633961adde851cfec4923c834dc529747a647d1baa2fb63a32fdcec964"
+  },
+  {
+   "source_id": "skdocs-15-neighbors",
+   "title": "scikit-learn 1.5 User Guide: Nearest Neighbors",
+   "short": "scikit-learn 1.5 docs, Nearest Neighbors",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/neighbors.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-10",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what kNN is and how k trades noise against boundary detail; the lesson does not use scikit-learn."
+   },
+   "sha256": "0b44e970ea6a5f9a7e2d146b18b5f575f1beb6aa82731d7d3a806f00defbeeb3"
+  },
+  {
+   "source_id": "skdocs-15-linear-model",
+   "title": "scikit-learn 1.5 User Guide: Linear Models",
+   "short": "scikit-learn 1.5 docs, Linear Models",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/linear_model.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-10",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for what logistic regression models (a probability through the logistic function) and the log loss it minimises; the lesson does not use scikit-learn."
+   },
+   "sha256": "c5219ba7fa89456b6af2336311409c3a40e2a416fcfe030bd2f56eb471c08287"
+  },
+  {
+   "source_id": "pydocs-312-math",
+   "title": "Python 3.12 Library Reference: math — Mathematical functions",
+   "short": "Python 3.12 docs, math",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/math.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-10",
+    "basis": "Official Python documentation (PSF licence). Cited for math.exp and math.log, and for OverflowError/ValueError on out-of-range arguments."
+   },
+   "sha256": "1f356c2ceef5e5f776b6fe6cdad2b51ed0a646b683a6dcbc9774ab978e498365"
+  },
+  {
+   "source_id": "skdocs-15-tree",
+   "title": "scikit-learn 1.5 User Guide: Decision Trees",
+   "short": "scikit-learn 1.5 docs, Decision Trees",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/tree.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-11",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for how a classification tree splits on thresholds, the Gini impurity criterion, and depth limits against overfitting; the lesson does not use scikit-learn."
+   },
+   "sha256": "065ab2b6c609c37c57aaf33cf4afb48701a665038fcc4a107c716e60f72a12d6"
+  },
+  {
+   "source_id": "skdocs-15-ensemble",
+   "title": "scikit-learn 1.5 User Guide: Ensembles",
+   "short": "scikit-learn 1.5 docs, Ensembles",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/ensemble.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue')",
+    "date": "2026-11-11",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for bagging, bootstrap samples, random forests and out-of-bag estimates; the lesson does not use scikit-learn."
+   },
+   "sha256": "884c74295ce9e23c3ac0f2d8aa3b30a310782192bc83eb113429a5a06a2d3732"
+  },
+  {
+   "source_id": "npdocs-20-solve",
+   "title": "NumPy 2.0 API reference: numpy.linalg.solve",
+   "short": "NumPy 2.0 docs, numpy.linalg.solve",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.linalg.solve.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for solving a square linear system and the error raised for a singular matrix."
+   },
+   "sha256": "d338d32f4edcc5246237a2fe28d8acc80ec63178ccf56e1dd5884d1bfea88aa7"
+  },
+  {
+   "source_id": "npdocs-20-matmul",
+   "title": "NumPy 2.0 API reference: numpy.matmul",
+   "short": "NumPy 2.0 docs, numpy.matmul",
+   "authors": [
+    "NumPy Developers"
+   ],
+   "url": "https://numpy.org/doc/2.0/reference/generated/numpy.matmul.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://numpy.org/doc/2.0/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official NumPy documentation (BSD 3-Clause), pinned to 2.0 as the browser runs. Cited for the matrix product, the @ operator and shape rules."
+   },
+   "sha256": "25bf62f9577328d3f39998ad7777246e2e54c47493bcf6637a81189eb8d60ce4"
+  },
+  {
+   "source_id": "pydocs-312-floatingpoint",
+   "title": "The Python Tutorial 3.12: Floating-Point Arithmetic: Issues and Limitations",
+   "short": "Python 3.12 docs, floating-point arithmetic",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/tutorial/floatingpoint.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for float precision (about 17 significant digits stored, binary approximation) and rounding error."
+   },
+   "sha256": "491f3aaab334b60608c7ca9cae6d98643f96e3a8c0a49a9366005f454313c4a3"
+  },
+  {
+   "source_id": "skdocs-15-naive-bayes",
+   "title": "scikit-learn 1.5 User Guide: Naive Bayes",
+   "short": "scikit-learn 1.5 docs, Naive Bayes",
+   "authors": [
+    "scikit-learn developers"
+   ],
+   "url": "https://scikit-learn.org/1.5/modules/naive_bayes.html",
+   "license": "BSD 3-Clause",
+   "license_url": "https://github.com/scikit-learn/scikit-learn/blob/1.5.2/COPYING",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official scikit-learn documentation (BSD 3-Clause). Cited for the naive (conditional independence) assumption and multinomial naive Bayes with Laplace smoothing; the lesson does not use scikit-learn."
+   },
+   "sha256": "cf9d916bd44f54a60d01d707cde5e364e5ff145c0614a53a7a551f0888f38aec"
+  },
+  {
+   "source_id": "pydocs-312-fractions",
+   "title": "Python 3.12 Library Reference: fractions — Rational numbers",
+   "short": "Python 3.12 docs, fractions",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/fractions.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue until everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for exact rational arithmetic with fractions.Fraction."
+   },
+   "sha256": "359d550b41e647bbea4cc7b1de4019c2f479c68ec24aab28b976954f22bb374f"
+  },
+  {
+   "source_id": "pydocs-312-json",
+   "title": "Python 3.12 Library Reference: json — JSON encoder and decoder",
+   "short": "Python 3.12 docs, json",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/json.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for json.dumps/loads/dump/load, the Python-to-JSON conversion table and JSONDecodeError."
+   },
+   "sha256": "61534059deb718a77f803e5d1f63203463032d24b89c204b5acbdc1d5c549f52"
+  },
+  {
+   "source_id": "pydocs-312-csv",
+   "title": "Python 3.12 Library Reference: csv — CSV File Reading and Writing",
+   "short": "Python 3.12 docs, csv",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/csv.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for csv.reader/writer, DictReader/DictWriter, quoting and newline='' when opening files."
+   },
+   "sha256": "837f676e4026d5087b57e137dad623d3429149c782c72b7949c565ffb430925a"
+  },
+  {
+   "source_id": "pydocs-312-unittest",
+   "title": "Python 3.12 Library Reference: unittest — Unit testing framework",
+   "short": "Python 3.12 docs, unittest",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/unittest.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for TestCase, assert methods, assertRaises and running tests."
+   },
+   "sha256": "a7891bedfa9b5d8d99b9ef287c8010cf38a0468e3409b623438e37a4a4baf6d9"
+  },
+  {
+   "source_id": "pydocs-312-typing",
+   "title": "Python 3.12 Library Reference: typing — Support for type hints",
+   "short": "Python 3.12 docs, typing",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/typing.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for type hints and what they do and don't check."
+   },
+   "sha256": "f5ec740d2b8e46684f39985a34d74758679e3e3aebbf7bd70232d3f4226c226a"
+  },
+  {
+   "source_id": "pydocs-312-dataclasses",
+   "title": "Python 3.12 Library Reference: dataclasses — Data Classes",
+   "short": "Python 3.12 docs, dataclasses",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/dataclasses.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for @dataclass, field defaults and __post_init__."
+   },
+   "sha256": "e7355d64f6e2c93a0ae925b7085df69808b195550c65ff4185ce88cf73204786"
+  },
+  {
+   "source_id": "pydocs-312-sqlite3",
+   "title": "Python 3.12 Library Reference: sqlite3 — DB-API 2.0 interface for SQLite databases",
+   "short": "Python 3.12 docs, sqlite3",
+   "authors": [
+    "Python Software Foundation"
+   ],
+   "url": "https://docs.python.org/3.12/library/sqlite3.html",
+   "license": "PSF License v2 (code examples 0BSD)",
+   "license_url": "https://docs.python.org/3.12/license.html",
+   "rights_verified": true,
+   "allowed_to_publish": false,
+   "allowed_for_internal_extraction": true,
+   "decision": {
+    "by": "human:waiyan (delegated to Claude session; 'continue till everything is done')",
+    "date": "2026-11-11",
+    "basis": "Official Python documentation (PSF licence). Cited for connecting, executing SQL, placeholders and fetching rows."
+   },
+   "sha256": "cf425fd15be3911c9bffd72332a6cf247afb30edd0ef1d14d3176c812d246ec8"
+  }
+ ]
 }
