@@ -329,6 +329,11 @@
           "concept": "methods"
         },
         {
+          "name": "the leader is the highest scorer, and changes",
+          "code": "b = Scoreboard()\nb.add('zed', 9)\nb.add('amy', 2)\nassert b.leader() == 'zed', b.leader()\nb.add('amy', 10)\nassert b.leader() == 'amy', b.leader()",
+          "concept": "methods"
+        },
+        {
           "name": "two scoreboards are separate",
           "code": "a, b = Scoreboard(), Scoreboard()\na.add('ana', 9)\nassert b.score('ana') == 0 and b.leader() is None, 'the scoreboards share their scores: create them in __init__'",
           "concept": "objects"

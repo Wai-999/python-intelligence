@@ -80,6 +80,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Summarise data with the mean, variance and standard deviation, including weighted and relative versions.",
+  "analogy": "The mean is the balance point of a see-saw loaded with the data; the variance measures how far the weights sit from that point.",
+  "misconceptions": [
+    {
+      "belief": "Variance is the average distance from the mean.",
+      "correction": "It is the average squared distance; the standard deviation is its square root."
+    },
+    {
+      "belief": "The sample and population formulas are the same.",
+      "correction": "Sample variance divides by n − 1, population variance by n."
+    },
+    {
+      "belief": "A bigger standard deviation always means more spread relative to the data.",
+      "correction": "Compare spreads relative to the mean with the coefficient of variation."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right formulas",
+      "evidence": "means and variances follow their definitions"
+    },
+    {
+      "criterion": "Weights respected",
+      "evidence": "weighted statistics use the weights as specified"
+    },
+    {
+      "criterion": "Population convention",
+      "evidence": "the stated divisor is used"
+    }
+  ],
+  "review": {
+    "recall": "Why square the deviations in the variance? When do you divide by n − 1 instead of n?"
+  },
   "steps": [
     {
       "id": "why",
@@ -321,6 +354,41 @@
         }
       ],
       "solution": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    if len(arr) == 0 or np.all(arr == arr[0]):\n        return []\n    return arr[np.abs(arr - arr.mean()) > k * arr.std()].tolist()\n"
+    },
+    {
+      "id": "weighted",
+      "kind": "transfer",
+      "title": "Transfer: weighted marks and relative spread",
+      "body": "Write `weighted_mean(values, weights)` and `weighted_variance(values, weights)`, the weighted average of squared deviations\nfrom the weighted mean (weights needn't add up to 1). Then write `coefficient_of_variation(values)`: the population\nstandard deviation divided by the mean.",
+      "starter": "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    return float(np.mean(values))\n\n\ndef weighted_variance(values, weights):\n    return float(np.var(values))\n\n\ndef coefficient_of_variation(values):\n    return 0.0\n",
+      "hints": [
+        "Weighted mean: Σ w·x / Σ w. Weighted variance: Σ w·(x − mean)² / Σ w.",
+        "`np.std(values) / np.mean(values)` uses the population standard deviation.",
+        "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.sum(w * x) / np.sum(w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x) / np.mean(x))\n"
+      ],
+      "tests": [
+        {
+          "name": "the weighted mean",
+          "code": "assert abs(weighted_mean([60, 80, 90], [1, 1, 2]) - 80.0) < 1e-12 and abs(weighted_mean([1, 2], [3, 1]) - 1.25) < 1e-12",
+          "concept": "mean"
+        },
+        {
+          "name": "the weighted variance",
+          "code": "assert abs(weighted_variance([60, 80, 90], [1, 1, 2]) - 150.0) < 1e-9, weighted_variance([60, 80, 90], [1, 1, 2])\nassert abs(weighted_variance([2, 4], [1, 1]) - 1.0) < 1e-12",
+          "concept": "variance"
+        },
+        {
+          "name": "equal weights match the ordinary variance",
+          "code": "import numpy as np\nx = [3.0, 7.0, 8.0, 10.0]\nassert abs(weighted_variance(x, [5, 5, 5, 5]) - np.var(x)) < 1e-12",
+          "concept": "variance"
+        },
+        {
+          "name": "relative spread",
+          "code": "assert abs(coefficient_of_variation([2, 4, 4, 4, 5, 5, 7, 9]) - 0.4) < 1e-12 and coefficient_of_variation([5, 5]) == 0",
+          "concept": "standard-deviation"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.sum(w * x) / np.sum(w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x) / np.mean(x))\n"
     },
     {
       "id": "check",

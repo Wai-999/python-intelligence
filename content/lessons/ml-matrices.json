@@ -89,6 +89,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Multiply matrices, transform data with them, and solve linear systems.",
+  "analogy": "A matrix is a machine that transforms every arrow fed into it: rotate, stretch or mix; solving a system runs the machine backwards.",
+  "misconceptions": [
+    {
+      "belief": "`A * B` multiplies matrices.",
+      "correction": "On numpy arrays `*` is element-wise; `A @ B` is matrix multiplication."
+    },
+    {
+      "belief": "Matrix multiplication is commutative.",
+      "correction": "In general `A @ B` and `B @ A` differ."
+    },
+    {
+      "belief": "Every square system has exactly one solution.",
+      "correction": "Singular matrices (rank too low) have none or infinitely many."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right products",
+      "evidence": "@ is used for matrix products with matching shapes"
+    },
+    {
+      "criterion": "Uses the linear algebra",
+      "evidence": "np.linalg solves systems instead of hand-written guessing"
+    },
+    {
+      "criterion": "Shapes kept",
+      "evidence": "results have the shape the task asks for"
+    }
+  ],
+  "review": {
+    "recall": "What shapes can be multiplied with @? What does it mean for a matrix to be singular?"
+  },
   "steps": [
     {
       "id": "why",
@@ -309,6 +342,36 @@
         }
       ],
       "solution": "def solve(A, b):\n    n = len(A)\n    if n == 0 or any(len(row) != n for row in A) or len(b) != n:\n        raise ValueError('need a square n x n matrix and n right-hand values')\n    scale = max(abs(v) for row in A for v in row)\n    M = [[float(v) for v in row] + [float(bi)] for row, bi in zip(A, b)]\n    for k in range(n):\n        p = max(range(k, n), key=lambda i: abs(M[i][k]))\n        if abs(M[p][k]) <= 1e-12 * scale:\n            raise ValueError('the matrix is singular')\n        M[k], M[p] = M[p], M[k]\n        for i in range(k + 1, n):\n            f = M[i][k] / M[k][k]\n            for j in range(k, n + 1):\n                M[i][j] -= f * M[k][j]\n    x = [0.0] * n\n    for i in reversed(range(n)):\n        x[i] = (M[i][n] - sum(M[i][j] * x[j] for j in range(i + 1, n))) / M[i][i]\n    return x\n"
+    },
+    {
+      "id": "rotate",
+      "kind": "transfer",
+      "title": "Transfer: rotating points and mixing paint",
+      "body": "Write `rotate(points, degrees)`: `points` is an (n, 2) array of x, y coordinates; return them rotated anticlockwise about the\norigin, using a 2×2 rotation matrix and matrix multiplication. Then write `mix(A, b)`: each column of `A` says how much of\neach pigment one paint contains, and `b` is the pigment mix wanted; return how much of each paint to use (solve A x = b).",
+      "starter": "import numpy as np\n\n\ndef rotate(points, degrees):\n    return points\n\n\ndef mix(A, b):\n    return np.zeros(len(b))\n",
+      "hints": [
+        "R = [[cos t, -sin t], [sin t, cos t]] with t in radians; each point p becomes R @ p, so all at once: `points @ R.T`.",
+        "`np.linalg.solve(A, b)` solves A x = b.",
+        "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
+      ],
+      "tests": [
+        {
+          "name": "a quarter turn",
+          "code": "import numpy as np\nassert np.allclose(rotate(np.array([[1.0, 0.0], [0.0, 2.0]]), 90), [[0, 1], [-2, 0]]), rotate(np.array([[1.0, 0.0], [0.0, 2.0]]), 90)",
+          "concept": "matrix-multiplication"
+        },
+        {
+          "name": "lengths are kept and a full turn changes nothing",
+          "code": "import numpy as np\nP = np.array([[3.0, 4.0], [-1.0, 2.5]])\nassert np.allclose(np.linalg.norm(rotate(P, 37), axis=1), np.linalg.norm(P, axis=1)) and np.allclose(rotate(P, 360), P)",
+          "concept": "matrices"
+        },
+        {
+          "name": "solves the mix",
+          "code": "import numpy as np\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nx = mix(A, np.array([5.0, 10.0]))\nassert np.allclose(A @ x, [5, 10]) and np.allclose(x, [1, 3]), x",
+          "concept": "linear-systems"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
     },
     {
       "id": "check",

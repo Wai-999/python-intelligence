@@ -76,6 +76,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Estimate probabilities by simulation, compute them exactly, and check that the two agree.",
+  "analogy": "Simulation is flipping the coin a thousand times; exact probability is reading the coin's design. When they disagree, one of your models is wrong.",
+  "misconceptions": [
+    {
+      "belief": "After a door is opened, the two closed doors are always equally likely.",
+      "correction": "It depends on what the host knew; a host who always reveals a goat makes switching win 2/3."
+    },
+    {
+      "belief": "A simulation gives the exact answer.",
+      "correction": "It gives an estimate with random error that shrinks as the number of trials grows."
+    },
+    {
+      "belief": "Fixing the random seed makes a simulation less valid.",
+      "correction": "A seed makes it repeatable; the estimate is just as good."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Faithful simulation",
+      "evidence": "the simulation follows the game's rules, including which games count"
+    },
+    {
+      "criterion": "Exact answer",
+      "evidence": "the exact probability is derived and returned as a fraction"
+    },
+    {
+      "criterion": "Agreement",
+      "evidence": "the estimate is close to the exact value"
+    }
+  ],
+  "review": {
+    "recall": "Why does switching win 2/3 of the time in the classic game? What changes if the host opens a door at random?"
+  },
   "steps": [
     {
       "id": "why",
@@ -243,6 +276,41 @@
         }
       ],
       "solution": "from fractions import Fraction\n\n\ndef exact_win(doors, opened, switch):\n    if doors < 3 or not 0 <= opened <= doors - 2:\n        raise ValueError('need at least 3 doors and 0 <= opened <= doors - 2')\n    if not switch:\n        return Fraction(1, doors)\n    return Fraction(doors - 1, doors) * Fraction(1, doors - 1 - opened)\n"
+    },
+    {
+      "id": "forgetful",
+      "kind": "transfer",
+      "title": "Transfer: the forgetful host",
+      "body": "In this version the host forgets where the car is and opens one of the other doors at random. Games where he reveals the\ncar don't count. With `n` doors, after he reveals a goat you switch to a random other unopened door. Write\n`simulate(n, trials, seed)`: among the games that count, the share that switching wins, using `random.Random(seed)`.\nWrite `exact(n)`: that probability as a `Fraction` (it is 1/(n − 1)).",
+      "starter": "from fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    return 0.0\n\n\ndef exact(n):\n    return Fraction(2, 3)\n",
+      "hints": [
+        "Each game: car and pick are random doors; the host opens a random door that isn't your pick; skip the game if it hides the car.",
+        "Then switch to a random door that is neither your pick nor the opened one, and count a win if it hides the car.",
+        "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"
+      ],
+      "tests": [
+        {
+          "name": "the exact probability",
+          "code": "from fractions import Fraction\nassert exact(3) == Fraction(1, 2) and exact(5) == Fraction(1, 4)",
+          "concept": "exact-probabilities"
+        },
+        {
+          "name": "the simulation agrees",
+          "code": "for n in (3, 4, 6):\n    est = simulate(n, 40000, 7)\n    assert abs(est - 1 / (n - 1)) < 0.015, (n, est)",
+          "concept": "monte-carlo-estimates"
+        },
+        {
+          "name": "unlike the classic game",
+          "code": "assert simulate(3, 40000, 1) < 0.55, 'with a forgetful host, switching wins only half the time'",
+          "concept": "monty-hall-problem"
+        },
+        {
+          "name": "the seed makes it repeatable",
+          "code": "assert simulate(3, 2000, 42) == simulate(3, 2000, 42)",
+          "concept": "monte-carlo-estimates"
+        }
+      ],
+      "solution": "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"
     },
     {
       "id": "check",

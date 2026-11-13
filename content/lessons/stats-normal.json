@@ -66,6 +66,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Use the normal distribution's density and cumulative probability to answer questions about measurements.",
+  "analogy": "A normal curve is a sand pile poured from one spot: most grains land near the middle, fewer and fewer farther out, the same way on both sides.",
+  "misconceptions": [
+    {
+      "belief": "The density's height is the probability of a value.",
+      "correction": "For a continuous variable, probabilities are areas under the curve; a single value has probability 0."
+    },
+    {
+      "belief": "About 95% of values lie within one standard deviation.",
+      "correction": "About 68% lie within one, 95% within two, 99.7% within three."
+    },
+    {
+      "belief": "A density can never exceed 1.",
+      "correction": "A narrow normal curve can be taller than 1; it is the area that totals 1."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Areas, not heights",
+      "evidence": "probabilities come from the cumulative distribution"
+    },
+    {
+      "criterion": "Standardised",
+      "evidence": "values are converted with z = (x − μ)/σ where needed"
+    },
+    {
+      "criterion": "Checked",
+      "evidence": "results match known values like 68-95-99.7"
+    }
+  ],
+  "review": {
+    "recall": "What share of a normal distribution lies within two standard deviations? Why isn't the density a probability?"
+  },
   "steps": [
     {
       "id": "why",
@@ -270,6 +303,36 @@
         }
       ],
       "solution": "import random\nfrom statistics import NormalDist\n\n\ndef prob_between(mu, sigma, a, b):\n    if sigma <= 0:\n        raise ValueError('sigma must be positive')\n    if a >= b:\n        return 0.0\n    dist = NormalDist(mu, sigma)\n    return dist.cdf(b) - dist.cdf(a)\n\n\ndef value_at(mu, sigma, p):\n    if sigma <= 0 or not 0 < p < 1:\n        raise ValueError('need sigma > 0 and 0 < p < 1')\n    return NormalDist(mu, sigma).inv_cdf(p)\n\n\ndef estimate_between(mu, sigma, a, b, n, seed):\n    if sigma <= 0 or n < 1:\n        raise ValueError('need sigma > 0 and n >= 1')\n    rng = random.Random(seed)\n    hits = 0\n    for _ in range(n):\n        x = rng.gauss(mu, sigma)\n        if a < x <= b:\n            hits += 1\n    return hits / n\n"
+    },
+    {
+      "id": "measure",
+      "kind": "transfer",
+      "title": "Transfer: answering questions about heights",
+      "body": "Write `prob_between(a, b, mu, sigma)`: the probability that a normal value lies between a and b, using the cumulative\ndistribution Φ(z) = (1 + erf(z/√2))/2. Write `within(k)`: the probability of lying within k standard deviations of the\nmean. Write `peak(sigma)`: the height of the density at its mean, 1/(σ√(2π)).",
+      "starter": "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    return 0.0\n\n\ndef within(k):\n    return 0.0\n\n\ndef peak(sigma):\n    return 1.0\n",
+      "hints": [
+        "`cdf = lambda x: (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2`, then `cdf(b) - cdf(a)`.",
+        "`within(k)` is `prob_between(-k, k, 0, 1)`.",
+        "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / (sigma * math.sqrt(2 * math.pi))\n"
+      ],
+      "tests": [
+        {
+          "name": "68-95-99.7",
+          "code": "assert [round(within(k), 3) for k in (1, 2, 3)] == [0.683, 0.954, 0.997], [within(k) for k in (1, 2, 3)]",
+          "concept": "normal-distribution"
+        },
+        {
+          "name": "probability between two heights",
+          "code": "p = prob_between(160, 180, 170, 10)\nassert abs(p - within(1)) < 1e-12\nassert abs(prob_between(170, 1e9, 170, 10) - 0.5) < 1e-12",
+          "concept": "cumulative-probability"
+        },
+        {
+          "name": "the peak of the density",
+          "code": "import math\nassert abs(peak(1) - 0.3989422804014327) < 1e-15 and peak(0.1) > 1, 'a narrow curve is taller than 1'",
+          "concept": "probability-density"
+        }
+      ],
+      "solution": "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / (sigma * math.sqrt(2 * math.pi))\n"
     },
     {
       "id": "check",

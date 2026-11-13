@@ -110,6 +110,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Select, group and summarise tabular data with pandas, and deal with missing values deliberately.",
+  "analogy": "A DataFrame is a spreadsheet you talk to in sentences: pick these rows, group by that column, sum this one.",
+  "misconceptions": [
+    {
+      "belief": "`df['a'] > 1 and df['b'] < 5` filters rows.",
+      "correction": "Use `&` with brackets around each condition."
+    },
+    {
+      "belief": "Missing values count as zero in sums and means.",
+      "correction": "pandas skips NaN by default; decide explicitly whether to drop, fill or keep them."
+    },
+    {
+      "belief": "groupby changes the DataFrame.",
+      "correction": "It returns a grouped view; aggregating gives a new result."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right rows and columns",
+      "evidence": "selections pick exactly the rows and columns asked for"
+    },
+    {
+      "criterion": "Correct groups",
+      "evidence": "grouped totals and sort order are right"
+    },
+    {
+      "criterion": "Missing data handled",
+      "evidence": "NaN values are counted or skipped as specified"
+    }
+  ],
+  "review": {
+    "recall": "How do you keep rows matching two conditions? What does pandas do with NaN in a sum?"
+  },
   "steps": [
     {
       "id": "why",
@@ -307,6 +340,41 @@
         }
       ],
       "solution": "import pandas as pd\n\ndef team_averages(df):\n    return df.groupby(\"team\")[\"score\"].mean().round(1).to_dict()"
+    },
+    {
+      "id": "sales",
+      "kind": "transfer",
+      "title": "Transfer: a sales table",
+      "body": "A DataFrame has columns `order`, `region`, `qty` and `price` (price may be missing). Write `revenue_by_region(df)`: a dict from\nregion to the total of qty × price (missing prices count as 0), with regions in order of revenue, highest first.\nWrite `big_orders(df, min_qty)`: a DataFrame of just the `order` and `qty` columns for rows with `qty` of at least `min_qty`.\nWrite `missing_counts(df)`: a dict from column name to its number of missing values.",
+      "starter": "import pandas as pd\n\n\ndef revenue_by_region(df):\n    return {}\n\n\ndef big_orders(df, min_qty):\n    return df\n\n\ndef missing_counts(df):\n    return {}\n",
+      "hints": [
+        "`(df['qty'] * df['price'].fillna(0)).groupby(df['region']).sum().sort_values(ascending=False)`, then `.to_dict()`.",
+        "`df.loc[df['qty'] >= min_qty, ['order', 'qty']]`; `df.isna().sum().to_dict()`.",
+        "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
+      ],
+      "tests": [
+        {
+          "name": "revenue per region, highest first",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3, 4, 5], 'region': ['north', 'south', 'north', 'east', 'south'],\n    'qty': [2, 5, 1, 10, 3], 'price': [10.0, 2.0, float('nan'), 1.5, 4.0]})\nout = revenue_by_region(df)\nassert out == {'east': 15.0, 'north': 20.0, 'south': 22.0} and list(out) == ['south', 'north', 'east'], out",
+          "concept": "groupby"
+        },
+        {
+          "name": "big orders, two columns",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3, 4, 5], 'region': ['north', 'south', 'north', 'east', 'south'],\n    'qty': [2, 5, 1, 10, 3], 'price': [10.0, 2.0, float('nan'), 1.5, 4.0]})\nout = big_orders(df, 5)\nassert list(out.columns) == ['order', 'qty'] and out['order'].tolist() == [2, 4], out",
+          "concept": "selection"
+        },
+        {
+          "name": "missing values per column",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3, 4, 5], 'region': ['north', 'south', 'north', 'east', 'south'],\n    'qty': [2, 5, 1, 10, 3], 'price': [10.0, 2.0, float('nan'), 1.5, 4.0]})\nassert missing_counts(df) == {'order': 0, 'region': 0, 'qty': 0, 'price': 1}, missing_counts(df)",
+          "concept": "missing-data"
+        },
+        {
+          "name": "the input DataFrame is unchanged",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3, 4, 5], 'region': ['north', 'south', 'north', 'east', 'south'],\n    'qty': [2, 5, 1, 10, 3], 'price': [10.0, 2.0, float('nan'), 1.5, 4.0]})\nbefore = df.copy()\nrevenue_by_region(df)\nbig_orders(df, 2)\nassert df.equals(before)",
+          "concept": "dataframes"
+        }
+      ],
+      "solution": "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
     },
     {
       "id": "check",

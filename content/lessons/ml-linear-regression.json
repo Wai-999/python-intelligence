@@ -81,6 +81,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Fit linear models by minimising squared error, in closed form or by gradient descent.",
+  "analogy": "Fitting a line is adjusting a stiff ruler among the data points until the total squared stretch of rubber bands from each point to the ruler is as small as possible.",
+  "misconceptions": [
+    {
+      "belief": "Least squares minimises the sum of absolute errors.",
+      "correction": "It minimises the sum (or mean) of squared errors."
+    },
+    {
+      "belief": "A larger learning rate always converges faster.",
+      "correction": "Too large a step overshoots and diverges."
+    },
+    {
+      "belief": "Every line must have an intercept.",
+      "correction": "Some models are forced through the origin; the formula changes accordingly."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Correct loss",
+      "evidence": "the mean squared error is computed as defined"
+    },
+    {
+      "criterion": "Right fit",
+      "evidence": "the closed-form or descent result matches the least-squares answer"
+    },
+    {
+      "criterion": "Vectorised",
+      "evidence": "numpy computes sums and means over all points"
+    }
+  ],
+  "review": {
+    "recall": "What does least squares minimise? What goes wrong when the learning rate is too large?"
+  },
   "steps": [
     {
       "id": "why",
@@ -299,6 +332,41 @@
         }
       ],
       "solution": "import numpy as np\n\ndef gd_fit(x, y, lr=0.01, steps=5000):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w, b = 0.0, 0.0\n    for _ in range(steps):\n        err = w * x + b - y\n        dw = 2 * np.mean(err * x)\n        db = 2 * np.mean(err)\n        w, b = w - lr * dw, b - lr * db\n    return float(w), float(b)\n"
+    },
+    {
+      "id": "origin",
+      "kind": "transfer",
+      "title": "Transfer: a line through the origin",
+      "body": "Some quantities are zero when their cause is zero (cost against weight, say). Write `mse(y, y_hat)`, the mean squared\nerror, and `fit_through_origin(x, y)`, the slope w of the least-squares line y ≈ w·x with no intercept (w = Σxy / Σx²).\nThen write `step(w, x, y, lr)`: one gradient-descent step on the mean squared error of that model, which returns\nw − lr · 2·mean((w·x − y)·x).",
+      "starter": "import numpy as np\n\n\ndef mse(y, y_hat):\n    return 0.0\n\n\ndef fit_through_origin(x, y):\n    return 0.0\n\n\ndef step(w, x, y, lr):\n    return w\n",
+      "hints": [
+        "`np.mean((y - y_hat) ** 2)`; for the slope, `np.sum(x * y) / np.sum(x * x)`.",
+        "The gradient of mean((w·x − y)²) with respect to w is 2·mean((w·x − y)·x).",
+        "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n"
+      ],
+      "tests": [
+        {
+          "name": "mean squared error",
+          "code": "assert abs(mse([1, 2, 3], [1, 2, 5]) - 4 / 3) < 1e-12 and mse([2], [2]) == 0",
+          "concept": "loss-functions"
+        },
+        {
+          "name": "the least-squares slope",
+          "code": "import numpy as np\nx = np.array([1.0, 2.0, 3.0])\nassert abs(fit_through_origin(x, 2 * x) - 2) < 1e-12\nassert abs(fit_through_origin([1, 2], [1, 3]) - 1.4) < 1e-12, fit_through_origin([1, 2], [1, 3])",
+          "concept": "least-squares"
+        },
+        {
+          "name": "one descent step",
+          "code": "assert abs(step(0.0, [1.0, 2.0], [2.0, 4.0], 0.1) - 1.0) < 1e-12, step(0.0, [1.0, 2.0], [2.0, 4.0], 0.1)",
+          "concept": "gradient-descent"
+        },
+        {
+          "name": "descent reaches the least-squares slope",
+          "code": "w = 0.0\nfor _ in range(200):\n    w = step(w, [1.0, 2.0], [1.0, 3.0], 0.05)\nassert abs(w - fit_through_origin([1, 2], [1, 3])) < 1e-6, w",
+          "concept": "linear-models"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n"
     },
     {
       "id": "check",

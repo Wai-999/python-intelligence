@@ -67,6 +67,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Boost weak models by fitting each new one to the previous residuals and adding it with a small learning rate.",
+  "analogy": "Boosting is a team of editors: each one fixes only what the drafts so far still get wrong, and each correction is applied gently.",
+  "misconceptions": [
+    {
+      "belief": "Each boosting round refits the original targets.",
+      "correction": "Each round fits the residuals: what the ensemble still gets wrong."
+    },
+    {
+      "belief": "A learning rate of 1 is always best.",
+      "correction": "Smaller steps (shrinkage) usually generalise better, at the cost of more rounds."
+    },
+    {
+      "belief": "Boosting and bagging train their models independently.",
+      "correction": "Bagging's models are independent; boosting's are sequential, each depending on the last."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Residuals",
+      "evidence": "each round uses targets minus current predictions"
+    },
+    {
+      "criterion": "Shrinkage",
+      "evidence": "each new model's contribution is scaled by the learning rate"
+    },
+    {
+      "criterion": "Improves",
+      "evidence": "training error does not increase from round to round"
+    }
+  ],
+  "review": {
+    "recall": "What does each boosting round fit? What does the learning rate do?"
+  },
   "steps": [
     {
       "id": "why",
@@ -304,6 +337,41 @@
         }
       ],
       "solution": "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n\n\ndef fit_boost(X, y, rounds, lr):\n    if rounds < 0 or not lr > 0:\n        raise ValueError('need rounds >= 0 and lr > 0')\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    base = sum(y) / len(y)\n    F = [base] * len(y)\n    stumps = []\n    for _ in range(rounds):\n        s = fit_stump(X, [t - p for t, p in zip(y, F)])\n        if s is None:\n            break\n        stumps.append(s)\n        F = [p + lr * predict_stump(s, row) for p, row in zip(F, X)]\n    return {'base': base, 'lr': lr, 'stumps': stumps}\n\n\ndef predict_boost(model, X):\n    return [model['base'] + sum(model['lr'] * predict_stump(s, row) for s in model['stumps']) for row in X]\n"
+    },
+    {
+      "id": "constant",
+      "kind": "transfer",
+      "title": "Transfer: boosting the simplest learner",
+      "body": "The simplest weak learner predicts one constant: the mean of its targets. Write `residuals(ys, preds)` (target minus\nprediction, element by element), and `boost(ys, rounds, lr)`: start every prediction at 0, and in each round fit the\nconstant learner to the residuals and add `lr` times its prediction to every prediction. Return the final predictions.",
+      "starter": "def residuals(ys, preds):\n    return ys\n\n\ndef boost(ys, rounds, lr):\n    return [0.0] * len(ys)\n",
+      "hints": [
+        "`[y - p for y, p in zip(ys, preds)]`.",
+        "Each round: `r = residuals(ys, preds)`, `step = lr * sum(r) / len(r)`, then add `step` to every prediction.",
+        "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
+      ],
+      "tests": [
+        {
+          "name": "residuals",
+          "code": "assert residuals([3, 5], [1, 5]) == [2, 0]",
+          "concept": "residuals"
+        },
+        {
+          "name": "one round with shrinkage",
+          "code": "assert boost([2.0, 4.0], 1, 0.5) == [1.5, 1.5], boost([2.0, 4.0], 1, 0.5)",
+          "concept": "shrinkage"
+        },
+        {
+          "name": "rounds approach the mean",
+          "code": "preds = boost([2.0, 4.0], 30, 0.5)\nassert all(abs(p - 3.0) < 1e-6 for p in preds), preds\nassert boost([1.0], 0, 0.3) == [0.0]",
+          "concept": "boosting"
+        },
+        {
+          "name": "training error never grows",
+          "code": "ys = [1.0, 2.0, 9.0]\ndef sse(r):\n    preds = boost(ys, r, 0.3)\n    return sum((y - p) ** 2 for y, p in zip(ys, preds))\nerrs = [sse(r) for r in range(8)]\nassert all(b <= a + 1e-12 for a, b in zip(errs, errs[1:])), errs",
+          "concept": "boosting"
+        }
+      ],
+      "solution": "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
     },
     {
       "id": "check",

@@ -69,6 +69,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Estimate how a model does on new data with held-out splits and cross-validation, and recognise overfitting.",
+  "analogy": "Evaluating on the training data is marking your own homework with the answer key you studied; a held-out set is an exam you haven't seen.",
+  "misconceptions": [
+    {
+      "belief": "Low training error means the model will do well on new data.",
+      "correction": "A model can memorise training data; compare with validation or test error."
+    },
+    {
+      "belief": "Cross-validation uses each point for testing many times.",
+      "correction": "In k-fold, each point is tested exactly once."
+    },
+    {
+      "belief": "Pick the model with the lowest training error.",
+      "correction": "Pick by validation error; training error favours overfitting."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "No overlap",
+      "evidence": "a point is never in the training and test sets of the same split"
+    },
+    {
+      "criterion": "Each point tested once",
+      "evidence": "the splits cover every point exactly once"
+    },
+    {
+      "criterion": "Chosen by validation",
+      "evidence": "model choices use held-out error"
+    }
+  ],
+  "review": {
+    "recall": "What is overfitting, and how does a held-out set reveal it?"
+  },
   "steps": [
     {
       "id": "why",
@@ -315,6 +348,36 @@
         }
       ],
       "solution": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\ndef cross_val_mse(xs, ys, k):\n    n = len(xs)\n    if not 2 <= k <= n:\n        raise ValueError('need 2 <= k <= len(xs)')\n    scores = []\n    for i in range(k):\n        val = list(range(i, n, k))\n        train = [j for j in range(n) if j % k != i]\n        w, b = fit_line([xs[j] for j in train], [ys[j] for j in train])\n        scores.append(mse([w * xs[j] + b for j in val], [ys[j] for j in val]))\n    return float(np.mean(scores))\n"
+    },
+    {
+      "id": "loo",
+      "kind": "transfer",
+      "title": "Transfer: leave-one-out",
+      "body": "Write `leave_one_out(n)`: a list of n `(train, test)` pairs of numpy index arrays, where the i-th pair tests on index i\nalone and trains on all the others. Then write `pick(train_errors, valid_errors)`: given the errors of several candidate\nmodels, return the position of the model to choose, judged by validation error (ties to the earlier one).",
+      "starter": "import numpy as np\n\n\ndef leave_one_out(n):\n    return []\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(train_errors))\n",
+      "hints": [
+        "For each i: `test = np.array([i])`, `train = np.array([j for j in range(n) if j != i])`.",
+        "`int(np.argmin(valid_errors))` returns the first smallest.",
+        "import numpy as np\n\n\ndef leave_one_out(n):\n    return [(np.array([j for j in range(n) if j != i], dtype=int), np.array([i])) for i in range(n)]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"
+      ],
+      "tests": [
+        {
+          "name": "one split per point, each tested once",
+          "code": "import numpy as np\nsplits = leave_one_out(4)\nassert len(splits) == 4\nassert sorted(int(t[0]) for _, t in splits) == [0, 1, 2, 3] and all(len(t) == 1 for _, t in splits)",
+          "concept": "cross-validation"
+        },
+        {
+          "name": "train and test never overlap",
+          "code": "import numpy as np\nfor train, test in leave_one_out(5):\n    assert len(train) == 4 and not set(train.tolist()) & set(test.tolist())\n    assert sorted(train.tolist() + test.tolist()) == [0, 1, 2, 3, 4]",
+          "concept": "train-test-split"
+        },
+        {
+          "name": "choose by validation error",
+          "code": "assert pick([0.0, 0.3, 0.5], [0.9, 0.4, 0.6]) == 1 and pick([1, 1], [0.2, 0.2]) == 0",
+          "concept": "overfitting"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef leave_one_out(n):\n    return [(np.array([j for j in range(n) if j != i], dtype=int), np.array([i])) for i in range(n)]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"
     },
     {
       "id": "check",

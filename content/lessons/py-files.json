@@ -95,7 +95,7 @@
     },
     {
       "belief": "Lines read from a file have no newline.",
-      "correction": "Each line keeps its \"\\n\"; strip it if you don't want it."
+      "correction": "Reading keeps each line's \"\\n\" where there is one (the last line may have none); strip it if you don't want it."
     },
     {
       "belief": "Forgetting to close a file is harmless.",

@@ -85,7 +85,8 @@
  },
  "py-classes": {
   "reject": [
-   "class Scoreboard:\n    scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n"
+   "class Scoreboard:\n    scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n",
+   "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores)\n"
   ],
   "accept": [
    "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        best = max(self.scores.values())\n        return sorted(p for p in self.scores if self.scores[p] == best)[0]\n"
@@ -119,10 +120,12 @@
  },
  "py-json-csv": {
   "reject": [
-   "import json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    lines = [\",\".join(rows[0])]\n    for row in rows:\n        lines.append(\",\".join(str(v) for v in row.values()))\n    return \"\\n\".join(lines)\n"
+   "import json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    lines = [\",\".join(rows[0])]\n    for row in rows:\n        lines.append(\",\".join(str(v) for v in row.values()))\n    return \"\\n\".join(lines)\n",
+   "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.writer(out)\n    writer.writerow(list(rows[0]))\n    for row in rows:\n        writer.writerow(list(row.values()))\n    return out.getvalue()\n"
   ],
   "accept": [
-   "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.writer(out)\n    writer.writerow(list(rows[0]))\n    for row in rows:\n        writer.writerow(list(row.values()))\n    return out.getvalue()\n"
+   "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.DictWriter(out, fieldnames=list(rows[0]), quoting=csv.QUOTE_ALL)\n    writer.writeheader()\n    writer.writerows(rows)\n    return out.getvalue()\n",
+   "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.writer(out)\n    header = list(rows[0])\n    writer.writerow(header)\n    for row in rows:\n        writer.writerow([row[k] for k in header])\n    return out.getvalue()\n"
   ]
  },
  "py-testing": {
@@ -152,10 +155,13 @@
  },
  "py-sqlite": {
   "reject": [
-   "def search(con, word):\n    return [row[0] for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\")]\n"
+   "def search(con, word):\n    titles = []\n    for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\"):\n        titles.append(row[0])\n    return titles\n",
+   "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ?\", (f\"%{word}%\",)\n    )\n    titles = []\n    for row in rows:\n        titles.append(row[0])\n    return titles\n",
+   "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year\", (f\"%{word}%\",)\n    )\n    titles = []\n    for row in rows:\n        titles.append(row[0])\n    return titles\n"
   ],
   "accept": [
-   "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE :p ORDER BY year, title\", {\"p\": \"%\" + word + \"%\"}\n    )\n    return [row[0] for row in rows]\n"
+   "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word.lower()}%\",)\n    )\n    titles = []\n    for row in rows:\n        titles.append(row[0])\n    return titles\n",
+   "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE :p ORDER BY year, title\", {\"p\": \"%\" + word + \"%\"}\n    )\n    titles = []\n    for row in rows:\n        titles.append(row[0])\n    return titles\n"
   ]
  },
  "algo-complexity": {
@@ -164,6 +170,205 @@
   ],
   "accept": [
    "def first_repeat(items):\n    seen = {}\n    for item in items:\n        if item in seen:\n            return item\n        seen[item] = True\n    return None\n"
+  ]
+ },
+ "ml-vectors": {
+  "reject": [
+   "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / norms.max()\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arctan2(np.linalg.norm(np.cross(np.append(u, 0)[:3], np.append(v, 0)[:3])), u @ v)))\n"
+  ]
+ },
+ "ml-matrices": {
+  "reject": [
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.inv(np.asarray(A, dtype=float)) @ np.asarray(b, dtype=float)\n"
+  ]
+ },
+ "ml-derivatives": {
+  "reject": [
+   "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - f(x)) / h\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n"
+  ],
+  "accept": [
+   "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    return \"up\" if slope > 1e-6 else \"down\" if slope < -1e-6 else \"flat\"\n"
+  ]
+ },
+ "ml-linear-regression": {
+  "reject": [
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w + lr * 2 * np.mean((w * x - y) * x))\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.dot(x, y) / np.dot(x, x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n"
+  ]
+ },
+ "ml-scaling": {
+  "reject": [
+   "import numpy as np\n\n\ndef min_max_scale(train, test):\n    lo = np.vstack([train, test]).min(axis=0)\n    hi = np.vstack([train, test]).max(axis=0)\n    return (train - lo) / (hi - lo), (test - lo) / (hi - lo)\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    safe = np.where(span == 0, 1.0, span)\n    return (train - lo) / safe, (test - lo) / safe\n"
+  ]
+ },
+ "ml-knn": {
+  "reject": [
+   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(ks, key=lambda k: -err(k))\n"
+  ],
+  "accept": [
+   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: sum((a - b) ** 2 for a, b in zip(p[0], query)))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
+  ]
+ },
+ "ml-classification": {
+  "reject": [
+   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) > threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return np.where(np.asarray(scores) >= threshold, 1, 0)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
+  ]
+ },
+ "ml-logistic": {
+  "reject": [
+   "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(b)\n\n\ndef log_loss(ys, ps):\n    return 0.0\n"
+  ],
+  "accept": [
+   "import math\n\n\ndef sigmoid(z):\n    return 0.5 * (1 + math.tanh(z / 2))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + b)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = min(max(p, 1e-12), 1 - 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n"
+  ]
+ },
+ "ml-evaluation": {
+  "reject": [
+   "import numpy as np\n\n\ndef leave_one_out(n):\n    return []\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(train_errors))\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef leave_one_out(n):\n    idx = np.arange(n)\n    return [(np.delete(idx, i), idx[i:i + 1]) for i in range(n)]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"
+  ]
+ },
+ "ml-trees": {
+  "reject": [
+   "import math\n\n\ndef entropy(labels):\n    n = len(labels)\n    total = 0.0\n    for c in set(labels):\n        p = labels.count(c) / n\n        total -= p * math.log2(p)\n    return total\n\n\ndef information_gain(parent, left, right):\n    n = len(parent)\n    return entropy(parent) - (entropy(left) + entropy(right)) / 2\n\n\ndef depth(tree):\n    if not isinstance(tree, dict):\n        return 0\n    return 1 + max(depth(tree[\"left\"]), depth(tree[\"right\"]))\n"
+  ],
+  "accept": [
+   "import math\n\n\ndef entropy(labels):\n    n = len(labels)\n    total = 0.0\n    for c in set(labels):\n        p = labels.count(c) / n\n        total -= p * math.log2(p)\n    return total\n\n\ndef information_gain(parent, left, right):\n    n = len(parent)\n    return entropy(parent) - len(left) / n * entropy(left) - len(right) / n * entropy(right)\n\n\ndef depth(tree):\n    if type(tree) is not dict:\n        return 0\n    return 1 + max(depth(tree[\"left\"]), depth(tree[\"right\"]))\n"
+  ]
+ },
+ "ml-forests": {
+  "reject": [
+   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return max(p for p, c in counts.items() if c == top)\n"
+  ],
+  "accept": [
+   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    used = set(sample)\n    return [i for i in range(n) if i not in used]\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"
+  ]
+ },
+ "ml-boosting": {
+  "reject": [
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
+  ],
+  "accept": [
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        for i in range(len(preds)):\n            preds[i] += step\n    return preds\n"
+  ]
+ },
+ "ml-kmeans": {
+  "reject": [
+   "import numpy as np\n\n\ndef update(points, labels, centroids):\n    points, labels = np.asarray(points, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        members = points[labels == j]\n        new[j] = members.mean(axis=0) if len(members) else 0\n    return new\n\n\ndef inertia(points, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    return float(np.sum((points - centroids[np.asarray(labels)]) ** 2))\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef update(points, labels, centroids):\n    points, labels = np.asarray(points, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        members = points[labels == j]\n        if len(members):\n            new[j] = members.mean(axis=0)\n    return new\n\n\ndef inertia(points, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    return float(sum(np.sum((p - centroids[l]) ** 2) for p, l in zip(points, labels)))\n"
+  ]
+ },
+ "ml-pca": {
+  "reject": [
+   "import numpy as np\n\n\ndef project(X, components):\n    return X @ components.T\n\n\ndef components_needed(eigenvalues, share):\n    return len(eigenvalues)\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef project(X, components):\n    X = np.asarray(X, dtype=float)\n    return (X - X.mean(axis=0)) @ np.asarray(components, dtype=float).T\n\n\ndef components_needed(eigenvalues, share):\n    ratios = np.sort(np.asarray(eigenvalues, dtype=float))[::-1] / np.sum(eigenvalues)\n    total = 0.0\n    for i, r in enumerate(ratios):\n        total += r\n        if total >= share - 1e-12:\n            return i + 1\n    return len(ratios)\n"
+  ]
+ },
+ "ml-capstone": {
+  "reject": [
+   "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates()\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
+  ],
+  "accept": [
+   "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    out = df.dropna()\n    out = out[~out.duplicated()]\n    return out.reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
+  ]
+ },
+ "np-arrays": {
+  "reject": [
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return 0\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return M.mean()\n",
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.count_nonzero((lo <= a) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
+  ]
+ },
+ "pd-dataframes": {
+  "reject": [
+   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n",
+   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).mean()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
+  ],
+  "accept": [
+   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df[df[\"qty\"] >= min_qty][[\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
+  ]
+ },
+ "proj-caesar": {
+  "reject": [
+   "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            pass\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n",
+   "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(1, 26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"
+  ],
+  "accept": [
+   "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, 26 - k) for ch in cipher):\n            return k\n    return None\n"
+  ]
+ },
+ "proj-life": {
+  "reject": [
+   "def step_torus(grid):\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = 0\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    if dr or dc:\n                        if 0 <= r + dr < rows and 0 <= c + dc < cols:\n                            n += grid[r + dr][c + dc]\n            alive = grid[r][c] == 1\n            row.append(1 if (alive and n in (2, 3)) or (not alive and n == 3) else 0)\n        new.append(row)\n    return new\n\n\ndef cycle(grid, max_steps):\n    seen = {}\n    for step in range(max_steps + 1):\n        state = tuple(tuple(row) for row in grid)\n        if state in seen:\n            return (seen[state], step - seen[state])\n        seen[state] = step\n        grid = step_torus(grid)\n    return None\n",
+   "def step_torus(grid):\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = 0\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    if dr or dc:\n                        n += grid[(r + dr) % rows][(c + dc) % cols]\n            alive = grid[r][c] == 1\n            row.append(1 if (alive and n in (2, 3)) or (not alive and n == 3) else 0)\n        new.append(row)\n    return new\n\n\ndef cycle(grid, max_steps):\n    seen = {}\n    for step in range(max_steps + 1):\n        state = tuple(tuple(row) for row in grid)\n        if state in seen:\n            return (0, step)\n        seen[state] = step\n        grid = step_torus(grid)\n    return None\n"
+  ],
+  "accept": [
+   "def step_torus(grid):\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = 0\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    if dr or dc:\n                        n += grid[(r + dr) % rows][(c + dc) % cols]\n            alive = grid[r][c] == 1\n            row.append(1 if (alive and n in (2, 3)) or (not alive and n == 3) else 0)\n        new.append(row)\n    return new\n\n\ndef cycle(grid, max_steps):\n    seen = {}\n    for step in range(max_steps + 1):\n        state = str(grid)\n        if state in seen:\n            return (seen[state], step - seen[state])\n        seen[state] = step\n        grid = step_torus(grid)\n    return None\n"
+  ]
+ },
+ "proj-monty-hall": {
+  "reject": [
+   "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n",
+   "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(n - 1, n * (n - 2))\n"
+  ],
+  "accept": [
+   "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return float(Fraction(wins, counted))\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"
+  ]
+ },
+ "stats-bayes": {
+  "reject": [
+   "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = sensitivity, 1 - specificity\n    return hit * prior / (hit * prior + false * (1 - prior))\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    p = prior\n    for positive in results:\n        p = update(p, sensitivity, specificity, positive)\n    return p\n",
+   "def update(prior, sensitivity, specificity, positive):\n    return sensitivity\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    return prior\n"
+  ],
+  "accept": [
+   "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = 1 - sensitivity, specificity\n    odds = prior / (1 - prior) * hit / false\n    return odds / (1 + odds)\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    p = prior\n    for positive in results:\n        p = update(p, sensitivity, specificity, positive)\n    return p\n"
+  ]
+ },
+ "stats-normal": {
+  "reject": [
+   "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / math.sqrt(2 * math.pi)\n"
+  ],
+  "accept": [
+   "from statistics import NormalDist\n\n\ndef prob_between(a, b, mu, sigma):\n    d = NormalDist(mu, sigma)\n    return d.cdf(b) - d.cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return NormalDist(0, sigma).pdf(0)\n"
+  ]
+ },
+ "stats-simulation": {
+  "reject": [
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random()\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
+  ],
+  "accept": [
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        if x ** 2 + y ** 2 <= 1:\n            inside += 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
+  ]
+ },
+ "stats-summary": {
+  "reject": [
+   "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.sum(w * x) / np.sum(w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x, ddof=1) / np.mean(x))\n",
+   "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    return float(np.mean(values))\n\n\ndef weighted_variance(values, weights):\n    return float(np.var(values))\n\n\ndef coefficient_of_variation(values):\n    return 0.0\n"
+  ],
+  "accept": [
+   "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.average(x, weights=w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x) / np.mean(x))\n"
   ]
  }
 }

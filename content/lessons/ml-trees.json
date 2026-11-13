@@ -96,6 +96,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Measure how mixed a set of labels is and grow decision trees by choosing the splits that reduce it most.",
+  "analogy": "A decision tree is a game of twenty questions: each question splits the group, and a good question leaves each side as pure as possible.",
+  "misconceptions": [
+    {
+      "belief": "A deeper tree is always better.",
+      "correction": "Deep trees fit noise; depth is limited to generalise."
+    },
+    {
+      "belief": "Gini impurity and entropy pick very different splits.",
+      "correction": "They usually agree; both are 0 for a pure set and highest for an even mix."
+    },
+    {
+      "belief": "A split's quality is the impurity of its larger side.",
+      "correction": "Use the size-weighted average of both sides' impurities."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right impurity",
+      "evidence": "the measure is 0 for pure sets and computed from class proportions"
+    },
+    {
+      "criterion": "Weighted fairly",
+      "evidence": "each side counts in proportion to its size"
+    },
+    {
+      "criterion": "Tree structure",
+      "evidence": "depth and leaves are read correctly from the tree"
+    }
+  ],
+  "review": {
+    "recall": "What is the impurity of a pure set? How is a split's quality computed from its two sides?"
+  },
   "steps": [
     {
       "id": "why",
@@ -380,6 +413,41 @@
         }
       ],
       "solution": "def gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n"
+    },
+    {
+      "id": "entropy",
+      "kind": "transfer",
+      "title": "Transfer: entropy and depth",
+      "body": "Write `entropy(labels)`: −Σ p·log₂ p over the classes (0 for an empty or pure list). Write `information_gain(parent, left,\nright)`: the parent's entropy minus the size-weighted entropies of the two sides. A tree is either a leaf (any value that\nisn't a dict) or a dict with keys `\"left\"` and `\"right\"`; write `depth(tree)`, where a leaf has depth 0.",
+      "starter": "def entropy(labels):\n    return 0.0\n\n\ndef information_gain(parent, left, right):\n    return 0.0\n\n\ndef depth(tree):\n    return 0\n",
+      "hints": [
+        "Count each class, p = count / n, add −p·math.log2(p).",
+        "For depth: a dict is 1 + the larger depth of its two children; anything else is 0.",
+        "import math\n\n\ndef entropy(labels):\n    n = len(labels)\n    total = 0.0\n    for c in set(labels):\n        p = labels.count(c) / n\n        total -= p * math.log2(p)\n    return total\n\n\ndef information_gain(parent, left, right):\n    n = len(parent)\n    return entropy(parent) - len(left) / n * entropy(left) - len(right) / n * entropy(right)\n\n\ndef depth(tree):\n    if not isinstance(tree, dict):\n        return 0\n    return 1 + max(depth(tree[\"left\"]), depth(tree[\"right\"]))\n"
+      ],
+      "tests": [
+        {
+          "name": "entropy of pure, even and empty sets",
+          "code": "assert entropy(['a', 'a']) == 0 and abs(entropy(['a', 'b']) - 1) < 1e-12 and entropy([]) == 0\nassert abs(entropy(['a', 'b', 'c', 'd']) - 2) < 1e-12",
+          "concept": "gini-impurity"
+        },
+        {
+          "name": "a perfect split gains everything",
+          "code": "assert abs(information_gain(['y', 'y', 'n', 'n'], ['y', 'y'], ['n', 'n']) - 1) < 1e-12\nassert abs(information_gain(['y', 'y', 'n', 'n'], ['y', 'n'], ['y', 'n'])) < 1e-12",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "each side weighted by its size",
+          "code": "import math\nleft = ['y', 'y', 'y', 'n']\nh_left = -(0.75 * math.log2(0.75) + 0.25 * math.log2(0.25))\ngain = information_gain(['y', 'y', 'y', 'n', 'n', 'n'], left, ['n', 'n'])\nassert abs(gain - (1 - 4 / 6 * h_left)) < 1e-12, gain",
+          "concept": "decision-trees"
+        },
+        {
+          "name": "depth of a tree",
+          "code": "leaf = 'yes'\nassert depth(leaf) == 0 and depth({'left': 'a', 'right': 'b'}) == 1\nassert depth({'left': {'left': 1, 'right': {'left': 2, 'right': 3}}, 'right': 0}) == 3",
+          "concept": "tree-depth"
+        }
+      ],
+      "solution": "import math\n\n\ndef entropy(labels):\n    n = len(labels)\n    total = 0.0\n    for c in set(labels):\n        p = labels.count(c) / n\n        total -= p * math.log2(p)\n    return total\n\n\ndef information_gain(parent, left, right):\n    n = len(parent)\n    return entropy(parent) - len(left) / n * entropy(left) - len(right) / n * entropy(right)\n\n\ndef depth(tree):\n    if not isinstance(tree, dict):\n        return 0\n    return 1 + max(depth(tree[\"left\"]), depth(tree[\"right\"]))\n"
     },
     {
       "id": "check",

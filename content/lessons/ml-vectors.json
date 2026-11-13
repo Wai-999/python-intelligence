@@ -90,6 +90,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Treat data as vectors and compare them with dot products, norms and cosine similarity.",
+  "analogy": "A vector is an arrow: its norm is the arrow's length, and cosine similarity asks how closely two arrows point the same way, whatever their lengths.",
+  "misconceptions": [
+    {
+      "belief": "A larger dot product always means two vectors are more alike.",
+      "correction": "The dot product grows with length too; cosine similarity divides by both norms to compare direction only."
+    },
+    {
+      "belief": "`a * b` on numpy arrays is the dot product.",
+      "correction": "`*` multiplies element by element; use `a @ b` or `np.dot` for the dot product."
+    },
+    {
+      "belief": "Every vector can be normalised to length 1.",
+      "correction": "The zero vector has no direction; dividing by its norm of 0 fails, so handle it separately."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Vectorised",
+      "evidence": "numpy operations replace element-by-element loops"
+    },
+    {
+      "criterion": "Correct geometry",
+      "evidence": "norms, angles and similarities match the definitions"
+    },
+    {
+      "criterion": "Edge cases",
+      "evidence": "zero vectors are handled without dividing by zero"
+    }
+  ],
+  "review": {
+    "recall": "Write the formula for cosine similarity. Why divide by the norms?"
+  },
   "steps": [
     {
       "id": "why",
@@ -294,6 +327,41 @@
         }
       ],
       "solution": "import numpy as np\n\ndef nearest(query, items):\n    q = np.array(query, dtype=float)\n    best_name, best_dist = None, None\n    for name, vec in items.items():\n        d = float(np.sum((np.array(vec, dtype=float) - q) ** 2) ** 0.5)\n        if best_dist is None or d < best_dist:\n            best_name, best_dist = name, d\n    return best_name\n"
+    },
+    {
+      "id": "angles",
+      "kind": "transfer",
+      "title": "Transfer: unit vectors and angles",
+      "body": "Write `normalize_rows(M)`: given a 2-D numpy array, return a new array whose rows are scaled to length 1 (a row of all\nzeros stays all zeros). Then write `angle_degrees(u, v)`: the angle between two non-zero vectors, in degrees.",
+      "starter": "import numpy as np\n\n\ndef normalize_rows(M):\n    return M\n\n\ndef angle_degrees(u, v):\n    return 0.0\n",
+      "hints": [
+        "`norms = np.linalg.norm(M, axis=1, keepdims=True)`; divide where the norm isn't 0, e.g. with `np.where(norms == 0, 1, norms)`.",
+        "cos = u @ v / (norm(u) * norm(v)); clip it to [-1, 1] before `np.degrees(np.arccos(cos))`.",
+        "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"
+      ],
+      "tests": [
+        {
+          "name": "rows get length 1",
+          "code": "import numpy as np\nN = normalize_rows(np.array([[3.0, 4.0], [0.0, 2.0]]))\nassert np.allclose(N, [[0.6, 0.8], [0.0, 1.0]]), N",
+          "concept": "norms"
+        },
+        {
+          "name": "a zero row stays zero, and the input is unchanged",
+          "code": "import numpy as np\nM = np.array([[0.0, 0.0], [1.0, 1.0]])\nN = normalize_rows(M)\nassert np.allclose(N[0], [0, 0]) and np.allclose(np.linalg.norm(N[1]), 1)\nassert np.array_equal(M, [[0.0, 0.0], [1.0, 1.0]]), 'return a new array'",
+          "concept": "vectors"
+        },
+        {
+          "name": "angles in degrees",
+          "code": "assert abs(angle_degrees([1, 0], [0, 2]) - 90) < 1e-9 and abs(angle_degrees([1, 1], [2, 2])) < 1e-4 and abs(angle_degrees([1, 0], [-3, 0]) - 180) < 1e-9",
+          "concept": "similarity"
+        },
+        {
+          "name": "uses the dot product",
+          "code": "assert abs(angle_degrees([1, 0], [1, 1]) - 45) < 1e-9",
+          "concept": "dot-product"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"
     },
     {
       "id": "check",

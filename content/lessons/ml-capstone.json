@@ -132,6 +132,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Run a whole learning pipeline: clean the data, avoid leakage, compare against a baseline and report honestly.",
+  "analogy": "A pipeline is a kitchen line: clean ingredients first, keep the tasting spoon (the test set) out of the cooking, and always compare with the plain dish (the baseline).",
+  "misconceptions": [
+    {
+      "belief": "A model is good if its accuracy is high.",
+      "correction": "Compare with a baseline such as predicting the majority class; 90% may be no better."
+    },
+    {
+      "belief": "Cleaning or scaling the whole dataset before splitting is harmless.",
+      "correction": "Statistics from the test rows leak into training; fit cleaning steps on training data."
+    },
+    {
+      "belief": "A feature that predicts the target perfectly is a great find.",
+      "correction": "It is often leakage, information that wouldn't exist at prediction time."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Clean data",
+      "evidence": "missing and duplicate rows are handled as specified"
+    },
+    {
+      "criterion": "Baseline",
+      "evidence": "the model is compared with a simple baseline"
+    },
+    {
+      "criterion": "No leakage",
+      "evidence": "features copied from the target and test-set statistics are kept out"
+    }
+  ],
+  "review": {
+    "recall": "Why compare a model with a baseline? Give one example of data leakage."
+  },
   "steps": [
     {
       "id": "why",
@@ -459,6 +492,41 @@
         }
       ],
       "solution": "import io\nimport random\nimport numpy as np\nimport pandas as pd\n\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef majority_label(labels):\n    counts = {}\n    for label in labels:\n        counts[label] = counts.get(label, 0) + 1\n    return max(sorted(counts), key=counts.get)\n\n\ndef accuracy(predicted, actual):\n    return sum(p == a for p, a in zip(predicted, actual)) / len(actual)\n\n\ndef run_pipeline(csv_text, features, label, test_fraction, seed):\n    X, y = load_examples(csv_text, features, label)\n    positions = list(range(len(y)))\n    random.Random(seed).shuffle(positions)\n    cut = int(len(y) * test_fraction)\n    test, train = positions[:cut], positions[cut:]\n    if not test or not train:\n        raise ValueError('both the training set and the test set need at least one example')\n    X_train, y_train = [X[i] for i in train], [y[i] for i in train]\n    X_test, y_test = [X[i] for i in test], [y[i] for i in test]\n    guess = majority_label(y_train)\n    model = fit_centroids(X_train, y_train)\n    return {'n_train': len(train), 'n_test': len(test), 'baseline_label': guess,\n            'baseline': accuracy([guess] * len(y_test), y_test),\n            'model': accuracy(predict_centroids(model, X_test), y_test)}\n"
+    },
+    {
+      "id": "audit",
+      "kind": "transfer",
+      "title": "Transfer: a pipeline audit",
+      "body": "Write `clean(df)`: return a new DataFrame without rows that have any missing value and without duplicate rows (keep the\nfirst), with a fresh 0..n−1 index. Write `majority_baseline(y_train, y_test)`: the accuracy on `y_test` of always\npredicting the most common label in `y_train` (ties to the smallest label). Write `leaky_columns(df, target)`: the\nsorted names of other columns whose values equal the target column in every row.",
+      "starter": "import pandas as pd\n\n\ndef clean(df):\n    return df\n\n\ndef majority_baseline(y_train, y_test):\n    return 0.0\n\n\ndef leaky_columns(df, target):\n    return []\n",
+      "hints": [
+        "`df.dropna().drop_duplicates().reset_index(drop=True)`.",
+        "Count labels with `value_counts()`; for leakage, compare each column with `df[c].equals(df[target])`.",
+        "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
+      ],
+      "tests": [
+        {
+          "name": "drops missing and duplicate rows",
+          "code": "import pandas as pd\nimport numpy as np\ndf = pd.DataFrame({'a': [1, 1, 2, np.nan], 'b': ['x', 'x', 'y', 'z']})\nout = clean(df)\nassert out.to_dict('list') == {'a': [1.0, 2.0], 'b': ['x', 'y']} and list(out.index) == [0, 1], out\nassert len(df) == 4, 'return a new DataFrame'",
+          "concept": "data-cleaning"
+        },
+        {
+          "name": "the majority baseline",
+          "code": "assert majority_baseline([1, 0, 1, 1], [1, 0, 0, 1]) == 0.5 and majority_baseline([0, 1], [0, 0, 1]) == 2 / 3",
+          "concept": "baselines"
+        },
+        {
+          "name": "columns that copy the target",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'y': [0, 1, 1], 'copy': [0, 1, 1], 'z': [0, 1, 0], 'also': [0, 1, 1]})\nassert leaky_columns(df, 'y') == ['also', 'copy'], leaky_columns(df, 'y')",
+          "concept": "data-leakage"
+        },
+        {
+          "name": "the steps fit together",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'f': [1, 2, 2, None], 'label': [1, 0, 0, 1]})\nc = clean(df)\nassert majority_baseline(c['label'], c['label']) == 0.5 and leaky_columns(c, 'label') == []",
+          "concept": "ml-pipeline"
+        }
+      ],
+      "solution": "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
     },
     {
       "id": "check",

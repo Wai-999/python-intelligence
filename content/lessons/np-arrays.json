@@ -81,6 +81,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Work on whole arrays at once with vectorised arithmetic, boolean masks and aggregations along an axis.",
+  "analogy": "An array is an egg carton: numpy lets you do the same thing to every egg in one move instead of picking them up one by one.",
+  "misconceptions": [
+    {
+      "belief": "`a[a > 0] = 0` makes a copy and leaves `a` alone.",
+      "correction": "Assigning through a mask changes the array in place; use `np.where` or a copy for a new array."
+    },
+    {
+      "belief": "`and` and `or` combine boolean masks.",
+      "correction": "Use `&` and `|` with brackets: `(a > 0) & (a < 5)`."
+    },
+    {
+      "belief": "`M.mean()` gives the mean of each column.",
+      "correction": "Without an axis it averages everything; `axis=0` gives column means."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Vectorised",
+      "evidence": "masks and numpy functions replace Python loops"
+    },
+    {
+      "criterion": "Right axis",
+      "evidence": "aggregations run along the axis the task asks for"
+    },
+    {
+      "criterion": "Inputs respected",
+      "evidence": "functions that return new arrays leave their input unchanged"
+    }
+  ],
+  "review": {
+    "recall": "How do you combine two conditions in a numpy mask? What does `axis=0` mean for a 2-D array?"
+  },
   "steps": [
     {
       "id": "why",
@@ -256,6 +289,41 @@
         }
       ],
       "solution": "import numpy as np\n\ndef zscores(values):\n    arr = np.array(values, dtype=float)\n    if arr.std() == 0:\n        return [0.0] * len(arr)\n    return np.round((arr - arr.mean()) / arr.std(), 2).tolist()"
+    },
+    {
+      "id": "sensors",
+      "kind": "transfer",
+      "title": "Transfer: cleaning sensor readings",
+      "body": "Write `count_in_range(a, lo, hi)`: how many values lie between `lo` and `hi`, inclusive. Write `zero_negatives(a)`: a new array\nwith negative values replaced by 0 (don't change `a`). Write `column_means(M)`: the mean of each column of a 2-D array.\nUse masks and numpy functions rather than Python loops.",
+      "starter": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return 0\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return M.mean()\n",
+      "hints": [
+        "`int(np.sum((a >= lo) & (a <= hi)))`; `np.where(a < 0, 0, a)` builds a new array.",
+        "`M.mean(axis=0)`.",
+        "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
+      ],
+      "tests": [
+        {
+          "name": "counts values in range, ends included",
+          "code": "import numpy as np\nassert count_in_range(np.array([1, 5, 7, 10, 12]), 5, 10) == 3 and count_in_range(np.array([]), 0, 1) == 0",
+          "concept": "boolean-masks"
+        },
+        {
+          "name": "negatives become 0 in a new array",
+          "code": "import numpy as np\na = np.array([-2, 3, -1, 0])\nout = zero_negatives(a)\nassert np.array_equal(out, [0, 3, 0, 0]) and np.array_equal(a, [-2, 3, -1, 0]), 'return a new array and leave the input alone'",
+          "concept": "arrays"
+        },
+        {
+          "name": "the mean of each column",
+          "code": "import numpy as np\nassert np.allclose(column_means(np.array([[1.0, 10.0], [3.0, 20.0]])), [2.0, 15.0])",
+          "concept": "array-aggregation"
+        },
+        {
+          "name": "works on big arrays quickly",
+          "code": "import numpy as np\na = np.arange(-500_000, 500_000)\nassert count_in_range(a, 0, 9) == 10 and zero_negatives(a).min() == 0",
+          "concept": "vectorization"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
     },
     {
       "id": "check",

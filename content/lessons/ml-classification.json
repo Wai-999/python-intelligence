@@ -79,6 +79,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Turn scores into class predictions with a decision rule and measure how good they are.",
+  "analogy": "A classifier is a sorting hat with a dial: the score says how sure it is, and the threshold dial decides where 'yes' starts.",
+  "misconceptions": [
+    {
+      "belief": "High accuracy means a good classifier.",
+      "correction": "On imbalanced data predicting the majority class gives high accuracy; look at precision and recall too."
+    },
+    {
+      "belief": "Precision and recall measure the same thing.",
+      "correction": "Precision: how many predicted positives are right. Recall: how many real positives were found."
+    },
+    {
+      "belief": "The threshold must be 0.5.",
+      "correction": "It can move to trade false positives against false negatives."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Correct counts",
+      "evidence": "true/false positives and negatives are counted exactly"
+    },
+    {
+      "criterion": "Right metrics",
+      "evidence": "precision and recall follow their definitions, with zero denominators handled"
+    },
+    {
+      "criterion": "Threshold applied",
+      "evidence": "scores at the threshold count as positive"
+    }
+  ],
+  "review": {
+    "recall": "Define precision and recall. Why can accuracy mislead on imbalanced data?"
+  },
   "steps": [
     {
       "id": "why",
@@ -313,6 +346,36 @@
         }
       ],
       "solution": "import numpy as np\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    if len(X) != len(y) or len(y) == 0:\n        raise ValueError('need one label per example, and at least one example')\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n"
+    },
+    {
+      "id": "metrics",
+      "kind": "transfer",
+      "title": "Transfer: thresholds, precision and recall",
+      "body": "Write `predict(scores, threshold)`: a numpy array with 1 where the score is at least the threshold and 0 elsewhere. Then\nwrite `precision_recall(y_true, y_pred)` for 0/1 labels, returning `(precision, recall)`; when a denominator is 0, that\nvalue is 0.0.",
+      "starter": "import numpy as np\n\n\ndef predict(scores, threshold):\n    return np.zeros(len(scores), dtype=int)\n\n\ndef precision_recall(y_true, y_pred):\n    return (0.0, 0.0)\n",
+      "hints": [
+        "`(np.asarray(scores) >= threshold).astype(int)`.",
+        "tp = sum((y_true == 1) & (y_pred == 1)); precision = tp / (number predicted 1), recall = tp / (number truly 1).",
+        "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
+      ],
+      "tests": [
+        {
+          "name": "scores at the threshold are positive",
+          "code": "import numpy as np\nassert np.array_equal(predict([0.2, 0.5, 0.9], 0.5), [0, 1, 1])",
+          "concept": "decision-boundary"
+        },
+        {
+          "name": "precision and recall",
+          "code": "p, r = precision_recall([1, 1, 0, 0, 1], [1, 0, 1, 0, 1])\nassert abs(p - 2 / 3) < 1e-12 and abs(r - 2 / 3) < 1e-12, (p, r)\np, r = precision_recall([1, 0, 0, 0], [1, 1, 1, 1])\nassert (p, r) == (0.25, 1.0), (p, r)",
+          "concept": "classification"
+        },
+        {
+          "name": "zero denominators give 0.0",
+          "code": "assert precision_recall([1, 1], [0, 0]) == (0.0, 0.0) and precision_recall([0, 0], [0, 0]) == (0.0, 0.0)",
+          "concept": "accuracy"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
     },
     {
       "id": "check",

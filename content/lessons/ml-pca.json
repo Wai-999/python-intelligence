@@ -100,6 +100,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Reduce dimensions with principal components and judge how much variance a few components keep.",
+  "analogy": "PCA turns the camera to the angle where a cloud of points looks widest, then keeps only that view.",
+  "misconceptions": [
+    {
+      "belief": "PCA works on the raw data as it is.",
+      "correction": "Centre (and usually scale) the data first; otherwise the first component chases the mean."
+    },
+    {
+      "belief": "Principal components are original features.",
+      "correction": "They are new directions, combinations of the original features."
+    },
+    {
+      "belief": "The first component explains most of the variance in every dataset.",
+      "correction": "Sometimes variance is spread out; check the explained-variance ratios."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Centred",
+      "evidence": "data is centred before projecting"
+    },
+    {
+      "criterion": "Right projection",
+      "evidence": "coordinates are dot products with unit component directions"
+    },
+    {
+      "criterion": "Variance ratios",
+      "evidence": "ratios are eigenvalues divided by their total, largest first"
+    }
+  ],
+  "review": {
+    "recall": "Why centre data before PCA? What does the explained-variance ratio of a component tell you?"
+  },
   "steps": [
     {
       "id": "why",
@@ -316,6 +349,36 @@
         }
       ],
       "solution": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0 or not 1 <= k <= A.shape[1]:\n        raise ValueError('need at least one row and 1 <= k <= number of features')\n    if np.all(A == A[0]):\n        raise ValueError('the data has no spread')\n    values, vectors = np.linalg.eigh(np.array(covariance_matrix(A)))\n    order = np.argsort(values)[::-1]\n    values, vectors = values[order], vectors[:, order]\n    total = values.sum()\n    components = []\n    for j in range(k):\n        u = vectors[:, j]\n        if u[np.argmax(np.abs(u) > 1e-9)] < 0:\n            u = -u\n        components.append(u.tolist())\n    return {'mean': A.mean(axis=0).tolist(), 'components': components,\n            'variances': values[:k].tolist(), 'explained': (values[:k] / total).tolist()}\n\n\ndef pca_transform(model, X):\n    A = np.array(X, dtype=float).reshape(-1, len(model['mean']))\n    return ((A - np.array(model['mean'])) @ np.array(model['components']).T).tolist()\n"
+    },
+    {
+      "id": "project",
+      "kind": "transfer",
+      "title": "Transfer: projecting and keeping enough variance",
+      "body": "Write `project(X, components)`: centre the rows of X by their column means and return their coordinates along each\ncomponent (components is a (k, d) array of unit vectors). Then write `components_needed(eigenvalues, share)`: the\nsmallest number of components (taken largest eigenvalue first) whose explained-variance ratios add up to at least `share`.",
+      "starter": "import numpy as np\n\n\ndef project(X, components):\n    return X @ components.T\n\n\ndef components_needed(eigenvalues, share):\n    return len(eigenvalues)\n",
+      "hints": [
+        "Subtract `X.mean(axis=0)` first, then `@ components.T`.",
+        "Sort descending, divide by the total, take the running sum with `np.cumsum`, and find the first position reaching `share`.",
+        "import numpy as np\n\n\ndef project(X, components):\n    X = np.asarray(X, dtype=float)\n    return (X - X.mean(axis=0)) @ np.asarray(components, dtype=float).T\n\n\ndef components_needed(eigenvalues, share):\n    ratios = np.sort(np.asarray(eigenvalues, dtype=float))[::-1] / np.sum(eigenvalues)\n    return int(np.searchsorted(np.cumsum(ratios), share - 1e-12) + 1)\n"
+      ],
+      "tests": [
+        {
+          "name": "centres, then projects",
+          "code": "import numpy as np\nX = np.array([[1.0, 1.0], [3.0, 3.0]])\nZ = project(X, np.array([[1.0, 1.0]]) / np.sqrt(2))\nassert np.allclose(Z, [[-np.sqrt(2)], [np.sqrt(2)]]), Z",
+          "concept": "principal-components"
+        },
+        {
+          "name": "several components",
+          "code": "import numpy as np\nX = np.array([[2.0, 0.0], [0.0, 4.0], [4.0, 2.0]])\nZ = project(X, np.eye(2))\nassert Z.shape == (3, 2) and np.allclose(Z.mean(axis=0), 0)",
+          "concept": "dimensionality-reduction"
+        },
+        {
+          "name": "components needed for a share of variance",
+          "code": "assert components_needed([1.0, 6.0, 3.0], 0.6) == 1 and components_needed([1.0, 6.0, 3.0], 0.85) == 2\nassert components_needed([5.0, 5.0], 1.0) == 2",
+          "concept": "explained-variance"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef project(X, components):\n    X = np.asarray(X, dtype=float)\n    return (X - X.mean(axis=0)) @ np.asarray(components, dtype=float).T\n\n\ndef components_needed(eigenvalues, share):\n    ratios = np.sort(np.asarray(eigenvalues, dtype=float))[::-1] / np.sum(eigenvalues)\n    return int(np.searchsorted(np.cumsum(ratios), share - 1e-12) + 1)\n"
     },
     {
       "id": "check",

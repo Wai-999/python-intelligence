@@ -70,6 +70,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Rescale features using statistics from the training data only, and apply the same scaling to new data.",
+  "analogy": "Scaling is converting every measurement to the same ruler; the ruler must be made from the training data alone, or the test answers leak into the lesson.",
+  "misconceptions": [
+    {
+      "belief": "Scale train and test separately with their own statistics.",
+      "correction": "Use the training statistics for both; the test set must be transformed, not refitted."
+    },
+    {
+      "belief": "Scaling always puts values in [0, 1].",
+      "correction": "Min-max scaling does for training data; test values can fall outside, and standardisation has no fixed range."
+    },
+    {
+      "belief": "A constant feature can be scaled like any other.",
+      "correction": "Its spread is 0; dividing by it fails, so treat it specially."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "No leakage",
+      "evidence": "only training data determines the scaling"
+    },
+    {
+      "criterion": "Same transform",
+      "evidence": "test data is transformed with the training statistics"
+    },
+    {
+      "criterion": "Edge cases",
+      "evidence": "constant columns don't cause division by zero"
+    }
+  ],
+  "review": {
+    "recall": "Why must the scaling statistics come from the training set only?"
+  },
   "steps": [
     {
       "id": "why",
@@ -324,6 +357,36 @@
         }
       ],
       "solution": "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    X = np.array(X, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or len(X) != len(y):\n        raise ValueError('need one label per example, and at least one example')\n    means = X.mean(axis=0)\n    stds = X.std(axis=0)\n    stds[stds == 0] = 1.0\n    Z = (X - means) / stds\n    return {'means': means.tolist(), 'stds': stds.tolist(), 'centroids': fit_centroids(Z, y)}\n\n\ndef predict_scaled(model, X):\n    X = np.array(X, dtype=float).reshape(-1, len(model['means']))\n    Z = (X - np.array(model['means'])) / np.array(model['stds'])\n    return predict_centroids(model['centroids'], Z)\n"
+    },
+    {
+      "id": "minmax",
+      "kind": "transfer",
+      "title": "Transfer: min-max scaling",
+      "body": "Write `min_max_scale(train, test)`: for each column, map the training minimum to 0 and the training maximum to 1, and\napply the same mapping to `test` (test values may land outside [0, 1]). A column that is constant in the training data\nbecomes all zeros. Return the two scaled arrays as a tuple; don't change the inputs.",
+      "starter": "import numpy as np\n\n\ndef min_max_scale(train, test):\n    lo = np.vstack([train, test]).min(axis=0)\n    hi = np.vstack([train, test]).max(axis=0)\n    return (train - lo) / (hi - lo), (test - lo) / (hi - lo)\n",
+      "hints": [
+        "Use `train.min(axis=0)` and `train.max(axis=0)` only.",
+        "Replace a zero span by 1 with `np.where(span == 0, 1, span)` so constant columns give 0.",
+        "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    span = np.where(span == 0, 1, span)\n    return (train - lo) / span, (test - lo) / span\n"
+      ],
+      "tests": [
+        {
+          "name": "training data maps to [0, 1]",
+          "code": "import numpy as np\ntr, te = min_max_scale(np.array([[0.0, 10.0], [5.0, 20.0], [10.0, 30.0]]), np.array([[5.0, 25.0]]))\nassert np.allclose(tr, [[0, 0], [0.5, 0.5], [1, 1]]) and np.allclose(te, [[0.5, 0.75]]), (tr, te)",
+          "concept": "feature-scaling"
+        },
+        {
+          "name": "only training statistics are used",
+          "code": "import numpy as np\ntr, te = min_max_scale(np.array([[0.0], [10.0]]), np.array([[20.0], [-5.0]]))\nassert np.allclose(te, [[2.0], [-0.5]]), f'test values are scaled with the training min and max: {te}'",
+          "concept": "train-only-statistics"
+        },
+        {
+          "name": "a constant column becomes zeros",
+          "code": "import numpy as np\ntr, te = min_max_scale(np.array([[3.0, 1.0], [3.0, 2.0]]), np.array([[4.0, 1.5]]))\nassert np.allclose(tr[:, 0], 0) and np.allclose(te[:, 0], 1) and np.allclose(te[:, 1], 0.5), (tr, te)",
+          "concept": "standardization"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    span = np.where(span == 0, 1, span)\n    return (train - lo) / span, (test - lo) / span\n"
     },
     {
       "id": "check",

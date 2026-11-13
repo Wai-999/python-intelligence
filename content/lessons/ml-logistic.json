@@ -107,6 +107,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Turn a linear score into a probability with the sigmoid and judge predictions with the log loss.",
+  "analogy": "The sigmoid is a dimmer switch: any score, however large, becomes a brightness between 0 and 1.",
+  "misconceptions": [
+    {
+      "belief": "Logistic regression predicts the class directly.",
+      "correction": "It predicts a probability; a threshold turns it into a class."
+    },
+    {
+      "belief": "`1 / (1 + math.exp(-z))` is safe for every z.",
+      "correction": "For large negative z, exp(-z) overflows; split by sign to stay stable."
+    },
+    {
+      "belief": "A confident wrong prediction costs about the same as an unsure one in log loss.",
+      "correction": "Log loss grows without bound as the probability of the true class goes to 0; clip probabilities to keep it finite."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Stable",
+      "evidence": "the sigmoid works for very large and very negative scores"
+    },
+    {
+      "criterion": "Right score",
+      "evidence": "the score is the dot product of weights and features plus the bias"
+    },
+    {
+      "criterion": "Bounded loss",
+      "evidence": "probabilities are clipped before taking logarithms"
+    }
+  ],
+  "review": {
+    "recall": "Write the sigmoid. Why does log loss punish confident mistakes so hard?"
+  },
   "steps": [
     {
       "id": "why",
@@ -367,6 +400,36 @@
         }
       ],
       "solution": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef fit_logistic(X, y, lr=0.1, steps=1000):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    if any(label not in (0, 1) for label in y) or lr <= 0 or steps < 0:\n        raise ValueError('labels must be 0 or 1, lr positive and steps not negative')\n    n, d = len(X), len(X[0])\n    w, b = [0.0] * d, 0.0\n    for _ in range(steps):\n        err = [sigmoid(sum(wj * xj for wj, xj in zip(w, row)) + b) - label for row, label in zip(X, y)]\n        dw = [sum(e * row[j] for e, row in zip(err, X)) / n for j in range(d)]\n        db = sum(err) / n\n        w = [wj - lr * g for wj, g in zip(w, dw)]\n        b = b - lr * db\n    return w, float(b)\n"
+    },
+    {
+      "id": "stable",
+      "kind": "transfer",
+      "title": "Transfer: a safe sigmoid for many features",
+      "body": "Write `sigmoid(z)` that never overflows (for z ≥ 0 use 1/(1+e^−z); for z < 0 use e^z/(1+e^z)); `predict_proba(w, b, x)` for\nlists `w` and `x` of equal length (the sigmoid of w·x + b); and `log_loss(ys, ps)`, the mean of −[y log p + (1−y) log(1−p)]\nwith each p clipped to [1e-12, 1 − 1e-12].",
+      "starter": "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(b)\n\n\ndef log_loss(ys, ps):\n    return 0.0\n",
+      "hints": [
+        "Branch on the sign of z so that `math.exp` only ever sees a non-positive number.",
+        "Clip with `min(max(p, 1e-12), 1 - 1e-12)` before the logarithms.",
+        "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + b)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = min(max(p, 1e-12), 1 - 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n"
+      ],
+      "tests": [
+        {
+          "name": "a stable sigmoid",
+          "code": "assert sigmoid(0) == 0.5 and abs(sigmoid(2) - 1 / (1 + 2.718281828459045 ** -2)) < 1e-12\nassert sigmoid(-1000) == 0.0 and sigmoid(1000) == 1.0",
+          "concept": "sigmoid"
+        },
+        {
+          "name": "probability from several features",
+          "code": "import math\nassert abs(predict_proba([1.0, -2.0], 0.5, [3.0, 1.0]) - 1 / (1 + math.exp(-1.5))) < 1e-12",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "log loss, clipped",
+          "code": "import math\nassert abs(log_loss([1, 0], [0.8, 0.1]) - (-(math.log(0.8) + math.log(0.9)) / 2)) < 1e-12\nassert abs(log_loss([1], [0.0]) - -math.log(1e-12)) < 1e-6, 'clip p before taking logs'",
+          "concept": "log-loss"
+        }
+      ],
+      "solution": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + b)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = min(max(p, 1e-12), 1 - 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n"
     },
     {
       "id": "check",

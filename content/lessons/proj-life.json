@@ -77,6 +77,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Simulate a cellular automaton on a grid of nested lists and detect when its pattern starts repeating.",
+  "analogy": "The Game of Life is a crowd where each person looks only at their eight neighbours to decide what to do next, and everyone moves at once.",
+  "misconceptions": [
+    {
+      "belief": "You can update the grid in place, cell by cell.",
+      "correction": "Every cell must use the old generation; build a new grid."
+    },
+    {
+      "belief": "`[[0] * n] * n` makes an n-by-n grid.",
+      "correction": "It repeats one row object n times; build each row separately."
+    },
+    {
+      "belief": "A pattern that repeats must repeat from the start.",
+      "correction": "It can enter a cycle later; remember every state seen to find when."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Simultaneous update",
+      "evidence": "the next generation is computed from the old one only"
+    },
+    {
+      "criterion": "Right neighbours",
+      "evidence": "neighbour counts include the wrap-around edges"
+    },
+    {
+      "criterion": "Cycles found",
+      "evidence": "the first repeated state and the cycle length are reported correctly"
+    }
+  ],
+  "review": {
+    "recall": "Why must Life update from a copy? How would you detect that a sequence of states repeats?"
+  },
   "steps": [
     {
       "id": "why",
@@ -262,6 +295,41 @@
         }
       ],
       "solution": "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n\n\ndef find_cycle(grid, max_steps):\n    if max_steps < 0:\n        raise ValueError('max_steps must not be negative')\n    step(grid)  # validates the grid, even when max_steps is 0\n    seen = {}\n    for k in range(max_steps + 1):\n        key = tuple(tuple(row) for row in grid)\n        if key in seen:\n            return seen[key], k - seen[key]\n        seen[key] = k\n        grid = step(grid)\n    return None\n"
+    },
+    {
+      "id": "torus",
+      "kind": "transfer",
+      "title": "Transfer: Life on a doughnut",
+      "body": "On a torus the grid wraps around: the row above the top is the bottom row, and the column left of the first is the last.\nWrite `step_torus(grid)`: the next Life generation (a live cell with 2 or 3 live neighbours lives, a dead cell with exactly\n3 comes alive) on a wrapping grid of 0s and 1s, as a new grid. Then write `cycle(grid, max_steps)`: step until a grid seen\nbefore comes back and return `(start, length)`, the step at which the cycle starts and how many steps it takes; or `None`\nif nothing repeats within `max_steps` steps.",
+      "starter": "def step_torus(grid):\n    return grid\n\n\ndef cycle(grid, max_steps):\n    return None\n",
+      "hints": [
+        "Neighbour (r + dr) % rows, (c + dc) % cols for every dr, dc in -1..1 except (0, 0).",
+        "Store each grid as a tuple of tuples in a dict from state to step; when the current state is already there, you have the start.",
+        "def step_torus(grid):\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = 0\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    if dr or dc:\n                        n += grid[(r + dr) % rows][(c + dc) % cols]\n            alive = grid[r][c] == 1\n            row.append(1 if (alive and n in (2, 3)) or (not alive and n == 3) else 0)\n        new.append(row)\n    return new\n\n\ndef cycle(grid, max_steps):\n    seen = {}\n    for step in range(max_steps + 1):\n        state = tuple(tuple(row) for row in grid)\n        if state in seen:\n            return (seen[state], step - seen[state])\n        seen[state] = step\n        grid = step_torus(grid)\n    return None\n"
+      ],
+      "tests": [
+        {
+          "name": "a blinker turns",
+          "code": "g = [[0] * 5 for _ in range(5)]\nfor c in (1, 2, 3):\n    g[2][c] = 1\nn = step_torus(g)\nassert [n[r][2] for r in (1, 2, 3)] == [1, 1, 1] and sum(map(sum, n)) == 3, n\nassert sum(map(sum, g)) == 3 and g[2] == [0, 1, 1, 1, 0], 'build a new grid'",
+          "concept": "cellular-automata"
+        },
+        {
+          "name": "the edges wrap around",
+          "code": "g = [[0] * 4 for _ in range(4)]\nfor r, c in ((0, 0), (0, 3), (3, 0)):\n    g[r][c] = 1\nn = step_torus(g)\nassert n[3][3] == 1, 'the corner cell has three live neighbours across the edges'",
+          "concept": "nested-lists"
+        },
+        {
+          "name": "cycles are found",
+          "code": "block = [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]]\nassert cycle(block, 10) == (0, 1)\nblinker = [[0] * 5 for _ in range(5)]\nfor c in (1, 2, 3):\n    blinker[2][c] = 1\nassert cycle(blinker, 10) == (0, 2)",
+          "concept": "cycle-detection"
+        },
+        {
+          "name": "a pattern that settles later",
+          "code": "g = [[0] * 5 for _ in range(5)]\nfor r, c in ((1, 1), (1, 2), (2, 1)):\n    g[r][c] = 1\nstart, length = cycle(g, 10)\nassert (start, length) == (1, 1), (start, length)\nassert cycle(g, 0) is None",
+          "concept": "cycle-detection"
+        }
+      ],
+      "solution": "def step_torus(grid):\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = 0\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    if dr or dc:\n                        n += grid[(r + dr) % rows][(c + dc) % cols]\n            alive = grid[r][c] == 1\n            row.append(1 if (alive and n in (2, 3)) or (not alive and n == 3) else 0)\n        new.append(row)\n    return new\n\n\ndef cycle(grid, max_steps):\n    seen = {}\n    for step in range(max_steps + 1):\n        state = tuple(tuple(row) for row in grid)\n        if state in seen:\n            return (seen[state], step - seen[state])\n        seen[state] = step\n        grid = step_torus(grid)\n    return None\n"
     },
     {
       "id": "check",

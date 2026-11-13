@@ -343,8 +343,13 @@
         },
         {
           "name": "reads the JSON with the json module",
-          "code": "import json\nassert json_to_csv(json.dumps([{'k': True, 'n': None}])).splitlines()[1] == 'True,', json_to_csv(json.dumps([{'k': True, 'n': None}]))",
+          "code": "import csv, io, json\nrows = list(csv.reader(io.StringIO(json_to_csv(json.dumps([{'k': True, 'n': None}])))))\nassert rows == [['k', 'n'], ['True', '']], rows",
           "concept": "json"
+        },
+        {
+          "name": "values follow the header, whatever their order in each object",
+          "code": "import csv, io, json\ntext = json_to_csv(json.dumps([{'a': 1, 'b': 2}, {'b': 3, 'a': 4}]))\nassert list(csv.reader(io.StringIO(text))) == [['a', 'b'], ['1', '2'], ['4', '3']], text",
+          "concept": "csv-files"
         }
       ],
       "solution": "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.DictWriter(out, fieldnames=list(rows[0]))\n    writer.writeheader()\n    writer.writerows(rows)\n    return out.getvalue()\n"

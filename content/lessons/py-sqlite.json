@@ -317,35 +317,35 @@
       "kind": "transfer",
       "title": "Transfer: searching a catalogue",
       "body": "A `books (title, year)` table exists. Write `search(con, word)`, which returns the titles that contain `word` anywhere,\nignoring case, oldest first (ties by title), using SQL `LIKE` with the word passed as a parameter (build the pattern\n`%word%` in Python and pass it with `?`).",
-      "starter": "def search(con, word):\n    return [row[0] for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\")]\n",
+      "starter": "def search(con, word):\n    titles = []\n    for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\"):\n        titles.append(row[0])\n    return titles\n",
       "hints": [
         "`con.execute(\"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",))`.",
-        "SQLite's LIKE ignores case for ASCII letters; return `[row[0] for row in ...]`.",
-        "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",)\n    )\n    return [row[0] for row in rows]\n"
+        "SQLite's LIKE ignores case for ASCII letters; loop over the rows and append `row[0]` to a list.",
+        "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",)\n    )\n    titles = []\n    for row in rows:\n        titles.append(row[0])\n    return titles\n"
       ],
       "tests": [
         {
-          "name": "finds titles containing the word, oldest first",
-          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\nassert search(con, 'dune') == ['Dune', 'Dune Messiah', 'The Dune Encyclopedia'], search(con, 'dune')",
+          "name": "finds titles containing the word, oldest first, ties by title",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('The Dune Encyclopedia', 1984), ('Emma', 1815), ('Dune Messiah', 1969), ('Kim', 1901), ('Dune: Zed', 1965), ('Dune', 1965)])\nassert search(con, 'dune') == ['Dune', 'Dune: Zed', 'Dune Messiah', 'The Dune Encyclopedia'], search(con, 'dune')",
           "concept": "sql-queries"
         },
         {
           "name": "no match gives an empty list",
-          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\nassert search(con, 'zzz') == []",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('The Dune Encyclopedia', 1984), ('Emma', 1815), ('Dune Messiah', 1969), ('Kim', 1901), ('Dune: Zed', 1965), ('Dune', 1965)])\nassert search(con, 'zzz') == []",
           "concept": "sql-tables"
         },
         {
           "name": "a quote in the word is just data",
-          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\ncon.execute('INSERT INTO books VALUES (?, ?)', (\"O'Brien's Year\", 2001))\nassert search(con, \"o'brien\") == [\"O'Brien's Year\"], search(con, \"o'brien\")",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('The Dune Encyclopedia', 1984), ('Emma', 1815), ('Dune Messiah', 1969), ('Kim', 1901), ('Dune: Zed', 1965), ('Dune', 1965)])\ncon.execute('INSERT INTO books VALUES (?, ?)', (\"O'Brien's Year\", 2001))\nassert search(con, \"o'brien\") == [\"O'Brien's Year\"], search(con, \"o'brien\")",
           "concept": "query-parameters"
         },
         {
           "name": "the word is passed as a parameter",
-          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\nclass _Recorder:\n    def __init__(self, con):\n        self.con, self.calls = con, []\n\n    def execute(self, sql, params=()):\n        self.calls.append((sql, params))\n        return self.con.execute(sql, params)\n\n    def cursor(self, *args, **kwargs):\n        rec, cur = self, self.con.cursor(*args, **kwargs)\n\n        class _Cursor:\n            def execute(self, sql, params=()):\n                rec.calls.append((sql, params))\n                cur.execute(sql, params)\n                return self\n\n            def __iter__(self):\n                return iter(cur)\n\n            def __next__(self):\n                return next(cur)\n\n            def __getattr__(self, name):\n                return getattr(cur, name)\n\n        return _Cursor()\n\n    def __enter__(self):\n        self.con.__enter__()\n        return self\n\n    def __exit__(self, *exc):\n        return self.con.__exit__(*exc)\n\n    def __getattr__(self, name):\n        return getattr(self.con, name)\n\nrec = _Recorder(con)\nassert search(rec, 'Kim') == ['Kim']\nassert not any('Kim' in sql for sql, _ in rec.calls), 'the word is part of the SQL text: pass the pattern as a ? parameter'\nassert any('Kim' in repr(params) for _, params in rec.calls), 'pass the pattern as a ? parameter'",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('The Dune Encyclopedia', 1984), ('Emma', 1815), ('Dune Messiah', 1969), ('Kim', 1901), ('Dune: Zed', 1965), ('Dune', 1965)])\nclass _Recorder:\n    def __init__(self, con):\n        self.con, self.calls = con, []\n\n    def execute(self, sql, params=()):\n        self.calls.append((sql, params))\n        return self.con.execute(sql, params)\n\n    def cursor(self, *args, **kwargs):\n        rec, cur = self, self.con.cursor(*args, **kwargs)\n\n        class _Cursor:\n            def execute(self, sql, params=()):\n                rec.calls.append((sql, params))\n                cur.execute(sql, params)\n                return self\n\n            def __iter__(self):\n                return iter(cur)\n\n            def __next__(self):\n                return next(cur)\n\n            def __getattr__(self, name):\n                return getattr(cur, name)\n\n        return _Cursor()\n\n    def __enter__(self):\n        self.con.__enter__()\n        return self\n\n    def __exit__(self, *exc):\n        return self.con.__exit__(*exc)\n\n    def __getattr__(self, name):\n        return getattr(self.con, name)\n\nrec = _Recorder(con)\nassert search(rec, 'Kim') == ['Kim']\nassert not any('kim' in sql.lower() for sql, _ in rec.calls), 'the word is part of the SQL text: pass the pattern as a ? parameter'\nassert any('kim' in repr(params).lower() for _, params in rec.calls), 'pass the pattern as a ? parameter'",
           "concept": "query-parameters"
         }
       ],
-      "solution": "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",)\n    )\n    return [row[0] for row in rows]\n"
+      "solution": "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",)\n    )\n    titles = []\n    for row in rows:\n        titles.append(row[0])\n    return titles\n"
     },
     {
       "id": "check",

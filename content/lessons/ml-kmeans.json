@@ -79,6 +79,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Group points into clusters with k-means by alternating assignment and update steps, and measure the result with inertia.",
+  "analogy": "k-means is placing k post offices: each house goes to its nearest office, each office moves to the middle of its houses, and you repeat until nothing moves.",
+  "misconceptions": [
+    {
+      "belief": "k-means finds the best clustering.",
+      "correction": "It finds a local optimum that depends on the starting centroids."
+    },
+    {
+      "belief": "A cluster can't end up empty.",
+      "correction": "It can; keep its old centroid (or reseed it) instead of dividing by zero."
+    },
+    {
+      "belief": "Lower inertia always means a better k.",
+      "correction": "Inertia keeps falling as k grows; pick k by an elbow or another criterion."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right update",
+      "evidence": "each centroid becomes the mean of its assigned points"
+    },
+    {
+      "criterion": "Empty clusters",
+      "evidence": "a cluster with no points keeps its previous centroid"
+    },
+    {
+      "criterion": "Inertia",
+      "evidence": "the sum of squared distances to assigned centroids is computed exactly"
+    }
+  ],
+  "review": {
+    "recall": "What are k-means' two alternating steps? Why doesn't lower inertia alone tell you the right k?"
+  },
   "steps": [
     {
       "id": "why",
@@ -371,6 +404,36 @@
         }
       ],
       "solution": "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n\n\ndef kmeans(X, init, max_iter=100):\n    X = np.array(X, dtype=float)\n    C = np.array(init, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or C.ndim != 2 or len(C) == 0 or C.shape[1] != X.shape[1] or max_iter < 1:\n        raise ValueError('need rows, starting centroids of the same width, and max_iter >= 1')\n    labels = None\n    for _ in range(max_iter):\n        new = assign(X, C)\n        for j in range(len(C)):\n            members = [i for i in range(len(new)) if new[i] == j]\n            if members:\n                C[j] = X[members].mean(axis=0)\n        if new == labels:\n            break\n        labels = new\n    labels = new\n    inertia = float(sum(np.sum((X[i] - C[labels[i]]) ** 2) for i in range(len(X))))\n    return {'centroids': C.tolist(), 'labels': labels, 'inertia': inertia}\n"
+    },
+    {
+      "id": "update",
+      "kind": "transfer",
+      "title": "Transfer: the update step and inertia",
+      "body": "Write `update(points, labels, centroids)`: a new (k, d) array where centroid j is the mean of the points labelled j, or\nstays as it was if no point has that label. Then write `inertia(points, labels, centroids)`: the sum of squared\ndistances from each point to its assigned centroid.",
+      "starter": "import numpy as np\n\n\ndef update(points, labels, centroids):\n    return centroids\n\n\ndef inertia(points, labels, centroids):\n    return 0.0\n",
+      "hints": [
+        "For each j: `members = points[labels == j]`; if it isn't empty, use `members.mean(axis=0)`.",
+        "`np.sum((points - centroids[labels]) ** 2)`.",
+        "import numpy as np\n\n\ndef update(points, labels, centroids):\n    points, labels = np.asarray(points, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        members = points[labels == j]\n        if len(members):\n            new[j] = members.mean(axis=0)\n    return new\n\n\ndef inertia(points, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    return float(np.sum((points - centroids[np.asarray(labels)]) ** 2))\n"
+      ],
+      "tests": [
+        {
+          "name": "centroids move to their points' means",
+          "code": "import numpy as np\nP = np.array([[0.0, 0.0], [2.0, 0.0], [10.0, 10.0]])\nC = update(P, np.array([0, 0, 1]), np.array([[5.0, 5.0], [0.0, 0.0]]))\nassert np.allclose(C, [[1, 0], [10, 10]]), C",
+          "concept": "k-means"
+        },
+        {
+          "name": "an empty cluster keeps its centroid",
+          "code": "import numpy as np\nold = np.array([[0.0, 0.0], [7.0, 7.0]])\nC = update(np.array([[1.0, 1.0]]), np.array([0]), old)\nassert np.allclose(C, [[1, 1], [7, 7]]) and np.allclose(old, [[0, 0], [7, 7]]), (C, old)",
+          "concept": "clustering"
+        },
+        {
+          "name": "inertia",
+          "code": "import numpy as np\nP = np.array([[0.0, 0.0], [2.0, 0.0], [10.0, 10.0]])\nassert abs(inertia(P, np.array([0, 0, 1]), np.array([[1.0, 0.0], [10.0, 10.0]])) - 2.0) < 1e-12",
+          "concept": "inertia"
+        }
+      ],
+      "solution": "import numpy as np\n\n\ndef update(points, labels, centroids):\n    points, labels = np.asarray(points, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        members = points[labels == j]\n        if len(members):\n            new[j] = members.mean(axis=0)\n    return new\n\n\ndef inertia(points, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    return float(np.sum((points - centroids[np.asarray(labels)]) ** 2))\n"
     },
     {
       "id": "check",

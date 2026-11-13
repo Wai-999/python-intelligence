@@ -76,6 +76,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Build a cipher program from small functions, using modular arithmetic, and break a cipher by trying every key.",
+  "analogy": "A Caesar cipher is a combination lock dial: every letter turns the same number of clicks, and after Z the dial wraps round to A.",
+  "misconceptions": [
+    {
+      "belief": "Shifting past Z needs special if-statements.",
+      "correction": "`% 26` wraps around automatically."
+    },
+    {
+      "belief": "Encrypting changes spaces and punctuation too.",
+      "correction": "Only letters move; everything else stays as it is."
+    },
+    {
+      "belief": "Brute force is too slow to be useful.",
+      "correction": "With 26 keys, trying them all is instant; it is the key space that matters."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Wraps correctly",
+      "evidence": "letters wrap from z to a with modular arithmetic, case kept"
+    },
+    {
+      "criterion": "Small functions",
+      "evidence": "the program is built from small helpers that each do one job"
+    },
+    {
+      "criterion": "Finds keys",
+      "evidence": "the search tries every key and returns the right one"
+    }
+  ],
+  "review": {
+    "recall": "Why does `% 26` make the alphabet wrap round? How many keys does a Caesar cipher have?"
+  },
   "steps": [
     {
       "id": "why",
@@ -251,6 +284,41 @@
       "cites": [
         "bb-hacker"
       ]
+    },
+    {
+      "id": "vigenere",
+      "kind": "transfer",
+      "title": "Transfer: a Vigenère cipher",
+      "body": "A Vigenère cipher shifts each letter by the next letter of a keyword (a = 0, b = 1, ...), cycling through the keyword; only\nletters use up keyword letters, and case is kept. Write `vigenere(text, key)` and `unvigenere(text, key)`. Then write\n`find_shift(cipher, word)`: the Caesar shift (0 to 25) that, undone, makes `word` appear in the text, or `None`.",
+      "starter": "def vigenere(text, key):\n    return text\n\n\ndef unvigenere(text, key):\n    return text\n\n\ndef find_shift(cipher, word):\n    return None\n",
+      "hints": [
+        "A helper `shift_letter(ch, k)` that moves one letter by k (positive or negative) with `% 26` keeps the rest simple.",
+        "Keep a position in the key that advances only when you shift a letter. For find_shift, try every k in range(26).",
+        "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"
+      ],
+      "tests": [
+        {
+          "name": "encrypts with the keyword",
+          "code": "assert vigenere('attack at dawn', 'lemon') == 'lxfopv ef rnhr', vigenere('attack at dawn', 'lemon')",
+          "concept": "modular-arithmetic"
+        },
+        {
+          "name": "case and punctuation",
+          "code": "assert vigenere('Hi, Bob!', 'b') == 'Ij, Cpc!' and vigenere('xyz', 'c') == 'zab'",
+          "concept": "modular-arithmetic"
+        },
+        {
+          "name": "decrypting undoes it",
+          "code": "msg = 'Meet me at Noon, by the Old Bridge.'\nassert unvigenere(vigenere(msg, 'Key'), 'Key') == msg",
+          "concept": "program-decomposition"
+        },
+        {
+          "name": "finds the Caesar shift by trying them all",
+          "code": "assert find_shift('wkh txlfn eurzq ira', 'quick') == 3 and find_shift('abc', 'zzz') is None and find_shift('hello', 'hello') == 0",
+          "concept": "brute-force-search"
+        }
+      ],
+      "solution": "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"
     },
     {
       "id": "check",

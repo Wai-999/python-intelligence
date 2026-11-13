@@ -97,6 +97,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Build ensembles from bootstrap samples and combine their votes.",
+  "analogy": "A forest is a panel of judges who each studied a slightly different copy of the evidence; their majority vote is steadier than any single judge.",
+  "misconceptions": [
+    {
+      "belief": "A bootstrap sample is a shuffled copy of the data.",
+      "correction": "It draws with replacement, so some points repeat and about a third are left out."
+    },
+    {
+      "belief": "Out-of-bag points were used to train that tree.",
+      "correction": "They are exactly the points that tree never saw, which is why they can test it."
+    },
+    {
+      "belief": "More trees overfit like deeper trees do.",
+      "correction": "Adding trees mostly reduces variance; it doesn't make each tree deeper."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right sampling",
+      "evidence": "bootstrap samples draw with replacement; out-of-bag points are the ones never drawn"
+    },
+    {
+      "criterion": "Fair vote",
+      "evidence": "majority votes are counted correctly, with ties broken as specified"
+    },
+    {
+      "criterion": "Deterministic",
+      "evidence": "seeded randomness gives repeatable results"
+    }
+  ],
+  "review": {
+    "recall": "What is a bootstrap sample? Which points are out-of-bag?"
+  },
   "steps": [
     {
       "id": "why",
@@ -302,6 +335,41 @@
         }
       ],
       "solution": "import random\n\n\ndef gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n\n\ndef bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n\n\ndef fit_forest(X, y, n_trees, max_depth, seed):\n    if n_trees < 1:\n        raise ValueError('need at least one tree')\n    build_tree(X, y, max_depth)  # the same checks as a single tree, before sampling\n    rng = random.Random(seed)\n    forest = []\n    for _ in range(n_trees):\n        draws, oob = bootstrap(len(X), rng)\n        tree = build_tree([X[i] for i in draws], [y[i] for i in draws], max_depth)\n        forest.append((tree, oob))\n    return forest\n\n\ndef predict_forest(forest, X):\n    if not forest:\n        raise ValueError('an empty forest')\n    votes = [predict_tree(tree, X) for tree, _ in forest]\n    return [vote([v[i] for v in votes]) for i in range(len(X))]\n\n\ndef oob_accuracy(forest, X, y):\n    if not forest or len(X) != len(y):\n        raise ValueError('need a forest and one label per row')\n    right = counted = 0\n    for i, row in enumerate(X):\n        labels = [predict_tree(tree, [row])[0] for tree, oob in forest if i in oob]\n        if labels:\n            counted += 1\n            right += vote(labels) == y[i]\n    return right / counted if counted else None\n"
+    },
+    {
+      "id": "oob",
+      "kind": "transfer",
+      "title": "Transfer: out-of-bag points and votes",
+      "body": "Write `out_of_bag(n, sample)`: given n data points and a bootstrap sample (a list of indices, possibly repeated), return the\nsorted list of indices that never appear in the sample. Then write `vote(predictions)`: the most common prediction,\nwith ties going to the smallest value.",
+      "starter": "def out_of_bag(n, sample):\n    return []\n\n\ndef vote(predictions):\n    return predictions[0]\n",
+      "hints": [
+        "`sorted(set(range(n)) - set(sample))`.",
+        "Count with a dict or `collections.Counter`, then take `min` of the values with the top count.",
+        "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"
+      ],
+      "tests": [
+        {
+          "name": "the points a sample left out",
+          "code": "assert out_of_bag(5, [0, 0, 3, 4, 3]) == [1, 2] and out_of_bag(3, [0, 1, 2]) == []",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "about a third are out of bag",
+          "code": "import random\nrng = random.Random(1)\nn = 3000\nsample = [rng.randrange(n) for _ in range(n)]\nshare = len(out_of_bag(n, sample)) / n\nassert 0.33 < share < 0.40, share",
+          "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "majority vote, ties to the smallest",
+          "code": "assert vote([2, 1, 2, 3]) == 2 and vote(['b', 'a', 'b', 'a']) == 'a' and vote([7]) == 7",
+          "concept": "bagging"
+        },
+        {
+          "name": "the ensemble outvotes a wrong tree",
+          "code": "trees = [lambda x: 1, lambda x: 1, lambda x: 0]\nassert vote([t(None) for t in trees]) == 1",
+          "concept": "ensembles"
+        }
+      ],
+      "solution": "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"
     },
     {
       "id": "check",

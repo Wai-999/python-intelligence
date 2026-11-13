@@ -56,6 +56,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Estimate derivatives numerically with finite differences and use them to check formulas.",
+  "analogy": "A derivative is the slope you'd feel walking on a curve; a finite difference measures it by taking one tiny step each way and comparing heights.",
+  "misconceptions": [
+    {
+      "belief": "A smaller step h always gives a more accurate estimate.",
+      "correction": "Too small a step loses digits to floating-point rounding; moderate steps like 1e-5 work best."
+    },
+    {
+      "belief": "The forward difference is as accurate as the central one.",
+      "correction": "The central difference's error shrinks like h², the forward one's only like h."
+    },
+    {
+      "belief": "A gradient check proves a formula is right.",
+      "correction": "Agreement at a few points is strong evidence, not proof; test several points."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right formula",
+      "evidence": "differences are taken symmetrically where the task asks"
+    },
+    {
+      "criterion": "Sensible step",
+      "evidence": "the step size balances truncation and rounding error"
+    },
+    {
+      "criterion": "Checked",
+      "evidence": "estimates agree with known derivatives within a tolerance"
+    }
+  ],
+  "review": {
+    "recall": "Write the central difference formula. Why does a tiny h like 1e-15 give bad estimates?"
+  },
   "steps": [
     {
       "id": "why",
@@ -261,6 +294,41 @@
         }
       ],
       "solution": "def derivative(f, x, h=1e-5):\n    if not h > 0:\n        raise ValueError('h must be positive')\n    return (f(x + h) - f(x - h)) / (2 * h)\n\n\ndef gradient(f, point, h=1e-5):\n    if not h > 0:\n        raise ValueError('h must be positive')\n    if not point:\n        raise ValueError('need at least one coordinate')\n    out = []\n    for i in range(len(point)):\n        up, down = list(point), list(point)\n        up[i] += h\n        down[i] -= h\n        out.append((f(up) - f(down)) / (2 * h))\n    return out\n\n\ndef check_gradient(f, grad, point, h=1e-5, tol=1e-6):\n    if not tol >= 0:\n        raise ValueError('tol must not be negative')\n    numeric = gradient(f, point, h)\n    analytic = list(grad(point))\n    if len(analytic) != len(numeric):\n        raise ValueError('grad returned the wrong number of components')\n    worst = max(abs(a - n) / max(1.0, abs(a), abs(n)) for a, n in zip(analytic, numeric))\n    return worst <= tol, worst\n"
+    },
+    {
+      "id": "curvature",
+      "kind": "transfer",
+      "title": "Transfer: curvature and direction",
+      "body": "Write `second_derivative(f, x, h=1e-4)` using the central second difference (f(x+h) − 2f(x) + f(x−h)) / h², and\n`direction(f, x)`, which returns `\"up\"`, `\"down\"` or `\"flat\"` depending on whether the central first difference at `x`\n(with h = 1e-5) is above 1e-6, below −1e-6, or in between.",
+      "starter": "def second_derivative(f, x, h=1e-4):\n    return 0.0\n\n\ndef direction(f, x):\n    return \"flat\"\n",
+      "hints": [
+        "`(f(x + h) - 2 * f(x) + f(x - h)) / h ** 2`.",
+        "slope = (f(x + h) - f(x - h)) / (2 * h); compare it with the two thresholds.",
+        "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n"
+      ],
+      "tests": [
+        {
+          "name": "the second derivative of a cubic",
+          "code": "assert abs(second_derivative(lambda x: x ** 3, 2.0) - 12.0) < 1e-3, second_derivative(lambda x: x ** 3, 2.0)",
+          "concept": "derivatives"
+        },
+        {
+          "name": "checks a known formula",
+          "code": "import math\nfor x in (0.0, 1.0, 2.5):\n    assert abs(second_derivative(math.sin, x) + math.sin(x)) < 1e-3, x",
+          "concept": "gradient-checking"
+        },
+        {
+          "name": "the h parameter is used",
+          "code": "assert abs(second_derivative(lambda x: x ** 4, 1.0, h=1e-2) - 12.0) < 2e-3",
+          "concept": "finite-differences"
+        },
+        {
+          "name": "up, down and flat",
+          "code": "assert [direction(lambda x: x * x, x) for x in (2.0, -2.0, 0.0)] == ['up', 'down', 'flat']",
+          "concept": "finite-differences"
+        }
+      ],
+      "solution": "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n"
     },
     {
       "id": "check",

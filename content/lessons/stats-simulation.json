@@ -116,6 +116,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Estimate quantities by simulating random experiments, reproducibly, and judge how close the estimate is.",
+  "analogy": "A simulation is a rehearsal: play the scene thousands of times and count how often each ending happens.",
+  "misconceptions": [
+    {
+      "belief": "A simulation with a fixed seed is cheating.",
+      "correction": "A seed makes the run repeatable; the randomness is still fair."
+    },
+    {
+      "belief": "Ten trials are enough to estimate a probability.",
+      "correction": "Error shrinks like 1/√n; use thousands of trials for two-digit accuracy."
+    },
+    {
+      "belief": "random.random() can return 1.0.",
+      "correction": "It returns values in [0, 1), never exactly 1."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Faithful",
+      "evidence": "each trial follows the experiment's rules"
+    },
+    {
+      "criterion": "Reproducible",
+      "evidence": "a seed gives the same result every time"
+    },
+    {
+      "criterion": "Accurate enough",
+      "evidence": "estimates are within the expected error of the true value"
+    }
+  ],
+  "review": {
+    "recall": "How does the accuracy of a simulation grow with the number of trials? Why seed it?"
+  },
   "steps": [
     {
       "id": "why",
@@ -360,6 +393,36 @@
         }
       ],
       "solution": "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n\n\ndef estimate(trial, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(1 for _ in range(trials) if trial(rng))\n    return round(hits / trials, 3)\n"
+    },
+    {
+      "id": "montecarlo",
+      "kind": "transfer",
+      "title": "Transfer: estimating π and a dice probability",
+      "body": "Write `estimate_pi(n, seed)`: drop n random points in the unit square and return 4 × the share that land inside the quarter\ncircle x² + y² ≤ 1, using `random.Random(seed)`. Write `dice_probability(target, trials, seed)`: the estimated probability\nthat two dice add up to `target`.",
+      "starter": "def estimate_pi(n, seed):\n    return 3.0\n\n\ndef dice_probability(target, trials, seed):\n    return 0.0\n",
+      "hints": [
+        "`rng = random.Random(seed)`, then `x, y = rng.random(), rng.random()` for each point.",
+        "`rng.randint(1, 6) + rng.randint(1, 6) == target`, counted over the trials.",
+        "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
+      ],
+      "tests": [
+        {
+          "name": "close to π",
+          "code": "import math\nassert abs(estimate_pi(40000, 3) - math.pi) < 0.03, estimate_pi(40000, 3)",
+          "concept": "estimation"
+        },
+        {
+          "name": "repeatable with a seed, varying across seeds",
+          "code": "assert estimate_pi(5000, 1) == estimate_pi(5000, 1)\nassert len({estimate_pi(5000, seed) for seed in range(5)}) > 1, 'different seeds should give different random points'",
+          "concept": "randomness"
+        },
+        {
+          "name": "dice probabilities",
+          "code": "assert abs(dice_probability(7, 40000, 5) - 6 / 36) < 0.01 and abs(dice_probability(2, 40000, 5) - 1 / 36) < 0.005\nassert dice_probability(13, 1000, 5) == 0",
+          "concept": "simulation"
+        }
+      ],
+      "solution": "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
     },
     {
       "id": "check",

@@ -1,29 +1,4 @@
 {
- "_note": "Lessons whose G-5 metadata and transfer problem are not written yet. The content gate requires them for every other lesson; remove ids as batches land, and delete the file's last entry to finish G-5.",
- "lessons": [
-  "ml-boosting",
-  "ml-capstone",
-  "ml-classification",
-  "ml-derivatives",
-  "ml-evaluation",
-  "ml-forests",
-  "ml-kmeans",
-  "ml-knn",
-  "ml-linear-regression",
-  "ml-logistic",
-  "ml-matrices",
-  "ml-pca",
-  "ml-scaling",
-  "ml-trees",
-  "ml-vectors",
-  "np-arrays",
-  "pd-dataframes",
-  "proj-caesar",
-  "proj-life",
-  "proj-monty-hall",
-  "stats-bayes",
-  "stats-normal",
-  "stats-simulation",
-  "stats-summary"
- ]
+ "_note": "G-5 is finished: every lesson has its metadata and transfer problem, and the content gate requires them. Keep this list empty.",
+ "lessons": []
 }

@@ -67,6 +67,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Update a probability with evidence using Bayes' rule, step by step.",
+  "analogy": "Bayes' rule is a detective's notebook: start with a hunch (the prior), and each clue makes the suspect more or less likely in proportion to how well the clue fits.",
+  "misconceptions": [
+    {
+      "belief": "A positive result from a 99% accurate test means a 99% chance of having the condition.",
+      "correction": "It depends on how common the condition is; with a rare condition most positives can be false."
+    },
+    {
+      "belief": "P(A | B) equals P(B | A).",
+      "correction": "They are different; Bayes' rule converts one into the other using the priors."
+    },
+    {
+      "belief": "Several test results can be combined by just multiplying likelihoods, always.",
+      "correction": "That assumes the results are independent given the condition, as naive Bayes does."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right formula",
+      "evidence": "the posterior follows Bayes' rule with the prior and both likelihoods"
+    },
+    {
+      "criterion": "Sequential",
+      "evidence": "each result updates the previous posterior"
+    },
+    {
+      "criterion": "Edge cases",
+      "evidence": "no results leaves the prior unchanged"
+    }
+  ],
+  "review": {
+    "recall": "Write Bayes' rule. Why can a positive result for a rare condition still mean it's unlikely?"
+  },
   "steps": [
     {
       "id": "why",
@@ -294,6 +327,41 @@
         }
       ],
       "solution": "import math\n\n\ndef fit_nb(docs, labels):\n    if not docs or len(docs) != len(labels):\n        raise ValueError('need documents, one label each')\n    vocab = {w for doc in docs for w in doc}\n    model = {'vocab': vocab, 'classes': {}}\n    for c in sorted(set(labels)):\n        words = [w for doc, l in zip(docs, labels) if l == c for w in doc]\n        model['classes'][c] = {'prior': labels.count(c) / len(labels), 'counts': {w: words.count(w) for w in vocab}, 'total': len(words)}\n    return model\n\n\ndef nb_scores(model, doc):\n    scores = {}\n    V = len(model['vocab'])\n    for c, info in model['classes'].items():\n        s = math.log(info['prior'])\n        for w in doc:\n            if w in model['vocab']:\n                s += math.log((info['counts'][w] + 1) / (info['total'] + V))\n        scores[c] = s\n    return scores\n\n\ndef predict_nb(model, doc):\n    scores = nb_scores(model, doc)\n    top = max(scores.values())\n    return min(c for c in scores if scores[c] >= top - 1e-9)\n"
+    },
+    {
+      "id": "retest",
+      "kind": "transfer",
+      "title": "Transfer: testing twice",
+      "body": "A test has a given sensitivity (P(positive | condition)) and specificity (P(negative | no condition)). Write\n`update(prior, sensitivity, specificity, positive)`: the probability of the condition after one result (`positive` is True or\nFalse). Then write `after_results(prior, sensitivity, specificity, results)`, applying one update per result in order, assuming\nthe results are independent given the condition.",
+      "starter": "def update(prior, sensitivity, specificity, positive):\n    return sensitivity\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    return prior\n",
+      "hints": [
+        "For a positive: sens·p / (sens·p + (1 − spec)·(1 − p)). For a negative, use (1 − sens) and spec instead.",
+        "Loop over the results, feeding each posterior in as the next prior.",
+        "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = 1 - sensitivity, specificity\n    return hit * prior / (hit * prior + false * (1 - prior))\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    p = prior\n    for positive in results:\n        p = update(p, sensitivity, specificity, positive)\n    return p\n"
+      ],
+      "tests": [
+        {
+          "name": "one positive result for a rare condition",
+          "code": "assert abs(update(0.01, 0.9, 0.95, True) - 0.009 / (0.009 + 0.0495)) < 1e-12, update(0.01, 0.9, 0.95, True)",
+          "concept": "bayes-rule"
+        },
+        {
+          "name": "a negative result lowers it",
+          "code": "p = update(0.3, 0.9, 0.8, False)\nassert abs(p - 0.03 / (0.03 + 0.56)) < 1e-12 and p < 0.3, p",
+          "concept": "conditional-probability"
+        },
+        {
+          "name": "results update in turn",
+          "code": "two = after_results(0.01, 0.9, 0.95, [True, True])\nassert abs(two - update(update(0.01, 0.9, 0.95, True), 0.9, 0.95, True)) < 1e-12 and two > 0.6, two\nassert after_results(0.2, 0.9, 0.9, []) == 0.2",
+          "concept": "naive-bayes"
+        },
+        {
+          "name": "a positive then a negative",
+          "code": "p = after_results(0.5, 0.8, 0.8, [True, False])\nassert abs(p - 0.5) < 1e-12, p",
+          "concept": "naive-bayes"
+        }
+      ],
+      "solution": "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = 1 - sensitivity, specificity\n    return hit * prior / (hit * prior + false * (1 - prior))\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    p = prior\n    for positive in results:\n        p = update(p, sensitivity, specificity, positive)\n    return p\n"
     },
     {
       "id": "check",

@@ -87,6 +87,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Predict with k-nearest neighbours and choose k on validation data rather than training data.",
+  "analogy": "kNN asks the neighbours: to guess a house's price, look at the k most similar houses nearby and take what they sold for.",
+  "misconceptions": [
+    {
+      "belief": "k = 1 is always best because it fits the training data perfectly.",
+      "correction": "It memorises noise; choose k on held-out validation data."
+    },
+    {
+      "belief": "Choosing k by test-set accuracy is fine.",
+      "correction": "That leaks the test set; use a separate validation set."
+    },
+    {
+      "belief": "kNN only works for classification.",
+      "correction": "For regression, average the neighbours' values."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right neighbours",
+      "evidence": "distances are computed and the k nearest chosen, ties broken by order"
+    },
+    {
+      "criterion": "Right prediction",
+      "evidence": "the neighbours' values are averaged (or voted) correctly"
+    },
+    {
+      "criterion": "Validation",
+      "evidence": "k is chosen by validation error, ties to the smaller k"
+    }
+  ],
+  "review": {
+    "recall": "How does k change kNN's behaviour? Which data should you use to pick k?"
+  },
   "steps": [
     {
       "id": "why",
@@ -330,6 +363,41 @@
         }
       ],
       "solution": "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n\n\ndef choose_k(X_train, y_train, X_val, y_val, ks):\n    if not ks or not X_val or len(X_val) != len(y_val):\n        raise ValueError('need candidate ks and labelled validation rows')\n    scores = {}\n    for k in ks:\n        pred = knn_predict(X_train, y_train, X_val, k)\n        scores[k] = sum(p == t for p, t in zip(pred, y_val)) / len(y_val)\n    best = min(scores, key=lambda k: (-scores[k], k))\n    return {'scores': scores, 'best': best}\n"
+    },
+    {
+      "id": "regress",
+      "kind": "transfer",
+      "title": "Transfer: kNN for numbers",
+      "body": "Training data is a list of `(features, value)` pairs, where features is a tuple of numbers. Write `knn_value(train, query, k)`:\nthe mean value of the k training points closest to `query` by Euclidean distance (on a tie in distance, the earlier\npoint wins). Then write `best_k(train, valid, ks)`: the k from `ks` with the smallest mean squared error on the `valid`\npairs (ties go to the smaller k).",
+      "starter": "def knn_value(train, query, k):\n    return 0.0\n\n\ndef best_k(train, valid, ks):\n    return ks[0]\n",
+      "hints": [
+        "`sorted(train, key=lambda p: dist(p[0], query))[:k]` keeps earlier points first on ties (sorted is stable).",
+        "For each k, average `(knn_value(train, f, k) - v) ** 2` over the validation pairs; pick the smallest, smaller k first.",
+        "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
+      ],
+      "tests": [
+        {
+          "name": "averages the k nearest values",
+          "code": "train = [((0,), 1.0), ((1,), 3.0), ((5,), 10.0)]\nassert knn_value(train, (0.4,), 2) == 2.0 and knn_value(train, (6,), 1) == 10.0",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "ties in distance go to the earlier point",
+          "code": "train = [((1,), 5.0), ((-1,), 7.0)]\nassert knn_value(train, (0,), 1) == 5.0",
+          "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "k is chosen on validation data",
+          "code": "train = [((0,), 0.0), ((1,), 0.0), ((2,), 0.0), ((3,), 9.0)]\nvalid = [((0.1,), 0.0), ((2.9,), 9.0)]\nassert best_k(train, valid, [3, 1, 4]) == 1, best_k(train, valid, [3, 1, 4])",
+          "concept": "validation-set"
+        },
+        {
+          "name": "ties go to the smaller k",
+          "code": "train = [((0,), 1.0), ((10,), 1.0)]\nassert best_k(train, [((5,), 1.0)], [2, 1]) == 1",
+          "concept": "hyperparameters"
+        }
+      ],
+      "solution": "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
     },
     {
       "id": "check",
