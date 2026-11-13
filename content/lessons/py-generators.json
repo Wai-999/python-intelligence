@@ -1,0 +1,416 @@
+{
+  "id": "py-generators",
+  "title": "Iterators and generators: one value at a time",
+  "summary": "Use iterators and next(), write generator functions with yield and lazy generator expressions, and build pipelines that never hold all the data at once.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "py-comprehensions",
+    "py-exceptions"
+  ],
+  "concepts": [
+    "iterators",
+    "generators",
+    "generator-expressions"
+  ],
+  "sources": [
+    {
+      "id": "dip-gen",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        163,
+        168
+      ],
+      "section": "Generators",
+      "use": "reference"
+    },
+    {
+      "id": "dip-iter",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        169,
+        176
+      ],
+      "section": "Classes & Iterators",
+      "use": "reference"
+    },
+    {
+      "id": "dip-genexp",
+      "source_id": "pch-diveintopython3",
+      "pages": [
+        193,
+        197
+      ],
+      "section": "Generator expressions",
+      "use": "reference"
+    },
+    {
+      "id": "tp-genexp",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        207,
+        208
+      ],
+      "section": "Generator expressions",
+      "use": "reference"
+    },
+    {
+      "id": "pc-iter",
+      "source_id": "pydocs-312-classes",
+      "pages": [
+        16,
+        16
+      ],
+      "section": "9.8. Iterators",
+      "use": "reference"
+    },
+    {
+      "id": "pc-gen",
+      "source_id": "pydocs-312-classes",
+      "pages": [
+        17,
+        17
+      ],
+      "section": "9.9. Generators",
+      "use": "reference"
+    },
+    {
+      "id": "pc-genexp",
+      "source_id": "pydocs-312-classes",
+      "pages": [
+        18,
+        18
+      ],
+      "section": "9.10. Generator Expressions",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "You don't need all of it at once",
+      "body": "To add up the squares of a million numbers you could build a list of a million squares and then sum it.\nBut the sum only ever needs the next number. A log file with ten million lines, the readings from a sensor\nthat never stops, the pages of search results: often you only need to look at one item, use it, and move\non. Python's **iterators** and **generators** hand you values one at a time, only when you ask, so a\nprogram can work through far more data than would fit in memory."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A ticket dispenser, not a pile of tickets",
+      "body": "A list is a pile of tickets: all printed, all in memory. An **iterator** is a ticket dispenser: each time\nyou press the button (`next(it)`) you get the next ticket, and when it is empty it says so (it raises\n`StopIteration`). A `for` loop just keeps pressing the button for you.\n\nA **generator function** is the easiest way to build a dispenser. It looks like a normal function but uses\n`yield` instead of `return`: each `yield` hands one value out and *pauses* the function, keeping all its\nlocal variables, until the next value is asked for. A **generator expression**, `(x * x for x in xs)`,\nis the same idea written like a list comprehension, with round brackets.\n\nOne catch: a dispenser can be emptied. Once a generator has given out its last value, looping over it\nagain gives nothing.",
+      "cites": [
+        "dip-gen",
+        "dip-iter",
+        "pc-iter",
+        "pc-gen"
+      ],
+      "socratic": {
+        "questions": [
+          "When does the body of a generator function start running: at the call, or at the first `next`?",
+          "Why can `sum(x * x for x in range(10**9))` run in a small amount of memory while `sum([x * x for x in range(10**9)])` can't?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a generator pause and resume",
+      "body": "The generator and the `for` loop take turns: each `yield` passes a value out and freezes the function in\nplace until the loop asks again. Each frame shows the variables just before the highlighted line runs; a frame with output shows what its line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\nfor x in countdown(2):\n    print(x)",
+        "frames": [
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "countdown": "<function countdown>"
+            },
+            "note": "Calling `countdown(2)` runs none of its body: it only creates a generator. The `for` loop asks it for a first value."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "countdown(2)"
+            ],
+            "locals": {
+              "n": "2"
+            },
+            "note": "The body starts on that first request. 2 > 0, so the loop runs."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "countdown(2)"
+            ],
+            "locals": {
+              "n": "2"
+            },
+            "note": "`yield` hands 2 to the `for` loop and pauses right here, keeping n."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "countdown": "<function countdown>",
+              "x": "2"
+            },
+            "note": "The loop body runs with x = 2.",
+            "output": "2"
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "countdown(2)"
+            ],
+            "locals": {
+              "n": "2"
+            },
+            "note": "The loop asks for the next value, so the generator resumes just after the `yield`: n becomes 1."
+          },
+          {
+            "line": 3,
+            "stack": [
+              "<module>",
+              "countdown(2)"
+            ],
+            "locals": {
+              "n": "1"
+            },
+            "note": "1 > 0, so it yields 1 and pauses again."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "countdown": "<function countdown>",
+              "x": "1"
+            },
+            "note": "x = 1.",
+            "output": "1"
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>",
+              "countdown(2)"
+            ],
+            "locals": {
+              "n": "1"
+            },
+            "note": "Resumed once more: n becomes 0."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "countdown(2)"
+            ],
+            "locals": {
+              "n": "0"
+            },
+            "note": "0 > 0 is false, so the function ends. Ending raises `StopIteration`, and the `for` loop stops quietly."
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Iterables and iterators:** anything you can loop over is *iterable* (lists, strings, dicts, files,\nranges). `iter(x)` gives an *iterator* over it, and `next(it)` returns the next value or raises\n`StopIteration` when there are none left. A `for` loop calls `iter` once and then `next` until\n`StopIteration`.\n\n**Generator functions:** a function whose body contains `yield`. Calling it runs nothing yet and returns a\n*generator*, which is an iterator. Each `next` runs the body until the next `yield`, which produces that\nvalue; reaching the end of the body (or a `return`) raises `StopIteration`.\n\n**Generator expressions:** `(expression for name in iterable if condition)` builds a generator, lazily.\nWhen it is the only argument to a call, the extra brackets can go: `sum(x * x for x in xs)`.\n\n**Single use:** a generator (like any iterator) is used up as you go; looping over it a second time\nyields nothing. A list can be looped over again and again. `list(gen)` collects what is left.\n\n**Endless and lazy:** `itertools.count()` counts forever, and `itertools.islice(it, n)` takes the first `n`\nvalues of any iterator. Chained generators form a pipeline that holds only one value at a time.",
+      "cites": [
+        "pc-iter",
+        "pc-gen",
+        "pc-genexp",
+        "dip-genexp",
+        "tp-genexp"
+      ]
+    },
+    {
+      "id": "squares",
+      "kind": "example",
+      "title": "Run it: next, single use, and laziness",
+      "body": "Two values by hand with `next`, the rest with `list`, then nothing on the second `list`. Then a sum of a\nmillion squares that never builds a list, and the first five even numbers from an endless counter.",
+      "code": "def squares(n):\n    for k in range(n):\n        yield k * k\n\ngen = squares(4)\nprint(next(gen), next(gen))\nprint(list(gen))\nprint(list(gen))\n\nprint(sum(x * x for x in range(1_000_000)))\n\nimport itertools\nevens = (n for n in itertools.count() if n % 2 == 0)\nprint(list(itertools.islice(evens, 5)))\n",
+      "expected_output": "0 1\n[4, 9]\n[]\n333332833333500000\n[0, 2, 4, 6, 8]\n"
+    },
+    {
+      "id": "running",
+      "kind": "guided",
+      "title": "Your turn: make it lazy",
+      "body": "`running_total(numbers)` gives the total so far after each number: for `[3, 1, 4]` it gives 3, 4, 8. The\nstarter works, but it builds the whole list before returning anything. Rewrite it as a generator\nfunction that yields each total as soon as it knows it, so that it works on an endless stream of numbers\nand never reads more numbers than it has been asked for.",
+      "starter": "def running_total(numbers):\n    total = 0\n    result = []\n    for x in numbers:\n        total += x\n        result.append(total)\n    return result\n",
+      "hints": [
+        "Keep the running `total`, drop the `result` list.",
+        "Replace `result.append(total)` with `yield total`, and remove the `return`.",
+        "def running_total(numbers):\n    total = 0\n    for x in numbers:\n        total += x\n        yield total\n"
+      ],
+      "tests": [
+        {
+          "name": "[3, 1, 4] gives 3, 4, 8",
+          "code": "assert list(running_total([3, 1, 4])) == [3, 4, 8], list(running_total([3, 1, 4]))",
+          "concept": "generators"
+        },
+        {
+          "name": "an empty input gives nothing",
+          "code": "assert list(running_total([])) == []",
+          "concept": "generators"
+        },
+        {
+          "name": "works with negative and decimal numbers",
+          "code": "assert list(running_total([1.5, -0.5, -1])) == [1.5, 1.0, 0.0]",
+          "concept": "generators"
+        },
+        {
+          "name": "it is a generator function",
+          "code": "import inspect\nassert inspect.isgeneratorfunction(running_total), 'use yield, so that running_total is a generator function'",
+          "concept": "generators"
+        },
+        {
+          "name": "it reads only as many numbers as it is asked for",
+          "code": "import itertools\ndef _source():\n    yield 1\n    yield 2\n    raise AssertionError('running_total read more numbers than it was asked for')\n\nassert list(itertools.islice(running_total(_source()), 2)) == [1, 3]",
+          "concept": "iterators"
+        },
+        {
+          "name": "it works on an endless stream",
+          "code": "import itertools\ndef _endless():\n    n = 0\n    while True:\n        n += 1\n        if n > 1000:\n            raise AssertionError('running_total tried to read the whole endless stream before giving a total')\n        yield n\n\nassert list(itertools.islice(running_total(_endless()), 4)) == [1, 3, 6, 10]",
+          "concept": "iterators"
+        }
+      ],
+      "solution": "def running_total(numbers):\n    total = 0\n    for x in numbers:\n        total += x\n        yield total\n"
+    },
+    {
+      "id": "pipeline",
+      "kind": "challenge",
+      "title": "Challenge: a lazy word pipeline",
+      "body": "Write a generator function `long_words(lines, min_len)`. `lines` is any iterable of strings (a list, an open\nfile, another generator). Yield, in order, every word of at least `min_len` letters, in lower case and with\nthe punctuation `.,!?;:` stripped from its ends. Words are separated by whitespace. It must read the lines\none at a time: it should not look at a line before it needs a word from it.",
+      "starter": "def long_words(lines, min_len):\n    words = []\n    return words\n",
+      "hints": [
+        "Two loops: one over the lines, one over `line.split()`.",
+        "`word.strip(\".,!?;:\").lower()`, then `yield` it if it is long enough.",
+        "def long_words(lines, min_len):\n    for line in lines:\n        for word in line.split():\n            word = word.strip(\".,!?;:\").lower()\n            if len(word) >= min_len:\n                yield word\n"
+      ],
+      "tests": [
+        {
+          "name": "keeps long words, in order",
+          "code": "assert list(long_words(['The cat sat.', 'A tremendous, wonderful day!'], 5)) == ['tremendous', 'wonderful']",
+          "concept": "generators"
+        },
+        {
+          "name": "the length limit is inclusive",
+          "code": "assert list(long_words(['ab abc abcd'], 3)) == ['abc', 'abcd']",
+          "concept": "generators"
+        },
+        {
+          "name": "lower case, punctuation stripped",
+          "code": "assert list(long_words(['Python PYTHON! python?'], 6)) == ['python', 'python', 'python']",
+          "concept": "generators"
+        },
+        {
+          "name": "blank and punctuation-only lines give nothing",
+          "code": "assert list(long_words(['', '!!!', 'Hi, there'], 5)) == ['there']",
+          "concept": "generators"
+        },
+        {
+          "name": "any whitespace separates words",
+          "code": "assert list(long_words(['a\\tbetter\\nchoice'], 5)) == ['better', 'choice']",
+          "concept": "generators"
+        },
+        {
+          "name": "it is a generator function",
+          "code": "import inspect\nassert inspect.isgeneratorfunction(long_words), 'use yield, so that long_words is a generator function'",
+          "concept": "generators"
+        },
+        {
+          "name": "it reads a line only when it needs a word from it",
+          "code": "def _lines():\n    yield 'elephants walk slowly'\n    raise AssertionError('long_words read the next line before it was needed')\n\nwords = long_words(_lines(), 4)\nassert next(words) == 'elephants'\nassert next(words) == 'walk'\nassert next(words) == 'slowly'",
+          "concept": "iterators"
+        },
+        {
+          "name": "it accepts a generator expression as input",
+          "code": "assert list(long_words((s.upper() for s in ['tiny', 'gigantic']), 6)) == ['gigantic']",
+          "concept": "generator-expressions"
+        }
+      ],
+      "solution": "def long_words(lines, min_len):\n    for line in lines:\n        for word in line.split():\n            word = word.strip(\".,!?;:\").lower()\n            if len(word) >= min_len:\n                yield word\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What happens on the last line?\n\n```python\nit = iter([1, 2])\nnext(it)\nnext(it)\nnext(it)\n```",
+          "choices": [
+            "It raises StopIteration",
+            "It returns None",
+            "It starts again and returns 1",
+            "It returns 2 again"
+          ],
+          "answer": 0,
+          "explanation": "An iterator only moves forward; once it has no values left, `next` raises `StopIteration`.",
+          "concept": "iterators"
+        },
+        {
+          "id": "q2",
+          "prompt": "`def gen():` has `print('start')` as its first line and later yields values. What does `g = gen()` print?",
+          "choices": [
+            "Nothing: the body runs only when a value is asked for",
+            "start",
+            "start, then every value",
+            "It raises an error"
+          ],
+          "answer": 0,
+          "explanation": "Calling a generator function only creates the generator; the body starts at the first `next`.",
+          "concept": "generators"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does this print?\n\n```python\nnums = (x * 2 for x in range(3))\nprint(sum(nums), sum(nums))\n```",
+          "choices": [
+            "6 0",
+            "6 6",
+            "0 6",
+            "It raises an error"
+          ],
+          "answer": 0,
+          "explanation": "The first `sum` uses up the generator (0 + 2 + 4); the second finds it empty.",
+          "concept": "generator-expressions"
+        },
+        {
+          "id": "q4",
+          "prompt": "Which adds up a billion squares without needing memory for a billion numbers?",
+          "choices": [
+            "sum(x * x for x in range(10**9))",
+            "sum([x * x for x in range(10**9)])",
+            "sum(list(x * x for x in range(10**9)))",
+            "None of them can"
+          ],
+          "answer": 0,
+          "explanation": "The generator expression makes one square at a time; the list versions build all billion first.",
+          "concept": "generator-expressions"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Use `iter` and `next`, and know that a `for` loop stops at `StopIteration`.\n- Write generator functions with `yield`, and know their body runs only when values are asked for.\n- Write lazy generator expressions, and remember a generator can be used only once.\n- Build pipelines that work on endless or huge inputs, one value at a time."
+    }
+  ]
+}
