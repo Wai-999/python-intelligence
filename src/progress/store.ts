@@ -87,13 +87,23 @@ function validateEvents(value: unknown, path = "events"): LearnerEvent[] {
     throw error;
   }
 }
+function validateAssistance(value: unknown): Record<string, number> {
+  if (value === undefined) return {};
+  object(value, "assistance");
+  return Object.fromEntries(Object.entries(value).map(([key, level]) => {
+    check(/^[^:]+:[\s\S]+$/.test(key), `assistance.${key} key must be lessonId:stepId`);
+    check(Number.isInteger(level) && (level as number) >= 0 && (level as number) <= 4, `assistance.${key} must be 0..4`);
+    return [key, level as number];
+  }));
+}
+const ASSIST = "assist:";
 const sameEvent = (a: LearnerEvent, b: LearnerEvent) => JSON.stringify(a, Object.keys(a).sort()) === JSON.stringify(b, Object.keys(b).sort());
 function validate(data: unknown): ProgressExport {
   object(data, "payload");
-  const { format, version, exportedAt, lessons, drafts, position, events } = data;
+  const { format, version, exportedAt, lessons, drafts, position, events, assistance } = data;
   check(format === EXPORT_FORMAT, "format is not supported");
   check((IMPORTABLE_VERSIONS as readonly unknown[]).includes(version), "version is not supported");
-  check(version === 1 ? events === undefined : true, "a version 1 file has no events");
+  check(version === 1 ? events === undefined && assistance === undefined : true, "a version 1 file has no events or assistance");
   timestamp(exportedAt, "exportedAt");
   check(Array.isArray(lessons), "lessons must be an array");
   const ids = new Set<string>();
@@ -106,6 +116,7 @@ function validate(data: unknown): ProgressExport {
   object(drafts, "drafts");
   return { format, version: EXPORT_VERSION, exportedAt: exportedAt as string, lessons: normalizedLessons,
     events: version === 1 ? [] : validateEvents(events),
+    assistance: validateAssistance(assistance),
     drafts: Object.fromEntries(Object.entries(drafts).map(([key, code]) => [key, validateDraft(key, code)])),
     position: position === null ? null : validatePosition(position) };
 }
@@ -219,10 +230,22 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       });
     },
     allEvents: async () => ordered(await read<LearnerEvent[]>("events")),
+    getAssistance: async (lesson, step) => (await read<number | undefined>("meta", `${ASSIST}${lesson}:${step}`)) ?? 0,
+    raiseAssistance: async (lesson, step, level) => {
+      check(typeof lesson === "string" && lesson.length > 0 && !lesson.includes(":"), "assistance lessonId must be nonempty and contain no colon");
+      check(typeof step === "string" && step.length > 0, "assistance stepId must be a nonempty string");
+      check(Number.isInteger(level) && level >= 0 && level <= 4, "assistance must be 0..4");
+      await transact<void>(["meta"], "readwrite", (tx) => {
+        const store = tx.objectStore("meta");
+        const key = `${ASSIST}${lesson}:${step}`;
+        const current = store.get(key);
+        current.onsuccess = () => { if (level > ((current.result as number | undefined) ?? 0)) store.put(level, key); };
+      });
+    },
     getPosition: async () => (await read<Position | undefined>("meta", "position")) ?? null,
     setPosition: async (lessonId, stepIndex) => put("meta", validatePosition({ lessonId, stepIndex, updatedAt: new Date().toISOString() }), "position"),
     exportAll: () => transact<ProgressExport>(stores, "readonly", (tx, result) => {
-      const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null, events: [] };
+      const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null, events: [], assistance: {} };
       const lessons = tx.objectStore("lessons").getAll();
       lessons.onsuccess = () => { output.lessons = lessons.result; };
       const cursor = tx.objectStore("drafts").openCursor();
@@ -235,6 +258,14 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       };
       const position = tx.objectStore("meta").get("position");
       position.onsuccess = () => { output.position = position.result ?? null; };
+      const meta = tx.objectStore("meta").openCursor();
+      meta.onsuccess = () => {
+        const entry = meta.result;
+        if (!entry) return;
+        const key = String(entry.key);
+        if (key.startsWith(ASSIST)) Object.defineProperty(output.assistance, key.slice(ASSIST.length), { value: entry.value, enumerable: true, configurable: true, writable: true });
+        entry.continue();
+      };
       const events = tx.objectStore("events").getAll();
       events.onsuccess = () => { output.events = ordered(events.result as LearnerEvent[]); };
       result(output);
@@ -252,6 +283,7 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
         for (const [key, code] of Object.entries(normalized.drafts)) tx.objectStore("drafts").put(code, key);
         if (normalized.position !== null) tx.objectStore("meta").put(normalized.position, "position");
         for (const e of normalized.events) tx.objectStore("events").put(e);
+        for (const [key, level] of Object.entries(normalized.assistance)) tx.objectStore("meta").put(level, `${ASSIST}${key}`);
       });
     },
     clear: () => transact<void>(stores, "readwrite", (tx) => {

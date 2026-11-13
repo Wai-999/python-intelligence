@@ -45,6 +45,8 @@ export interface ProgressExport {
   position: Position | null;
   /** Append-only learner event log (src/learner/model.ts). */
   events: LearnerEvent[];
+  /** Highest help seen per exercise, keyed `${lessonId}:${stepId}` (0..4, see learner/model Assistance). */
+  assistance: Record<string, number>;
 }
 
 export interface ProgressStore {
@@ -58,6 +60,9 @@ export interface ProgressStore {
   /** Validates, then stores; re-adding an identical event is a no-op, a different event with a used id is rejected. */
   appendEvents(events: LearnerEvent[]): Promise<void>;
   allEvents(): Promise<LearnerEvent[]>;
+  /** Help seen on an exercise so far (0 if none). It only ever goes up, so reopening a task can't hide earlier help. */
+  getAssistance(lessonId: string, stepId: string): Promise<number>;
+  raiseAssistance(lessonId: string, stepId: string, level: number): Promise<void>;
   exportAll(): Promise<ProgressExport>;
   /** Validates fully BEFORE writing; on invalid input throws ImportError and leaves the store unchanged. */
   importAll(data: unknown): Promise<void>;

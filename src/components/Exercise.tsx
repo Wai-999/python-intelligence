@@ -23,6 +23,9 @@ interface Props {
   lessonId: string;
   draft: string | undefined;
   record: StepResult | undefined;
+  /** Help already seen on this task in earlier visits (0..4); it is restored, never forgotten. */
+  assistance: number;
+  onAssist: (level: Assistance) => void;
   onDraft: (code: string) => void;
   onResult: (passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
 }
@@ -30,15 +33,22 @@ interface Props {
 /** Hints are revealed one at a time. The solution becomes available only after this many failed attempts. */
 export const SOLUTION_AFTER = 2;
 
-export function Exercise({ step, packages, lessonId, draft, record, onDraft, onResult }: Props) {
+export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, onDraft, onResult }: Props) {
   const [code, setCode] = useState(draft ?? step.starter);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
   const [busy, setBusy] = useState(false);
-  const [hintsShown, setHintsShown] = useState(0);
+  // Earlier help is shown again on return, and counted: reopening a task never makes it count as unaided.
+  const [hintsShown, setHintsShown] = useState(() => Math.min(step.hints.length, assistance >= 4 ? step.hints.length : assistance));
   const [failures, setFailures] = useState(record && !record.passed ? record.attempts : 0);
   const [confirmSolution, setConfirmSolution] = useState(false);
-  const [showSolution, setShowSolution] = useState(false);
+  const [showSolution, setShowSolution] = useState(assistance >= 4);
+  // The highest help seen so far, read when a run finishes (help revealed while a run is pending counts too).
+  const helped = useRef<Assistance>(assistanceFor(Math.min(3, assistance), assistance >= 4));
+  const reveal = (hints: number, solution: boolean) => {
+    const level = assistanceFor(hints, solution);
+    if (level > helped.current) { helped.current = level; onAssist(level); }
+  };
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => { setCode(draft ?? step.starter); }, [step.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -67,7 +77,7 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
       if (!passed) setFailures((n) => n + 1);
       onResult(passed, failedConcepts, {
         results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed })) : null,
-        assistance: assistanceFor(hintsShown, showSolution),
+        assistance: helped.current,
       });
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,
@@ -117,7 +127,7 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
             {/[.!?]$/.test(h.trim()) ? inline(h) : <code className="hint-code">{h}</code>}</p>
         ))}
         {hintsShown < step.hints.length && !allPassed && (
-          <button type="button" className="btn ghost" onClick={() => setHintsShown((n) => n + 1)}>
+          <button type="button" className="btn ghost" onClick={() => { setHintsShown(hintsShown + 1); reveal(hintsShown + 1, showSolution); }}>
             {hintsShown === 0 ? "Show a hint" : "Another hint"} ({step.hints.length - hintsShown} left)
           </button>
         )}
@@ -125,7 +135,7 @@ export function Exercise({ step, packages, lessonId, draft, record, onDraft, onR
           confirmSolution ? (
             <span className="confirm">
               Seeing the answer is fine, but you learn more by trying one more time.{" "}
-              <button type="button" className="btn" onClick={() => setShowSolution(true)}>Show it anyway</button>{" "}
+              <button type="button" className="btn" onClick={() => { setShowSolution(true); reveal(hintsShown, true); }}>Show it anyway</button>{" "}
               <button type="button" className="btn ghost" onClick={() => setConfirmSolution(false)}>I'll try again</button>
             </span>
           ) : (

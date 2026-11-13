@@ -55,15 +55,14 @@ export interface ReviewItem {
 }
 
 /**
- * A retrieval question for a concept: one of its own quiz questions if it has any, otherwise one from its lesson's quiz.
+ * A retrieval question for a concept: one of its own quiz questions (questions about other concepts would test the
+ * wrong thing). Concepts without one get no review item: the Review page says so instead of faking retention evidence.
  * `turn` rotates through the candidates so repeated reviews don't always ask the same thing.
  */
 export function reviewItem(lessons: Lesson[], concept: string, turn: number): ReviewItem | null {
   const lesson = lessons.find((l) => l.concepts.includes(concept));
   if (!lesson) return null;
-  const all = lesson.steps.flatMap((s) => (s.kind === "quiz" ? s.questions : []));
-  const own = all.filter((q) => q.concept === concept);
-  const pool = own.length > 0 ? own : all;
+  const pool = lesson.steps.flatMap((s) => (s.kind === "quiz" ? s.questions : [])).filter((q) => q.concept === concept);
   if (pool.length === 0) return null;
   return { concept, lessonId: lesson.id, question: pool[((turn % pool.length) + pool.length) % pool.length]! };
 }

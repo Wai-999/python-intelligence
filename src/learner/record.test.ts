@@ -52,12 +52,12 @@ describe("quiz events", () => {
 });
 
 describe("reviews", () => {
-  it("asks one of the concept's own questions, rotating; falls back to its lesson's quiz", () => {
+  it("asks only the concept's own questions, rotating through them", () => {
     expect(reviewItem([L], "loops", 0)!.question.id).toBe("q0");
     expect(reviewItem([L], "loops", 1)!.question.id).toBe("q1");
     expect(reviewItem([L], "loops", 2)!.question.id).toBe("q0");
     expect(reviewItem([L], "ranges", 7)!.question.id).toBe("q2");
-    expect(reviewItem([L], "style", 1)).toMatchObject({ concept: "style", lessonId: "basics", question: { id: "q1" } });
+    expect(reviewItem([L], "style", 1)).toBeNull(); // no question of its own: no review rather than an unrelated one
     expect(reviewItem([L], "unknown", 0)).toBeNull();
     expect(reviewItem([lesson("b", ["x"], [E1])], "x", 0)).toBeNull();
   });

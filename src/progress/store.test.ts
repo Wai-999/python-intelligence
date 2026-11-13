@@ -302,12 +302,31 @@ describe("learner event log", () => {
     const store = await open();
     await seed(store);
     const v2 = JSON.parse(JSON.stringify(await store.exportAll()));
-    const { events: _, ...rest } = v2;
+    const { events: _, assistance: __, ...rest } = v2;
     await store.appendEvents([event("old")]);
     await store.importAll({ ...rest, version: 1 });
     expect(await store.allEvents()).toEqual([]);
     expect(await store.allLessons()).toEqual([lesson]);
     await expect(store.importAll({ ...rest, version: 1, events: [] })).rejects.toBeInstanceOf(ImportError);
+  });
+
+  it("keeps the highest help seen per exercise, only ever raising it, and exports it", async () => {
+    const store = await open();
+    expect(await store.getAssistance("functions", "exercise")).toBe(0);
+    await store.raiseAssistance("functions", "exercise", 2);
+    await store.raiseAssistance("functions", "exercise", 1);
+    expect(await store.getAssistance("functions", "exercise")).toBe(2);
+    await store.raiseAssistance("functions", "exercise", 4);
+    expect(await store.getAssistance("functions", "exercise")).toBe(4);
+    await expect(store.raiseAssistance("functions", "exercise", 5)).rejects.toThrow(ValidationError);
+    const saved = JSON.parse(JSON.stringify(await store.exportAll()));
+    expect(saved.assistance).toEqual({ "functions:exercise": 4 });
+    await store.clear();
+    expect(await store.getAssistance("functions", "exercise")).toBe(0);
+    await store.importAll(saved);
+    expect(await store.getAssistance("functions", "exercise")).toBe(4);
+    await expect(store.importAll({ ...saved, assistance: { "functions:exercise": 7 } })).rejects.toBeInstanceOf(ImportError);
+    expect(await store.getAssistance("functions", "exercise")).toBe(4);
   });
 
   it("upgrades a version 1 database in place, keeping its progress", async () => {

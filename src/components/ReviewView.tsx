@@ -19,7 +19,10 @@ interface Props {
 
 /** Spaced retrieval (master prompt §5): due concepts one question at a time, then the evidence behind each concept. */
 export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: Props) {
-  const due = dueReviews(model, now);
+  // Only concepts with a question of their own can be reviewed; the others are listed, never faked.
+  const allDue = dueReviews(model, now);
+  const due = allDue.filter((s) => reviewItem(lessons, s.concept, 0) !== null);
+  const unreviewable = allDue.filter((s) => reviewItem(lessons, s.concept, 0) === null);
   // While an answer's feedback is showing, keep that question on screen even though the schedule has moved on.
   const [shown, setShown] = useState<{ item: ReviewItem; chosen: number } | null>(null);
   const [chosen, setChosen] = useState<number | null>(null);
@@ -74,6 +77,11 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
         <p className="pill ok" role="status">Nothing is due for review right now.</p>
       )}
 
+      {unreviewable.length > 0 && (
+        <p className="muted">Also due, but without a review question yet: {unreviewable.map((s) => s.concept).join(", ")}.
+           Revisit their lessons instead; these reviews aren't counted.</p>
+      )}
+
       <h2>Your concepts</h2>
       {started.length === 0 ? <p className="muted">Concepts appear here once you start practising them.</p> : (
         <div className="table-scroll">
@@ -88,7 +96,8 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
                   <td><a href={`#/lesson/${s.lessonId}/0`}>{titleOf(s.lessonId)}</a></td>
                   <td>{STATUS[s.status]}{!s.prerequisitesMet && s.evidenceReady ? " · finish its prerequisites" : ""}</td>
                   <td>{Math.round(s.masteryEstimate * 100)}% <span className="muted">({s.uncertainty} uncertainty)</span></td>
-                  <td>{s.reviewDue ? new Date(s.reviewDue).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "—"}</td>
+                  <td>{!s.reviewDue ? "—" : reviewItem(lessons, s.concept, 0) === null ? "no review question yet"
+                    : new Date(s.reviewDue).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</td>
                 </tr>
               ))}
             </tbody>

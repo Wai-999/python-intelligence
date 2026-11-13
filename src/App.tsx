@@ -5,7 +5,7 @@ import { Library } from "./components/Library";
 import { ProgressPanel } from "./components/ProgressPanel";
 import { ReviewView } from "./components/ReviewView";
 import { buildModel, dueReviews, type LearnerEvent } from "./learner/model";
-import { exerciseEvents, quizEvents, reviewEvent, type Stamp } from "./learner/record";
+import { exerciseEvents, quizEvents, reviewEvent, reviewItem, type Stamp } from "./learner/record";
 import { isExercise } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -42,6 +42,9 @@ export function App() {
   const [panel, setPanel] = useState(false);
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<LearnerEvent[]>([]);
+  const [assist, setAssist] = useState<Record<string, number>>({});
+  // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
+  const [now, setNow] = useState(() => new Date().toISOString());
 
   const reload = useCallback(async (s: ProgressStore) => {
     const all = await s.allLessons();
@@ -54,6 +57,7 @@ export function App() {
     }
     setDrafts(d);
     setEvents(exp.events);
+    setAssist(exp.assistance);
     return exp.position;
   }, []);
 
@@ -97,9 +101,21 @@ export function App() {
     setEvents((prev) => [...prev, ...evs]);
     void store?.appendEvents(evs).catch((e) => setStoreError(String(e?.message ?? e)));
   }, [store]);
-  const now = new Date().toISOString();
   const model = useMemo(() => buildModel(LESSONS, events), [events]);
-  const dueCount = dueReviews(model, now).length;
+  useEffect(() => {
+    const tick = () => setNow(new Date().toISOString());
+    const nowMs = Date.now();
+    const next = [...model.concepts.values()].map((c) => (c.reviewDue ? Date.parse(c.reviewDue) : Infinity)).filter((t) => t > nowMs)
+      .reduce((a, b) => Math.min(a, b), Infinity);
+    // Browsers cap timer delays at about 24.8 days; a capped timer just re-arms this effect.
+    const timer = Number.isFinite(next) ? setTimeout(tick, Math.min(next - nowMs + 50, 2 ** 31 - 1)) : undefined;
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    addEventListener("focus", tick);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearTimeout(timer); removeEventListener("focus", tick); document.removeEventListener("visibilitychange", onVisible); };
+  }, [model, now]);
+  useEffect(() => { setNow(new Date().toISOString()); }, [route, events]);
+  const dueCount = dueReviews(model, now).filter((s) => reviewItem(LESSONS, s.concept, 0) !== null).length;
 
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };
   const current = route.view === "lesson" ? route.lessonId : undefined;
@@ -158,6 +174,12 @@ export function App() {
               unlocked={isUnlocked(graph, route.lessonId, progress)}
               titleOf={titleOf}
               go={go}
+              assistance={Object.fromEntries(Object.entries(assist).filter(([k]) => k.startsWith(`${route.lessonId}:`)).map(([k, v]) => [k.slice(route.lessonId.length + 1), v]))}
+              onAssist={(sid, level) => {
+                const key = `${route.lessonId}:${sid}`;
+                setAssist((a) => ({ ...a, [key]: Math.max(a[key] ?? 0, level) }));
+                void store?.raiseAssistance(route.lessonId, sid, level).catch((e) => setStoreError(String(e?.message ?? e)));
+              }}
               onDraft={(sid, code) => {
                 setDrafts((d) => ({ ...d, [route.lessonId]: { ...d[route.lessonId], [sid]: code } }));
                 void store?.putDraft(route.lessonId, sid, code);

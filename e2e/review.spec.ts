@@ -37,13 +37,24 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   test.setTimeout(240_000);
   await page.clock.install({ time: T0 });
 
-  // Real practice in the browser becomes learner events.
-  await page.goto(`./#/lesson/py-values-names/${at("circle")}`);
+  // Real practice in the browser becomes learner events, and help is remembered: fail twice, reveal the solution,
+  // leave, come back, and pass. The pass counts as assisted (5%), not independent (25%).
+  const circle = `./#/lesson/py-values-names/${at("circle")}`;
+  await page.goto(circle);
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole("button", { name: "▶ Run checks" }).click();
+    await expect(page.locator(".checks li.fail").first()).toBeVisible({ timeout: 120_000 });
+  }
+  await page.getByRole("button", { name: "Show the solution…" }).click();
+  await page.getByRole("button", { name: "Show it anyway" }).click();
+  await page.goto("./#/");
+  await page.goto(circle);
+  await expect(page.getByText("One correct solution")).toBeVisible(); // restored on return
   await page.locator("textarea.editor-input").fill(lesson.steps[at("circle")]!.solution!);
   await page.getByRole("button", { name: "▶ Run checks" }).click();
   await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
   await page.goto("./#/review");
-  await expect(page.getByRole("row", { name: /^expressions/ })).toContainText("learning");
+  await expect(page.getByRole("row", { name: /^names/ }).locator("td").nth(2)).toHaveText(/^5% /);
 
   // Import a history in which "names" has two independent exercises and an explanation check.
   await page.getByRole("button", { name: "Progress" }).click();
@@ -54,6 +65,10 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   await expect(names).toContainText("complete (reviews pending)");
   await expect(page.getByText("Nothing is due for review right now.")).toBeVisible();
   await expect(badge(page)).toHaveCount(0);
+
+  // The badge appears by itself when the deadline passes, with no navigation (it fell due at 22:00 after T0).
+  await page.clock.fastForward("23:00:00");
+  await expect(badge(page)).toHaveText("1");
 
   // A day later, after a reload (events come back from IndexedDB), the review is due.
   await page.clock.setSystemTime(new Date(T0.getTime() + 24 * 3600_000));

@@ -27,6 +27,9 @@ interface Props {
   onExercise: (stepId: string, passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
   onQuiz: (stepId: string, score: number, passed: boolean, missed: string[], correct: boolean[]) => void;
   onDraft: (stepId: string, code: string) => void;
+  /** Help seen per exercise step (0..4). */
+  assistance: Record<string, number>;
+  onAssist: (stepId: string, level: number) => void;
 }
 
 export function LessonView(p: Props) {
@@ -77,6 +80,7 @@ export function LessonView(p: Props) {
       {(step.kind === "guided" || step.kind === "challenge") && (
         <Exercise key={step.id} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
+                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)}
                   onDraft={(c) => p.onDraft(step.id, c)}
                   onResult={(passed, fc, detail) => p.onExercise(step.id, passed, fc, detail)} />
       )}
