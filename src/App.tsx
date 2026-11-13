@@ -101,9 +101,10 @@ export function App() {
     await store?.putLesson(p);
   }, [store]);
 
-  // Track position + furthest step whenever the visible step changes.
+  // Track position + furthest step whenever the visible step changes. Not while an import or reset is being applied:
+  // the visit is applied to the reloaded progress instead, once `generation` catches up.
   useEffect(() => {
-    if (route.view !== "lesson" || !store) return;
+    if (route.view !== "lesson" || !store || !live()) return;
     const lesson = graph.byId.get(route.lessonId)!;
     void store.setPosition(route.lessonId, route.step);
     const prev = progress.get(route.lessonId);
@@ -112,7 +113,7 @@ export function App() {
     // Warm Python once the service worker controls the page, so a first visit also caches Pyodide for offline use.
     if (lesson.steps.some((s) => s.kind === "example" || s.kind === "guided" || s.kind === "challenge"))
       void waitForController().then(() => getRunner().warm()).catch(() => {});
-  }, [route, store]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [route, store, generation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Learner events: kept in memory for the model and appended to IndexedDB (the store validates them).
   const record = useCallback((evs: LearnerEvent[]) => {
@@ -160,15 +161,22 @@ export function App() {
         </div>
       </header>
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
-      {panel && store && <ProgressPanel store={store} onReplacing={() => { generationRef.current += 1; setReplacing(true); }}
-                                  onChanged={() => { void reload(store).finally(() => { setGeneration(generationRef.current); setReplacing(false); }); }}
+      {panel && store && <ProgressPanel store={store} busy={replacing} onReplacing={() => { generationRef.current += 1; setReplacing(true); return generationRef.current; }}
+                                  onChanged={(token) => {
+                                    // Only the latest replacement unlocks the page, and only once its reload has finished.
+                                    void reload(store).finally(() => {
+                                      if (token !== generationRef.current) return;
+                                      setGeneration(token);
+                                      setReplacing(false);
+                                    });
+                                  }}
                                   onClose={() => setPanel(false)} />}
 
-      <div className={`layout layout--${route.view}`}>
+      <div className={`layout layout--${route.view}`} inert={replacing}>
         {route.view === "lesson" && (
           <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} /></aside>
         )}
-        <main id="main" tabIndex={-1} inert={replacing} aria-busy={replacing}>
+        <main id="main" tabIndex={-1} aria-busy={replacing}>
           {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
             <ReviewView key={generation} lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
                         onAnswer={(item, correct) => { if (live()) record([reviewEvent(item, correct, stampNow())]); }} />
