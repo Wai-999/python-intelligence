@@ -245,13 +245,13 @@
           "concept": "validation"
         },
         {
-          "name": "a price that isn't a number raises TypeError",
-          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nassert _raises(TypeError, 'pen', 'cheap'), \"Item('pen', 'cheap') should raise TypeError\"\nassert _raises(TypeError, 'pen', True), \"Item('pen', True) should raise TypeError: a bool isn't a price\"",
+          "name": "a price that isn't an int or float raises TypeError",
+          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nfrom fractions import Fraction\nassert _raises(TypeError, 'pen', 'cheap'), \"Item('pen', 'cheap') should raise TypeError\"\nassert _raises(TypeError, 'pen', True), \"Item('pen', True) should raise TypeError: a bool isn't a price\"\nassert _raises(TypeError, 'pen', Fraction(3, 2)), \"Item('pen', Fraction(3, 2)) should raise TypeError: only int or float prices\"\nassert _raises(TypeError, 'pen', None), \"Item('pen', None) should raise TypeError\"",
           "concept": "validation"
         },
         {
-          "name": "a quantity that isn't a whole number raises TypeError",
-          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nassert _raises(TypeError, 'pen', 1.0, 2.5), \"Item('pen', 1.0, 2.5) should raise TypeError\"\nassert _raises(TypeError, 'pen', 1.0, True), \"Item('pen', 1.0, True) should raise TypeError\"",
+          "name": "a quantity that isn't an int raises TypeError",
+          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nassert _raises(TypeError, 'pen', 1.0, 2.5), \"Item('pen', 1.0, 2.5) should raise TypeError\"\nassert _raises(TypeError, 'pen', 1.0, 2.0), \"Item('pen', 1.0, 2.0) should raise TypeError: 2.0 is a float\"\nassert _raises(TypeError, 'pen', 1.0, '2'), \"Item('pen', 1.0, '2') should raise TypeError\"\nassert _raises(TypeError, 'pen', 1.0, True), \"Item('pen', 1.0, True) should raise TypeError\"",
           "concept": "validation"
         },
         {
@@ -263,6 +263,11 @@
           "name": "Cart is a dataclass that starts empty",
           "code": "import dataclasses\nassert dataclasses.is_dataclass(Cart)\nassert Cart().items == []\nassert Cart().total() == 0",
           "concept": "dataclasses"
+        },
+        {
+          "name": "Cart has one field, items: list[Item], with a default factory",
+          "code": "import dataclasses, typing\nfs = dataclasses.fields(Cart)\nassert [f.name for f in fs] == ['items'], f'Cart should have one field, items; it has {[f.name for f in fs]}'\nhints = typing.get_type_hints(Cart, globals())\nassert typing.get_origin(hints['items']) is list and typing.get_args(hints['items']) == (Item,), f\"annotate items as list[Item]; it is {hints['items']}\"\nassert fs[0].default_factory is not dataclasses.MISSING, 'give items a default_factory, so each cart gets its own new list'\nassert typing.get_type_hints(Cart.total, globals()).get('return') is float, 'annotate total with -> float'\n",
+          "concept": "type-hints"
         },
         {
           "name": "every cart has its own list",
