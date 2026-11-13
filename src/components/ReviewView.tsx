@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "../content/types";
 import { dueReviews, type ConceptState, type LearnerEvent, type LearnerModel } from "../learner/model";
 import { reviewItem, type ReviewItem } from "../learner/record";
@@ -26,6 +26,14 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
   // While an answer's feedback is showing, keep that question on screen even though the schedule has moved on.
   const [shown, setShown] = useState<{ item: ReviewItem; chosen: number } | null>(null);
   const [chosen, setChosen] = useState<number | null>(null);
+  // Keyboard and screen-reader users keep their place: the heading on entry, then each next question (or the
+  // "nothing due" message) after advancing, since the button they pressed disappears.
+  const heading = useRef<HTMLHeadingElement>(null);
+  const questionLine = useRef<HTMLParagraphElement>(null);
+  const emptyLine = useRef<HTMLParagraphElement>(null);
+  const [advanced, setAdvanced] = useState(0);
+  useEffect(() => { heading.current?.focus(); }, []);
+  useEffect(() => { if (advanced > 0) (questionLine.current ?? emptyLine.current)?.focus(); }, [advanced]);
   const next = due[0];
   const turn = next ? events.filter((e) => e.task === "review" && e.concept === next.concept).length : 0;
   const item = shown?.item ?? (next ? reviewItem(lessons, next.concept, turn) : null);
@@ -40,13 +48,13 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
 
   return (
     <section className="review" aria-labelledby="review-title">
-      <h1 id="review-title" tabIndex={-1}>Review</h1>
+      <h1 id="review-title" tabIndex={-1} ref={heading}>Review</h1>
       <p>Short questions on concepts you completed earlier, spaced out over days so they stick: 1 day after you finish
          a concept, then 3, 7, 14 and 30 days. A wrong answer, or one you needed help with, starts the spacing again.</p>
 
       {item ? (
         <form className="quiz" onSubmit={(e) => { e.preventDefault(); if (!shown) submit(); }}>
-          <p className="eyebrow">{shown ? "Review" : `${due.length} due`} · {item.concept} · from {titleOf(item.lessonId)}</p>
+          <p className="eyebrow" tabIndex={-1} ref={questionLine}>{shown ? "Review" : `${due.length} due`} · {item.concept} · from {titleOf(item.lessonId)}</p>
           <fieldset className="question" disabled={!!shown}>
             <legend>{inline(item.question.prompt)}</legend>
             {item.question.code && <pre className="code-block"><code>{item.question.code}</code></pre>}
@@ -65,7 +73,7 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
           {shown ? (
             <div role="status" className={shown.chosen === item.question.answer ? "pill ok" : "pill warn"}>
               {shown.chosen === item.question.answer ? "Correct. " : "Not quite. "}{inline(item.question.explanation)}{" "}
-              <button type="button" className="btn primary" onClick={() => { setShown(null); setChosen(null); }}>
+              <button type="button" className="btn primary" onClick={() => { setShown(null); setChosen(null); setAdvanced((n) => n + 1); }}>
                 {due.length > 0 ? "Next review" : "Done"}
               </button>
             </div>
@@ -74,7 +82,7 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
           )}
         </form>
       ) : (
-        <p className="pill ok" role="status">Nothing is due for review right now.</p>
+        <p className="pill ok" role="status" tabIndex={-1} ref={emptyLine}>Nothing is due for review right now.</p>
       )}
 
       {unreviewable.length > 0 && (

@@ -221,9 +221,13 @@ export function App() {
                   // raises the level and returns the previous one in one transaction, so two open tabs can't both count as unaided.
                   const key = `${l.id}:${sid}`;
                   const stamp = stampNow();
+                  const startedIn = generationRef.current;
                   setAssist((a) => ({ ...a, [key]: 4 }));
                   if (store) void store.raiseAssistance(l.id, sid, 4)
-                    .then((before) => record(quizEvents(l, step, correct, stamp, before >= 4 ? 4 : 0)))
+                    .then((before) => {
+                      if (startedIn !== generationRef.current) return; // progress was replaced meanwhile
+                      record(quizEvents(l, step, correct, stamp, before >= 4 ? 4 : 0));
+                    })
                     .catch((e) => setStoreError(String(e?.message ?? e)));
                 }
               }}

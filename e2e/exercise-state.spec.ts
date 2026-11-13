@@ -215,3 +215,32 @@ test("a quiz attempted in a version 1 backup counts as revealed after import", a
   expect(events.length).toBeGreaterThan(0);
   expect(events.every((e) => e.assistance === 4)).toBe(true);
 });
+
+test("the Review page keeps keyboard focus in place across two due questions", async ({ page }) => {
+  const T0 = new Date("2026-03-02T09:00:00Z");
+  await page.clock.install({ time: T0 });
+  const iso = (h: number) => new Date(T0.getTime() + h * 3600_000).toISOString();
+  const events = ["names", "expressions"].flatMap((concept, k) => [["a", "exercise"], ["b", "exercise"], ["check", "quiz"]].map(([stepId, task], i) =>
+    ({ id: `${concept}-${i}`, at: iso(-3 + k * 0.01 + i * 0.001), lessonId: "py-values-names", stepId, task, concept, passed: true, assistance: 0, policy: "learner-heuristic-1" })));
+  await page.goto("./#/review");
+  await page.getByRole("button", { name: "Progress" }).click();
+  await page.locator("input[type=file]").setInputFiles({ name: "h.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(
+    { format: "python-intelligence-progress", version: 2, exportedAt: iso(0), lessons: [], drafts: {}, position: null, assistance: {}, events })) });
+  await expect(page.getByText("Progress imported.")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await page.clock.setSystemTime(new Date(T0.getTime() + 22 * 3600_000));
+  await page.goto("./#/");
+  await page.goto("./#/review");
+  await expect(page.locator(":focus")).toHaveText("Review");
+  const form = page.locator("form.quiz");
+  for (const [left, button] of [["2 due", "Next review"], ["1 due", "Done"]] as const) {
+    await expect(form.locator(".eyebrow")).toContainText(left);
+    await form.locator("input[type=radio]").first().focus();
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Enter"); // submits the form
+    await expect(form.getByRole("status")).toBeVisible();
+    await page.getByRole("button", { name: button }).press("Enter");
+    if (button === "Next review") await expect(page.locator(":focus")).toContainText("1 due");
+  }
+  await expect(page.locator(":focus")).toHaveText("Nothing is due for review right now.");
+});
