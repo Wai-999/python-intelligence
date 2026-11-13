@@ -244,3 +244,16 @@ test("the Review page keeps keyboard focus in place across two due questions", a
   }
   await expect(page.locator(":focus")).toHaveText("Nothing is due for review right now.");
 });
+
+test("importing progress while a quiz shows its feedback starts the quiz over", async ({ page }) => {
+  await page.goto(`./#/lesson/py-values-names/${quizAt}`);
+  await submitQuiz(page, false);
+  await expect(page.getByText(/You need/)).toBeVisible();
+  const empty = { format: "python-intelligence-progress", version: 2, exportedAt: "2026-03-01T09:00:00.000Z", lessons: [], drafts: {}, position: null, events: [], assistance: {} };
+  await page.getByRole("button", { name: "Progress" }).click();
+  await page.locator("input[type=file]").setInputFiles({ name: "e.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(empty)) });
+  await expect(page.getByText("Progress imported.")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByText(/You need/)).toHaveCount(0);
+  await expect(page.locator("fieldset.question input[type=radio]:checked")).toHaveCount(0); // a fresh, unanswered quiz
+});

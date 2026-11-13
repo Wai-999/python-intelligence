@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import valuesNames from "../content/lessons/py-values-names.json" with { type: "json" };
 
@@ -30,6 +31,23 @@ async function answerReview(page: Page, right: boolean) {
   await page.getByRole("button", { name: "Check answer" }).click();
   await expect(page.getByRole("status")).toContainText(right ? "Correct." : "Not quite.");
   await page.getByRole("button", { name: /Done|Next review/ }).click();
+}
+async function reviewEvents(page: Page) {
+  await page.getByRole("button", { name: "Progress" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export progress" }).click();
+  const data = JSON.parse(readFileSync(await (await download).path(), "utf8")) as { events: { task: string; concept: string; passed: boolean; at: string }[] };
+  await page.getByRole("button", { name: "Close" }).click();
+  // Hours after T0, to the nearest tenth (the page clock keeps ticking after each jump).
+  return data.events.filter((e) => e.task === "review").sort((a, b) => a.at.localeCompare(b.at))
+    .map((e) => [e.concept, e.passed, Math.round((Date.parse(e.at) - T0.getTime()) / 360_000) / 10]);
+}
+async function dueAt(page: Page, hours: number) {
+  await page.clock.setSystemTime(new Date(T0.getTime() + hours * 3600_000));
+  await page.goto("./#/");
+  await page.goto("./#/review");
+  await expect(page.getByText(/Nothing is due for review right now\.|1 due · names/)).toBeVisible();
+  return page.getByText(/1 due · names/).isVisible();
 }
 const badge = (page: Page) => page.getByRole("link", { name: /^Review/ }).locator(".badge");
 
@@ -79,19 +97,16 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   await answerReview(page, true);
   await expect(page.getByText("Nothing is due for review right now.")).toBeVisible();
   await expect(badge(page)).toHaveCount(0);
+  expect(await reviewEvents(page)).toEqual([["names", true, 24]]);
 
-  // Two days later it isn't due yet (the next gap is 3 days); a day after that it is, and a wrong answer is a lapse.
-  await page.clock.setSystemTime(new Date(T0.getTime() + 72 * 3600_000));
-  await page.goto("./#/");
-  await page.goto("./#/review");
-  await expect(page.getByText("Nothing is due for review right now.")).toBeVisible();
-  await page.clock.setSystemTime(new Date(T0.getTime() + 97 * 3600_000));
-  await page.goto("./#/");
-  await page.goto("./#/review");
+  // A success moves the next review out to three days: not due just before, due just after.
+  expect(await dueAt(page, 24 + 71.5)).toBe(false);
+  expect(await dueAt(page, 24 + 72.5)).toBe(true);
   await answerReview(page, false);
-  await expect(names).toContainText("complete (reviews pending)");
-  await page.clock.setSystemTime(new Date(T0.getTime() + 122 * 3600_000));
-  await page.goto("./#/");
-  await page.goto("./#/review");
-  await expect(page.getByText(/1 due · names/)).toBeVisible();
+  expect(await reviewEvents(page)).toEqual([["names", true, 24], ["names", false, 96.5]]);
+  // A failure resets the gap to one day.
+  expect(await dueAt(page, 96.5 + 23.5)).toBe(false);
+  expect(await dueAt(page, 96.5 + 24.5)).toBe(true);
+
+  await expect(names).toContainText("complete (reviews pending)"); // a lapse doesn't take away completion
 });

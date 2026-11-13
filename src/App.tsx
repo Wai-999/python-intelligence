@@ -46,6 +46,10 @@ export function App() {
   const [generation, setGeneration] = useState(0);
   // Bumped synchronously when an import or reset starts; results of runs started earlier are then ignored.
   const generationRef = useRef(0);
+  // While an import or reset is being applied, the page is inert and any input that slips through is dropped:
+  // `live()` is false from the moment the replacement starts until the views have been rebuilt from it.
+  const [replacing, setReplacing] = useState(false);
+  const live = () => generation === generationRef.current;
   // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
   const [now, setNow] = useState(() => new Date().toISOString());
 
@@ -156,17 +160,18 @@ export function App() {
         </div>
       </header>
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
-      {panel && store && <ProgressPanel store={store} onReplacing={() => { generationRef.current += 1; }}
-                                  onChanged={() => { void reload(store).then(() => setGeneration(generationRef.current)); }} onClose={() => setPanel(false)} />}
+      {panel && store && <ProgressPanel store={store} onReplacing={() => { generationRef.current += 1; setReplacing(true); }}
+                                  onChanged={() => { void reload(store).finally(() => { setGeneration(generationRef.current); setReplacing(false); }); }}
+                                  onClose={() => setPanel(false)} />}
 
       <div className={`layout layout--${route.view}`}>
         {route.view === "lesson" && (
           <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} /></aside>
         )}
-        <main id="main" tabIndex={-1}>
+        <main id="main" tabIndex={-1} inert={replacing} aria-busy={replacing}>
           {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
             <ReviewView key={generation} lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
-                        onAnswer={(item, correct) => record([reviewEvent(item, correct, stampNow())])} />
+                        onAnswer={(item, correct) => { if (live()) record([reviewEvent(item, correct, stampNow())]); }} />
           ) : route.view === "home" ? (
             <>
               <section className="hero">
@@ -193,11 +198,13 @@ export function App() {
               generation={generation}
               assistance={Object.fromEntries(Object.entries(assist).filter(([k]) => k.startsWith(`${route.lessonId}:`)).map(([k, v]) => [k.slice(route.lessonId.length + 1), v]))}
               onAssist={(sid, level) => {
+                if (!live()) return;
                 const key = `${route.lessonId}:${sid}`;
                 setAssist((a) => ({ ...a, [key]: Math.max(a[key] ?? 0, level) }));
                 void store?.raiseAssistance(route.lessonId, sid, level).catch((e) => setStoreError(String(e?.message ?? e)));
               }}
               onDraft={(sid, code) => {
+                if (!live()) return;
                 setDrafts((d) => ({ ...d, [route.lessonId]: { ...d[route.lessonId], [sid]: code } }));
                 void store?.putDraft(route.lessonId, sid, code);
               }}
@@ -213,6 +220,7 @@ export function App() {
                 });
               }}
               onQuiz={(sid, score, passed, missed, correct) => {
+                if (!live()) return; // submitted while an import or reset was being applied
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, score, failedConcepts: missed, attempt: true }));
                 const step = l.steps.find((s) => s.id === sid);
@@ -221,7 +229,7 @@ export function App() {
                   // raises the level and returns the previous one in one transaction, so two open tabs can't both count as unaided.
                   const key = `${l.id}:${sid}`;
                   const stamp = stampNow();
-                  const startedIn = generationRef.current;
+                  const startedIn = generation;
                   setAssist((a) => ({ ...a, [key]: 4 }));
                   if (store) void store.raiseAssistance(l.id, sid, 4)
                     .then((before) => {
