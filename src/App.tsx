@@ -12,6 +12,7 @@ import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curri
 import { getRunner } from "./py/runner";
 import { waitForController } from "./sw-register";
 import { applyOutcome, visitStep } from "./progress/logic";
+import { groupDrafts } from "./progress/drafts";
 import { openProgressStore, StaleProgressError } from "./progress/store";
 import type { LessonProgress, ProgressStore } from "./progress/types";
 
@@ -68,11 +69,7 @@ export function App() {
   const reload = useCallback(async (s: ProgressStore) => {
     const exp = await s.load(); // also binds this view's writes to the snapshot's replacement token
     const all = exp.lessons;
-    const d: Record<string, Record<string, string>> = {};
-    for (const [k, v] of Object.entries(exp.drafts)) {
-      const [lid, sid] = k.split(":") as [string, string];
-      (d[lid] ??= {})[sid] = v;
-    }
+    const d = groupDrafts(exp.drafts);
     // Quizzes attempted before help was tracked (a version 1 file, an upgraded database) have shown their answers.
     const assistance = { ...exp.assistance };
     for (const p of all) {
@@ -97,7 +94,12 @@ export function App() {
     openProgressStore().then(async (s) => {
       setStore(s);
       try {
-        const pos = await reload(s);
+        let pos;
+        do {
+          remoteDuringLoad.current = false;
+          pos = await reload(s);
+        } while (remoteDuringLoad.current);
+        firstLoadDone.current = true;
         if (!location.hash && pos && graph.byId.has(pos.lessonId)) location.replace(`#/lesson/${pos.lessonId}/${pos.stepIndex}`);
         setGeneration(1);
         setReplacing(false);
@@ -126,6 +128,10 @@ export function App() {
   const failRef = useRef<(e: unknown) => void>(() => {});
   const fail = useCallback((e: unknown) => failRef.current(e), []);
   const remoteRef = useRef<() => void>(() => {});
+  // A replacement announced while the first load is still reading: the load reads again before unlocking the page.
+  const remoteDuringLoad = useRef(false);
+  // Set in the same synchronous step that unlocks the page after the first load, so no broadcast falls between.
+  const firstLoadDone = useRef(false);
   const channel = useRef<BroadcastChannel | null>(null);
   useEffect(() => {
     if (typeof BroadcastChannel === "undefined") return;
@@ -182,6 +188,7 @@ export function App() {
     setReloadFailed(null);
     reload(store).then(() => {
       if (token !== generationRef.current) return;
+      firstLoadDone.current = true; // also when a failed first load succeeds on retry
       setGeneration(token);
       setReplacing(false);
     }, (e) => {
@@ -192,9 +199,7 @@ export function App() {
 
   // Another tab imported or reset progress (told by its broadcast, or found when one of our writes was refused).
   remoteRef.current = () => {
-    // During the first load there is nothing stale to reload yet; if its snapshot predates the other tab's replacement,
-    // the first write is refused (StaleProgressError) and lands here again once the load has finished.
-    if (generation === 0) return;
+    if (!firstLoadDone.current) { remoteDuringLoad.current = true; return; } // the first load is still running: it re-reads
     generationRef.current += 1;
     setReplacing(true);
     finishReplacement(generationRef.current);

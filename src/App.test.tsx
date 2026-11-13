@@ -41,10 +41,11 @@ const fake: ProgressStore & { close(): void } = {
     return new Promise<number>((resolve) => { release = resolve; });
   },
   exportAll: async (): Promise<ProgressExport> => {
+    const lessons = lessonsAfter; // the snapshot is taken when the read starts, as in one IndexedDB transaction
     if (exportGate) await exportGate;
     if (failExport) throw new Error("disk went away");
     return { format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
-    lessons: lessonsAfter, drafts, position: null, events: history, assistance: {} };
+    lessons, drafts, position: null, events: history, assistance: {} };
   },
   load: () => { loads += 1; staleWrites = false; return fake.exportAll(); },
   importAll: () => new Promise<void>((resolve) => { pendingImports.push(resolve); }),
@@ -232,6 +233,12 @@ describe("App", () => {
     await waitFor(() => expect(positions).toBe(1));
     expect(savedRecords.every((p) => p.completed)).toBe(true);
     expect(screen.queryByText(/couldn't be read back/)).toBeNull();
+    // Once the retried load has succeeded, another tab's replacement reloads this one as usual.
+    lessonsAfter = [];
+    const other = new BroadcastChannel("python-intelligence-progress");
+    other.postMessage("replaced");
+    await waitFor(() => expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^0 of /));
+    other.close();
   });
 
   it("still works, unsaved, when storage can't be opened at all", async () => {
@@ -386,5 +393,35 @@ describe("App", () => {
     await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
     expect(screen.queryByText(/Progress can't be saved/)).toBeNull();
     expect(appended).toEqual([]);
+  });
+
+  it("reads again before unlocking when another tab replaces progress during the first load", async () => {
+    let open: () => void = () => {};
+    exportGate = new Promise((r) => { open = r; });
+    const { App } = await import("./App");
+    location.hash = "#/";
+    render(<App />);
+    await waitFor(() => expect(loads).toBe(1)); // the first read has started, with the old (empty) progress
+    lessonsAfter = [completedRecord()]; // another tab imports...
+    const other = new BroadcastChannel("python-intelligence-progress");
+    other.postMessage("replaced"); // ...and says so
+    await new Promise((r) => setTimeout(r, 30));
+    await act(async () => { open(); await Promise.resolve(); });
+    await waitFor(() => expect(loads).toBe(2));
+    await waitFor(() => expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^1 of /));
+    expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false);
+    expect(saved).toEqual([]); // no learner write was needed to notice
+    other.close();
+  });
+
+  it("restores drafts whose lesson ids are prototype names as plain data", async () => {
+    drafts = { "__proto__:polluted": "x = 1\n", "constructor:leak": "y = 2\n", "py-values-names:circle": "radius = 'kept'\n" };
+    const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+    const { App } = await import("./App");
+    location.hash = `#/lesson/py-values-names/${lesson.steps.findIndex((st) => st.id === "circle")}`;
+    render(<App />);
+    await waitFor(() => expect((document.querySelector("textarea.editor-input") as HTMLTextAreaElement).value).toBe("radius = 'kept'\n"));
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect((Object as unknown as Record<string, unknown>).leak).toBeUndefined();
   });
 });
