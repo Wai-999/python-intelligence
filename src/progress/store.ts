@@ -87,8 +87,8 @@ function validateEvents(value: unknown, path = "events"): LearnerEvent[] {
     throw error;
   }
 }
+/** Required in a version 2 file: a missing map would erase remembered help on import. */
 function validateAssistance(value: unknown): Record<string, number> {
-  if (value === undefined) return {};
   object(value, "assistance");
   return Object.fromEntries(Object.entries(value).map(([key, level]) => {
     check(/^[^:]+:[\s\S]+$/.test(key), `assistance.${key} key must be lessonId:stepId`);
@@ -116,7 +116,7 @@ function validate(data: unknown): ProgressExport {
   object(drafts, "drafts");
   return { format, version: EXPORT_VERSION, exportedAt: exportedAt as string, lessons: normalizedLessons,
     events: version === 1 ? [] : validateEvents(events),
-    assistance: validateAssistance(assistance),
+    assistance: version === 1 ? {} : validateAssistance(assistance),
     drafts: Object.fromEntries(Object.entries(drafts).map(([key, code]) => [key, validateDraft(key, code)])),
     position: position === null ? null : validatePosition(position) };
 }

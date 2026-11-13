@@ -33,6 +33,9 @@ function parseHash(h: string): Route {
   return { view: "home" };
 }
 
+/** The help level assumed when the stored one can't be read: the most help, so no attempt is over-credited. */
+const UNKNOWN_HELP = 4;
+
 export function App() {
   const [store, setStore] = useState<ProgressStore | null>(null);
   const [storeError, setStoreError] = useState<string | null>(null);
@@ -251,10 +254,14 @@ export function App() {
                 const step = l.steps.find((s) => s.id === sid);
                 // Another tab may have revealed help on this task: count the higher of this tab's and the stored level.
                 // Without storage (some private modes) practice is still modelled for this visit, from this tab's help alone.
-                if (step && isExercise(step)) void (store ? store.getAssistance(l.id, sid) : Promise.resolve(0)).then((stored) => {
-                  if (detail.generation !== generationRef.current) return;
-                  record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stampNow()));
-                });
+                // If the stored level can't be read, another tab may have shown the solution: the attempt is kept, but
+                // conservatively counted as fully assisted (UNKNOWN_HELP), so it never passes for independent work.
+                if (step && isExercise(step)) void (store ? store.getAssistance(l.id, sid) : Promise.resolve(0))
+                  .catch((e) => { setStoreError(String(e?.message ?? e)); return UNKNOWN_HELP; })
+                  .then((stored) => {
+                    if (detail.generation !== generationRef.current) return;
+                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stampNow()));
+                  });
               }}
               onQuiz={(sid, score, passed, missed, correct) => {
                 if (!live()) return; // submitted while an import or reset was being applied
@@ -270,6 +277,8 @@ export function App() {
                   setAssist((a) => ({ ...a, [key]: 4 }));
                   const shownHere = assist[key] ?? 0;
                   void (store ? store.raiseAssistance(l.id, sid, 4) : Promise.resolve(shownHere))
+                    // The previous level is unknown if storage failed: keep the attempt, counted as assisted (see UNKNOWN_HELP).
+                    .catch((e) => { setStoreError(String(e?.message ?? e)); return UNKNOWN_HELP; })
                     .then((before) => {
                       if (startedIn !== generationRef.current) return; // progress was replaced meanwhile
                       record(quizEvents(l, step, correct, stamp, before >= 4 ? 4 : 0));

@@ -81,6 +81,8 @@ describe("IndexedDB progress store", () => {
     ["completed", (p: any) => { delete p.lessons[0].completed; }],
     ["exportedAt", (p: any) => { delete p.exportedAt; }],
     ["lessonId", (p: any) => { p.lessons.push(p.lessons[0]); }],
+    ["events", (p: any) => { delete p.events; }],
+    ["assistance", (p: any) => { delete p.assistance; }],
   ])("rejects invalid %s without changing any data", async (field, mutate) => {
     const store = await open();
     await seed(store);
@@ -90,6 +92,15 @@ describe("IndexedDB progress store", () => {
     await expect(store.importAll(invalid)).rejects.toThrow(ImportError);
     await expect(store.importAll(invalid)).rejects.toThrow(field);
     expect(contents(await store.exportAll())).toEqual(contents(before));
+  });
+
+  it("rejects a version 2 file without assistance and keeps the remembered help", async () => {
+    const store = await open();
+    await seed(store);
+    await store.raiseAssistance("functions", "exercise", 2);
+    const { assistance: _dropped, ...withoutHelp } = await store.exportAll();
+    await expect(store.importAll(withoutHelp)).rejects.toThrow("assistance");
+    expect(await store.getAssistance("functions", "exercise")).toBe(2);
   });
 
   it.each([null, undefined, 42, "garbage", [], {}])("rejects garbage payload %j", async (data) => {

@@ -16,7 +16,7 @@ const T0 = new Date("2026-03-02T09:00:00Z");
 const iso = (hours: number) => new Date(T0.getTime() + hours * 3600_000).toISOString();
 
 const history = {
-  format: "python-intelligence-progress", version: 2, exportedAt: iso(0), lessons: [], drafts: {}, position: null,
+  format: "python-intelligence-progress", version: 2, exportedAt: iso(0), lessons: [], drafts: {}, position: null, assistance: {},
   events: [
     ["circle", "exercise", 0], ["practice-2", "exercise", 0.5], ["check", "quiz", 1],
   ].map(([stepId, task, h], i) => ({ id: `seed-${i}`, at: iso((h as number) - 3), lessonId: "py-values-names", stepId, task,

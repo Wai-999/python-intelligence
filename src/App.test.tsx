@@ -33,8 +33,12 @@ const fake: ProgressStore & { close(): void } = {
   setPosition: async () => { positions += 1; },
   appendEvents: async (evs) => { appended.push(...evs); },
   allEvents: async () => [],
-  getAssistance: async () => 0,
-  raiseAssistance: () => { raised += 1; return new Promise<number>((resolve) => { release = resolve; }); },
+  getAssistance: async () => { if (failHelp) throw new Error("help store failed"); return 0; },
+  raiseAssistance: () => {
+    raised += 1;
+    if (failHelp) return Promise.reject(new Error("help store failed"));
+    return new Promise<number>((resolve) => { release = resolve; });
+  },
   exportAll: async (): Promise<ProgressExport> => {
     if (exportGate) await exportGate;
     if (failExport) throw new Error("disk went away");
@@ -45,6 +49,7 @@ const fake: ProgressStore & { close(): void } = {
   clear: async () => {},
 };
 let openFails = false;
+let failHelp = false;
 vi.mock("./progress/store", () => ({ openProgressStore: async () => { if (openFails) throw new Error("storage blocked"); return fake; } }));
 // Python runs report every check passed, tagged with the concepts of the step's own tests.
 let runTests: { name: string; concept?: string }[] = [];
@@ -52,7 +57,7 @@ vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "ready", onStatus: (
   run: async () => ({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: true, message: "" })) }) }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -284,6 +289,37 @@ describe("App", () => {
     const concepts = new Set(runTests.map((t) => t.concept).filter(Boolean));
     expect(concepts.size).toBeGreaterThan(0);
     for (const c of concepts) expect(await screen.findByRole("row", { name: new RegExp(`^${c} `) })).toBeTruthy();
+    runTests = [];
+  });
+
+  it("keeps practice, counted as assisted, when the help level can't be read or written", async () => {
+    const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+    const circle = lesson.steps.findIndex((st) => st.id === "circle");
+    runTests = (lesson.steps[circle] as unknown as { tests: { name: string; concept?: string }[] }).tests;
+    const { App } = await import("./App");
+    location.hash = `#/lesson/py-values-names/${circle}`;
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Run checks/ }));
+    await screen.findByText(/All checks pass/);
+    await waitFor(() => expect(appended.filter((e) => e.stepId === "circle").length).toBeGreaterThan(0));
+    const perRun = appended.filter((e) => e.stepId === "circle").length;
+    failHelp = true; // storage starts failing after a successful start
+    fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
+    await screen.findByText(/help store failed/);
+    await waitFor(() => expect(appended.filter((e) => e.stepId === "circle").length).toBe(2 * perRun));
+    const circleEvents = appended.filter((e) => e.stepId === "circle");
+    expect(circleEvents.slice(0, circleEvents.length / 2).every((e) => e.assistance === 0)).toBe(true);
+    expect(circleEvents.slice(circleEvents.length / 2).every((e) => e.assistance === 4)).toBe(true);
+
+    const quizAt = lesson.steps.findIndex((st) => st.kind === "quiz");
+    const quiz = lesson.steps[quizAt] as QuizStep;
+    await act(async () => { location.hash = `#/lesson/py-values-names/${quizAt}`; dispatchEvent(new HashChangeEvent("hashchange")); });
+    const sets = await waitFor(() => { const f = document.querySelectorAll("fieldset.question"); expect(f.length).toBe(quiz.questions.length); return f; });
+    quiz.questions.forEach((q, i) => fireEvent.click(sets[i]!.querySelectorAll("input[type=radio]")[q.answer]!));
+    fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
+    await screen.findByText(/Passed!/);
+    await waitFor(() => expect(appended.some((e) => e.task === "quiz")).toBe(true));
+    expect(appended.filter((e) => e.task === "quiz").every((e) => e.assistance === 4)).toBe(true);
     runTests = [];
   });
 });
