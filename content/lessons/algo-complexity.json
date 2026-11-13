@@ -1,0 +1,407 @@
+{
+  "id": "algo-complexity",
+  "title": "How code scales: counting steps and choosing data structures",
+  "summary": "Count the steps an algorithm takes, read its order of growth by doubling the input, and pick the data structure that keeps code fast as data grows.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "py-dicts",
+    "py-comprehensions"
+  ],
+  "concepts": [
+    "operation-counting",
+    "order-of-growth",
+    "data-structure-choice"
+  ],
+  "sources": [
+    {
+      "id": "tp-algo",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        223,
+        224
+      ],
+      "section": "Analysis of Algorithms",
+      "use": "reference"
+    },
+    {
+      "id": "tp-growth",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        224,
+        226
+      ],
+      "section": "Order of growth",
+      "use": "reference"
+    },
+    {
+      "id": "tp-ops",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        226,
+        227
+      ],
+      "section": "Analysis of basic Python operations",
+      "use": "reference"
+    },
+    {
+      "id": "tp-search",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        227,
+        228
+      ],
+      "section": "Analysis of search algorithms",
+      "use": "reference"
+    },
+    {
+      "id": "tp-hash",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        228,
+        231
+      ],
+      "section": "Hashtables",
+      "use": "reference"
+    },
+    {
+      "id": "st-set",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        29,
+        29
+      ],
+      "section": "Set Types — set, frozenset",
+      "use": "reference"
+    },
+    {
+      "id": "st-dict",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        30,
+        30
+      ],
+      "section": "Mapping Types — dict",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Fast on ten, slow on a million",
+      "body": "Code that answers instantly for ten items can take minutes for a million. Usually nothing is wrong with\nthe computer: the code simply does more and more work per item as the data grows. Knowing how the work\ngrows lets you predict that before it happens, and pick the approach (and the data structure) that\nstays fast."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Count steps, then double the input",
+      "body": "Instead of timing code (which depends on the machine and on what else is running), count the **steps** it\ntakes, such as comparisons or loop passes. Then ask what happens when the input doubles:\n\n- the steps stay the same: **constant** work (looking up `xs[5]`);\n- they grow by about one: **logarithmic** (binary search halves the range each step);\n- they double: **linear** (scanning a list once);\n- they roughly quadruple: **quadratic** (comparing every item with every other).\n\nThat pattern is the **order of growth**, written O(1), O(log n), O(n) and O(n²). It is what matters as\nthe data gets big; the exact numbers and the small terms matter much less.",
+      "cites": [
+        "tp-algo",
+        "tp-growth",
+        "tp-search"
+      ],
+      "socratic": {
+        "questions": [
+          "If a function takes 1,000 steps for 100 items and 4,000 for 200, what will it take for 400?",
+          "Why does checking `x in my_list` get slower as the list grows, but `x in my_set` doesn't?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a loop inside a loop",
+      "body": "For each item, the inner loop runs over every item again, so n items cost n × n steps. Each frame shows the variables just before the highlighted line runs; a frame with output shows what its line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "def count_pairs(xs):\n    count = 0\n    for a in xs:\n        for b in xs:\n            count += 1\n    return count\n\nprint(count_pairs([1, 2]))",
+        "frames": [
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count_pairs": "<function count_pairs>"
+            },
+            "note": "Count every (a, b) pair from a list of two items."
+          },
+          {
+            "line": 2,
+            "stack": [
+              "<module>",
+              "count_pairs([1, 2])"
+            ],
+            "locals": {
+              "xs": "[1, 2]"
+            },
+            "note": "The counter starts at 0."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "count_pairs([1, 2])"
+            ],
+            "locals": {
+              "xs": "[1, 2]",
+              "count": "0",
+              "a": "1",
+              "b": "1"
+            },
+            "note": "Outer pass a = 1, inner pass b = 1: one step."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "count_pairs([1, 2])"
+            ],
+            "locals": {
+              "xs": "[1, 2]",
+              "count": "1",
+              "a": "1",
+              "b": "2"
+            },
+            "note": "Still a = 1; the inner loop now gives b = 2."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "count_pairs([1, 2])"
+            ],
+            "locals": {
+              "xs": "[1, 2]",
+              "count": "2",
+              "a": "2",
+              "b": "1"
+            },
+            "note": "Outer pass a = 2, and the inner loop starts again from the first item."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>",
+              "count_pairs([1, 2])"
+            ],
+            "locals": {
+              "xs": "[1, 2]",
+              "count": "3",
+              "a": "2",
+              "b": "2"
+            },
+            "note": "The fourth step."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>",
+              "count_pairs([1, 2])"
+            ],
+            "locals": {
+              "xs": "[1, 2]",
+              "count": "4",
+              "a": "2",
+              "b": "2"
+            },
+            "note": "2 × 2 = 4 steps. With 4 items it would be 16: double the input, four times the work."
+          },
+          {
+            "line": 8,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "count_pairs": "<function count_pairs>"
+            },
+            "note": "The count of steps.",
+            "output": "4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Order of growth:** keep the fastest-growing term and drop constant factors: 3n² + 100n + 5 steps is\nO(n²), because for large n the n² term dominates. Usually we describe the **worst case**.\n\n**Common costs in Python:** indexing a list or a dict, `len`, and `append` are O(1) (append on\naverage); `x in list`, `list.index`, `list.remove`, `insert(0, x)` and copying are O(n), because\nthey may touch every item; sorting is O(n log n); `x in set` and `x in dict` (and dict lookups by key)\nare O(1) on average, because sets and dicts are hash tables that jump straight to where the item would\nbe.\n\n**Loops multiply:** a loop of n passes around O(1) work is O(n); an O(n) operation inside such a loop\n(like `in` on a list) makes it O(n²).\n\n**By experiment:** count steps for n and for 2n. A ratio near 1 (with a small increase) suggests\nO(log n), near 2 suggests O(n), near 4 suggests O(n²).",
+      "cites": [
+        "tp-growth",
+        "tp-ops",
+        "tp-hash",
+        "st-set",
+        "st-dict"
+      ]
+    },
+    {
+      "id": "searching",
+      "kind": "example",
+      "title": "Run it: linear and binary search",
+      "body": "Both find the last item of a sorted list of n numbers. Each line shows n, then the steps for a linear\nscan, then the steps for binary search.",
+      "code": "def linear_steps(xs, target):\n    steps = 0\n    for x in xs:\n        steps += 1\n        if x == target:\n            break\n    return steps\n\ndef binary_steps(xs, target):\n    lo, hi, steps = 0, len(xs) - 1, 0\n    while lo <= hi:\n        steps += 1\n        mid = (lo + hi) // 2\n        if xs[mid] == target:\n            break\n        elif xs[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return steps\n\nfor n in (10, 100, 1000, 10000):\n    xs = list(range(n))\n    print(n, linear_steps(xs, n - 1), binary_steps(xs, n - 1))\n",
+      "expected_output": "10 10 4\n100 100 7\n1000 1000 10\n10000 10000 14\n"
+    },
+    {
+      "id": "growth",
+      "kind": "guided",
+      "title": "Your turn: order of growth by experiment",
+      "body": "`steps` is a function: `steps(n)` returns how many steps some algorithm takes on an input of size `n`. Write\n`order_of_growth(steps)`, which compares `steps(1000)` with `steps(2000)` and returns one of\n`\"constant\"` (the two counts are equal), `\"logarithmic\"` (ratio below 1.5), `\"linear\"` (ratio below\n3) or `\"quadratic\"` (anything larger).",
+      "starter": "def order_of_growth(steps):\n    small = steps(1000)\n    big = steps(2000)\n    return \"linear\"\n",
+      "hints": [
+        "Check for equal counts first: a constant algorithm gives ratio exactly 1.",
+        "Then compute `big / small` and compare it with 1.5 and 3, in that order.",
+        "def order_of_growth(steps):\n    small, big = steps(1000), steps(2000)\n    if big == small:\n        return \"constant\"\n    ratio = big / small\n    if ratio < 1.5:\n        return \"logarithmic\"\n    if ratio < 3:\n        return \"linear\"\n    return \"quadratic\"\n"
+      ],
+      "tests": [
+        {
+          "name": "a constant number of steps",
+          "code": "assert order_of_growth(lambda n: 7) == 'constant'",
+          "concept": "order-of-growth"
+        },
+        {
+          "name": "halving the range each step is logarithmic",
+          "code": "assert order_of_growth(lambda n: n.bit_length()) == 'logarithmic'",
+          "concept": "order-of-growth"
+        },
+        {
+          "name": "one pass is linear, whatever the constants",
+          "code": "assert order_of_growth(lambda n: 3 * n + 5) == 'linear'",
+          "concept": "order-of-growth"
+        },
+        {
+          "name": "every pair is quadratic",
+          "code": "assert order_of_growth(lambda n: n * (n - 1) // 2) == 'quadratic'",
+          "concept": "order-of-growth"
+        },
+        {
+          "name": "a big constant factor doesn't change linear",
+          "code": "assert order_of_growth(lambda n: 50 * n + 3) == 'linear'",
+          "concept": "order-of-growth"
+        },
+        {
+          "name": "a small constant factor doesn't change quadratic",
+          "code": "assert order_of_growth(lambda n: n * n // 1000 + 1) == 'quadratic'",
+          "concept": "order-of-growth"
+        },
+        {
+          "name": "classifies the real linear search",
+          "code": "def linear_steps(xs, target):\n    steps = 0\n    for x in xs:\n        steps += 1\n        if x == target:\n            break\n    return steps\n\ndef binary_steps(xs, target):\n    lo, hi, steps = 0, len(xs) - 1, 0\n    while lo <= hi:\n        steps += 1\n        mid = (lo + hi) // 2\n        if xs[mid] == target:\n            break\n        elif xs[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return steps\nassert order_of_growth(lambda n: linear_steps(list(range(n)), n - 1)) == 'linear'",
+          "concept": "operation-counting"
+        },
+        {
+          "name": "classifies the real binary search",
+          "code": "def linear_steps(xs, target):\n    steps = 0\n    for x in xs:\n        steps += 1\n        if x == target:\n            break\n    return steps\n\ndef binary_steps(xs, target):\n    lo, hi, steps = 0, len(xs) - 1, 0\n    while lo <= hi:\n        steps += 1\n        mid = (lo + hi) // 2\n        if xs[mid] == target:\n            break\n        elif xs[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return steps\nassert order_of_growth(lambda n: binary_steps(list(range(n)), n - 1)) == 'logarithmic'",
+          "concept": "operation-counting"
+        }
+      ],
+      "solution": "def order_of_growth(steps):\n    small, big = steps(1000), steps(2000)\n    if big == small:\n        return \"constant\"\n    ratio = big / small\n    if ratio < 1.5:\n        return \"logarithmic\"\n    if ratio < 3:\n        return \"linear\"\n    return \"quadratic\"\n"
+    },
+    {
+      "id": "common",
+      "kind": "challenge",
+      "title": "Challenge: the right data structure",
+      "body": "Write `common_items(a, b)`: return the items of `b` that also appear in `a`, in `b`'s order, keeping repeats\nfrom `b`. The starter is correct, but `item in a` scans the whole list `a` for every item of `b`, which\nis O(len(a) × len(b)). Make it scale: the checks count how many times your code compares two items for\nequality, using 400 items in each list. Items are hashable.",
+      "starter": "def common_items(a, b):\n    result = []\n    for item in b:\n        if item in a:\n            result.append(item)\n    return result\n",
+      "hints": [
+        "Which structure answers `in` without looking at every item?",
+        "Build `set(a)` once, before the loop.",
+        "def common_items(a, b):\n    seen = set(a)\n    return [item for item in b if item in seen]\n"
+      ],
+      "tests": [
+        {
+          "name": "keeps b's order and repeats",
+          "code": "assert common_items([3, 1, 2], [2, 2, 5, 3]) == [2, 2, 3]",
+          "concept": "data-structure-choice"
+        },
+        {
+          "name": "works with strings and empty lists",
+          "code": "assert common_items(['x', 'y'], ['y', 'z']) == ['y']\nassert common_items([], [1]) == []\nassert common_items([1], []) == []",
+          "concept": "data-structure-choice"
+        },
+        {
+          "name": "doesn't change its inputs",
+          "code": "a, b = [2, 1, 2], [3, 2]\ncommon_items(a, b)\nassert (a, b) == ([2, 1, 2], [3, 2])",
+          "concept": "data-structure-choice"
+        },
+        {
+          "name": "scales: few comparisons for 400 + 400 items",
+          "code": "class _C:\n    eqs = 0\n\n    def __init__(self, v):\n        self.v = v\n\n    def __eq__(self, other):\n        _C.eqs += 1\n        return isinstance(other, _C) and self.v == other.v\n\n    def __hash__(self):\n        return hash(self.v)\n\na = [_C(i) for i in range(400)]\nb = [_C(i) for i in range(200, 600)]\n_C.eqs = 0\nresult = common_items(a, b)\nassert [x.v for x in result] == list(range(200, 400))\nassert _C.eqs < 2000, f'common_items compared items {_C.eqs} times; a set answers `in` without scanning every item'",
+          "concept": "operation-counting"
+        }
+      ],
+      "solution": "def common_items(a, b):\n    seen = set(a)\n    return [item for item in b if item in seen]\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "An algorithm takes 3n² + 100n + 5 steps. What is its order of growth?",
+          "choices": [
+            "O(n²)",
+            "O(n)",
+            "O(3n²)",
+            "O(100n)"
+          ],
+          "answer": 0,
+          "explanation": "For large n the n² term dominates; constant factors are dropped.",
+          "concept": "order-of-growth"
+        },
+        {
+          "id": "q2",
+          "prompt": "About how many steps does binary search need for a sorted list of a million items?",
+          "choices": [
+            "About 20",
+            "About 1,000",
+            "About 500,000",
+            "About a million"
+          ],
+          "answer": 0,
+          "explanation": "Each step halves the range: 2 to the power 20 is just over a million.",
+          "concept": "order-of-growth"
+        },
+        {
+          "id": "q3",
+          "prompt": "You need to check membership many times in a big collection. Which is fastest for `x in collection`?",
+          "choices": [
+            "A set",
+            "A list",
+            "A sorted list",
+            "A tuple"
+          ],
+          "answer": 0,
+          "explanation": "A set is a hash table: `in` is O(1) on average instead of a scan.",
+          "concept": "data-structure-choice"
+        },
+        {
+          "id": "q4",
+          "prompt": "A loop takes 500 steps for 100 items and 2,000 for 200. How many for 400?",
+          "choices": [
+            "About 8,000",
+            "About 4,000",
+            "About 2,500",
+            "About 16,000"
+          ],
+          "answer": 0,
+          "explanation": "Doubling the input quadrupled the steps, so it is quadratic: double again, four times again.",
+          "concept": "operation-counting"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Count an algorithm's steps instead of timing it.\n- Read the order of growth (constant, logarithmic, linear, quadratic) by doubling the input.\n- Spot the hidden O(n) inside a loop, such as `in` on a list.\n- Choose a set or a dict when you need fast membership tests and lookups."
+    }
+  ]
+}
