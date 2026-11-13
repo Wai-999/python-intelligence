@@ -104,8 +104,11 @@ describe("scaffold fading", () => {
     expect(note()).toMatch(/^Predict first/); // the suggestion only changes when the model's does
   });
 
-  it("never suggests more hints than the exercise has", () => {
-    mount(3);
-    expect(note()).toMatch(/up to 1 hint\b/);
+  it("never suggests more hints than the exercise has, and only says 'more' or 'fewer' when the visible count changes", () => {
+    mount(3); // one hint: the same single hint as at the usual tier
+    expect(note()).toBe("Suggested support: up to 1 hint. Use more or fewer as you like.");
+    cleanup();
+    mount(1); // one hint: still one hint, not "fewer"
+    expect(note()).toBe("Suggested support: up to 1 hint. Use more or fewer as you like.");
   });
 });

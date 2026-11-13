@@ -97,5 +97,12 @@ describe("suggested support", () => {
     expect(suggestedTier(struggling, L, E1)).toBe(MAX_AUTO_HINT_TIER);
     // Credited concepts are those its checks test plus the lesson's untested ones ("style" here).
     expect(creditedConcepts(L, E2)).toEqual(["ranges", "style"]);
+    // A concept the exercise isn't credited to doesn't affect its suggestion, however much support it needs itself.
+    const ev = (concept: string, passed: boolean, n: number) => ({ id: `x${n}-${concept}`, at: at(n).at, lessonId: L.id, stepId: "e1",
+      task: "exercise" as const, concept, passed, assistance: 0 as const, policy: "learner-heuristic-1" });
+    const mixed = buildModel([L], [...[1, 2, 3, 4].map((n) => ev("loops", false, n)), ...[5, 6].flatMap((n) => [ev("ranges", true, n), ev("style", true, n)])]);
+    expect(mixed.concepts.get("loops")!.hintTier).toBe(MAX_AUTO_HINT_TIER);
+    expect(suggestedTier(mixed, L, E2)).toBe(START_HINT_TIER - 1);
+    expect(suggestedTier(mixed, L, E1)).toBe(MAX_AUTO_HINT_TIER);
   });
 });

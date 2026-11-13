@@ -39,13 +39,14 @@ interface Props {
 export const SOLUTION_AFTER = 2;
 
 function SupportNote({ offered, hints }: { offered: number; hints: number }) {
-  const n = Math.min(offered, hints);
+  // Compared on what the learner can see: an exercise with one hint offers one hint at tier 2 and at tier 3 alike.
+  const n = Math.min(offered, hints), usual = Math.min(START_HINT_TIER, hints);
   return (
     <p className="support muted" role="note">
       {offered === 0
         ? "Predict first: decide what your code should do before you run it. Hints are here whenever you want them."
-        : `Suggested support: up to ${n} hint${n === 1 ? "" : "s"}${offered > START_HINT_TIER ? ", more than at first after repeated tries"
-          : offered < START_HINT_TIER ? ", fewer than at first since you've solved similar tasks on your own" : ""}. Use more or fewer as you like.`}
+        : `Suggested support: up to ${n} hint${n === 1 ? "" : "s"}${n > usual ? ", more than at first after repeated tries"
+          : n < usual ? ", fewer than at first since you've solved similar tasks on your own" : ""}. Use more or fewer as you like.`}
     </p>
   );
 }
