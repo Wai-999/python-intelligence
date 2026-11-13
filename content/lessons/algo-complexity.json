@@ -229,7 +229,7 @@
       "id": "rules",
       "kind": "formal",
       "title": "The precise rules",
-      "body": "**Order of growth:** keep the fastest-growing term and drop constant factors: 3n² + 100n + 5 steps is\nO(n²), because for large n the n² term dominates. Usually we describe the **worst case**.\n\n**Common costs in Python:** indexing a list or a dict, `len`, and `append` are O(1) (append on\naverage); `x in list`, `list.index`, `list.remove`, `insert(0, x)` and copying are O(n), because\nthey may touch every item; sorting is O(n log n); `x in set` and `x in dict` (and dict lookups by key)\nare O(1) on average, because sets and dicts are hash tables that jump straight to where the item would\nbe.\n\n**Loops multiply:** a loop of n passes around O(1) work is O(n); an O(n) operation inside such a loop\n(like `in` on a list) makes it O(n²).\n\n**By experiment:** count steps for n and for 2n. A ratio near 1 (with a small increase) suggests\nO(log n), near 2 suggests O(n), near 4 suggests O(n²).",
+      "body": "**Order of growth:** keep the fastest-growing term and drop constant factors: 3n² + 100n + 5 steps is\nO(n²), because for large n the n² term dominates. Usually we describe the **worst case**.\n\n**Common costs in Python:** indexing a list (`xs[i]`) and `len` are O(1). `append` is *amortized*\nO(1): now and then the list grows its storage, which costs O(n) that once, but over many appends the\naverage cost per append stays constant. `x in list`, `list.index`, `list.remove`, `insert(0, x)` and\ncopying are O(n), because they may touch every item; sorting is O(n log n). Sets and dicts are hash\ntables: `x in set`, `x in dict` and `d[key]` are O(1) on *average* (assuming hashing and comparing a key\ntake constant time), because they jump straight to where the key would be; in the rare worst case, when\nmany keys collide, a lookup can take O(n).\n\n**Loops multiply:** a loop of n passes around O(1) work is O(n); an O(n) operation inside such a loop\n(like `in` on a list) makes it O(n²).\n\n**By experiment:** count steps for n and for 2n. A ratio near 1 (with a small increase) suggests\nO(log n), near 2 suggests O(n), near 4 suggests O(n²). It is evidence, not proof: at small sizes a lower\nterm can still dominate, and in-between rates such as O(n log n) (ratio about 2.2) look much like O(n).\nCheck several sizes, and reason about the code itself.",
       "cites": [
         "tp-growth",
         "tp-ops",
@@ -250,7 +250,7 @@
       "id": "growth",
       "kind": "guided",
       "title": "Your turn: order of growth by experiment",
-      "body": "`steps` is a function: `steps(n)` returns how many steps some algorithm takes on an input of size `n`. Write\n`order_of_growth(steps)`, which compares `steps(1000)` with `steps(2000)` and returns one of\n`\"constant\"` (the two counts are equal), `\"logarithmic\"` (ratio below 1.5), `\"linear\"` (ratio below\n3) or `\"quadratic\"` (anything larger).",
+      "body": "`steps` is a function: `steps(n)` returns how many steps some algorithm takes on an input of size `n`. Write\n`order_of_growth(steps)`, which compares `steps(1000)` with `steps(2000)` and returns one of\n`\"constant\"` (the two counts are equal), `\"logarithmic\"` (ratio below 1.5), `\"linear\"` (ratio below\n3) or `\"quadratic\"` (anything larger). This is a rule of thumb for these four shapes, not a proof: two\nsizes can mislead when small terms still dominate, and other growth rates exist (n log n doubles to about\n2.2 times, so this rule would call it linear).",
       "starter": "def order_of_growth(steps):\n    small = steps(1000)\n    big = steps(2000)\n    return \"linear\"\n",
       "hints": [
         "Check for equal counts first: a constant algorithm gives ratio exactly 1.",
@@ -305,7 +305,7 @@
       "id": "common",
       "kind": "challenge",
       "title": "Challenge: the right data structure",
-      "body": "Write `common_items(a, b)`: return the items of `b` that also appear in `a`, in `b`'s order, keeping repeats\nfrom `b`. The starter is correct, but `item in a` scans the whole list `a` for every item of `b`, which\nis O(len(a) × len(b)). Make it scale: the checks count how many times your code compares two items for\nequality, using 400 items in each list. Items are hashable.",
+      "body": "Write `common_items(a, b)`: return the items of `b` that also appear in `a`, in `b`'s order, keeping repeats\nfrom `b`. The starter is correct, but `item in a` scans the whole list `a` for every item of `b`, which\nis O(len(a) × len(b)). Make it scale: the checks count how many times your code compares two items for\nequality or computes an item's hash, using 400 items in each list (a generous budget a little under five\noperations per item). Items are hashable.",
       "starter": "def common_items(a, b):\n    result = []\n    for item in b:\n        if item in a:\n            result.append(item)\n    return result\n",
       "hints": [
         "Which structure answers `in` without looking at every item?",
@@ -330,7 +330,7 @@
         },
         {
           "name": "scales: few comparisons for 400 + 400 items",
-          "code": "class _C:\n    eqs = 0\n\n    def __init__(self, v):\n        self.v = v\n\n    def __eq__(self, other):\n        _C.eqs += 1\n        return isinstance(other, _C) and self.v == other.v\n\n    def __hash__(self):\n        return hash(self.v)\n\na = [_C(i) for i in range(400)]\nb = [_C(i) for i in range(200, 600)]\n_C.eqs = 0\nresult = common_items(a, b)\nassert [x.v for x in result] == list(range(200, 400))\nassert _C.eqs < 2000, f'common_items compared items {_C.eqs} times; a set answers `in` without scanning every item'",
+          "code": "class _C:\n    ops = 0\n\n    def __init__(self, v):\n        self.v = v\n\n    def __eq__(self, other):\n        _C.ops += 1\n        return isinstance(other, _C) and self.v == other.v\n\n    def __hash__(self):\n        _C.ops += 1\n        return hash(self.v)\n\na = [_C(i) for i in range(400)]\nb = [_C(i) for i in range(200, 600)]\n_C.ops = 0\nresult = common_items(a, b)\nassert [x.v for x in result] == list(range(200, 400))\nassert _C.ops < 4000, f'common_items made {_C.ops} comparisons and hash computations for 400 + 400 items; build one lookup structure, once, then check each item of b against it'",
           "concept": "operation-counting"
         }
       ],
@@ -349,8 +349,8 @@
           "choices": [
             "O(n²)",
             "O(n)",
-            "O(3n²)",
-            "O(100n)"
+            "O(n³)",
+            "O(1)"
           ],
           "answer": 0,
           "explanation": "For large n the n² term dominates; constant factors are dropped.",
@@ -384,7 +384,7 @@
         },
         {
           "id": "q4",
-          "prompt": "A loop takes 500 steps for 100 items and 2,000 for 200. How many for 400?",
+          "prompt": "A loop takes 500 steps for 100 items and 2,000 for 200. If it keeps growing the same way (quadratically), about how many steps for 400?",
           "choices": [
             "About 8,000",
             "About 4,000",
@@ -392,7 +392,7 @@
             "About 16,000"
           ],
           "answer": 0,
-          "explanation": "Doubling the input quadrupled the steps, so it is quadratic: double again, four times again.",
+          "explanation": "Doubling the input quadrupled the steps; under the same quadratic model, doubling again quadruples again. Two measurements suggest the shape; they don't prove it.",
           "concept": "operation-counting"
         }
       ]
