@@ -43,6 +43,7 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<LearnerEvent[]>([]);
   const [assist, setAssist] = useState<Record<string, number>>({});
+  const [generation, setGeneration] = useState(0);
   // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
   const [now, setNow] = useState(() => new Date().toISOString());
 
@@ -141,7 +142,7 @@ export function App() {
         </div>
       </header>
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
-      {panel && store && <ProgressPanel store={store} onChanged={() => void reload(store)} onClose={() => setPanel(false)} />}
+      {panel && store && <ProgressPanel store={store} onChanged={() => { void reload(store).then(() => setGeneration((g) => g + 1)); }} onClose={() => setPanel(false)} />}
 
       <div className={`layout layout--${route.view}`}>
         {route.view === "lesson" && (
@@ -174,6 +175,7 @@ export function App() {
               unlocked={isUnlocked(graph, route.lessonId, progress)}
               titleOf={titleOf}
               go={go}
+              generation={generation}
               assistance={Object.fromEntries(Object.entries(assist).filter(([k]) => k.startsWith(`${route.lessonId}:`)).map(([k, v]) => [k.slice(route.lessonId.length + 1), v]))}
               onAssist={(sid, level) => {
                 const key = `${route.lessonId}:${sid}`;

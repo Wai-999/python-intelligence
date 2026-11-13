@@ -60,7 +60,11 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
   };
   useEffect(() => () => clearTimeout(saveTimer.current), []);
 
+  // One run at a time, whether started by the button or the keyboard shortcut.
+  const running = useRef(false);
   const check = async () => {
+    if (running.current) return;
+    running.current = true;
     clearTimeout(saveTimer.current);
     onDraft(code);
     setBusy(true);
@@ -83,6 +87,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,
         error: { type: "LoadError", message: String((e as Error).message), line: null, summary: String((e as Error).message) } });
     } finally {
+      running.current = false;
       setBusy(false);
     }
   };
