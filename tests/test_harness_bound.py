@@ -43,12 +43,27 @@ names = harness.bound_names
     # match statements
     ("match cmd:\n    case [first, *others]:\n        pass\n    case {'k': val, **extra}:\n        pass\n    case Point(x=px) as pt:\n        pass\n",
      {"first", "others", "val", "extra", "px", "pt"}),
+    # async functions and their parameters
+    ("async def fetch(url, *, retries=3):\n    async with session(url) as resp:\n        data = 1\n", {"fetch", "url", "retries", "resp", "data"}),
+    # class-private names are mangled inside the class (and its methods), as Python stores them; dunders aren't
+    ("class Counter:\n    __limit = 3\n    def bump(self, __step):\n        __total = 0\n        self.__seen = 1\n    def __repr__(self):\n        return ''\n__outside = 1\n",
+     {"Counter", "_Counter__limit", "bump", "self", "_Counter__step", "_Counter__total", "__repr__", "__outside"}),
+    ("class _Hidden:\n    __x = 1\nclass __Weird:\n    __y = 2\n", {"_Hidden", "_Hidden__x", "__Weird", "_Weird__y"}),
+    # a class's bases are evaluated outside it, so a walrus there isn't mangled; its body is
+    ("class C((__base := object)):\n    __inner = 1\n", {"C", "__base", "_C__inner"}),
     # type parameters (Python 3.12)
     ("def first[T](items: list[T]) -> T:\n    return items[0]\n", {"first", "T", "items"}),
 ])
 def test_bound_names(code, expected):
     compile(code, "<test>", "exec")  # every example is valid Python
     assert set(names(code)) == expected
+
+
+def test_a_misspelt_private_name_in_a_class_is_a_near_miss_of_a_bound_name():
+    code = "class Counter:\n    def bump(self):\n        __total = 0\n        return __totl\n\nCounter().bump()"
+    err = harness.run_learner(code)["error"]
+    assert err["message"] == "name '_Counter__totl' is not defined"
+    assert "_Counter__total" in err["bound"]
 
 
 def test_unparsable_code_binds_nothing():

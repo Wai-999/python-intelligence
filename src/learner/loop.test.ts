@@ -56,6 +56,12 @@ describe("classifying a failed run", () => {
     expect(looksLikeTypo("total", ["total"])).toBe(false); // the same name isn't a near-miss of itself
   });
 
+  it("treats a misspelt class-private name as a slip (both names arrive mangled)", () => {
+    const tags = classifyError(nameErr("_Counter__totl", ["Counter", "_Counter__total", "bump", "self"]));
+    expect(tags).toEqual(["slip:name"]);
+    expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
+  });
+
   it("never steps back for a misspelt name, however it was bound", () => {
     const tags = classifyError(nameErr("wdith", ["area", "height", "width"]));
     expect(tags).toEqual(["slip:name"]);
