@@ -44,7 +44,7 @@ describe("Exercise attempts", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show a hint/ }));
     runChecks();
     await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
-    expect(onResult.mock.calls[0]![2]).toEqual({ results: [{ concept: "names", passed: false }], assistance: 1, generation: 3 });
+    expect(onResult.mock.calls[0]![2]).toEqual({ results: [{ concept: "names", passed: false }], assistance: 1, generation: 3, errorTags: [] });
   });
 
   it("records a timeout as a failed attempt: the learner's code ran too long", async () => {

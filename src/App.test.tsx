@@ -467,7 +467,7 @@ describe("App", () => {
     runPasses = false;
     const failRun = async (n: number) => {
       fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
-      await waitFor(() => expect(new Set(appended.filter((e) => !e.passed).map((e) => e.at)).size).toBe(n));
+      await waitFor(() => expect(new Set(appended.filter((e) => e.task === "exercise" && !e.passed).map((e) => e.at)).size).toBe(n));
     };
     await failRun(1);
     expect(await note()).toMatch(/^Predict first/);

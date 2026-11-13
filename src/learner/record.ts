@@ -37,18 +37,25 @@ export function suggestedTier(model: LearnerModel, lesson: Lesson, step: Exercis
 
 /**
  * `results` lists each check's concept and outcome; `null` means the code didn't run (every concept counts as failed).
+ * `errorTags` (from classifyError) go on every failed event of the attempt; each failed check adds "check:<concept>" to
+ * that concept's event (and to the untested concepts' events, which are credited with the overall result).
  */
 export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { concept?: string; passed: boolean }[] | null,
-                               assistance: Assistance, stamp: Stamp): LearnerEvent[] {
+                               assistance: Assistance, stamp: Stamp, errorTags: readonly string[] = []): LearnerEvent[] {
   const lessonConcepts = new Set(lesson.concepts);
   const direct = [...new Set(step.tests.map((t) => t.concept).filter((c): c is string => !!c && lessonConcepts.has(c)))];
   const untested = lesson.concepts.filter((c) => !testedBy(lesson).has(c));
   const overall = results !== null && results.length === step.tests.length && results.every((r) => r.passed);
   const outcome = (c: string) => results !== null && results.filter((r) => r.concept === c).length > 0
     && results.filter((r) => r.concept === c).every((r) => r.passed);
-  return [...direct.map((c) => [c, outcome(c)] as const), ...untested.map((c) => [c, overall] as const)].map(([concept, passed]) => ({
-    id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance, policy: POLICY_VERSION,
-  }));
+  const failedChecks = (results ?? []).filter((r) => !r.passed).map((r) => `check:${r.concept ?? "general"}`);
+  const tagsFor = (concept: string, isDirect: boolean) => [...new Set([...errorTags,
+    ...(isDirect ? failedChecks.filter((t) => t === `check:${concept}`) : failedChecks)])];
+  return [...direct.map((c) => [c, outcome(c), true] as const), ...untested.map((c) => [c, overall, false] as const)].map(([concept, passed, isDirect]) => {
+    const tags = passed ? [] : tagsFor(concept, isDirect);
+    return { id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance,
+      policy: POLICY_VERSION, ...(tags.length ? { tags } : {}) };
+  });
 }
 
 /**

@@ -1,0 +1,142 @@
+{
+  "error:TypeError": {
+    "code": "print(\"3\" + 4)",
+    "question": "What happens when this runs?",
+    "choices": [
+      "It prints 34",
+      "It prints 7",
+      "It stops with a TypeError"
+    ],
+    "answer": 2,
+    "explanation": "`+` doesn't mix text and numbers: Python won't guess whether you meant 7 or 34. Convert one side first: `int(\"3\") + 4` is 7, `\"3\" + str(4)` is \"34\". Look for the line where two different types meet.",
+    "outcome": {
+      "raises": "TypeError"
+    }
+  },
+  "error:IndexError": {
+    "code": "xs = [10, 20, 30]\nprint(xs[3])",
+    "question": "What happens when this runs?",
+    "choices": [
+      "It prints 30",
+      "It prints None",
+      "It stops with an IndexError"
+    ],
+    "answer": 2,
+    "explanation": "A list of 3 items has positions 0, 1 and 2, so `xs[3]` is past the end. The last item is `xs[2]` (or `xs[-1]`). Check the largest index your code can reach.",
+    "outcome": {
+      "raises": "IndexError"
+    }
+  },
+  "error:KeyError": {
+    "code": "ages = {\"ann\": 31}\nprint(ages[\"Ann\"])",
+    "question": "What happens when this runs?",
+    "choices": [
+      "It prints 31",
+      "It prints None",
+      "It stops with a KeyError"
+    ],
+    "answer": 2,
+    "explanation": "A key must match exactly, capitals included, and a missing key is an error, not None. `ages.get(\"Ann\")` returns None instead, and `\"Ann\" in ages` tests first.",
+    "outcome": {
+      "raises": "KeyError"
+    }
+  },
+  "error:ZeroDivisionError": {
+    "code": "items = []\nprint(sum(items) / len(items))",
+    "question": "What happens when this runs?",
+    "choices": [
+      "It prints 0",
+      "It prints 0.0",
+      "It stops with a ZeroDivisionError"
+    ],
+    "answer": 2,
+    "explanation": "An empty list has length 0, and dividing by 0 is an error. Decide what the empty case should give, and handle it before dividing.",
+    "outcome": {
+      "raises": "ZeroDivisionError"
+    }
+  },
+  "error:AttributeError": {
+    "code": "names = [\"b\", \"a\"]\nordered = names.sort()\nprint(ordered)",
+    "question": "What does this print?",
+    "choices": [
+      "['a', 'b']",
+      "None",
+      "['b', 'a']"
+    ],
+    "answer": 1,
+    "explanation": "`list.sort()` sorts the list in place and returns None, so `ordered` is None, and calling a method on it later raises an AttributeError. `sorted(names)` returns a new sorted list. One common cause of AttributeError: a value that is None when you expected something else.",
+    "outcome": {
+      "prints": "None"
+    }
+  },
+  "error:ValueError": {
+    "code": "print(int(\"3.5\"))",
+    "question": "What happens when this runs?",
+    "choices": [
+      "It prints 3",
+      "It prints 3.5",
+      "It stops with a ValueError"
+    ],
+    "answer": 2,
+    "explanation": "`int()` reads text that is a whole number; \"3.5\" isn't one. `float(\"3.5\")` gives 3.5, and `int(float(\"3.5\"))` gives 3. The value had the right type but the wrong content.",
+    "outcome": {
+      "raises": "ValueError"
+    }
+  },
+  "error:NameError": {
+    "code": "def area(r):\n    result = 3.14 * r * r\n\narea(2)\nprint(result)",
+    "question": "What happens when this runs?",
+    "choices": [
+      "It prints 12.56",
+      "It prints None",
+      "It stops with a NameError"
+    ],
+    "answer": 2,
+    "explanation": "A name created inside a function exists only while it runs. To get the value out, `return result` and keep it: `a = area(2)`. Check where each name is created and where it is used.",
+    "outcome": {
+      "raises": "NameError"
+    }
+  },
+  "error:UnboundLocalError": {
+    "code": "count = 0\ndef bump():\n    count = count + 1\nbump()",
+    "question": "What happens when this runs?",
+    "choices": [
+      "count becomes 1",
+      "Nothing changes",
+      "It stops with an UnboundLocalError"
+    ],
+    "answer": 2,
+    "explanation": "Assigning to `count` anywhere in the function makes `count` local to the whole function, so reading it on the right-hand side fails. Pass the value in and return the new one: `def bump(count): return count + 1`.",
+    "outcome": {
+      "raises": "UnboundLocalError"
+    }
+  },
+  "error:RecursionError": {
+    "code": "def countdown(n):\n    print(n)\n    countdown(n - 1)\n\ncountdown(3)",
+    "question": "How does this end?",
+    "choices": [
+      "After printing 1",
+      "After printing 0",
+      "It doesn't stop by itself: Python ends it with a RecursionError"
+    ],
+    "answer": 2,
+    "explanation": "Nothing tells the function to stop calling itself, so it keeps going (0, -1, -2, …) until Python's limit. Every recursive function needs a base case that returns without calling itself, like `if n == 0: return`.",
+    "outcome": {
+      "raises": "RecursionError"
+    }
+  },
+  "error:TimeoutError": {
+    "code": "n = 3\nwhile n > 0:\n    print(n)",
+    "question": "How many lines does this print?",
+    "choices": [
+      "3",
+      "4",
+      "It never stops"
+    ],
+    "answer": 2,
+    "explanation": "The loop's condition depends on `n`, but nothing in the loop changes `n`, so it is true forever. Each pass of a while loop must move towards making its condition false, here `n = n - 1`.",
+    "outcome": {
+      "runsForever": true
+    }
+  }
+}

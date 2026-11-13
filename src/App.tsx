@@ -5,7 +5,9 @@ import { Library } from "./components/Library";
 import { ProgressPanel } from "./components/ProgressPanel";
 import { ReviewView } from "./components/ReviewView";
 import { buildModel, dueReviews, type Assistance, type LearnerEvent } from "./learner/model";
-import { exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier, type Stamp } from "./learner/record";
+import { creditedConcepts, exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier, type Stamp } from "./learner/record";
+import { interventionEvent, mesoTrigger, transferTarget, type Intervention, type Target } from "./learner/loop";
+import { MesoPanel } from "./components/MesoPanel";
 import { isExercise } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -49,6 +51,10 @@ export function App() {
   const [panel, setPanel] = useState(false);
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<LearnerEvent[]>([]);
+  // The same events, updated synchronously as they are recorded, so the feedback controller sees the run just made.
+  const eventsRef = useRef<LearnerEvent[]>([]);
+  // A meso-loop step back for one task (lesson:step:generation), shown after the tutor note.
+  const [meso, setMeso] = useState<{ key: string; i: Intervention; target: Target | null } | null>(null);
   const [assist, setAssist] = useState<Record<string, number>>({});
   const [generation, setGeneration] = useState(0);
   // Bumped synchronously when an import or reset starts; results of runs started earlier are then ignored.
@@ -85,6 +91,7 @@ export function App() {
     setProgress(new Map(all.map((p) => [p.lessonId, p])));
     setDrafts(d);
     setEvents(exp.events);
+    eventsRef.current = exp.events;
     setAssist(assistance);
     return exp.position;
   }, []);
@@ -171,6 +178,7 @@ export function App() {
   const record = useCallback((evs: LearnerEvent[]) => {
     if (evs.length === 0) return;
     setEvents((prev) => [...prev, ...evs]);
+    eventsRef.current = [...eventsRef.current, ...evs];
     void store?.appendEvents(evs).catch(fail);
   }, [store, fail]);
   const model = useMemo(() => buildModel(LESSONS, events), [events]);
@@ -187,6 +195,7 @@ export function App() {
     return () => { clearTimeout(timer); removeEventListener("focus", tick); document.removeEventListener("visibilitychange", onVisible); };
   }, [model, now]);
   useEffect(() => { setNow(new Date().toISOString()); }, [route, events]);
+  useEffect(() => { setMeso(null); }, [route]); // a step back belongs to the task on screen
   const dueCount = dueReviews(model, now).filter((s) => reviewItem(LESSONS, s.concept, 0) !== null).length;
 
   // Only the latest replacement unlocks the page, and only once its reload has succeeded.
@@ -279,6 +288,13 @@ export function App() {
               go={go}
               generation={generation}
               suggestTier={(step) => suggestedTier(model, graph.byId.get(route.lessonId)!, step)}
+              mesoFor={(sid) => meso && meso.key === `${route.lessonId}:${sid}:${generation}` ? (
+                <MesoPanel intervention={meso.i} target={meso.target} titleOf={titleOf} onOutcome={(outcome) => {
+                  if (!live()) return;
+                  record([interventionEvent(meso.i, route.lessonId, sid, outcome, stampNow())]);
+                  if (outcome === "postponed") setMeso(null);
+                }} />
+              ) : undefined}
               assistance={Object.fromEntries(Object.entries(assist).filter(([k]) => k.startsWith(`${route.lessonId}:`)).map(([k, v]) => [k.slice(route.lessonId.length + 1), v]))}
               onAssist={(sid, level) => {
                 if (!live()) return;
@@ -305,7 +321,15 @@ export function App() {
                   .catch((e) => { fail(e); return UNKNOWN_HELP; })
                   .then((stored) => {
                     if (detail.generation !== generationRef.current) return;
-                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp));
+                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp, detail.errorTags));
+                    // Double loop: after repeated structural errors (or reliance on strong hints), step back once.
+                    for (const c of creditedConcepts(l, step)) {
+                      const i = mesoTrigger(eventsRef.current, c, Date.parse(stamp.at), `${l.id}:${sid}`);
+                      if (!i) continue;
+                      setMeso({ key: `${l.id}:${sid}:${generationRef.current}`, i, target: transferTarget(LESSONS, model, c, l.id, sid) });
+                      record([interventionEvent(i, l.id, sid, "shown", stampNow())]);
+                      break;
+                    }
                   });
               }}
               onQuiz={(sid, score, passed, missed, correct) => {

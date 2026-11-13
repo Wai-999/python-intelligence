@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ExerciseStep } from "../content/types";
 import { INFRASTRUCTURE_ERRORS, type RunResult } from "../py/protocol";
 import { getRunner } from "../py/runner";
@@ -10,6 +10,7 @@ import { TutorNote } from "./TutorNote";
 import type { StepResult } from "../progress/types";
 import { START_HINT_TIER, type Assistance } from "../learner/model";
 import { assistanceFor } from "../learner/record";
+import { classifyError } from "../learner/loop";
 
 export interface AttemptDetail {
   /** Each check's concept and outcome, or null when the code didn't run. */
@@ -17,6 +18,8 @@ export interface AttemptDetail {
   assistance: Assistance;
   /** The progress generation the run started in; results from before an import or reset are discarded. */
   generation: number;
+  /** Diagnostic tags for an error in the learner's code (classifyError); empty when the checks ran. */
+  errorTags: string[];
 }
 
 interface Props {
@@ -31,6 +34,8 @@ interface Props {
   generation: number;
   /** The learner model's suggested support for this exercise (0 = predict first, 1–3 = hints); see suggestedTier(). */
   suggestedTier: number;
+  /** A meso-loop step back triggered by this task's runs (shown after the tutor note), if any. */
+  meso?: ReactNode;
   onDraft: (code: string) => void;
   onResult: (passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
 }
@@ -51,7 +56,7 @@ function SupportNote({ offered, hints }: { offered: number; hints: number }) {
   );
 }
 
-export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, suggestedTier, onDraft, onResult }: Props) {
+export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, suggestedTier, meso, onDraft, onResult }: Props) {
   const [code, setCode] = useState(draft ?? step.starter);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -106,6 +111,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed })) : null,
         assistance: helped.current,
         generation: startedIn,
+        errorTags: r.error ? classifyError(r.error, code) : [],
       });
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,
@@ -142,6 +148,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       )}
       {allPassed && <p className="pill ok" role="status">🎉 All checks pass. Nicely done.</p>}
       {fb && !allPassed && <TutorNote fb={fb} />}
+      {meso}
 
       {!allPassed && step.socratic && failures === 0 && (
         <details className="socratic"><summary>Before you start, think about…</summary>

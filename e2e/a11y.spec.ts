@@ -65,6 +65,24 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.locator(".checks li.fail").first()).toBeVisible({ timeout: 90_000 });
       await expect(page.getByRole("complementary", { name: "Professor's note" })).toBeVisible();
       await scan(page, "failed checks + tutor note");
+      await expect(page.getByRole("note")).toBeVisible();
+      await scan(page, "suggested-support note");
+    });
+
+    test(`the meso-loop step back has no violations (${scheme})`, async ({ page }) => {
+      await page.goto("./#/lesson/py-values-names/3");
+      for (let i = 0; i < 3; i++) {
+        await page.locator("textarea.editor-input").fill('radius = "3"\narea = 3.14 * radius + 1\n');
+        await page.getByRole("button", { name: "▶ Run checks" }).click();
+        await expect(page.getByRole("button", { name: "▶ Run checks" })).toBeEnabled({ timeout: 90_000 });
+      }
+      const panel = page.locator("section.meso");
+      await expect(panel).toBeVisible();
+      await scan(page, "meso prediction");
+      await panel.getByRole("radio").first().check();
+      await panel.getByRole("button", { name: "Check my prediction" }).click();
+      await expect(panel.getByRole("status")).toBeVisible();
+      await scan(page, "meso explanation and transfer link");
     });
   });
 }

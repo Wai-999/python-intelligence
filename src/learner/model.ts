@@ -20,9 +20,14 @@ export const MISCONCEPTION_REPEATS = 2;
 
 /** 0 = no help; 1–3 = that many hints seen; 4 = the worked solution was shown. */
 export type Assistance = 0 | 1 | 2 | 3 | 4;
-/** "exercise": a coding task; "quiz": an explanation check; "review": a delayed retrieval. */
-export type Task = "exercise" | "quiz" | "review";
-const TASKS: readonly Task[] = ["exercise", "quiz", "review"];
+/**
+ * "exercise": a coding task; "quiz": an explanation check; "review": a delayed retrieval; "intervention": a feedback
+ * controller decision (what was triggered and why; see loop.ts). Interventions are a log, never evidence of learning.
+ */
+export type Task = "exercise" | "quiz" | "review" | "intervention";
+const TASKS: readonly Task[] = ["exercise", "quiz", "review", "intervention"];
+/** Tags for surface slips (a syntax error, a misspelt name): recorded, but never reported as a misconception. */
+export const SLIP_TAG_PREFIX = "slip:";
 
 export interface LearnerEvent {
   id: string;
@@ -38,6 +43,8 @@ export interface LearnerEvent {
   tags?: string[];
   /** Optional self-rated confidence before the attempt, 1 (guessing) to 5 (certain). */
   confidence?: 1 | 2 | 3 | 4 | 5;
+  /** For an intervention: the ids of the events that triggered it. */
+  supports?: string[];
 }
 
 export class LearnerDataError extends Error {
@@ -136,12 +143,14 @@ function validate(e: unknown, i: number): LearnerEvent {
   const v = e as Record<string, unknown>;
   for (const k of ["id", "lessonId", "stepId", "concept", "policy"] as const)
     if (typeof v[k] !== "string" || (v[k] as string).length === 0) throw bad(`${k} must be a nonempty string`);
-  if (!TASKS.includes(v.task as Task)) throw bad("task must be exercise, quiz or review");
+  if (!TASKS.includes(v.task as Task)) throw bad("task must be exercise, quiz, review or intervention");
   if (typeof v.passed !== "boolean") throw bad("passed must be a boolean");
   if (!Number.isInteger(v.assistance) || (v.assistance as number) < 0 || (v.assistance as number) > 4) throw bad("assistance must be 0..4");
   parseTime(v.at, `event ${i} at`);
   if (v.tags !== undefined && (!Array.isArray(v.tags) || !v.tags.every((x) => typeof x === "string" && x.length > 0)))
     throw bad("tags must be a list of nonempty strings");
+  if (v.supports !== undefined && (!Array.isArray(v.supports) || !v.supports.every((x) => typeof x === "string" && x.length > 0)))
+    throw bad("supports must be a list of nonempty event ids");
   if (v.confidence !== undefined && !(Number.isInteger(v.confidence) && (v.confidence as number) >= 1 && (v.confidence as number) <= 5))
     throw bad("confidence must be 1..5");
   return v as unknown as LearnerEvent;
@@ -186,7 +195,8 @@ function observe(r: Running, e: LearnerEvent, t: number) {
   else {
     r.failures += 1;
     r.recentFailures += 1;
-    for (const tag of new Set(e.tags ?? [])) r.tagCounts.set(tag, (r.tagCounts.get(tag) ?? 0) + 1);
+    // A repeated slip (a typo) is not a misconception: only structural tags are counted.
+    for (const tag of new Set(e.tags ?? [])) if (!tag.startsWith(SLIP_TAG_PREFIX)) r.tagCounts.set(tag, (r.tagCounts.get(tag) ?? 0) + 1);
   }
   if (e.confidence !== undefined) { r.rated += 1; r.ratedConfidence += (e.confidence - 1) / 4; r.ratedPassed += e.passed ? 1 : 0; }
 
@@ -251,6 +261,7 @@ export function buildModel(lessons: Lesson[], events: readonly unknown[]): Learn
     }
   };
   for (const e of ordered(events)) {
+    if (e.task === "intervention") continue; // a decision log, not evidence
     const lesson = owner.get(e.concept);
     if (!lesson || lesson.id !== e.lessonId) { quarantined.push(e); continue; }
     const t = parseTime(e.at);

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { isGraded, type Lesson, type Step, type ExerciseStep } from "../content/types";
 import type { Recommendation } from "../curriculum/graph";
 import type { LessonProgress } from "../progress/types";
@@ -34,6 +34,8 @@ interface Props {
   onAssist: (stepId: string, level: number) => void;
   /** Suggested up-front support for an exercise, from the learner model (see suggestedTier). */
   suggestTier: (step: ExerciseStep) => number;
+  /** The meso-loop panel for this lesson's step, if one is showing. */
+  mesoFor: (stepId: string) => ReactNode | undefined;
 }
 
 export function LessonView(p: Props) {
@@ -84,7 +86,7 @@ export function LessonView(p: Props) {
       {(step.kind === "guided" || step.kind === "challenge") && (
         <Exercise key={`${lesson.id}:${step.id}:${p.generation}`} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
-                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)} generation={p.generation} suggestedTier={p.suggestTier(step)}
+                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)} generation={p.generation} suggestedTier={p.suggestTier(step)} meso={p.mesoFor(step.id)}
                   onDraft={(c) => p.onDraft(step.id, c)}
                   onResult={(passed, fc, detail) => p.onExercise(step.id, passed, fc, detail)} />
       )}
