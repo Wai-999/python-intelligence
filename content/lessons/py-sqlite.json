@@ -81,6 +81,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Store rows in a SQLite table and answer questions with SQL queries whose values are passed as parameters.",
+  "analogy": "A database is a librarian: you hand over a request slip (the query) with the details filled in separately (parameters), and the librarian fetches the matching rows.",
+  "misconceptions": [
+    {
+      "belief": "Putting values into SQL with an f-string is fine if you're careful.",
+      "correction": "Quotes and SQL in the data change the query; always pass values with ? placeholders."
+    },
+    {
+      "belief": "`fetchone()` returns an empty tuple when nothing matches.",
+      "correction": "It returns None."
+    },
+    {
+      "belief": "An inner JOIN keeps rows without a match.",
+      "correction": "Only LEFT JOIN keeps unmatched rows from the left table, with NULLs."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Parameterized",
+      "evidence": "every value reaches the database as a ? parameter"
+    },
+    {
+      "criterion": "Right rows",
+      "evidence": "WHERE, ORDER BY and LIMIT pick exactly the rows asked for"
+    },
+    {
+      "criterion": "Plain results",
+      "evidence": "results are lists of tuples or values as specified"
+    }
+  ],
+  "review": {
+    "recall": "Why use `?` placeholders? What does `fetchone()` return when no row matches?"
+  },
   "steps": [
     {
       "id": "why",
@@ -223,7 +256,7 @@
         },
         {
           "name": "the name is passed as a parameter, not inside the SQL",
-          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nclass _Recorder:\n    def __init__(self, con):\n        self.con, self.calls = con, []\n\n    def execute(self, sql, params=()):\n        self.calls.append((sql, params))\n        return self.con.execute(sql, params)\n\n    def executemany(self, sql, rows):\n        rows = list(rows)\n        self.calls.append((sql, rows))\n        return self.con.executemany(sql, rows)\n\n    def cursor(self, *args, **kwargs):\n        rec, cur = self, self.con.cursor(*args, **kwargs)\n\n        class _Cursor:\n            def execute(self, sql, params=()):\n                rec.calls.append((sql, params))\n                cur.execute(sql, params)\n                return self\n\n            def executemany(self, sql, rows):\n                rows = list(rows)\n                rec.calls.append((sql, rows))\n                cur.executemany(sql, rows)\n                return self\n\n            def __getattr__(self, name):\n                return getattr(cur, name)\n\n        return _Cursor()\n\n    def __enter__(self):\n        self.con.__enter__()\n        return self\n\n    def __exit__(self, *exc):\n        return self.con.__exit__(*exc)\n\n    def __getattr__(self, name):\n        return getattr(self.con, name)\n\nrec = _Recorder(con)\nadd_score(rec, 'Zed', 4)\nassert rec.calls, 'add_score should run its INSERT through the connection it is given'\nsql, params = rec.calls[-1]\nassert 'Zed' not in sql, 'the name is part of the SQL text: pass it as a parameter with ?'\nassert 'Zed' in repr(params), 'pass the name as a parameter with ?'\nassert top(con, 1) == [('Zed', 4)]",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nclass _Recorder:\n    def __init__(self, con):\n        self.con, self.calls = con, []\n\n    def execute(self, sql, params=()):\n        self.calls.append((sql, params))\n        return self.con.execute(sql, params)\n\n    def executemany(self, sql, rows):\n        rows = list(rows)\n        self.calls.append((sql, rows))\n        return self.con.executemany(sql, rows)\n\n    def cursor(self, *args, **kwargs):\n        rec, cur = self, self.con.cursor(*args, **kwargs)\n\n        class _Cursor:\n            def execute(self, sql, params=()):\n                rec.calls.append((sql, params))\n                cur.execute(sql, params)\n                return self\n\n            def executemany(self, sql, rows):\n                rows = list(rows)\n                rec.calls.append((sql, rows))\n                cur.executemany(sql, rows)\n                return self\n\n            def __iter__(self):\n                return iter(cur)\n\n            def __next__(self):\n                return next(cur)\n\n            def __getattr__(self, name):\n                return getattr(cur, name)\n\n        return _Cursor()\n\n    def __enter__(self):\n        self.con.__enter__()\n        return self\n\n    def __exit__(self, *exc):\n        return self.con.__exit__(*exc)\n\n    def __getattr__(self, name):\n        return getattr(self.con, name)\n\nrec = _Recorder(con)\nadd_score(rec, 'Zed', 4)\nassert rec.calls, 'add_score should run its INSERT through the connection it is given'\nassert not any('Zed' in sql for sql, _ in rec.calls), 'the name is part of the SQL text: pass it as a parameter with ?'\nassert any('Zed' in repr(params) for _, params in rec.calls), 'pass the name as a parameter with ?'\nassert top(con, 1) == [('Zed', 4)]",
           "concept": "query-parameters"
         },
         {
@@ -278,6 +311,41 @@
         }
       ],
       "solution": "def team_totals(con):\n    return con.execute(\n        \"SELECT p.team, COALESCE(SUM(s.points), 0) AS total \"\n        \"FROM players AS p LEFT JOIN scores AS s ON s.name = p.name \"\n        \"GROUP BY p.team ORDER BY total DESC, p.team\"\n    ).fetchall()\n"
+    },
+    {
+      "id": "search",
+      "kind": "transfer",
+      "title": "Transfer: searching a catalogue",
+      "body": "A `books (title, year)` table exists. Write `search(con, word)`, which returns the titles that contain `word` anywhere,\nignoring case, oldest first (ties by title), using SQL `LIKE` with the word passed as a parameter (build the pattern\n`%word%` in Python and pass it with `?`).",
+      "starter": "def search(con, word):\n    return [row[0] for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\")]\n",
+      "hints": [
+        "`con.execute(\"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",))`.",
+        "SQLite's LIKE ignores case for ASCII letters; return `[row[0] for row in ...]`.",
+        "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",)\n    )\n    return [row[0] for row in rows]\n"
+      ],
+      "tests": [
+        {
+          "name": "finds titles containing the word, oldest first",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\nassert search(con, 'dune') == ['Dune', 'Dune Messiah', 'The Dune Encyclopedia'], search(con, 'dune')",
+          "concept": "sql-queries"
+        },
+        {
+          "name": "no match gives an empty list",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\nassert search(con, 'zzz') == []",
+          "concept": "sql-tables"
+        },
+        {
+          "name": "a quote in the word is just data",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\ncon.execute('INSERT INTO books VALUES (?, ?)', (\"O'Brien's Year\", 2001))\nassert search(con, \"o'brien\") == [\"O'Brien's Year\"], search(con, \"o'brien\")",
+          "concept": "query-parameters"
+        },
+        {
+          "name": "the word is passed as a parameter",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE books (title TEXT, year INTEGER)')\ncon.executemany('INSERT INTO books VALUES (?, ?)', [('Dune', 1965), ('Dune Messiah', 1969), ('Emma', 1815), ('The Dune Encyclopedia', 1984), ('Kim', 1901)])\nclass _Recorder:\n    def __init__(self, con):\n        self.con, self.calls = con, []\n\n    def execute(self, sql, params=()):\n        self.calls.append((sql, params))\n        return self.con.execute(sql, params)\n\n    def cursor(self, *args, **kwargs):\n        rec, cur = self, self.con.cursor(*args, **kwargs)\n\n        class _Cursor:\n            def execute(self, sql, params=()):\n                rec.calls.append((sql, params))\n                cur.execute(sql, params)\n                return self\n\n            def __iter__(self):\n                return iter(cur)\n\n            def __next__(self):\n                return next(cur)\n\n            def __getattr__(self, name):\n                return getattr(cur, name)\n\n        return _Cursor()\n\n    def __enter__(self):\n        self.con.__enter__()\n        return self\n\n    def __exit__(self, *exc):\n        return self.con.__exit__(*exc)\n\n    def __getattr__(self, name):\n        return getattr(self.con, name)\n\nrec = _Recorder(con)\nassert search(rec, 'Kim') == ['Kim']\nassert not any('Kim' in sql for sql, _ in rec.calls), 'the word is part of the SQL text: pass the pattern as a ? parameter'\nassert any('Kim' in repr(params) for _, params in rec.calls), 'pass the pattern as a ? parameter'",
+          "concept": "query-parameters"
+        }
+      ],
+      "solution": "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE ? ORDER BY year, title\", (f\"%{word}%\",)\n    )\n    return [row[0] for row in rows]\n"
     },
     {
       "id": "check",
