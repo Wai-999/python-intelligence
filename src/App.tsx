@@ -256,11 +256,12 @@ export function App() {
                 // Without storage (some private modes) practice is still modelled for this visit, from this tab's help alone.
                 // If the stored level can't be read, another tab may have shown the solution: the attempt is kept, but
                 // conservatively counted as fully assisted (UNKNOWN_HELP), so it never passes for independent work.
+                const stamp = stampNow(); // the attempt's own time, not when the help level was read back
                 if (step && isExercise(step)) void (store ? store.getAssistance(l.id, sid) : Promise.resolve(0))
                   .catch((e) => { setStoreError(String(e?.message ?? e)); return UNKNOWN_HELP; })
                   .then((stored) => {
                     if (detail.generation !== generationRef.current) return;
-                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stampNow()));
+                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp));
                   });
               }}
               onQuiz={(sid, score, passed, missed, correct) => {

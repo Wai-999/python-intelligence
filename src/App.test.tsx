@@ -33,7 +33,7 @@ const fake: ProgressStore & { close(): void } = {
   setPosition: async () => { positions += 1; },
   appendEvents: async (evs) => { appended.push(...evs); },
   allEvents: async () => [],
-  getAssistance: async () => { if (failHelp) throw new Error("help store failed"); return 0; },
+  getAssistance: async () => { if (helpGate) await helpGate; if (failHelp) throw new Error("help store failed"); return 0; },
   raiseAssistance: () => {
     raised += 1;
     if (failHelp) return Promise.reject(new Error("help store failed"));
@@ -50,6 +50,7 @@ const fake: ProgressStore & { close(): void } = {
 };
 let openFails = false;
 let failHelp = false;
+let helpGate: Promise<void> | null = null;
 vi.mock("./progress/store", () => ({ openProgressStore: async () => { if (openFails) throw new Error("storage blocked"); return fake; } }));
 // Python runs report every check passed, tagged with the concepts of the step's own tests.
 let runTests: { name: string; concept?: string }[] = [];
@@ -57,7 +58,7 @@ vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "ready", onStatus: (
   run: async () => ({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: true, message: "" })) }) }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -347,5 +348,26 @@ describe("App", () => {
     await act(async () => { release(0); await Promise.resolve(); });
     await waitFor(() => expect(appended.length).toBeGreaterThan(first));
     expect(appended.filter((e) => e.task === "quiz").every((e) => e.assistance === 4)).toBe(true);
+  });
+
+  it("stamps an exercise attempt with its own time even when reading the help level is slow", async () => {
+    const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+    const circle = lesson.steps.findIndex((st) => st.id === "circle");
+    runTests = (lesson.steps[circle] as unknown as { tests: { name: string; concept?: string }[] }).tests;
+    const { App } = await import("./App");
+    location.hash = `#/lesson/py-values-names/${circle}`;
+    render(<App />);
+    const button = await screen.findByRole("button", { name: /Run checks/ });
+    await waitFor(() => expect(positions).toBeGreaterThan(0));
+    let open: () => void = () => {};
+    helpGate = new Promise((r) => { open = r; });
+    fireEvent.click(button);
+    await screen.findByText(/All checks pass/);
+    const attemptedBy = Date.now();
+    await new Promise((r) => setTimeout(r, 80)); // the read finishes well after the attempt
+    await act(async () => { open(); await Promise.resolve(); });
+    await waitFor(() => expect(appended.some((e) => e.stepId === "circle")).toBe(true));
+    for (const e of appended.filter((x) => x.stepId === "circle")) expect(Date.parse(e.at)).toBeLessThanOrEqual(attemptedBy);
+    runTests = [];
   });
 });
