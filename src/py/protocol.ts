@@ -8,6 +8,8 @@ export interface PyError {
   message: string;
   line: number | null;
   summary: string;
+  /** For a NameError: every name the learner's code binds, from Python's own parser (harness.bound_names). */
+  bound?: string[];
 }
 
 export interface TestResult {

@@ -60,3 +60,18 @@ test("the learner can postpone a step back", async ({ page }) => {
   const outcomes = (await exportEvents(page)).filter((e) => e.task === "intervention").map((d) => d.tags!.find((t) => t.startsWith("outcome:")));
   expect(outcomes).toEqual(["outcome:shown", "outcome:postponed"]);
 });
+
+test("in the browser, Python's own parser tells a misspelt name from a real NameError", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.goto(`./#/lesson/py-values-names/${at}`);
+  // A typo of a name bound in a way a hand-written scanner gets wrong (a walrus inside an f-string's format spec).
+  for (let i = 0; i < 3; i++) await runCode(page, 'w = 5\nprint(f"{3:{(width := w)}}")\nprint(widht)\n');
+  await expect(page.locator("section.meso")).toHaveCount(0);
+  // A name used but never bound anywhere: structural, three times, so the step back appears.
+  for (let i = 0; i < 3; i++) await runCode(page, "radius = 3\nprint(area_of_circle)\n");
+  await expect(page.locator("section.meso")).toContainText("NameError");
+  const events = await exportEvents(page);
+  const tags = events.filter((e) => e.task === "exercise").flatMap((e) => e.tags ?? []);
+  expect(tags).toContain("slip:name");
+  expect(tags).toContain("error:NameError");
+});

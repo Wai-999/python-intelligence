@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ExerciseStep, Lesson } from "../content/types";
 import type { PyError } from "../py/protocol";
 import { buildModel, ordered, type LearnerEvent } from "./model";
-import { boundNames, classifyError, codeOnly, logicalLines, statements, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
+import { classifyError, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
 import { exerciseEvents } from "./record";
 
 const err = (type: string, message = ""): PyError => ({ type, message, line: 1, summary: `${type}: ${message}` });
@@ -17,147 +17,49 @@ const T0 = Date.parse("2026-02-01T09:00:00Z");
 let k = 0;
 const at = (min: number) => ({ at: new Date(T0 + min * 60_000).toISOString(), id: () => `ev${++k}` });
 /** A failed run of E1 whose code raised `e` (classified as the app would). */
-const failWith = (e: PyError, min: number, code = "") => exerciseEvents(L, E1, null, 0, at(min), classifyError(e, code));
+const nameErr = (name: string, bound: string[]): PyError => ({ ...err("NameError", `name '${name}' is not defined`), bound });
+const failWith = (e: PyError, min: number) => exerciseEvents(L, E1, null, 0, at(min), classifyError(e));
 const failCheck = (min: number) => exerciseEvents(L, E1, [{ concept: "loops", passed: false }], 0, at(min));
 const pass = (step: ExerciseStep, min: number, help: 0 | 3 | 4 = 0) => exerciseEvents(L, step, [{ concept: step.tests[0]!.concept!, passed: true }], help, at(min));
 const now = (min: number) => T0 + min * 60_000;
 
 describe("classifying a failed run", () => {
   it("calls syntax errors and misspelt names slips, and other errors structural", () => {
-    expect(classifyError(err("SyntaxError", "expected ':'"), "")).toEqual(["slip:syntax"]);
-    expect(classifyError(err("IndentationError"), "")).toEqual(["slip:syntax"]);
-    expect(classifyError(err("NameError", "name 'totl' is not defined"), "total = 0\nprint(totl)")).toEqual(["slip:name"]);
-    expect(classifyError(err("NameError", "name 'Print' is not defined"), "Print(1)")).toEqual(["slip:name"]); // a built-in, wrong case
-    expect(classifyError(err("NameError", "name 'TOTAL' is not defined"), "total = 1\nprint(TOTAL)")).toEqual(["slip:name"]); // case only
-    // Not a near-miss of anything written: using a name that doesn't exist (yet) is structural.
-    expect(classifyError(err("NameError", "name 'result' is not defined"), "def f():\n    result = 1\nprint(result)")).toEqual(["error:NameError"]);
-    expect(classifyError(err("TypeError", "can only concatenate"), "")).toEqual(["error:TypeError"]);
-    expect(classifyError(err("TimeoutError"), "")).toEqual(["error:TimeoutError"]);
+    expect(classifyError(err("SyntaxError", "expected ':'"))).toEqual(["slip:syntax"]);
+    expect(classifyError(err("IndentationError"))).toEqual(["slip:syntax"]);
+    expect(classifyError(err("TabError"))).toEqual(["slip:syntax"]);
+    expect(classifyError(nameErr("totl", ["total"]))).toEqual(["slip:name"]);
+    expect(classifyError(nameErr("Print", []))).toEqual(["slip:name"]); // a built-in, wrong case
+    expect(classifyError(nameErr("TOTAL", ["total"]))).toEqual(["slip:name"]); // case only, however long
+    // Not a near-miss of anything the code binds: using a name that doesn't exist (yet) is structural.
+    expect(classifyError(nameErr("result", ["f"]))).toEqual(["error:NameError"]);
+    expect(classifyError(nameErr("value", []))).toEqual(["error:NameError"]);
+    // Without the names (an older worker), only built-ins can make it a slip.
+    expect(classifyError(err("NameError", "name 'totl' is not defined"))).toEqual(["error:NameError"]);
+    expect(classifyError(err("NameError", "name 'lenn' is not defined"))).toEqual(["slip:name"]);
+    expect(classifyError(err("UnboundLocalError", "cannot access local variable 'count'"))).toEqual(["error:UnboundLocalError"]);
+    expect(classifyError(err("TypeError", "can only concatenate"))).toEqual(["error:TypeError"]);
+    expect(classifyError(err("TimeoutError"))).toEqual(["error:TimeoutError"]);
   });
 
-  it("measures near-misses by edit distance, stricter for short names", () => {
+  it("measures near-misses by edit distance, stricter for short names and for built-ins", () => {
     expect(editDistance("totl", "total")).toBe(1);
     expect(editDistance("lenght", "length")).toBe(1); // a swap counts once
-    expect(looksLikeTypo("lenght", "length = 3")).toBe(true);
-    expect(looksLikeTypo("xy", "ab = 1")).toBe(false);
-    expect(looksLikeTypo("ab", "xb = 1")).toBe(true); // distance 1 on a short name
-    expect(looksLikeTypo("abcd", "xycd = 1")).toBe(false); // distance 2 is too far for a 4-letter name
-    expect(looksLikeTypo("abcde", "xycde = 1")).toBe(true);
+    expect(looksLikeTypo("lenght", ["length"])).toBe(true);
+    expect(looksLikeTypo("xy", ["ab"])).toBe(false);
+    expect(looksLikeTypo("ab", ["xb"])).toBe(true); // distance 1 on a short name
+    expect(looksLikeTypo("abcd", ["xycd"])).toBe(false); // distance 2 is too far for a 4-letter name
+    expect(looksLikeTypo("abcde", ["xycde"])).toBe(true);
+    expect(looksLikeTypo("nn", ["n"])).toBe(false); // single letters are too easy to be near
+    expect(looksLikeTypo("lenn", [])).toBe(true); // a built-in, one edit away
+    expect(looksLikeTypo("vale", [])).toBe(false); // "vars" is two edits away: too far for a built-in
+    expect(looksLikeTypo("total", ["total"])).toBe(false); // the same name isn't a near-miss of itself
   });
 
-  it("only counts names the code binds, never words in strings, comments or attribute names", () => {
-    expect(codeOnly('x = "values" # the values\ny = \'it\\\'s\'\nz = """doc\nvalues"""')).not.toMatch(/values|doc|it/);
-    const bound = boundNames("total, n = 0, 1\nfor i, item in enumerate(xs):\n    pass\ndef area(r, *rest, scale=2):\n    return r\nimport math as m\ncount += 1\nclass Box: pass\nif total == n: pass\n");
-    for (const name of ["total", "n", "i", "item", "area", "r", "rest", "scale", "m", "count", "Box"]) expect(bound).toContain(name);
-    for (const name of ["enumerate", "xs", "pass", "if", "math"]) expect(bound).not.toContain(name); // `import math as m` binds only m
-    const names = (code: string) => [...boundNames(code)].sort();
-    expect(names("total: int = 0\ncount: int\n")).toEqual(["count", "total"]); // annotated assignments
-    expect(names("[first, second] = pair\n(a, (b, *c)) = x\np = q = 0\n")).toEqual(["a", "b", "c", "first", "p", "q", "second"]);
-    expect(names("xs[i] = 1\nobj.attr = 2\ngrid[r][c] = 0\nd[k], e = 1, 2\n")).toEqual(["e"]); // subscriptions and attributes bind nothing
-    expect(names("print(x, sep=y)\nif n == 1: pass\nwhile n >= 0: pass\n")).toEqual([]); // keyword arguments and comparisons aren't assignments
-    // Several keyword arguments, alone or on an assignment's right-hand side, bind nothing but the target.
-    expect(names("plot(xs, color=c, width=2, label=name)\nresult = dict(a=1, b=2, c=3)\nf(g(x=1), y=2)\n")).toEqual(["result"]);
-    expect(names("def area(r, scale=1, unit='m'):\n    pass\n")).toEqual(["area", "r", "scale", "unit"]);
-    // Lambda parameters, global/nonlocal declarations and comprehension targets (nested and starred).
-    expect(names("square = lambda n, *more, k=2: n * k\n")).toEqual(["k", "more", "n", "square"]);
-    expect(names("def f():\n    global total, count\n    nonlocal step\n")).toEqual(["count", "f", "step", "total"]);
-    expect(names("pairs = [a + b for a, b in rows]\nflat = [x for (i, (j, *rest)) in grid for x in rest]\nsquares = {k: v * v for k, v in d.items()}\n"))
-      .toEqual(["a", "b", "flat", "i", "j", "k", "pairs", "rest", "squares", "v", "x"]);
-    expect(classifyError(err("NameError", "name 'labl' is not defined"), "plot(xs, color=c, label=name)\nprint(labl)")).toEqual(["error:NameError"]);
-    expect(classifyError(err("NameError", "name 'totl' is not defined"), "def f():\n    global total\n    print(totl)")).toEqual(["slip:name"]);
-    expect(classifyError(err("NameError", "name 'nmu' is not defined"), "sq = lambda num: nmu * num")).toEqual(["slip:name"]);
-    expect(names("import os.path\nimport numpy as np, json\nfrom os import path as p, sep\nfrom m import (a, b)\nfrom n import *\n"))
-      .toEqual(["a", "b", "json", "np", "os", "p", "sep"]);
-    expect(names("with open(f) as fh, open(g) as gh:\n    pass\nexcept ValueError as err:\n    pass\nif (n := 10) > 5: pass\n"))
-      .toEqual(["err", "fh", "gh", "n"]);
-    // An annotated name's misspelling is a slip; an undefined subscript index or an aliased module's original name isn't.
-    expect(classifyError(err("NameError", "name 'totl' is not defined"), "total: int = 0\nprint(totl)")).toEqual(["slip:name"]);
-    expect(classifyError(err("NameError", "name 'indx' is not defined"), "xs = [0]\nxs[index] = 1\nprint(indx)")).toEqual(["error:NameError"]);
-    expect(classifyError(err("NameError", "name 'mathh' is not defined"), "import math as m\nprint(mathh.pi)")).toEqual(["error:NameError"]);
-    // "value" is undefined and its only look-alikes are in a comment, a string, an attribute and a call: structural.
-    const code = '# add up the values\nprint("values")\ntotals = d.values()\nprint(value)';
-    expect(classifyError(err("NameError", "name 'value' is not defined"), code)).toEqual(["error:NameError"]);
-    expect(classifyError(err("NameError", "name 'value' is not defined"), "values = [1, 2]\nprint(value)")).toEqual(["slip:name"]);
-    expect(looksLikeTypo("lenn", "print(lenn(xs))")).toBe(true); // a built-in, one edit away
-    expect(looksLikeTypo("vale", "print(vale)")).toBe(false); // "vars" is two edits away: too far for a built-in
-  });
-
-  it("reads statements written over several lines as one", () => {
-    expect(logicalLines("a = f(1,\n      2)\nb = 3\nc = 1 + \\\n    2\n")).toEqual(["a = f(1,       2)", "b = 3", "c = 1 +      2", ""]);
-    const names = (code: string) => [...boundNames(code)].sort();
-    expect(names("plot(xs,\n     color=c,\n     label=name)\n")).toEqual([]); // keyword arguments over several lines
-    expect(names("result = dict(\n    a=1,\n    b=2,\n)\n")).toEqual(["result"]); // on an assignment's right-hand side
-    expect(names("def area(width,\n         height=1,\n         *,\n         unit=(\"m\", 1)):\n    pass\n")).toEqual(["area", "height", "unit", "width"]);
-    expect(names("total = first + \\\n    second\n")).toEqual(["total"]);
-    expect(names("def scale(size=(1, 2), factor=3, *rest):\n    pass\n")).toEqual(["factor", "rest", "scale", "size"]); // after a parenthesised default
-    expect(classifyError(err("NameError", "name 'labl' is not defined"), "plot(xs,\n     color=c,\n     label=name)\nprint(labl)")).toEqual(["error:NameError"]);
-    // A misspelt parameter of a multi-line def is a slip, and repeating it never triggers a step back.
-    const code = "def area(width,\n         height):\n    return wdith * height\n";
-    const tags = classifyError(err("NameError", "name 'wdith' is not defined"), code);
+  it("never steps back for a misspelt name, however it was bound", () => {
+    const tags = classifyError(nameErr("wdith", ["area", "height", "width"]));
     expect(tags).toEqual(["slip:name"]);
-    const runs = [1, 2, 3, 4, 5].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags));
-    expect(mesoTrigger(runs, "loops", now(30))).toBeNull();
-  });
-
-  it("blanks strings and comments in one pass, so quotes inside them start nothing", () => {
-    const names = (code: string) => [...boundNames(code)].sort();
-    expect(names("# don't use ''' here\ntotal = 0\n")).toEqual(["total"]); // a quote in a comment
-    expect(names("s = \"'''\"\ntotal = 1\nt = '\"\"\"'\ncount = 2\n")).toEqual(["count", "s", "t", "total"]); // triple quotes inside strings
-    expect(names("doc = \"\"\"first\nwidth = 3\n\"\"\"\nheight = 2\n")).toEqual(["doc", "height"]); // text inside a real triple-quoted string
-    expect(names("msg = f\"{x}\" + rb'y'\n")).toEqual(["msg"]); // prefixes are part of the string
-    expect(codeOnly("a = 'it\\'s'  # done\nb = 2")).toBe("a =                \nb = 2");
-    expect(codeOnly("x = 'open\ny = 1")).toBe("x =      \ny = 1"); // an unterminated string ends at the line
-    expect(classifyError(err("NameError", "name 'totl' is not defined"), "# don't use ''' here\ntotal = 0\nprint(totl)")).toEqual(["slip:name"]);
-  });
-
-  it("finds assignments after semicolons and in one-line suites", () => {
-    expect(statements("if ready: total = 0; count = 1")).toEqual(["if ready:", "total = 0", "count = 1"]);
-    expect(statements("for i in r: acc = i")).toEqual(["for i in r:", "acc = i"]);
-    expect(statements("f = lambda x: x")).toEqual(["f = lambda x: x"]); // a lambda's colon isn't a suite
-    expect(statements("if d == {1: 2}: hit = 1")).toEqual(["if d == {1: 2}:", "hit = 1"]);
-    const names = (code: string) => [...boundNames(code)].sort();
-    expect(names("total = 0; count = 1\n")).toEqual(["count", "total"]);
-    expect(names("if ready: flag = 1\nelse: other = 2\nwhile n: step = n\ntry: value = 1\nexcept E as e: pass\nwith open(p) as fh: data = fh.read()\nclass C: size = 3\n"))
-      .toEqual(["C", "data", "e", "fh", "flag", "other", "size", "step", "value"]);
-    expect(names("for i in r: acc = i\ndef f(a): return a\n")).toEqual(["a", "acc", "f", "i"]);
-    // Three runs of the same ordinary typo in these forms are slips, so no step back.
-    for (const code of ["if ready: total = 0\nprint(totl)", "total = 0; count = 1\nprint(totl)", "# it's ''' odd\ntotal = 0\nprint(totl)"]) {
-      const tags = classifyError(err("NameError", "name 'totl' is not defined"), code);
-      expect(tags).toEqual(["slip:name"]);
-      expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
-    }
-  });
-
-  it("finds the suite after a compound header that contains a lambda", () => {
-    expect(statements("if lambda: 0: flag = 1")).toEqual(["if lambda: 0:", "flag = 1"]);
-    expect(statements("while check(lambda x: x): n = n - 1")).toEqual(["while check(lambda x: x):", "n = n - 1"]);
-    expect(statements("if lambda a: lambda: a: total = 1")).toEqual(["if lambda a: lambda: a:", "total = 1"]);
-    const code = "if lambda: 0: total = 1\nprint(totl)";
-    expect([...boundNames(code)]).toEqual(["total"]);
-    const tags = classifyError(err("NameError", "name 'totl' is not defined"), code);
-    expect(tags).toEqual(["slip:name"]);
-    expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
-  });
-
-  it("keeps the code inside f-string replacement fields, and only that", () => {
-    const kept = (code: string, ...keep: string[]) => {
-      const out = codeOnly(code);
-      expect(out.length).toBe(code.length);
-      for (const k of keep) expect(out).toContain(k);
-      return out;
-    };
-    expect(kept('s = f"total {(n := 5)} done"', "((n := 5))")).not.toMatch(/total|done/);
-    expect(kept('s = f"{{literal}} {x!r:>3}"', "(x!r:>3)")).not.toMatch(/literal|\{|\}/);
-    expect(kept('s = f"{d["key"]} {g(f"{y}")}"', "(d[", "(g(f", "(y)")).not.toMatch(/key/);
-    expect(codeOnly('s = "not {(n := 5)} an f-string"').trim()).toBe("s ="); // only an f-string has fields
-    const names = (code: string) => [...boundNames(code)].sort();
-    expect(names('print(f"{(count := 3)} items")\n')).toEqual(["count"]);
-    expect(names('s = f"{d["k"]}"\ntotal = 1\n')).toEqual(["s", "total"]); // same-quote nesting (Python 3.12) doesn't end the string
-    expect(names('if f"{x:3}": flag = 1\n')).toEqual(["flag"]); // a format spec's colon is inside the field, not the header's
-    const code = 'print(f"{(count := 3)} items")\nprint(cuont)';
-    const tags = classifyError(err("NameError", "name 'cuont' is not defined"), code);
-    expect(tags).toEqual(["slip:name"]);
-    expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
+    expect(mesoTrigger([1, 2, 3, 4, 5].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(30))).toBeNull();
   });
 
   it("tags failed checks per concept on the events", () => {

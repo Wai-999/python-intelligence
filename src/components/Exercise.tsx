@@ -111,7 +111,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed })) : null,
         assistance: helped.current,
         generation: startedIn,
-        errorTags: r.error ? classifyError(r.error, code) : [],
+        errorTags: r.error ? classifyError(r.error) : [],
       });
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,

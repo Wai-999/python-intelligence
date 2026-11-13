@@ -1,6 +1,7 @@
 # Single source of truth for executing learner code and lesson tests.
 # Loaded verbatim into Pyodide (src/py/worker.ts) AND imported by scripts/validate_content.py under CPython,
 # so a lesson that validates at build time behaves the same in the browser.
+import ast as _ast
 import json as _json
 import os as _os
 import tempfile as _tempfile
@@ -9,7 +10,43 @@ import traceback as _traceback
 LEARNER_FILE = "<learner>"
 
 
-def _error_info(exc):
+def bound_names(code):
+    """Every name the code binds anywhere, read with Python's own parser (so every syntax form is handled exactly).
+
+    Used to tell a misspelt name (a slip) from a structural NameError: an undefined name close to one of these is
+    probably a typo. Assignment, loop, comprehension, with/except and match targets, walrus names, function, lambda
+    and class names and parameters (including type parameters), the names imports bind, and global/nonlocal names.
+    """
+    try:
+        tree = _ast.parse(code)
+    except SyntaxError:
+        return []
+    names = set()
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.Name) and isinstance(node.ctx, _ast.Store):
+            names.add(node.id)
+        elif isinstance(node, _ast.arg):
+            names.add(node.arg)
+        elif isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, (_ast.Import, _ast.ImportFrom)):
+            for alias in node.names:
+                if alias.name != "*":
+                    names.add(alias.asname or alias.name.split(".")[0])
+        elif isinstance(node, (_ast.Global, _ast.Nonlocal)):
+            names.update(node.names)
+        elif isinstance(node, _ast.ExceptHandler) and node.name:
+            names.add(node.name)
+        elif isinstance(node, (_ast.MatchAs, _ast.MatchStar)) and node.name:
+            names.add(node.name)
+        elif isinstance(node, _ast.MatchMapping) and node.rest:
+            names.add(node.rest)
+        elif type(node).__name__ in ("TypeVar", "ParamSpec", "TypeVarTuple"):  # Python 3.12 type parameters
+            names.add(node.name)
+    return sorted(names)
+
+
+def _error_info(exc, code=None):
     tb = _traceback.extract_tb(exc.__traceback__)
     line = None
     for frame in reversed(tb):
@@ -18,12 +55,15 @@ def _error_info(exc):
             break
     if line is None and isinstance(exc, SyntaxError):
         line = exc.lineno
-    return {
+    info = {
         "type": type(exc).__name__,
         "message": str(exc),
         "line": line,
         "summary": "".join(_traceback.format_exception_only(type(exc), exc)).strip(),
     }
+    if type(exc) is NameError and code is not None:
+        info["bound"] = bound_names(code)
+    return info
 
 
 def run_learner(code, tests=None):
@@ -49,7 +89,7 @@ def _run(code, tests):
         exec(compile(code, LEARNER_FILE, "exec"), ns)
     except BaseException as exc:  # includes SystemExit / KeyboardInterrupt raised by learner code
         result["ok"] = False
-        result["error"] = _error_info(exc)
+        result["error"] = _error_info(exc, code)
         return result
     for test in tests or []:
         name = test["name"]

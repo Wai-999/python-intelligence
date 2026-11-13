@@ -38,241 +38,6 @@ export const PY_BUILTINS = [
   "eval", "exec", "compile", "globals", "locals", "open", "breakpoint", "help", "exit", "quit", "copyright", "credits", "license",
 ];
 
-/**
- * The code with string literals and comments blanked out, so words inside them are never taken for names (a prefix
- * letter such as f or rb may remain; it can never stand where a name is bound). One left-to-right scan, as Python's
- * tokenizer reads it: a quote inside a comment, or triple quotes inside an ordinary string, start nothing. Newlines are
- * kept, so line structure is unchanged.
- */
-export function codeOnly(code: string): string {
-  let out = "";
-  for (let i = 0; i < code.length;) {
-    const ch = code[i]!;
-    if (ch === "#") {
-      const end = code.indexOf("\n", i);
-      const stop = end === -1 ? code.length : end;
-      out += blank(code.slice(i, stop));
-      i = stop;
-    } else if (ch === "'" || ch === '"') {
-      const prefix = /(?<![A-Za-z0-9_])[rRbBuUfF]{1,2}$/.exec(out)?.[0] ?? "";
-      const str = scanString(code, i, /f/i.test(prefix));
-      out += str.text;
-      i = str.end;
-    } else { out += ch; i++; }
-  }
-  return out;
-}
-
-const blank = (text: string) => text.replace(/[^\n]/g, " ");
-
-/**
- * Scans the string literal starting at `i`: its text blanked, except that an f-string's replacement fields keep their
- * code (an expression there can bind a name, as in `f"{(n := 5)}"`), wrapped in parentheses so nesting is kept, with
- * any strings inside them scanned in turn. `{{` and `}}` are literal braces.
- */
-function scanString(code: string, i: number, isF: boolean): { end: number; text: string } {
-  const ch = code[i]!;
-  const q = code.startsWith(ch.repeat(3), i) ? 3 : 1;
-  let text = " ".repeat(q);
-  let k = i + q;
-  while (k < code.length) {
-    const c = code[k]!;
-    if (c === "\\") { text += blank(code.slice(k, k + 2)); k += 2; continue; }
-    if (q === 3 ? code.startsWith(ch.repeat(3), k) : c === ch) return { end: k + q, text: text + " ".repeat(q) };
-    if (q === 1 && c === "\n") return { end: k, text }; // an unterminated string ends at the line
-    if (isF && (code.startsWith("{{", k) || code.startsWith("}}", k))) { text += "  "; k += 2; continue; }
-    if (isF && c === "{") {
-      text += "(";
-      k++;
-      for (let depth = 1; k < code.length && depth > 0;) {
-        const d = code[k]!;
-        if (d === "'" || d === '"') {
-          const innerF = /(?<![A-Za-z0-9_])[rRbBuUfF]{0,2}$/.exec(code.slice(Math.max(0, k - 2), k))?.[0] ?? "";
-          const inner = scanString(code, k, /f/i.test(innerF));
-          text += inner.text;
-          k = inner.end;
-          continue;
-        }
-        if (d === "{") depth++;
-        else if (d === "}" && --depth === 0) { text += ")"; k++; break; }
-        text += d;
-        k++;
-      }
-      continue;
-    }
-    text += c === "\n" ? "\n" : " ";
-    k++;
-  }
-  return { end: k, text };
-}
-
-const KEYWORDS = new Set(("and as assert async await break class continue def del elif else except finally for from global if import "
-  + "in is lambda match case nonlocal not or pass raise return try while with yield").split(" "));
-const IDENT = /^[A-Za-z_]\w*$/;
-
-/**
- * Python's logical lines: physical lines joined while brackets are open or after a trailing backslash, so a call or a
- * `def` written over several lines is read as one statement. Expects code with strings and comments blanked.
- */
-export function logicalLines(src: string): string[] {
-  const lines: string[] = [];
-  let depth = 0, current = "";
-  for (const physical of src.split("\n")) {
-    current += (current ? " " : "") + physical.replace(/\\\s*$/, "");
-    for (const ch of physical) {
-      if ("([{".includes(ch)) depth++;
-      else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
-    }
-    if (depth === 0 && !/\\\s*$/.test(physical)) { lines.push(current); current = ""; }
-  }
-  if (current) lines.push(current);
-  return lines;
-}
-
-/** The text inside the parentheses that open at `open` (balanced), or the rest of the text if they never close. */
-function insideParens(text: string, open: number): string {
-  let depth = 0;
-  for (let i = open; i < text.length; i++) {
-    if (text[i] === "(") depth++;
-    else if (text[i] === ")" && --depth === 0) return text.slice(open + 1, i);
-  }
-  return text.slice(open + 1);
-}
-
-const COMPOUND = /^(?:if|elif|else|for|while|def|class|with|try|except|finally|async\s+(?:for|with|def))\b/;
-
-/**
- * The simple statements of a logical line: split at top-level semicolons, and after a compound statement's header colon
- * (`if ready: total = 0`, `for x in xs: acc = x`), so assignments in a one-line suite are seen.
- */
-export function statements(line: string): string[] {
-  const out: string[] = [];
-  for (const part of splitTop(line, ";")) {
-    const stmt = part.trim();
-    if (!stmt) continue;
-    const colon = COMPOUND.test(stmt) ? topLevelColon(stmt) : -1;
-    if (colon === -1) { out.push(stmt); continue; }
-    out.push(stmt.slice(0, colon + 1));
-    out.push(...statements(stmt.slice(colon + 1)));
-  }
-  return out;
-}
-
-/**
- * The colon that ends a compound statement's header: the first one outside brackets that isn't part of `:=` and doesn't
- * belong to a top-level `lambda` (each such lambda takes the next colon, as in `if lambda: 0: flag = 1`), or -1.
- */
-function topLevelColon(text: string): number {
-  let depth = 0, lambdas = 0;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i]!;
-    if ("([{".includes(ch)) depth++;
-    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
-    else if (depth === 0 && /^lambda\b/.test(text.slice(i)) && !/[A-Za-z0-9_]/.test(text[i - 1] ?? "")) lambdas++;
-    else if (ch === ":" && depth === 0 && text[i + 1] !== "=") {
-      if (lambdas > 0) { lambdas--; continue; }
-      return i;
-    }
-  }
-  return -1;
-}
-
-/** Splits `text` at `sep` characters that aren't inside brackets. */
-function splitTop(text: string, sep: string): string[] {
-  const parts: string[] = [];
-  let depth = 0, start = 0;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i]!;
-    if ("([{".includes(ch)) depth++;
-    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
-    else if (depth === 0 && ch === sep) { parts.push(text.slice(start, i)); start = i + 1; }
-  }
-  parts.push(text.slice(start));
-  return parts;
-}
-
-/**
- * Positions of assignment `=` at bracket depth 0 (not ==, !=, <=, >=, :=). An `=` inside brackets is a keyword
- * argument or default: with two of them (`f(a=1, b=2)`) the text between would otherwise look like a target `1, b`.
- */
-function assignmentSplits(line: string): number[] {
-  const at: number[] = [];
-  let depth = 0;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]!;
-    if ("([{".includes(ch)) depth++;
-    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
-    else if (ch === "=" && depth === 0 && line[i + 1] !== "=" && !"=!<>:".includes(line[i - 1] ?? "")) at.push(i);
-  }
-  return at;
-}
-
-/** The names a target list binds: `a`, `a, b`, `[a, *rest]`, `(a, (b, c))`; subscriptions and attributes bind nothing. */
-function targetNames(target: string, into: Set<string>) {
-  for (let part of splitTop(target, ",")) {
-    part = part.trim().replace(/^\*/, "").trim();
-    const wrapped = /^[([]([\s\S]*)[)\]]$/.exec(part);
-    if (wrapped && splitTop(part.slice(1, -1), ",").length >= 1 && !/^[A-Za-z_]\w*\s*\[/.test(part)) { targetNames(wrapped[1]!, into); continue; }
-    if (IDENT.test(part) && !KEYWORDS.has(part)) into.add(part);
-  }
-}
-
-/** Names the code binds: assignment, annotation, loop and comprehension targets, walrus names, functions and their
- *  parameters, lambda parameters, classes, the names imports bind, `with`/`except ... as`, and global/nonlocal. */
-export function boundNames(code: string): Set<string> {
-  const src = codeOnly(code);
-  const names = new Set<string>();
-  for (const line of logicalLines(src).flatMap(statements)) {
-    if (!line) continue;
-    // import a.b as c, d  ->  c, d (Python binds the alias, or the first part of a dotted name)
-    let m = /^import\s+(.+)$/.exec(line);
-    if (m) {
-      for (const part of m[1]!.split(",")) {
-        const alias = /\bas\s+([A-Za-z_]\w*)\s*$/.exec(part);
-        const first = /^\s*([A-Za-z_]\w*)/.exec(part);
-        if (alias) names.add(alias[1]!); else if (first) names.add(first[1]!);
-      }
-      continue;
-    }
-    // from m import a, b as c  ->  a, c
-    m = /^from\s+[\w.]+\s+import\s+\(?([^)]*)\)?$/.exec(line);
-    if (m) {
-      for (const part of m[1]!.split(",")) {
-        const alias = /\bas\s+([A-Za-z_]\w*)\s*$/.exec(part);
-        const name = /^\s*([A-Za-z_]\w*)\s*$/.exec(part);
-        if (alias) names.add(alias[1]!); else if (name) names.add(name[1]!);
-      }
-      continue;
-    }
-    if (/^(?:with|except)\b/.test(line) || /^async\s+with\b/.test(line))
-      for (const a of line.matchAll(/\bas\s+([A-Za-z_]\w*)/g)) names.add(a[1]!);
-    for (const g of line.matchAll(/^(?:global|nonlocal)\s+(.+)$/g)) targetNames(g[1]!, names);
-    for (const d of line.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(/g)) {
-      names.add(d[1]!);
-      for (const p of splitTop(insideParens(line, d.index! + d[0].length - 1), ",")) {
-        const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p);
-        if (n) names.add(n[1]!);
-      }
-    }
-    for (const c of line.matchAll(/\bclass\s+([A-Za-z_]\w*)/g)) names.add(c[1]!);
-    for (const f of line.matchAll(/\bfor\s+(.+?)\s+in\b/g)) targetNames(f[1]!, names);
-    for (const l of line.matchAll(/\blambda\s+([^:]*):/g)) for (const p of splitTop(l[1]!, ",")) {
-      const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p); if (n) names.add(n[1]!);
-    }
-    for (const w of line.matchAll(/([A-Za-z_]\w*)\s*:=/g)) names.add(w[1]!);
-    if (/^(?:if|elif|while|return|assert|del|raise|yield)\b/.test(line)) continue;
-    // Assignment: every segment before the last top-level "=" is a target (a = b = 0); "x: int = 0" and "x: int" too.
-    const splits = assignmentSplits(line);
-    const segments = splits.length ? [line.slice(0, splits[0]!), ...splits.slice(1).map((p, k) => line.slice(splits[k]! + 1, p))] : [];
-    const augmented = /^([A-Za-z_]\w*)\s*(?:[-+*/%&|^@]|\/\/|\*\*|<<|>>)=/.exec(line);
-    if (augmented) { names.add(augmented[1]!); continue; }
-    const annotated = /^([A-Za-z_]\w*)\s*:(?!=)/.exec(line);
-    if (annotated && !KEYWORDS.has(annotated[1]!)) { names.add(annotated[1]!); continue; }
-    for (const seg of segments) targetNames(seg, names);
-  }
-  return names;
-}
-
 /** Optimal string alignment distance (Levenshtein plus adjacent swaps). */
 export function editDistance(a: string, b: string): number {
   const d = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
@@ -286,25 +51,26 @@ export function editDistance(a: string, b: string): number {
 
 /**
  * True when an undefined name looks like a misspelling of a name the code binds (within 1 edit for names up to 4
- * letters, 2 for longer ones) or of a built-in (within 1 edit), or differs from one only in case. Words in strings,
- * comments and attribute names (`.values`) don't count: they aren't names the learner could have meant.
+ * letters, 2 for longer ones) or of a built-in (within 1 edit), or differs from one only in case. `bound` comes from
+ * Python's own parser (harness.bound_names), so strings, comments and attribute names never count.
  */
-export function looksLikeTypo(name: string, code: string): boolean {
+export function looksLikeTypo(name: string, bound: readonly string[]): boolean {
   const near = (k: string, limit: number) => k !== name && (k.toLowerCase() === name.toLowerCase() || (k.length > 1 && editDistance(name, k) <= limit));
   const limit = name.length <= 4 ? 1 : 2;
-  return [...boundNames(code)].some((k) => near(k, limit)) || PY_BUILTINS.some((k) => near(k, 1));
+  return bound.some((k) => near(k, limit)) || PY_BUILTINS.some((k) => near(k, 1));
 }
 
 /**
  * Diagnostic tags for a failed run of the learner's code (never for an infrastructure failure, which records nothing).
  * "slip:syntax" / "slip:name" are surface slips; "error:<Type>" is a runtime error of another kind, including a NameError
  * that isn't a near-miss (using a name before it exists). Failed checks are tagged per concept by exerciseEvents.
+ * A NameError carries the names the code binds (error.bound, from the harness); without them only built-ins count.
  */
-export function classifyError(error: PyError, code: string): string[] {
+export function classifyError(error: PyError): string[] {
   if (error.type === "SyntaxError" || error.type === "IndentationError" || error.type === "TabError") return [`${SLIP_TAG_PREFIX}syntax`];
   if (error.type === "NameError") {
     const name = /name '([^']+)' is not defined/.exec(error.message)?.[1];
-    if (name && looksLikeTypo(name, code)) return [`${SLIP_TAG_PREFIX}name`];
+    if (name && looksLikeTypo(name, error.bound ?? [])) return [`${SLIP_TAG_PREFIX}name`];
   }
   return [`error:${error.type}`];
 }
