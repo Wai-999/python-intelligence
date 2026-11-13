@@ -46,7 +46,6 @@ export const PY_BUILTINS = [
  */
 export function codeOnly(code: string): string {
   let out = "";
-  const blank = (text: string) => text.replace(/[^\n]/g, " ");
   for (let i = 0; i < code.length;) {
     const ch = code[i]!;
     if (ch === "#") {
@@ -55,19 +54,56 @@ export function codeOnly(code: string): string {
       out += blank(code.slice(i, stop));
       i = stop;
     } else if (ch === "'" || ch === '"') {
-      const triple = code.startsWith(ch.repeat(3), i);
-      let j = i + (triple ? 3 : 1);
-      while (j < code.length) {
-        if (code[j] === "\\") { j += 2; continue; }
-        if (triple ? code.startsWith(ch.repeat(3), j) : code[j] === ch) { j += triple ? 3 : 1; break; }
-        if (!triple && code[j] === "\n") break; // an unterminated string ends at the line
-        j++;
-      }
-      out += blank(code.slice(i, j));
-      i = j;
+      const prefix = /(?<![A-Za-z0-9_])[rRbBuUfF]{1,2}$/.exec(out)?.[0] ?? "";
+      const str = scanString(code, i, /f/i.test(prefix));
+      out += str.text;
+      i = str.end;
     } else { out += ch; i++; }
   }
   return out;
+}
+
+const blank = (text: string) => text.replace(/[^\n]/g, " ");
+
+/**
+ * Scans the string literal starting at `i`: its text blanked, except that an f-string's replacement fields keep their
+ * code (an expression there can bind a name, as in `f"{(n := 5)}"`), wrapped in parentheses so nesting is kept, with
+ * any strings inside them scanned in turn. `{{` and `}}` are literal braces.
+ */
+function scanString(code: string, i: number, isF: boolean): { end: number; text: string } {
+  const ch = code[i]!;
+  const q = code.startsWith(ch.repeat(3), i) ? 3 : 1;
+  let text = " ".repeat(q);
+  let k = i + q;
+  while (k < code.length) {
+    const c = code[k]!;
+    if (c === "\\") { text += blank(code.slice(k, k + 2)); k += 2; continue; }
+    if (q === 3 ? code.startsWith(ch.repeat(3), k) : c === ch) return { end: k + q, text: text + " ".repeat(q) };
+    if (q === 1 && c === "\n") return { end: k, text }; // an unterminated string ends at the line
+    if (isF && (code.startsWith("{{", k) || code.startsWith("}}", k))) { text += "  "; k += 2; continue; }
+    if (isF && c === "{") {
+      text += "(";
+      k++;
+      for (let depth = 1; k < code.length && depth > 0;) {
+        const d = code[k]!;
+        if (d === "'" || d === '"') {
+          const innerF = /(?<![A-Za-z0-9_])[rRbBuUfF]{0,2}$/.exec(code.slice(Math.max(0, k - 2), k))?.[0] ?? "";
+          const inner = scanString(code, k, /f/i.test(innerF));
+          text += inner.text;
+          k = inner.end;
+          continue;
+        }
+        if (d === "{") depth++;
+        else if (d === "}" && --depth === 0) { text += ")"; k++; break; }
+        text += d;
+        k++;
+      }
+      continue;
+    }
+    text += c === "\n" ? "\n" : " ";
+    k++;
+  }
+  return { end: k, text };
 }
 
 const KEYWORDS = new Set(("and as assert async await break class continue def del elif else except finally for from global if import "
@@ -122,14 +158,21 @@ export function statements(line: string): string[] {
   return out;
 }
 
-/** The first colon outside brackets that isn't part of `:=`, or -1. */
+/**
+ * The colon that ends a compound statement's header: the first one outside brackets that isn't part of `:=` and doesn't
+ * belong to a top-level `lambda` (each such lambda takes the next colon, as in `if lambda: 0: flag = 1`), or -1.
+ */
 function topLevelColon(text: string): number {
-  let depth = 0;
+  let depth = 0, lambdas = 0;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]!;
     if ("([{".includes(ch)) depth++;
     else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
-    else if (ch === ":" && depth === 0 && text[i + 1] !== "=") return i;
+    else if (depth === 0 && /^lambda\b/.test(text.slice(i)) && !/[A-Za-z0-9_]/.test(text[i - 1] ?? "")) lambdas++;
+    else if (ch === ":" && depth === 0 && text[i + 1] !== "=") {
+      if (lambdas > 0) { lambdas--; continue; }
+      return i;
+    }
   }
   return -1;
 }

@@ -128,6 +128,38 @@ describe("classifying a failed run", () => {
     }
   });
 
+  it("finds the suite after a compound header that contains a lambda", () => {
+    expect(statements("if lambda: 0: flag = 1")).toEqual(["if lambda: 0:", "flag = 1"]);
+    expect(statements("while check(lambda x: x): n = n - 1")).toEqual(["while check(lambda x: x):", "n = n - 1"]);
+    expect(statements("if lambda a: lambda: a: total = 1")).toEqual(["if lambda a: lambda: a:", "total = 1"]);
+    const code = "if lambda: 0: total = 1\nprint(totl)";
+    expect([...boundNames(code)]).toEqual(["total"]);
+    const tags = classifyError(err("NameError", "name 'totl' is not defined"), code);
+    expect(tags).toEqual(["slip:name"]);
+    expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
+  });
+
+  it("keeps the code inside f-string replacement fields, and only that", () => {
+    const kept = (code: string, ...keep: string[]) => {
+      const out = codeOnly(code);
+      expect(out.length).toBe(code.length);
+      for (const k of keep) expect(out).toContain(k);
+      return out;
+    };
+    expect(kept('s = f"total {(n := 5)} done"', "((n := 5))")).not.toMatch(/total|done/);
+    expect(kept('s = f"{{literal}} {x!r:>3}"', "(x!r:>3)")).not.toMatch(/literal|\{|\}/);
+    expect(kept('s = f"{d["key"]} {g(f"{y}")}"', "(d[", "(g(f", "(y)")).not.toMatch(/key/);
+    expect(codeOnly('s = "not {(n := 5)} an f-string"').trim()).toBe("s ="); // only an f-string has fields
+    const names = (code: string) => [...boundNames(code)].sort();
+    expect(names('print(f"{(count := 3)} items")\n')).toEqual(["count"]);
+    expect(names('s = f"{d["k"]}"\ntotal = 1\n')).toEqual(["s", "total"]); // same-quote nesting (Python 3.12) doesn't end the string
+    expect(names('if f"{x:3}": flag = 1\n')).toEqual(["flag"]); // a format spec's colon is inside the field, not the header's
+    const code = 'print(f"{(count := 3)} items")\nprint(cuont)';
+    const tags = classifyError(err("NameError", "name 'cuont' is not defined"), code);
+    expect(tags).toEqual(["slip:name"]);
+    expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
+  });
+
   it("tags failed checks per concept on the events", () => {
     const [loops, ranges] = exerciseEvents({ ...L, steps: [ex("two", ["loops", "ranges"])] } as Lesson, ex("two", ["loops", "ranges"]),
       [{ concept: "loops", passed: false }, { concept: "ranges", passed: true }], 0, at(0));
