@@ -281,7 +281,8 @@ export function App() {
                     .catch((e) => { setStoreError(String(e?.message ?? e)); return UNKNOWN_HELP; })
                     .then((before) => {
                       if (startedIn !== generationRef.current) return; // progress was replaced meanwhile
-                      record(quizEvents(l, step, correct, stamp, before >= 4 ? 4 : 0));
+                      // This tab's own record counts too: a reveal whose save failed still happened.
+                      record(quizEvents(l, step, correct, stamp, Math.max(before, shownHere) >= 4 ? 4 : 0));
                     })
                     .catch((e) => setStoreError(String(e?.message ?? e)));
                 }

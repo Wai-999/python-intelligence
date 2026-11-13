@@ -322,4 +322,30 @@ describe("App", () => {
     expect(appended.filter((e) => e.task === "quiz").every((e) => e.assistance === 4)).toBe(true);
     runTests = [];
   });
+
+  it("still counts a quiz retry as assisted after a failed save of the reveal, once storage recovers", async () => {
+    const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+    const quizAt = lesson.steps.findIndex((st) => st.kind === "quiz");
+    const quiz = lesson.steps[quizAt] as QuizStep;
+    const { App } = await import("./App");
+    location.hash = `#/lesson/py-values-names/${quizAt}`;
+    render(<App />);
+    const submit = async (right: boolean) => {
+      const sets = await waitFor(() => { const f = document.querySelectorAll("fieldset.question"); expect(f.length).toBe(quiz.questions.length); return f; });
+      quiz.questions.forEach((q, i) => fireEvent.click(sets[i]!.querySelectorAll("input[type=radio]")[right ? q.answer : (q.answer + 1) % q.choices.length]!));
+      fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
+      await screen.findByText(right ? /Passed!/ : /You need/);
+    };
+    failHelp = true; // the save of the first reveal fails
+    await submit(false);
+    await waitFor(() => expect(appended.some((e) => e.task === "quiz")).toBe(true));
+    const first = appended.length;
+    failHelp = false; // storage recovers, still holding level 0 for this quiz
+    await act(async () => { location.hash = "#/"; dispatchEvent(new HashChangeEvent("hashchange")); });
+    await act(async () => { location.hash = `#/lesson/py-values-names/${quizAt}`; dispatchEvent(new HashChangeEvent("hashchange")); });
+    await submit(true);
+    await act(async () => { release(0); await Promise.resolve(); });
+    await waitFor(() => expect(appended.length).toBeGreaterThan(first));
+    expect(appended.filter((e) => e.task === "quiz").every((e) => e.assistance === 4)).toBe(true);
+  });
 });
