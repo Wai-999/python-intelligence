@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openProgressStore, ValidationError } from "./store";
+import { openProgressStore, StaleProgressError, ValidationError } from "./store";
 import { ImportError, type LessonProgress } from "./types";
 import { POLICY_VERSION, type LearnerEvent } from "../learner/model";
 
@@ -26,6 +26,29 @@ function contents<T extends { exportedAt: string }>(value: T) {
 }
 
 describe("IndexedDB progress store", () => {
+  it.each(["import", "reset"] as const)("refuses writes from a view built before another tab's %s, until it reloads", async (kind) => {
+    const name = `progress-test-epoch-${Date.now()}-${serial++}`;
+    const a = await open(name);
+    await a.load();
+    await seed(a);
+    const b = await open(name);
+    const replacement = { ...(await b.exportAll()), lessons: [{ ...lesson, lessonId: "loops" }], drafts: {}, position: null };
+    if (kind === "import") await b.importAll(replacement); else await b.clear();
+    const after = contents(await b.exportAll());
+    const ev: LearnerEvent = { id: "late", at: "2026-01-02T00:00:00.000Z", lessonId: "functions", stepId: "exercise", task: "exercise",
+      concept: "calls", passed: true, assistance: 0, policy: POLICY_VERSION };
+    for (const write of [() => a.putLesson(lesson), () => a.putDraft("functions", "exercise", "x"), () => a.setPosition("functions", 1),
+      () => a.appendEvents([ev]), () => a.raiseAssistance("functions", "exercise", 3)]) await expect(write()).rejects.toBeInstanceOf(StaleProgressError);
+    await a.exportAll(); // exporting doesn't adopt the new token: only load() does
+    await expect(a.putLesson(lesson)).rejects.toBeInstanceOf(StaleProgressError);
+    expect(contents(await b.exportAll())).toEqual(after); // nothing from the stale view got in
+    await a.load();
+    await a.putLesson({ ...lesson, lessonId: "strings" });
+    expect((await b.allLessons()).map((l) => l.lessonId)).toContain("strings");
+    await b.putLesson({ ...lesson, lessonId: "tuples" }); // the replacing store adopted its own token
+  });
+
+
   it("round-trips lessons, drafts and the exact resume position", async () => {
     const store = await open();
     expect(await store.getLesson("missing")).toBeUndefined();

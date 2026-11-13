@@ -65,6 +65,12 @@ export interface ProgressStore {
   /** Atomically raises the stored level (never lowers it) and returns the level stored before, so concurrent tabs agree. */
   raiseAssistance(lessonId: string, stepId: string, level: number): Promise<number>;
   exportAll(): Promise<ProgressExport>;
+  /**
+   * Like exportAll, and also adopts the stored replacement token from the same transaction: this store's writes are
+   * accepted only while that token is current. An import or reset (from any tab) issues a new token, so writes from a
+   * view built on older progress fail with StaleProgressError instead of mixing into the replacement.
+   */
+  load(): Promise<ProgressExport>;
   /** Validates fully BEFORE writing; on invalid input throws ImportError and leaves the store unchanged. */
   importAll(data: unknown): Promise<void>;
   clear(): Promise<void>;

@@ -35,3 +35,9 @@ export type FromWorker =
   | { id: number; type: "packages-loading" | "packages-ready"; message?: string }
   | { id: number; type: "stdout" | "stderr"; text: string }
   | { id: number; type: "result"; result: Omit<RunResult, "stdout" | "stderr" | "durationMs"> };
+
+/**
+ * Failures of the system rather than of the learner's code: Python or a package didn't load, or the worker crashed.
+ * They record no attempt and get no tutor feedback. A TimeoutError is different: the learner's code ran too long.
+ */
+export const INFRASTRUCTURE_ERRORS: ReadonlySet<string> = new Set(["LoadError", "PackageError", "WorkerError"]);

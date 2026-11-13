@@ -97,6 +97,17 @@ function validateAssistance(value: unknown): Record<string, number> {
   }));
 }
 const ASSIST = "assist:";
+/** Meta key of the replacement token; a new one is written by every import and reset. */
+const EPOCH = "epoch";
+
+/** A write was refused because the progress was replaced (in this or another tab) after this view loaded it. */
+export class StaleProgressError extends Error {
+  constructor() {
+    super("progress was replaced in another tab; reloading it");
+    this.name = "StaleProgressError";
+  }
+}
+const newEpoch = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 const sameEvent = (a: LearnerEvent, b: LearnerEvent) => JSON.stringify(a, Object.keys(a).sort()) === JSON.stringify(b, Object.keys(b).sort());
 function validate(data: unknown): ProgressExport {
   object(data, "payload");
@@ -174,6 +185,12 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
     return opening;
   }
   await connect();
+  // The replacement token this store's writes are bound to: adopted on open and by load(), replaced by importAll/clear.
+  let adopted = await new Promise<unknown>((resolve, reject) => {
+    const request = db!.transaction(["meta"], "readonly").objectStore("meta").get(EPOCH);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
 
   async function transact<T>(names: string[], mode: IDBTransactionMode, work: (tx: IDBTransaction, result: (value: T) => void) => void): Promise<T> {
     const connection = await connect();
@@ -195,8 +212,53 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       request.onsuccess = () => result(request.result as T);
     });
   }
+  /** A readwrite transaction that first checks, inside the same transaction, that the adopted token is still current. */
+  function guarded<T>(names: string[], work: (tx: IDBTransaction, result: (value: T) => void) => void): Promise<T> {
+    let refused = false;
+    return transact<T>([...new Set([...names, "meta"])], "readwrite", (tx, result) => {
+      const token = tx.objectStore("meta").get(EPOCH);
+      token.onsuccess = () => {
+        if (token.result !== adopted) { refused = true; tx.abort(); return; }
+        work(tx, result);
+      };
+    }).catch((error) => { throw refused ? new StaleProgressError() : error; });
+  }
   function put(name: string, value: unknown, key?: IDBValidKey): Promise<void> {
-    return transact<void>([name], "readwrite", (tx) => { tx.objectStore(name).put(value, key); });
+    return guarded<void>([name], (tx) => { tx.objectStore(name).put(value, key); });
+  }
+  function snapshot(adopt: boolean): Promise<ProgressExport> {
+    let token: unknown;
+    return transact<ProgressExport>(stores, "readonly", (tx, result) => {
+      const t = tx.objectStore("meta").get(EPOCH);
+      t.onsuccess = () => { token = t.result; };
+      exportInto(tx, result);
+    }).then((output) => { if (adopt) adopted = token; return output; });
+  }
+  function exportInto(tx: IDBTransaction, result: (value: ProgressExport) => void) {
+    const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null, events: [], assistance: {} };
+    const lessons = tx.objectStore("lessons").getAll();
+    lessons.onsuccess = () => { output.lessons = lessons.result; };
+    const cursor = tx.objectStore("drafts").openCursor();
+    cursor.onsuccess = () => {
+      const entry = cursor.result;
+      if (entry) {
+        Object.defineProperty(output.drafts, String(entry.key), { value: entry.value, enumerable: true, configurable: true, writable: true });
+        entry.continue();
+      }
+    };
+    const position = tx.objectStore("meta").get("position");
+    position.onsuccess = () => { output.position = position.result ?? null; };
+    const meta = tx.objectStore("meta").openCursor();
+    meta.onsuccess = () => {
+      const entry = meta.result;
+      if (!entry) return;
+      const key = String(entry.key);
+      if (key.startsWith(ASSIST)) Object.defineProperty(output.assistance, key.slice(ASSIST.length), { value: entry.value, enumerable: true, configurable: true, writable: true });
+      entry.continue();
+    };
+    const events = tx.objectStore("events").getAll();
+    events.onsuccess = () => { output.events = ordered(events.result as LearnerEvent[]); };
+    result(output);
   }
   return {
     close: () => { closed = true; db?.close(); db = undefined; },
@@ -213,7 +275,7 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
     appendEvents: async (events) => {
       const valid = validateEvents(events);
       let conflict: string | null = null;
-      await transact<void>(["events"], "readwrite", (tx) => {
+      await guarded<void>(["events"], (tx) => {
         const store = tx.objectStore("events");
         for (const e of valid) {
           const existing = store.get(e.id);
@@ -235,7 +297,7 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       check(typeof lesson === "string" && lesson.length > 0 && !lesson.includes(":"), "assistance lessonId must be nonempty and contain no colon");
       check(typeof step === "string" && step.length > 0, "assistance stepId must be a nonempty string");
       check(Number.isInteger(level) && level >= 0 && level <= 4, "assistance must be 0..4");
-      return transact<number>(["meta"], "readwrite", (tx, result) => {
+      return guarded<number>(["meta"], (tx, result) => {
         const store = tx.objectStore("meta");
         const key = `${ASSIST}${lesson}:${step}`;
         const current = store.get(key);
@@ -248,32 +310,8 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
     },
     getPosition: async () => (await read<Position | undefined>("meta", "position")) ?? null,
     setPosition: async (lessonId, stepIndex) => put("meta", validatePosition({ lessonId, stepIndex, updatedAt: new Date().toISOString() }), "position"),
-    exportAll: () => transact<ProgressExport>(stores, "readonly", (tx, result) => {
-      const output: ProgressExport = { format: EXPORT_FORMAT, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), lessons: [], drafts: {}, position: null, events: [], assistance: {} };
-      const lessons = tx.objectStore("lessons").getAll();
-      lessons.onsuccess = () => { output.lessons = lessons.result; };
-      const cursor = tx.objectStore("drafts").openCursor();
-      cursor.onsuccess = () => {
-        const entry = cursor.result;
-        if (entry) {
-          Object.defineProperty(output.drafts, String(entry.key), { value: entry.value, enumerable: true, configurable: true, writable: true });
-          entry.continue();
-        }
-      };
-      const position = tx.objectStore("meta").get("position");
-      position.onsuccess = () => { output.position = position.result ?? null; };
-      const meta = tx.objectStore("meta").openCursor();
-      meta.onsuccess = () => {
-        const entry = meta.result;
-        if (!entry) return;
-        const key = String(entry.key);
-        if (key.startsWith(ASSIST)) Object.defineProperty(output.assistance, key.slice(ASSIST.length), { value: entry.value, enumerable: true, configurable: true, writable: true });
-        entry.continue();
-      };
-      const events = tx.objectStore("events").getAll();
-      events.onsuccess = () => { output.events = ordered(events.result as LearnerEvent[]); };
-      result(output);
-    }),
+    exportAll: () => snapshot(false),
+    load: () => snapshot(true),
     importAll: async (data) => {
       let normalized: ProgressExport;
       try { normalized = validate(data); }
@@ -281,17 +319,25 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
         if (error instanceof ValidationError) throw new ImportError(error.message);
         throw error;
       }
+      const token = newEpoch();
       await transact<void>(stores, "readwrite", (tx) => {
         for (const name of stores) tx.objectStore(name).clear();
+        tx.objectStore("meta").put(token, EPOCH); // views built on the old progress can no longer write
         for (const lesson of normalized.lessons) tx.objectStore("lessons").put(lesson);
         for (const [key, code] of Object.entries(normalized.drafts)) tx.objectStore("drafts").put(code, key);
         if (normalized.position !== null) tx.objectStore("meta").put(normalized.position, "position");
         for (const e of normalized.events) tx.objectStore("events").put(e);
         for (const [key, level] of Object.entries(normalized.assistance)) tx.objectStore("meta").put(level, `${ASSIST}${key}`);
       });
+      adopted = token;
     },
-    clear: () => transact<void>(stores, "readwrite", (tx) => {
-      for (const name of stores) tx.objectStore(name).clear();
-    }),
+    clear: async () => {
+      const token = newEpoch();
+      await transact<void>(stores, "readwrite", (tx) => {
+        for (const name of stores) tx.objectStore(name).clear();
+        tx.objectStore("meta").put(token, EPOCH);
+      });
+      adopted = token;
+    },
   };
 }

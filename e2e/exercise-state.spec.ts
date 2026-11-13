@@ -257,3 +257,44 @@ test("importing progress while a quiz shows its feedback starts the quiz over", 
   await expect(page.getByText(/You need/)).toHaveCount(0);
   await expect(page.locator("fieldset.question input[type=radio]:checked")).toHaveCount(0); // a fresh, unanswered quiz
 });
+
+for (const kind of ["reset", "import"] as const) {
+  test(`a run still going in one tab when another tab ${kind}s progress can't write into the replacement`, async ({ page, context }) => {
+    test.setTimeout(180_000);
+    await page.goto(`./#/lesson/py-values-names/${circle}`);
+    const slow = `${lesson.steps[circle]!.solution!}\nimport time\n_t = time.time()\nwhile time.time() - _t < 4:\n    pass\n`;
+    await page.locator("textarea.editor-input").fill(slow);
+    await page.getByRole("button", { name: "▶ Run checks" }).click();
+    const other = await context.newPage();
+    await other.goto("./#/");
+    await other.getByRole("button", { name: "Progress" }).click();
+    if (kind === "reset") {
+      await other.getByRole("button", { name: "Reset…" }).click();
+      await other.getByRole("button", { name: "Erase everything" }).click();
+      await expect(other.getByText("Progress reset.")).toBeVisible();
+    } else {
+      const empty = { format: "python-intelligence-progress", version: 2, exportedAt: "2026-03-01T09:00:00.000Z", lessons: [], drafts: {}, position: null, events: [], assistance: {} };
+      await other.locator("input[type=file]").setInputFiles({ name: "e.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(empty)) });
+      await expect(other.getByText("Progress imported.")).toBeVisible();
+    }
+    await other.getByRole("button", { name: "Close" }).click();
+    await page.waitForTimeout(9000); // the first tab's slow run finishes meanwhile
+    await expect(page.getByText(/Progress can't be saved/)).toHaveCount(0); // it reloaded instead of erroring
+    const data = await exportEvents(other) as unknown as { events: unknown[]; lessons: { steps: Record<string, unknown> }[] };
+    expect(data.events).toEqual([]);
+    expect(data.lessons.every((l) => !("circle" in l.steps))).toBe(true);
+  });
+}
+
+test("an import in one tab shows up in another open tab without it writing anything", async ({ page, context }) => {
+  await page.goto("./#/");
+  await expect(page.locator(".overall")).toContainText("0/");
+  const other = await context.newPage();
+  await other.goto("./#/");
+  const done = { lessonId: "py-values-names", steps: {}, furthestStep: 0, completed: true, completedAt: "2026-03-01T09:00:00.000Z", mastery: 1, struggles: {} };
+  const file = { format: "python-intelligence-progress", version: 2, exportedAt: "2026-03-01T09:00:00.000Z", lessons: [done], drafts: {}, position: null, events: [], assistance: {} };
+  await other.getByRole("button", { name: "Progress" }).click();
+  await other.locator("input[type=file]").setInputFiles({ name: "p.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });
+  await expect(other.getByText("Progress imported.")).toBeVisible();
+  await expect(page.locator(".overall")).toContainText("1/"); // told by the other tab's broadcast
+});

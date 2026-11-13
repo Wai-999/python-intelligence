@@ -12,7 +12,7 @@ import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curri
 import { getRunner } from "./py/runner";
 import { waitForController } from "./sw-register";
 import { applyOutcome, visitStep } from "./progress/logic";
-import { openProgressStore } from "./progress/store";
+import { openProgressStore, StaleProgressError } from "./progress/store";
 import type { LessonProgress, ProgressStore } from "./progress/types";
 
 const graph = buildGraph(LESSONS);
@@ -32,6 +32,9 @@ function parseHash(h: string): Route {
   if (/^#\/review\/?$/.test(h)) return { view: "review" };
   return { view: "home" };
 }
+
+/** Tabs tell each other here that progress was imported or reset, so they reload instead of showing stale progress. */
+const PROGRESS_CHANNEL = "python-intelligence-progress";
 
 /** The help level assumed when the stored one can't be read: the most help, so no attempt is over-credited. */
 const UNKNOWN_HELP = 4;
@@ -63,7 +66,7 @@ export function App() {
   // One exportAll (a single read transaction) gives a consistent snapshot of lessons, drafts, events and help; it is
   // published only if every step succeeded, so the views never mix old and new state.
   const reload = useCallback(async (s: ProgressStore) => {
-    const exp = await s.exportAll();
+    const exp = await s.load(); // also binds this view's writes to the snapshot's replacement token
     const all = exp.lessons;
     const d: Record<string, Record<string, string>> = {};
     for (const [k, v] of Object.entries(exp.drafts)) {
@@ -118,17 +121,31 @@ export function App() {
     return () => removeEventListener("hashchange", on);
   }, []);
 
+  // A write refused because another tab replaced the progress means this view is stale: reload it like a replacement.
+  // Any other storage failure is reported.
+  const failRef = useRef<(e: unknown) => void>(() => {});
+  const fail = useCallback((e: unknown) => failRef.current(e), []);
+  const remoteRef = useRef<() => void>(() => {});
+  const channel = useRef<BroadcastChannel | null>(null);
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const ch = new BroadcastChannel(PROGRESS_CHANNEL);
+    ch.onmessage = (m) => { if (m.data === "replaced") remoteRef.current(); };
+    channel.current = ch;
+    return () => { ch.close(); channel.current = null; };
+  }, []);
+
   const save = useCallback(async (p: LessonProgress) => {
     setProgress((m) => new Map(m).set(p.lessonId, p));
-    await store?.putLesson(p);
-  }, [store]);
+    await store?.putLesson(p).catch(fail);
+  }, [store, fail]);
 
   // Track position + furthest step whenever the visible step changes. Not while an import or reset is being applied:
   // the visit is applied to the reloaded progress instead, once `generation` catches up.
   useEffect(() => {
     if (route.view !== "lesson" || !store || !live()) return;
     const lesson = graph.byId.get(route.lessonId)!;
-    void store.setPosition(route.lessonId, route.step);
+    void store.setPosition(route.lessonId, route.step).catch(fail);
     const prev = progress.get(route.lessonId);
     const next = visitStep(lesson, prev, route.step);
     if (!prev || next.furthestStep !== prev.furthestStep) void save(next);
@@ -141,8 +158,8 @@ export function App() {
   const record = useCallback((evs: LearnerEvent[]) => {
     if (evs.length === 0) return;
     setEvents((prev) => [...prev, ...evs]);
-    void store?.appendEvents(evs).catch((e) => setStoreError(String(e?.message ?? e)));
-  }, [store]);
+    void store?.appendEvents(evs).catch(fail);
+  }, [store, fail]);
   const model = useMemo(() => buildModel(LESSONS, events), [events]);
   useEffect(() => {
     const tick = () => setNow(new Date().toISOString());
@@ -173,6 +190,20 @@ export function App() {
     });
   };
 
+  // Another tab imported or reset progress (told by its broadcast, or found when one of our writes was refused).
+  remoteRef.current = () => {
+    // During the first load there is nothing stale to reload yet; if its snapshot predates the other tab's replacement,
+    // the first write is refused (StaleProgressError) and lands here again once the load has finished.
+    if (generation === 0) return;
+    generationRef.current += 1;
+    setReplacing(true);
+    finishReplacement(generationRef.current);
+  };
+  failRef.current = (e) => {
+    if (e instanceof StaleProgressError) remoteRef.current();
+    else setStoreError(String((e as Error)?.message ?? e));
+  };
+
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };
   const current = route.view === "lesson" ? route.lessonId : undefined;
   const rec = useMemo(() => recommendNext(graph, progress, current), [progress, current]);
@@ -200,7 +231,7 @@ export function App() {
       {reloadFailed && <p className="pill bad" role="alert">Your saved progress couldn't be read back: {reloadFailed.message}. The page is paused so
         nothing overwrites it.{" "}<button type="button" className="btn" onClick={() => finishReplacement(reloadFailed.token)}>Try loading it again</button></p>}
       {panel && store && <ProgressPanel store={store} busy={replacing} onReplacing={() => { generationRef.current += 1; setReplacing(true); return generationRef.current; }}
-                                  onChanged={finishReplacement}
+                                  onChanged={(token) => { channel.current?.postMessage("replaced"); finishReplacement(token); }}
                                   onClose={() => setPanel(false)} />}
 
       <div className={`layout layout--${route.view}`} inert={replacing}>
@@ -240,12 +271,12 @@ export function App() {
                 if (!live()) return;
                 const key = `${route.lessonId}:${sid}`;
                 setAssist((a) => ({ ...a, [key]: Math.max(a[key] ?? 0, level) }));
-                void store?.raiseAssistance(route.lessonId, sid, level).catch((e) => setStoreError(String(e?.message ?? e)));
+                void store?.raiseAssistance(route.lessonId, sid, level).catch(fail);
               }}
               onDraft={(sid, code) => {
                 if (!live()) return;
                 setDrafts((d) => ({ ...d, [route.lessonId]: { ...d[route.lessonId], [sid]: code } }));
-                void store?.putDraft(route.lessonId, sid, code);
+                void store?.putDraft(route.lessonId, sid, code).catch(fail);
               }}
               onExercise={(sid, passed, failedConcepts, detail) => {
                 if (detail.generation !== generationRef.current) return; // started before an import or reset
@@ -258,7 +289,7 @@ export function App() {
                 // conservatively counted as fully assisted (UNKNOWN_HELP), so it never passes for independent work.
                 const stamp = stampNow(); // the attempt's own time, not when the help level was read back
                 if (step && isExercise(step)) void (store ? store.getAssistance(l.id, sid) : Promise.resolve(0))
-                  .catch((e) => { setStoreError(String(e?.message ?? e)); return UNKNOWN_HELP; })
+                  .catch((e) => { fail(e); return UNKNOWN_HELP; })
                   .then((stored) => {
                     if (detail.generation !== generationRef.current) return;
                     record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp));
@@ -279,13 +310,13 @@ export function App() {
                   const shownHere = assist[key] ?? 0;
                   void (store ? store.raiseAssistance(l.id, sid, 4) : Promise.resolve(shownHere))
                     // The previous level is unknown if storage failed: keep the attempt, counted as assisted (see UNKNOWN_HELP).
-                    .catch((e) => { setStoreError(String(e?.message ?? e)); return UNKNOWN_HELP; })
+                    .catch((e) => { fail(e); return UNKNOWN_HELP; })
                     .then((before) => {
                       if (startedIn !== generationRef.current) return; // progress was replaced meanwhile
                       // This tab's own record counts too: a reveal whose save failed still happened.
                       record(quizEvents(l, step, correct, stamp, Math.max(before, shownHere) >= 4 ? 4 : 0));
                     })
-                    .catch((e) => setStoreError(String(e?.message ?? e)));
+                    .catch(fail);
                 }
               }}
             />

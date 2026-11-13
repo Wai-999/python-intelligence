@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ExerciseStep } from "../content/types";
-import type { RunResult } from "../py/protocol";
+import { INFRASTRUCTURE_ERRORS, type RunResult } from "../py/protocol";
 import { getRunner } from "../py/runner";
 import { feedbackForError, feedbackForTests } from "../tutor/feedback";
 import { Console, RunBar } from "./CodeCell";
@@ -77,7 +77,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
     try {
       const r = await getRunner().run(code, step.tests, { packages, onOutput: (_s, t) => setLive((x) => x + t) });
       setResult(r);
-      if (r.error?.type === "LoadError" || r.error?.type === "PackageError") return;
+      if (r.error && INFRASTRUCTURE_ERRORS.has(r.error.type)) return; // the system failed, not the learner: no attempt
       const passed = r.ok && r.tests.length === step.tests.length && r.tests.every((t) => t.passed);
       const failedConcepts = r.ok
         ? r.tests.filter((t) => !t.passed).map((t) => t.concept).filter((c): c is string => !!c)
@@ -98,7 +98,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
   };
 
   const fb = result
-    ? result.error && !["LoadError", "PackageError"].includes(result.error.type) ? feedbackForError(result.error) : result.error ? null : feedbackForTests(result.tests)
+    ? result.error && !INFRASTRUCTURE_ERRORS.has(result.error.type) ? feedbackForError(result.error) : result.error ? null : feedbackForTests(result.tests)
     : null;
   const allPassed = !!result && result.ok && result.tests.every((t) => t.passed);
   const edId = `ed-${lessonId}-${step.id}`;

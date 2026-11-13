@@ -26,7 +26,7 @@ describe("Exercise attempts", () => {
   afterEach(cleanup);
 
   it("records no attempt when Python itself failed to load or a package failed", async () => {
-    for (const type of ["LoadError", "PackageError"]) {
+    for (const type of ["LoadError", "PackageError", "WorkerError"]) {
       run.mockResolvedValueOnce(failed(type));
       const onResult = mount();
       runChecks();
@@ -45,6 +45,15 @@ describe("Exercise attempts", () => {
     runChecks();
     await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
     expect(onResult.mock.calls[0]![2]).toEqual({ results: [{ concept: "names", passed: false }], assistance: 1, generation: 3 });
+  });
+
+  it("records a timeout as a failed attempt: the learner's code ran too long", async () => {
+    run.mockResolvedValueOnce(failed("TimeoutError"));
+    const onResult = mount();
+    runChecks();
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(onResult.mock.calls[0]![0]).toBe(false);
+    expect(onResult.mock.calls[0]![2]).toMatchObject({ results: null });
   });
 
   it("records a code error as a failed attempt for every concept (results null)", async () => {

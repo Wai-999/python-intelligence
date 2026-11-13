@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { RunResult } from "../py/protocol";
+import { INFRASTRUCTURE_ERRORS, type RunResult } from "../py/protocol";
 import { getRunner } from "../py/runner";
 import { feedbackForError } from "../tutor/feedback";
 import { Editor } from "./Editor";
@@ -59,7 +59,7 @@ export function CodeCell({ id, initial, packages }: { id: string; initial: strin
       <Editor id={id} label="Example code" value={code} onChange={setCode} onRun={run} />
       <RunBar onRun={run} onReset={() => { setCode(initial); setResult(null); }} busy={busy} packages={packages} />
       <Console result={result} live={live} />
-      {result?.error && !["LoadError", "PackageError"].includes(result.error.type) && <TutorNote fb={feedbackForError(result.error)} />}
+      {result?.error && !INFRASTRUCTURE_ERRORS.has(result.error.type) && <TutorNote fb={feedbackForError(result.error)} />}
     </section>
   );
 }

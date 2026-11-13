@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildModel, type LearnerEvent } from "./learner/model";
 import { quizEvents } from "./learner/record";
 import type { Lesson, QuizStep } from "./content/types";
+import { StaleProgressError } from "./progress/store";
 import type { LessonProgress, ProgressExport, ProgressStore } from "./progress/types";
 
 // A deterministic race: the quiz's raiseAssistance stays pending while progress is reset, then resolves.
@@ -31,7 +32,7 @@ const fake: ProgressStore & { close(): void } = {
   putDraft: async () => {},
   getPosition: async () => null,
   setPosition: async () => { positions += 1; },
-  appendEvents: async (evs) => { appended.push(...evs); },
+  appendEvents: async (evs) => { if (staleWrites) throw new StaleProgressError(); appended.push(...evs); },
   allEvents: async () => [],
   getAssistance: async () => { if (helpGate) await helpGate; if (failHelp) throw new Error("help store failed"); return 0; },
   raiseAssistance: () => {
@@ -45,20 +46,24 @@ const fake: ProgressStore & { close(): void } = {
     return { format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
     lessons: lessonsAfter, drafts, position: null, events: history, assistance: {} };
   },
+  load: () => { loads += 1; staleWrites = false; return fake.exportAll(); },
   importAll: () => new Promise<void>((resolve) => { pendingImports.push(resolve); }),
   clear: async () => {},
 };
 let openFails = false;
 let failHelp = false;
 let helpGate: Promise<void> | null = null;
-vi.mock("./progress/store", () => ({ openProgressStore: async () => { if (openFails) throw new Error("storage blocked"); return fake; } }));
+let staleWrites = false;
+let loads = 0;
+vi.mock("./progress/store", async (importOriginal) => ({ ...(await importOriginal<typeof import("./progress/store")>()),
+  openProgressStore: async () => { if (openFails) throw new Error("storage blocked"); return fake; } }));
 // Python runs report every check passed, tagged with the concepts of the step's own tests.
 let runTests: { name: string; concept?: string }[] = [];
 vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "ready", onStatus: () => () => {}, warm: async () => {},
   run: async () => ({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: true, message: "" })) }) }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; staleWrites = false; loads = 0; });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -369,5 +374,17 @@ describe("App", () => {
     await waitFor(() => expect(appended.some((e) => e.stepId === "circle")).toBe(true));
     for (const e of appended.filter((x) => x.stepId === "circle")) expect(Date.parse(e.at)).toBeLessThanOrEqual(attemptedBy);
     runTests = [];
+  });
+
+  it("reloads, rather than reporting an error, when a write is refused because another tab replaced the progress", async () => {
+    await openQuiz();
+    await waitFor(() => expect(loads).toBe(1));
+    staleWrites = true; // another tab imported or reset since this view loaded
+    fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
+    await act(async () => { release(0); await Promise.resolve(); });
+    await waitFor(() => expect(loads).toBe(2)); // the view reloads from the replacement
+    await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
+    expect(screen.queryByText(/Progress can't be saved/)).toBeNull();
+    expect(appended).toEqual([]);
   });
 });
