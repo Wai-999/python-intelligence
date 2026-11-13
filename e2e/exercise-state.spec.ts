@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import valuesNames from "../content/lessons/py-values-names.json" with { type: "json" };
+import functionsLesson from "../content/lessons/py-functions.json" with { type: "json" };
+
+const functionsQuiz = (functionsLesson as unknown as { steps: { kind: string; questions?: { id: string; answer: number }[] }[] }).steps.find((s) => s.kind === "quiz")! as { questions: { id: string; answer: number }[] };
 
 // Exercise state belongs to one task of one lesson, survives imports correctly, and one run is one attempt.
 
@@ -61,4 +64,70 @@ test("pressing the run shortcut repeatedly during a run records one attempt", as
   expect([...ids]).toEqual(["circle"]);
   // One run records one event per concept of the lesson (four here), not one batch per key press.
   expect(events.length).toBe(4);
+});
+
+test("a run still going when progress is reset can't write into the fresh progress", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.goto(`./#/lesson/py-values-names/${circle}`);
+  const slow = `${lesson.steps[circle]!.solution!}\nimport time\n_t = time.time()\nwhile time.time() - _t < 4:\n    pass\n`;
+  await page.locator("textarea.editor-input").fill(slow);
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await page.getByRole("button", { name: "Progress" }).click();
+  await page.getByRole("button", { name: "Reset…" }).click();
+  await page.getByRole("button", { name: "Erase everything" }).click();
+  await expect(page.getByText("Progress reset.")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await page.waitForTimeout(8000); // the slow run finishes in the meantime
+  const data = await exportEvents(page) as unknown as { events: unknown[]; lessons: { steps: Record<string, unknown> }[] };
+  expect(data.events).toEqual([]);
+  expect(data.lessons.every((l) => !("circle" in l.steps))).toBe(true);
+});
+
+test("an import while review feedback is showing starts the review over, and reviews rotate through a concept's questions", async ({ page }) => {
+  test.setTimeout(120_000);
+  const T0 = new Date("2026-03-02T09:00:00Z");
+  await page.clock.install({ time: T0 });
+  const iso = (h: number) => new Date(T0.getTime() + h * 3600_000).toISOString();
+  const evidence = (lessonId: string, concept: string, n: number) => [["a", "exercise"], ["b", "exercise"], ["check", "quiz"]].map(([stepId, task], i) =>
+    ({ id: `${concept}-${i}`, at: iso(-3 + n * 0.01 + i * 0.001), lessonId, stepId, task, concept, passed: true, assistance: 0, policy: "learner-heuristic-1" }));
+  const history = { format: "python-intelligence-progress", version: 2, exportedAt: iso(0), lessons: [], drafts: {}, position: null, assistance: {},
+    events: [...["values", "names", "expressions", "print"].flatMap((c, k) => evidence("py-values-names", c, k)), ...evidence("py-functions", "functions", 5),
+      // The prerequisite concepts are reviewed on time (day 1 and day 4), so only functions is due at each check below.
+      ...["values", "names", "expressions", "print"].flatMap((c) => [21, 93].map((h, i) => ({ id: `${c}-review-${i}`, at: iso(h), lessonId: "py-values-names",
+        stepId: "review:q", task: "review", concept: c, passed: true, assistance: 0, policy: "learner-heuristic-1" })))] };
+  const load = async () => {
+    await page.getByRole("button", { name: "Progress" }).click();
+    await page.locator("input[type=file]").setInputFiles({ name: "h.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(history)) });
+    await expect(page.getByText("Progress imported.")).toBeVisible();
+    await page.getByRole("button", { name: "Close" }).click();
+  };
+  await page.goto("./#/review");
+  await load();
+  await page.clock.setSystemTime(new Date(T0.getTime() + 22 * 3600_000));
+  await page.goto("./#/");
+  await page.goto("./#/review");
+  const form = page.locator("form.quiz");
+  await expect(page.getByText(/· functions ·/)).toBeVisible();
+  const first = await form.locator("legend").innerText();
+  await form.locator("input[type=radio]").first().check();
+  await page.getByRole("button", { name: "Check answer" }).click();
+  await expect(form.getByRole("status")).toBeVisible();
+  await load(); // replace the history while the feedback is still on screen
+  await expect(form.getByRole("status")).toHaveCount(0);
+  await expect(form.locator("legend")).toHaveText(first); // the same first question, from a clean start
+  // Answer it correctly this time, then the next review (3 days on) asks the other functions question.
+  const questions = [
+    { text: "How many times does the body", answer: (functionsQuiz.questions.find((q) => q.id === "q2")!).answer },
+    { text: "What happens on the last line", answer: (functionsQuiz.questions.find((q) => q.id === "q3")!).answer },
+  ];
+  const pick = (legend: string) => questions.find((q) => legend.includes(q.text))!;
+  await form.locator("input[type=radio]").nth(pick(first).answer).check();
+  await page.getByRole("button", { name: "Check answer" }).click();
+  await expect(form.getByRole("status")).toContainText("Correct.");
+  await page.clock.setSystemTime(new Date(T0.getTime() + (22 + 73) * 3600_000));
+  await page.goto("./#/");
+  await page.goto("./#/review");
+  await expect(page.getByText(/· functions ·/)).toBeVisible();
+  const second = await form.locator("legend").innerText();
+  expect(pick(second).text).not.toBe(pick(first).text);
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CurriculumMap } from "./components/CurriculumMap";
 import { LessonView } from "./components/LessonView";
 import { Library } from "./components/Library";
@@ -44,6 +44,8 @@ export function App() {
   const [events, setEvents] = useState<LearnerEvent[]>([]);
   const [assist, setAssist] = useState<Record<string, number>>({});
   const [generation, setGeneration] = useState(0);
+  // Bumped synchronously when an import or reset starts; results of runs started earlier are then ignored.
+  const generationRef = useRef(0);
   // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
   const [now, setNow] = useState(() => new Date().toISOString());
 
@@ -142,7 +144,8 @@ export function App() {
         </div>
       </header>
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
-      {panel && store && <ProgressPanel store={store} onChanged={() => { void reload(store).then(() => setGeneration((g) => g + 1)); }} onClose={() => setPanel(false)} />}
+      {panel && store && <ProgressPanel store={store} onReplacing={() => { generationRef.current += 1; }}
+                                  onChanged={() => { void reload(store).then(() => setGeneration(generationRef.current)); }} onClose={() => setPanel(false)} />}
 
       <div className={`layout layout--${route.view}`}>
         {route.view === "lesson" && (
@@ -150,7 +153,7 @@ export function App() {
         )}
         <main id="main" tabIndex={-1}>
           {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
-            <ReviewView lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
+            <ReviewView key={generation} lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
                         onAnswer={(item, correct) => record([reviewEvent(item, correct, stampNow())])} />
           ) : route.view === "home" ? (
             <>
@@ -187,6 +190,7 @@ export function App() {
                 void store?.putDraft(route.lessonId, sid, code);
               }}
               onExercise={(sid, passed, failedConcepts, detail) => {
+                if (detail.generation !== generationRef.current) return; // started before an import or reset
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, failedConcepts, attempt: true }));
                 const step = l.steps.find((s) => s.id === sid);

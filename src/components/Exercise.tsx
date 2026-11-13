@@ -15,6 +15,8 @@ export interface AttemptDetail {
   /** Each check's concept and outcome, or null when the code didn't run. */
   results: { concept?: string; passed: boolean }[] | null;
   assistance: Assistance;
+  /** The progress generation the run started in; results from before an import or reset are discarded. */
+  generation: number;
 }
 
 interface Props {
@@ -26,6 +28,7 @@ interface Props {
   /** Help already seen on this task in earlier visits (0..4); it is restored, never forgotten. */
   assistance: number;
   onAssist: (level: Assistance) => void;
+  generation: number;
   onDraft: (code: string) => void;
   onResult: (passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
 }
@@ -33,7 +36,7 @@ interface Props {
 /** Hints are revealed one at a time. The solution becomes available only after this many failed attempts. */
 export const SOLUTION_AFTER = 2;
 
-export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, onDraft, onResult }: Props) {
+export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, onDraft, onResult }: Props) {
   const [code, setCode] = useState(draft ?? step.starter);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -65,6 +68,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
   const check = async () => {
     if (running.current) return;
     running.current = true;
+    const startedIn = generation;
     clearTimeout(saveTimer.current);
     onDraft(code);
     setBusy(true);
@@ -82,6 +86,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       onResult(passed, failedConcepts, {
         results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed })) : null,
         assistance: helped.current,
+        generation: startedIn,
       });
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,

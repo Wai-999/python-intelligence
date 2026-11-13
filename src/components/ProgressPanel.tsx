@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ProgressStore } from "../progress/types";
 
 /** Export/import/reset. Progress lives only in this browser; export is the only way to move or back it up. */
-export function ProgressPanel({ store, onChanged, onClose }: { store: ProgressStore; onChanged: () => void; onClose: () => void }) {
+export function ProgressPanel({ store, onReplacing, onChanged, onClose }: { store: ProgressStore; onReplacing: () => void; onChanged: () => void; onClose: () => void }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const file = useRef<HTMLInputElement>(null);
@@ -28,7 +28,9 @@ export function ProgressPanel({ store, onChanged, onClose }: { store: ProgressSt
 
   const doImport = async (f: File) => {
     try {
-      await store.importAll(JSON.parse(await f.text()));
+      const data = JSON.parse(await f.text());
+      onReplacing(); // before storage changes, so a run still in flight can't write into the replacement
+      await store.importAll(data);
       onChanged();
       setMsg({ ok: true, text: "Progress imported." });
     } catch (e) {
@@ -51,7 +53,7 @@ export function ProgressPanel({ store, onChanged, onClose }: { store: ProgressSt
           <button type="button" className="btn danger" onClick={() => setConfirmReset(true)}>Reset…</button>
         ) : (
           <span className="confirm">This erases all progress and drafts in this browser.{" "}
-            <button type="button" className="btn danger" onClick={async () => { await store.clear(); onChanged(); setConfirmReset(false); setMsg({ ok: true, text: "Progress reset." }); }}>Erase everything</button>{" "}
+            <button type="button" className="btn danger" onClick={async () => { onReplacing(); await store.clear(); onChanged(); setConfirmReset(false); setMsg({ ok: true, text: "Progress reset." }); }}>Erase everything</button>{" "}
             <button type="button" className="btn ghost" onClick={() => setConfirmReset(false)}>Cancel</button>
           </span>
         )}

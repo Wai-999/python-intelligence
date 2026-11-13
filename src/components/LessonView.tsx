@@ -82,7 +82,7 @@ export function LessonView(p: Props) {
       {(step.kind === "guided" || step.kind === "challenge") && (
         <Exercise key={`${lesson.id}:${step.id}:${p.generation}`} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
-                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)}
+                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)} generation={p.generation}
                   onDraft={(c) => p.onDraft(step.id, c)}
                   onResult={(passed, fc, detail) => p.onExercise(step.id, passed, fc, detail)} />
       )}
