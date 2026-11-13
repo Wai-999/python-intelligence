@@ -14,6 +14,39 @@
   ],
   "sources": [],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Store values in names and compute new values from them with expressions, then show results with print.",
+  "analogy": "A name is a label on a jar: `price = 2.5` sticks the label `price` on the value 2.5, and assigning again moves the label to another jar.",
+  "misconceptions": [
+    {
+      "belief": "`x = 5` means x and 5 are equal forever, as in algebra.",
+      "correction": "`=` stores a value now; a later assignment moves the name to a new value."
+    },
+    {
+      "belief": "`print(\"3\" + \"4\")` shows 7.",
+      "correction": "Joining two strings gives \"34\"; convert with int() to add numbers."
+    },
+    {
+      "belief": "`7 // 2` is 3.5.",
+      "correction": "`//` is floor division and gives 3; `/` gives 3.5."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Correct values",
+      "evidence": "each name holds the value the task asks for"
+    },
+    {
+      "criterion": "Built from names",
+      "evidence": "later values are computed from earlier names, not retyped numbers"
+    },
+    {
+      "criterion": "Readable",
+      "evidence": "names say what their values mean"
+    }
+  ],
+  "review": {
+    "recall": "Without looking: what does `=` do, and how do `/` and `//` differ?"
+  },
   "steps": [
     {
       "id": "why",
@@ -69,6 +102,41 @@
         }
       ],
       "solution": "radius = 3\npi = 3.14159\narea = pi * radius ** 2"
+    },
+    {
+      "id": "bill",
+      "kind": "transfer",
+      "title": "Transfer: a shopping bill",
+      "body": "A new situation with the same ideas. Four items cost `2.5` each, and tax is 20% of the subtotal. Starting from\nthe names `price` and `count`, make `subtotal`, then `tax`, then `total` (subtotal plus tax), each computed from\nthe names before it, and print the total.",
+      "starter": "price = 2.5\ncount = 4\n",
+      "hints": [
+        "`subtotal = price * count`, then `tax = subtotal * 0.2`.",
+        "`total = subtotal + tax`, then `print(total)`.",
+        "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + tax\nprint(total)\n"
+      ],
+      "tests": [
+        {
+          "name": "the subtotal",
+          "code": "assert subtotal == 10.0, f'4 items at 2.5 make 10.0; subtotal is {subtotal!r}'",
+          "concept": "expressions"
+        },
+        {
+          "name": "tax is 20% of the subtotal",
+          "code": "assert abs(tax - 2.0) < 1e-9, f'20% of 10.0 is 2.0; tax is {tax!r}'",
+          "concept": "expressions"
+        },
+        {
+          "name": "the total",
+          "code": "assert abs(total - 12.0) < 1e-9, f'subtotal plus tax is 12.0; total is {total!r}'",
+          "concept": "values"
+        },
+        {
+          "name": "the starting names are unchanged",
+          "code": "assert (price, count) == (2.5, 4), 'keep price = 2.5 and count = 4'",
+          "concept": "names"
+        }
+      ],
+      "solution": "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + tax\nprint(total)\n"
     },
     {
       "id": "check",

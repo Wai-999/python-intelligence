@@ -133,7 +133,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
   const edId = `ed-${lessonId}-${step.id}`;
 
   return (
-    <section className="cell exercise" aria-label={step.kind === "challenge" ? "Challenge" : "Guided exercise"}>
+    <section className="cell exercise" aria-label={step.kind === "challenge" ? "Challenge" : step.kind === "transfer" ? "Transfer problem" : "Guided exercise"}>
       {record?.passed && !result && <p className="pill ok">✓ Completed earlier. You can keep experimenting.</p>}
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
       <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" />

@@ -203,3 +203,9 @@ main { min-width: 0; outline: none; }
 .meso .code-block { margin: 8px 0; }
 .meso .choice { display: block; margin: 4px 0; }
 .meso-transfer { margin-top: 8px; }
+
+/* Lesson metadata (G-5): goal, analogy, common mix-ups, self-check rubric, review recall. */
+.objective, .analogy, .recall { padding: 8px 12px; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 8px; }
+.misconceptions, .rubric { margin: 12px 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; }
+.misconceptions summary { cursor: pointer; font-weight: 600; }
+.rubric h3 { margin: 0 0 6px; font-size: 16px; }

@@ -1,17 +1,17 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { isGraded, type Lesson, type Step, type ExerciseStep } from "../content/types";
+import { isExercise, isGraded, type Lesson, type Step, type ExerciseStep } from "../content/types";
 import type { Recommendation } from "../curriculum/graph";
 import type { LessonProgress } from "../progress/types";
 import { CodeCell } from "./CodeCell";
 import { Exercise, type AttemptDetail } from "./Exercise";
-import { Prose } from "./Prose";
+import { inline, Prose } from "./Prose";
 import { Quiz } from "./Quiz";
 import { FurtherReading, StepSources } from "./Sources";
 import { TraceViewer } from "./TraceViewer";
 
 const KIND_LABEL: Record<Step["kind"], string> = {
   motivation: "Why it matters", intuition: "Intuition", visual: "See it run", formal: "The rules",
-  example: "Example", guided: "Guided practice", challenge: "Challenge", quiz: "Check", summary: "Recap",
+  example: "Example", guided: "Guided practice", challenge: "Challenge", transfer: "Transfer", quiz: "Check", summary: "Recap",
 };
 
 interface Props {
@@ -47,6 +47,11 @@ export function LessonView(p: Props) {
   const graded = lesson.steps.filter(isGraded);
   const passedCount = graded.filter((s) => progress?.steps[s.id]?.passed).length;
   const last = stepIndex === lesson.steps.length - 1;
+  // Where the lesson metadata appears: the analogy with the intuition (else the motivation), the common mix-ups with
+  // the rules (else the first example), since only some step kinds are required in every lesson.
+  const firstOf = (...kinds: Step["kind"][]) => kinds.map((k) => lesson.steps.find((s) => s.kind === k)).find(Boolean)?.id;
+  const analogyStep = firstOf("intuition", "motivation");
+  const mixUpStep = firstOf("formal", "example");
 
   return (
     <article className="lesson" aria-labelledby="step-title">
@@ -78,12 +83,28 @@ export function LessonView(p: Props) {
       )}
       <p className="kind">{KIND_LABEL[step.kind]} · step {stepIndex + 1} of {lesson.steps.length}</p>
       <h2 id="step-title" ref={heading} tabIndex={-1}>{step.title}</h2>
+      {step.kind === "motivation" && lesson.objective && <p className="objective"><strong>Goal:</strong> {inline(lesson.objective)}</p>}
       <Prose text={step.body} />
+      {step.id === analogyStep && lesson.analogy && <p className="analogy"><strong>Analogy:</strong> {inline(lesson.analogy)}</p>}
+      {step.id === mixUpStep && lesson.misconceptions && lesson.misconceptions.length > 0 && (
+        <details className="misconceptions">
+          <summary>Common mix-ups</summary>
+          <ul>{lesson.misconceptions.map((m, i) => (
+            <li key={i}><strong>Not quite:</strong> {inline(m.belief)} <strong>Instead:</strong> {inline(m.correction)}</li>
+          ))}</ul>
+        </details>
+      )}
+      {step.kind === "summary" && lesson.rubric && lesson.rubric.length > 0 && (
+        <section className="rubric" aria-labelledby="rubric-title">
+          <h3 id="rubric-title">Check your own work</h3>
+          <ul>{lesson.rubric.map((r, i) => <li key={i}><strong>{r.criterion}:</strong> {inline(r.evidence)}</li>)}</ul>
+        </section>
+      )}
       <StepSources lesson={lesson} step={step} />
 
       {step.kind === "visual" && <TraceViewer key={`${lesson.id}:${step.id}`} visual={step.visual} />}
       {step.kind === "example" && <CodeCell key={`${lesson.id}:${step.id}`} id={`ex-${lesson.id}-${step.id}`} initial={step.code} packages={lesson.packages} />}
-      {(step.kind === "guided" || step.kind === "challenge") && (
+      {isExercise(step) && (
         <Exercise key={`${lesson.id}:${step.id}:${p.generation}`} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
                   assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)} generation={p.generation} suggestedTier={p.suggestTier(step)} meso={p.mesoFor(step.id)}

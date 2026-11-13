@@ -66,6 +66,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Store and look up values by key in dictionaries, update them, and count things with them.",
+  "analogy": "A dictionary is a coat check: you hand over a ticket (the key) and get back exactly your coat (the value).",
+  "misconceptions": [
+    {
+      "belief": "Looking up a missing key gives None.",
+      "correction": "`d[key]` raises KeyError; use `d.get(key)` or check `key in d` first."
+    },
+    {
+      "belief": "`key in d` searches the values.",
+      "correction": "It checks the keys; use `value in d.values()` for values."
+    },
+    {
+      "belief": "A dictionary keeps its own order regardless of insertion.",
+      "correction": "Dictionaries keep insertion order; sort explicitly when you need another order."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Safe lookups",
+      "evidence": "missing keys are handled with get, setdefault or an in check"
+    },
+    {
+      "criterion": "Counts accumulate",
+      "evidence": "existing counts are added to, not overwritten"
+    },
+    {
+      "criterion": "Deterministic output",
+      "evidence": "results that are lists are sorted as asked"
+    }
+  ],
+  "review": {
+    "recall": "What happens with `d['missing']` versus `d.get('missing', 0)`? How do you count words with a dict?"
+  },
   "steps": [
     {
       "id": "why",
@@ -265,6 +298,41 @@
         }
       ],
       "solution": "def group_by_value(d):\n    result = {}\n    for key, value in d.items():\n        if value not in result:\n            result[value] = []\n        result[value].append(key)\n    return result"
+    },
+    {
+      "id": "restock",
+      "kind": "transfer",
+      "title": "Transfer: a stock list",
+      "body": "A shop's `stock` maps item names to quantities. Write `restock(stock, deliveries)`, where `deliveries` is a list of\n`[item, quantity]` pairs: add each quantity to the stock, creating items that aren't there yet (change `stock` itself).\nThen write `low_stock(stock, limit)`: the names of the items with fewer than `limit` left, in alphabetical order.",
+      "starter": "def restock(stock, deliveries):\n    pass\n\n\ndef low_stock(stock, limit):\n    return []\n",
+      "hints": [
+        "`stock[item] = stock.get(item, 0) + quantity` adds to an existing count or starts a new one.",
+        "`sorted(name for name in stock if stock[name] < limit)`.",
+        "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = stock.get(item, 0) + quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"
+      ],
+      "tests": [
+        {
+          "name": "adds to existing items",
+          "code": "stock = {'pen': 2, 'ink': 5}\nrestock(stock, [['pen', 3], ['pen', 1]])\nassert stock == {'pen': 6, 'ink': 5}, stock",
+          "concept": "counting"
+        },
+        {
+          "name": "creates new items",
+          "code": "stock = {}\nrestock(stock, [['tape', 4]])\nassert stock == {'tape': 4}, stock",
+          "concept": "dictionaries"
+        },
+        {
+          "name": "low stock, alphabetically",
+          "code": "assert low_stock({'pen': 1, 'ink': 9, 'clip': 0, 'tape': 3}, 3) == ['clip', 'pen'], low_stock({'pen': 1, 'ink': 9, 'clip': 0, 'tape': 3}, 3)",
+          "concept": "key-lookup"
+        },
+        {
+          "name": "nothing low",
+          "code": "assert low_stock({'pen': 5}, 3) == [] and low_stock({}, 3) == []",
+          "concept": "key-lookup"
+        }
+      ],
+      "solution": "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = stock.get(item, 0) + quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"
     },
     {
       "id": "check",

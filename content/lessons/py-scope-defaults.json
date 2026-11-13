@@ -15,6 +15,39 @@
   ],
   "sources": [],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Give parameters defaults, call functions with keyword arguments, and keep each function's names local by returning results.",
+  "analogy": "A function is a workshop with its own toolbox: names made inside stay inside, and defaults are the tools left on the bench unless you bring your own.",
+  "misconceptions": [
+    {
+      "belief": "Assigning to a name inside a function changes the global with that name.",
+      "correction": "It creates a local name; pass values in and return results instead."
+    },
+    {
+      "belief": "A default value is recomputed on every call.",
+      "correction": "Defaults are evaluated once, when the function is defined; that is why `def f(xs=[])` is a trap."
+    },
+    {
+      "belief": "Keyword arguments must be given in the order the parameters are defined.",
+      "correction": "Keywords can come in any order, after the positional arguments."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Sensible defaults",
+      "evidence": "optional parameters have defaults that make the common call short"
+    },
+    {
+      "criterion": "Keyword-friendly",
+      "evidence": "calls with keyword arguments in any order work"
+    },
+    {
+      "criterion": "No hidden globals",
+      "evidence": "functions take inputs as parameters and return results instead of changing globals"
+    }
+  ],
+  "review": {
+    "recall": "Why is `def add(item, items=[])` a trap? What happens to a name assigned inside a function?"
+  },
   "steps": [
     {
       "id": "why",
@@ -173,6 +206,41 @@
         }
       ],
       "solution": "score = 0\n\ndef add_points(score, points):\n    return score + points\n\nscore = add_points(score, 5)"
+    },
+    {
+      "id": "money",
+      "kind": "transfer",
+      "title": "Transfer: formatting money",
+      "body": "Write `format_price(amount, currency=\"£\", decimals=2)`, which returns the amount with the currency symbol in front and\nthe given number of decimal places, like `\"£3.50\"`. Then write `add_tip(total, percent=10)`, which returns the total\nplus the tip. A global named `total` exists; your functions must not change it.",
+      "starter": "total = 100\n\n\ndef format_price(amount):\n    return str(amount)\n\n\ndef add_tip(bill):\n    global total\n    total = bill * 1.1\n",
+      "hints": [
+        "An f-string can take the decimals as a nested field: `f\"{currency}{amount:.{decimals}f}\"`.",
+        "`def add_tip(total, percent=10): return total + total * percent / 100` uses a local `total`.",
+        "total = 100\n\n\ndef format_price(amount, currency=\"£\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total + total * percent / 100\n"
+      ],
+      "tests": [
+        {
+          "name": "the defaults",
+          "code": "assert format_price(3.5) == '£3.50', format_price(3.5)",
+          "concept": "default-arguments"
+        },
+        {
+          "name": "keyword arguments in any order",
+          "code": "assert format_price(2, decimals=0, currency='$') == '$2', format_price(2, decimals=0, currency='$')\nassert format_price(1.234, decimals=1) == '£1.2'",
+          "concept": "keyword-arguments"
+        },
+        {
+          "name": "add_tip returns the new total",
+          "code": "assert add_tip(50) == 55.0 and add_tip(80, percent=25) == 100.0",
+          "concept": "default-arguments"
+        },
+        {
+          "name": "the global total is untouched",
+          "code": "before = total\nadd_tip(200)\nadd_tip(10, percent=50)\nassert total == before, 'add_tip changed the global total; return the result instead'",
+          "concept": "scope"
+        }
+      ],
+      "solution": "total = 100\n\n\ndef format_price(amount, currency=\"£\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total + total * percent / 100\n"
     },
     {
       "id": "check",

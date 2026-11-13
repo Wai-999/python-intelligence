@@ -67,6 +67,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Build and change lists with methods, and know when two names share one list and when you have a copy.",
+  "analogy": "A list is a shared shopping list on the fridge: anyone holding the same list sees every change, but a photocopy is separate.",
+  "misconceptions": [
+    {
+      "belief": "`b = a` makes a copy of the list.",
+      "correction": "Both names refer to the same list; use `a.copy()` or `list(a)` for a copy."
+    },
+    {
+      "belief": "`xs.append(4)` returns the new list.",
+      "correction": "It changes the list in place and returns None."
+    },
+    {
+      "belief": "Removing items while looping over the same list is safe.",
+      "correction": "It skips items; loop over a copy, or build a new list."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Mutation where intended",
+      "evidence": "functions that should change a list change it; others leave it alone"
+    },
+    {
+      "criterion": "Copies when needed",
+      "evidence": "a new list is returned instead of an alias when the original must survive"
+    },
+    {
+      "criterion": "Right methods",
+      "evidence": "append, insert, remove, pop and index are used correctly"
+    }
+  ],
+  "review": {
+    "recall": "After `b = a` and `b.append(1)`, what is `a`? How do you make a real copy?"
+  },
   "steps": [
     {
       "id": "why",
@@ -255,6 +288,41 @@
         }
       ],
       "solution": "def remove_duplicates(items):\n    result = []\n    for x in items:\n        if x not in result:\n            result.append(x)\n    return result"
+    },
+    {
+      "id": "playlist",
+      "kind": "transfer",
+      "title": "Transfer: a playlist",
+      "body": "Write `move_to_front(songs, title)`, which returns a new list with the first occurrence of `title` moved to the front;\nif it isn't there, a copy of the list. It must not change `songs`. Then write `add_unique(songs, title)`, which\nchanges `songs` itself, appending `title` only if it isn't already there, and returns nothing.",
+      "starter": "def move_to_front(songs, title):\n    return songs\n\n\ndef add_unique(songs, title):\n    songs.append(title)\n",
+      "hints": [
+        "Copy first: `result = songs.copy()`, then `result.remove(title)` and `result.insert(0, title)` if it is present.",
+        "In `add_unique`, `if title not in songs: songs.append(title)`.",
+        "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
+      ],
+      "tests": [
+        {
+          "name": "moves the first occurrence",
+          "code": "assert move_to_front(['a', 'b', 'c', 'b'], 'b') == ['b', 'a', 'c', 'b']",
+          "concept": "list-methods"
+        },
+        {
+          "name": "returns a new list and leaves the original alone",
+          "code": "songs = ['a', 'b']\nout = move_to_front(songs, 'b')\nassert songs == ['a', 'b'], 'move_to_front changed the original list'\nassert out is not songs, 'return a new list, not the same one'\nmissing = move_to_front(songs, 'z')\nassert missing == songs and missing is not songs, 'when the title is missing, return a copy'",
+          "concept": "aliasing"
+        },
+        {
+          "name": "add_unique changes the list in place",
+          "code": "songs = ['a']\nsame = songs\nassert add_unique(songs, 'b') is None\nassert same == ['a', 'b'], 'add_unique should change the list itself'",
+          "concept": "mutability"
+        },
+        {
+          "name": "add_unique skips duplicates",
+          "code": "songs = ['a', 'b']\nadd_unique(songs, 'a')\nassert songs == ['a', 'b']",
+          "concept": "lists"
+        }
+      ],
+      "solution": "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
     },
     {
       "id": "check",

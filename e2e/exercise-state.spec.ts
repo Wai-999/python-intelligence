@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import type { Lesson } from "../src/content/types";
+import type { ExerciseStep, Lesson } from "../src/content/types";
 import { buildModel, type LearnerEvent } from "../src/learner/model";
+import { creditedConcepts } from "../src/learner/record";
 import valuesNames from "../content/lessons/py-values-names.json" with { type: "json" };
 import functionsLesson from "../content/lessons/py-functions.json" with { type: "json" };
 
@@ -64,8 +65,8 @@ test("pressing the run shortcut repeatedly during a run records one attempt", as
   const { events } = await exportEvents(page);
   const ids = new Set(events.map((e) => e.stepId));
   expect([...ids]).toEqual(["circle"]);
-  // One run records one event per concept of the lesson (four here), not one batch per key press.
-  expect(events.length).toBe(4);
+  // One run records one event per concept it is credited to (three here), not one batch per key press.
+  expect(events.length).toBe(creditedConcepts(valuesNames as unknown as Lesson, (valuesNames as unknown as Lesson).steps[circle] as ExerciseStep).length);
 });
 
 test("a run still going when progress is reset can't write into the fresh progress", async ({ page }) => {
@@ -147,7 +148,7 @@ test("after a rejected import, practice is still recorded", async ({ page }) => 
   await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
   await page.waitForTimeout(500);
   const data = await exportEvents(page) as unknown as { events: { stepId: string }[]; lessons: { lessonId: string; steps: Record<string, { passed: boolean }> }[] };
-  expect(data.events.length).toBe(4);
+  expect(data.events.length).toBe(creditedConcepts(valuesNames as unknown as Lesson, (valuesNames as unknown as Lesson).steps[circle] as ExerciseStep).length);
   expect(data.lessons.find((l) => l.lessonId === "py-values-names")?.steps.circle?.passed).toBe(true);
 });
 

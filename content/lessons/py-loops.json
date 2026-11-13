@@ -67,6 +67,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Repeat work with for and while loops, keep a running result in an accumulator, and stop early with break.",
+  "analogy": "A loop is a conveyor belt: each pass handles the next item, and the accumulator is the box you keep adding to.",
+  "misconceptions": [
+    {
+      "belief": "`range(1, 5)` includes 5.",
+      "correction": "The stop value is excluded: 1, 2, 3, 4."
+    },
+    {
+      "belief": "Setting the accumulator inside the loop keeps the total.",
+      "correction": "It resets every pass; set it once, before the loop."
+    },
+    {
+      "belief": "A while loop stops on its own when it should.",
+      "correction": "It stops only when its condition becomes false, so the body must change what the condition tests."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right loop for the job",
+      "evidence": "for loops walk over items; while loops repeat until a condition changes"
+    },
+    {
+      "criterion": "Accumulator set up once",
+      "evidence": "the running value starts before the loop and is updated in it"
+    },
+    {
+      "criterion": "Stops correctly",
+      "evidence": "loops end at the right moment, using break when the answer is found"
+    }
+  ],
+  "review": {
+    "recall": "When would you choose a while loop over a for loop? Where must an accumulator start?"
+  },
   "steps": [
     {
       "id": "why",
@@ -306,6 +339,51 @@
       "cites": [
         "docs-intlimit"
       ]
+    },
+    {
+      "id": "savings",
+      "kind": "transfer",
+      "title": "Transfer: savings and a first warning",
+      "body": "Write `years_to_target(balance, rate, target)`: how many whole years of growth (each year the balance is multiplied by\n`1 + rate`) until the balance reaches at least `target`; 0 if it already has. Then write `first_negative(numbers)`:\nthe position of the first negative number, or -1 if there is none. Stop looking once you find one.",
+      "starter": "def years_to_target(balance, rate, target):\n    return 0\n\n\ndef first_negative(numbers):\n    return -1\n",
+      "hints": [
+        "`while balance < target:` multiply the balance and add 1 to a year counter.",
+        "`for i in range(len(numbers)):` and `return i` (or `break`) at the first negative.",
+        "def years_to_target(balance, rate, target):\n    years = 0\n    while balance < target:\n        balance = balance * (1 + rate)\n        years += 1\n    return years\n\n\ndef first_negative(numbers):\n    for i in range(len(numbers)):\n        if numbers[i] < 0:\n            return i\n    return -1\n"
+      ],
+      "tests": [
+        {
+          "name": "counts years of growth",
+          "code": "assert years_to_target(100, 0.1, 121) == 2, years_to_target(100, 0.1, 121)\nassert years_to_target(100, 0.5, 400) == 4, years_to_target(100, 0.5, 400)",
+          "concept": "while-loops"
+        },
+        {
+          "name": "already there means 0 years",
+          "code": "assert years_to_target(500, 0.1, 500) == 0 and years_to_target(600, 0.1, 500) == 0",
+          "concept": "while-loops"
+        },
+        {
+          "name": "finds the first negative",
+          "code": "assert first_negative([3, 1, -2, -7]) == 2 and first_negative([-1]) == 0",
+          "concept": "for-loops"
+        },
+        {
+          "name": "-1 when there is none",
+          "code": "assert first_negative([4, 0, 2]) == -1 and first_negative([]) == -1",
+          "concept": "for-loops"
+        },
+        {
+          "name": "stops at the first one",
+          "code": "class _Spy(list):\n    reads = 0\n    def __getitem__(self, i):\n        _Spy.reads += 1\n        return list.__getitem__(self, i)\n    def __iter__(self):\n        for i in range(len(self)):\n            yield self[i]\ns = _Spy([5, -1, 9, 9, 9, 9])\nassert first_negative(s) == 1\nassert _Spy.reads <= 3, f'it looked at {_Spy.reads} items; stop once you find a negative'",
+          "concept": "break"
+        },
+        {
+          "name": "the year count accumulates",
+          "code": "assert years_to_target(1, 1.0, 1024) == 10, years_to_target(1, 1.0, 1024)",
+          "concept": "accumulators"
+        }
+      ],
+      "solution": "def years_to_target(balance, rate, target):\n    years = 0\n    while balance < target:\n        balance = balance * (1 + rate)\n        years += 1\n    return years\n\n\ndef first_negative(numbers):\n    for i in range(len(numbers)):\n        if numbers[i] < 0:\n            return i\n    return -1\n"
     },
     {
       "id": "check",

@@ -65,6 +65,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Build lists and dictionaries in one expression with comprehensions, filtering as you go.",
+  "analogy": "A comprehension is a sieve with a stamp: items fall through the filter, get stamped by the expression, and land in a new container.",
+  "misconceptions": [
+    {
+      "belief": "A comprehension changes the original list.",
+      "correction": "It builds a new list or dict; the source is left alone."
+    },
+    {
+      "belief": "The `if` goes before the `for` to filter.",
+      "correction": "A filter goes after: `[x for x in xs if x > 0]`; `a if c else b` before `for` chooses a value instead."
+    },
+    {
+      "belief": "A dict comprehension can keep two values for the same key.",
+      "correction": "A later item with the same key replaces the earlier one."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "One clear expression",
+      "evidence": "the result is built by a comprehension, not a loop with append"
+    },
+    {
+      "criterion": "Correct filter",
+      "evidence": "exactly the wanted items are kept"
+    },
+    {
+      "criterion": "Right container",
+      "evidence": "lists where order matters, dicts for lookups by key"
+    }
+  ],
+  "review": {
+    "recall": "Write from memory a list comprehension that keeps the even numbers from xs and squares them."
+  },
   "steps": [
     {
       "id": "why",
@@ -274,6 +307,41 @@
         }
       ],
       "solution": "def length_index(words):\n    return {w.lower(): len(w) for w in words if len(w) >= 3}"
+    },
+    {
+      "id": "menu",
+      "kind": "transfer",
+      "title": "Transfer: a price list",
+      "body": "Write `square_evens(numbers)`, which returns the squares of the even numbers, in order, using a list comprehension.\nThen write `price_index(items)`, where `items` is a list of `(name, price)` pairs: return a dict from each name in\nlower case to its price, keeping only items with a price above 0.",
+      "starter": "def square_evens(numbers):\n    return []\n\n\ndef price_index(items):\n    return {}\n",
+      "hints": [
+        "`[n * n for n in numbers if n % 2 == 0]`.",
+        "`{name.lower(): price for name, price in items if price > 0}`.",
+        "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n"
+      ],
+      "tests": [
+        {
+          "name": "squares of the evens, in order",
+          "code": "assert square_evens([1, 2, 3, 4, -6]) == [4, 16, 36] and square_evens([]) == []",
+          "concept": "list-comprehensions"
+        },
+        {
+          "name": "the input is unchanged",
+          "code": "nums = [2, 3]\nsquare_evens(nums)\nassert nums == [2, 3]",
+          "concept": "list-comprehensions"
+        },
+        {
+          "name": "names in lower case, priced items only",
+          "code": "assert price_index([('Tea', 2.5), ('FREE', 0), ('Cake', 3)]) == {'tea': 2.5, 'cake': 3}",
+          "concept": "dict-comprehensions"
+        },
+        {
+          "name": "a later price replaces an earlier one",
+          "code": "assert price_index([('Tea', 2), ('tea', 3)]) == {'tea': 3}",
+          "concept": "dict-comprehensions"
+        }
+      ],
+      "solution": "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n"
     },
     {
       "id": "check",

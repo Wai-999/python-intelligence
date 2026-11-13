@@ -47,12 +47,17 @@ CLAIM_KINDS = {"intuition", "formal"}  # steps that state facts and so must cite
 USES = {"reference", "adapted"}
 HARNESS = ROOT / "src" / "py" / "harness.py"
 MANIFEST = ROOT / "docs" / "audit" / "source_manifest.json"
-ORDER = ["motivation", "intuition", "visual", "formal", "example", "guided", "challenge", "quiz", "summary"]
+ORDER = ["motivation", "intuition", "visual", "formal", "example", "guided", "challenge", "transfer", "quiz", "summary"]
+EXERCISE_KINDS = ("guided", "challenge", "transfer")
+# Lessons whose master-prompt metadata (objective, analogy, misconceptions, rubric, review recall) and transfer problem
+# are still being written (task G-5, in batches). Every other lesson must have them; the list only shrinks.
+PENDING_META = set(json.loads((Path(__file__).resolve().parents[1] / "content" / "pending_meta.json").read_text())["lessons"])
 REQUIRED_KINDS = {"motivation", "example", "quiz", "summary"}
 COMMON = {"id", "kind", "title", "body"}
 BY_KIND = {
     "visual": {"visual"}, "example": {"code", "expected_output"},
     "guided": {"starter", "hints", "tests", "solution"}, "challenge": {"starter", "hints", "tests", "solution"},
+    "transfer": {"starter", "hints", "tests", "solution"},
     "quiz": {"questions", "pass_mark"},
 }
 LESSON_FIELDS = {"id", "title", "summary", "track", "level", "estimated_minutes", "prerequisites", "concepts",
@@ -186,6 +191,38 @@ def check_verbatim(lesson: dict, index: ExtractIndex | HashedIndex) -> list[str]
     return errs
 
 
+def check_meta(lesson: dict) -> list[str]:
+    """The master prompt's lesson metadata: an objective, one analogy, common misconceptions with corrections, a rubric,
+    spaced-review metadata (a free-recall prompt) and one transfer problem. Required unless the lesson is still pending."""
+    errs: list[str] = []
+    text = lambda v, n=10: isinstance(v, str) and len(v.strip()) >= n
+    pending = lesson.get("id") in PENDING_META
+    has_any = any(k in lesson for k in ("objective", "analogy", "misconceptions", "rubric", "review"))
+    transfers = [s for s in lesson.get("steps", []) if s.get("kind") == "transfer"]
+    if pending and not has_any and not transfers:
+        return errs
+    if not text(lesson.get("objective"), 20):
+        errs.append("objective: one sentence saying what the learner will be able to do")
+    if not text(lesson.get("analogy"), 20):
+        errs.append("analogy: one intuitive analogy for the central idea")
+    mis = lesson.get("misconceptions")
+    if not (isinstance(mis, list) and len(mis) >= 2 and all(isinstance(m, dict) and text(m.get("belief")) and text(m.get("correction")) for m in mis)):
+        errs.append("misconceptions: at least two {belief, correction} pairs")
+    rub = lesson.get("rubric")
+    if not (isinstance(rub, list) and len(rub) >= 3 and all(isinstance(r, dict) and text(r.get("criterion"), 3) and text(r.get("evidence")) for r in rub)):
+        errs.append("rubric: at least three {criterion, evidence} items")
+    rev = lesson.get("review")
+    if not (isinstance(rev, dict) and text(rev.get("recall"), 15)):
+        errs.append("review: {recall: a free-recall prompt for spaced review}")
+    if len(transfers) != 1:
+        errs.append(f"needs exactly one transfer step (a new problem using the lesson's ideas); has {len(transfers)}")
+    else:
+        tagged = {t.get("concept") for t in transfers[0].get("tests", [])}
+        if not tagged & set(lesson.get("concepts", [])):
+            errs.append("the transfer step's tests must be tagged with the lesson's concepts")
+    return errs
+
+
 def interpreter_report() -> tuple[str, dict[str, str | None]]:
     """(python version, {package: installed version or None}) of CONTENT_PY."""
     code = ("import sys, json, importlib, importlib.metadata as m\nstd = set(sys.argv[1].split(','))\nv = {}\nfor n in sys.argv[2:]:\n"
@@ -263,7 +300,8 @@ def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], cat
 
     steps = lesson["steps"]
     kinds = [s.get("kind") for s in steps]
-    if not REQUIRED_KINDS <= set(kinds) or not any(k in ("guided", "challenge") for k in kinds):
+    errs += [f"{lid}: {m}" for m in check_meta(lesson)]
+    if not REQUIRED_KINDS <= set(kinds) or not any(k in EXERCISE_KINDS for k in kinds):
         E(f"must include {sorted(REQUIRED_KINDS)} and at least one exercise; has {kinds}")
     idx = [ORDER.index(k) if k in ORDER else -1 for k in kinds]
     if -1 in idx:
@@ -302,7 +340,7 @@ def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], cat
                 E(f"{where}: example raises {res['error']}")
             elif res["stdout"] != s["expected_output"]:
                 E(f"{where}: stdout {res['stdout']!r} != expected_output {s['expected_output']!r}")
-        elif k in ("guided", "challenge"):
+        elif k in EXERCISE_KINDS:
             if not s["tests"]:
                 E(f"{where}: needs tests")
             sol = run_snippet(s["solution"], s["tests"])
@@ -389,7 +427,7 @@ def main() -> int:
         print("\n".join(f"✗ {e}" for e in errs))
         print(f"content invalid: {len(errs)} error(s)", file=sys.stderr)
         return 1
-    n_exec = sum(1 for l in lessons for s in l["steps"] if s["kind"] in ("example", "guided", "challenge", "visual"))
+    n_exec = sum(1 for l in lessons for s in l["steps"] if s["kind"] in ("example", "visual", *EXERCISE_KINDS))
     print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness "
           f"(CPython {py_version})")
     n_cited = sum(1 for l in lessons if l["sources"])

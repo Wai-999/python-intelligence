@@ -173,7 +173,7 @@ export function App() {
     const next = visitStep(lesson, prev, route.step);
     if (!prev || next.furthestStep !== prev.furthestStep) void save(next);
     // Warm Python once the service worker controls the page, so a first visit also caches Pyodide for offline use.
-    if (lesson.steps.some((s) => s.kind === "example" || s.kind === "guided" || s.kind === "challenge"))
+    if (lesson.steps.some((s) => s.kind === "example" || isExercise(s)))
       void waitForController().then(() => getRunner().warm()).catch(() => {});
   }, [route, store, generation]); // eslint-disable-line react-hooks/exhaustive-deps
 

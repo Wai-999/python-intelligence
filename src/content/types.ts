@@ -3,7 +3,8 @@
  * by scripts/validate_content.py (schema, graph, and every code snippet executed with CPython).
  *
  * Teaching arc required by MASTER_ARCHITECTURE.md, in order:
- *   motivation -> intuition -> visual -> formal -> example -> guided -> challenge -> quiz -> summary
+ *   motivation -> intuition -> visual -> formal -> example -> guided -> challenge -> transfer -> quiz -> summary
+ * A transfer step is an exercise in a new situation (master prompt §5: "1 transfer problem"), done after the others.
  */
 
 export type StepKind =
@@ -14,11 +15,12 @@ export type StepKind =
   | "example"
   | "guided"
   | "challenge"
+  | "transfer"
   | "quiz"
   | "summary";
 
 export const STEP_ORDER: readonly StepKind[] = [
-  "motivation", "intuition", "visual", "formal", "example", "guided", "challenge", "quiz", "summary",
+  "motivation", "intuition", "visual", "formal", "example", "guided", "challenge", "transfer", "quiz", "summary",
 ];
 
 /** Body text uses a small, safe Markdown subset rendered without innerHTML (see components/Prose). */
@@ -104,7 +106,7 @@ export interface PyTest {
 }
 
 export interface ExerciseStep extends BaseStep {
-  kind: "guided" | "challenge";
+  kind: "guided" | "challenge" | "transfer";
   starter: string;
   hints: string[];
   tests: PyTest[];
@@ -151,8 +153,18 @@ export interface Lesson {
   license: string;
   /** Pyodide packages the lesson's code imports (allowlist and pinned versions: src/py/packages.json). */
   packages?: string[];
+  /** What the learner will be able to do afterwards (master prompt §5 lesson metadata). */
+  objective?: string;
+  /** One intuitive analogy for the central idea. */
+  analogy?: string;
+  /** Common wrong beliefs about the topic, each with its correction. */
+  misconceptions?: { belief: string; correction: string }[];
+  /** How the work is judged: each criterion and the evidence that shows it. */
+  rubric?: { criterion: string; evidence: string }[];
+  /** Spaced-review metadata: a free-recall prompt asked before a review question on the lesson's concepts. */
+  review?: { recall: string };
   steps: Step[];
 }
 
-export const isExercise = (s: Step): s is ExerciseStep => s.kind === "guided" || s.kind === "challenge";
+export const isExercise = (s: Step): s is ExerciseStep => s.kind === "guided" || s.kind === "challenge" || s.kind === "transfer";
 export const isGraded = (s: Step) => isExercise(s) || s.kind === "quiz";

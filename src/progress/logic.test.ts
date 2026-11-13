@@ -18,6 +18,8 @@ describe("applyOutcome", () => {
     let p = applyOutcome(lesson, undefined, "circle", { passed: true, attempt: true });
     expect(p.completed).toBe(false);
     p = applyOutcome(lesson, p, "check", { passed: true, score: 1, attempt: true });
+    expect(p.completed).toBe(false); // the transfer problem is graded too
+    p = applyOutcome(lesson, p, "bill", { passed: true, attempt: true });
     expect(p.completed).toBe(true);
     expect(p.completedAt).toBeTruthy();
     expect(p.mastery).toBeGreaterThan(0.99);

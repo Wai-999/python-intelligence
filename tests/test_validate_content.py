@@ -119,3 +119,43 @@ def test_shipped_import_names_cover_only_supported_packages():
     meta = vc._PKG_MANIFEST.get("_import_names", {})
     assert isinstance(meta, dict) and set(meta) <= set(vc.PACKAGES)
     assert set(vc.IMPORT_NAMES) == set(vc.PACKAGES)
+
+
+def _meta_lesson(**over):
+    lesson = {"id": "not-pending-example", "concepts": ["loops"],
+              "objective": "Repeat work with loops and stop at the right time.",
+              "analogy": "A loop is a conveyor belt that handles one item per pass.",
+              "misconceptions": [{"belief": "range(1, 5) includes 5.", "correction": "The stop value is excluded."},
+                                 {"belief": "An accumulator reset inside the loop keeps the total.", "correction": "Set it once, before."}],
+              "rubric": [{"criterion": "Right loop", "evidence": "for over items, while until a condition"},
+                         {"criterion": "Accumulator", "evidence": "starts before the loop, updated inside"},
+                         {"criterion": "Stops", "evidence": "ends at the right moment, using break"}],
+              "review": {"recall": "When would you use while instead of for?"},
+              "steps": [{"id": "t", "kind": "transfer", "tests": [{"concept": "loops"}]}]}
+    lesson.update(over)
+    return lesson
+
+
+def test_lesson_metadata_is_required_and_checked():
+    assert vc.check_meta(_meta_lesson()) == []
+    for field, bad in [("objective", "short"), ("analogy", ""), ("misconceptions", [{"belief": "only one", "correction": "is not enough"}]),
+                       ("rubric", [{"criterion": "One", "evidence": "two are not enough"}] * 2), ("review", {"recall": ""})]:
+        errs = vc.check_meta(_meta_lesson(**{field: bad}))
+        assert any(e.startswith(field) for e in errs), (field, errs)
+    assert any("exactly one transfer" in e for e in vc.check_meta(_meta_lesson(steps=[])))
+    assert any("tagged with the lesson's concepts" in e for e in vc.check_meta(_meta_lesson(steps=[{"id": "t", "kind": "transfer", "tests": [{"concept": "other"}]}])))
+
+
+def test_pending_lessons_may_lack_metadata_but_partial_metadata_is_checked():
+    pending = next(iter(vc.PENDING_META), None)
+    if pending is None:
+        return  # G-5 finished: every lesson is checked
+    bare = {"id": pending, "concepts": ["x"], "steps": []}
+    assert vc.check_meta(bare) == []
+    assert vc.check_meta({**bare, "objective": "Do one thing well with this lesson's idea."}) != []
+
+
+def test_the_pending_list_only_names_real_lessons_without_metadata():
+    for lid in vc.PENDING_META:
+        lesson = json.loads((ROOT / "content" / "lessons" / f"{lid}.json").read_text())
+        assert "objective" not in lesson and not any(s["kind"] == "transfer" for s in lesson["steps"]), f"{lid} is done: remove it from pending_meta.json"

@@ -39,9 +39,15 @@ test("complete lesson 1, refresh mid-lesson 2, resume exactly, get next recommen
   await page.getByRole("button", { name: "▶ Run checks" }).click();
   await expect(page.getByText("All checks pass")).toBeVisible();
 
+  // Transfer problem: the same ideas in a new situation (graded, so the lesson needs it too).
   await page.goto("./#/lesson/py-values-names/4");
-  await passQuiz(page, [0, 1, 1]);
+  await setCode(page, "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + tax\nprint(total)\n");
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(page.getByText("All checks pass")).toBeVisible();
+
   await page.goto("./#/lesson/py-values-names/5");
+  await passQuiz(page, [0, 1, 1]);
+  await page.goto("./#/lesson/py-values-names/6");
   await expect(page.getByText(/Lesson complete/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Next lesson: Functions: naming a computation/ })).toBeVisible();
 
@@ -71,7 +77,7 @@ test("an infinite loop is stopped and Python recovers", async ({ page }) => {
 });
 
 test("export, reset, and import restore progress", async ({ page }) => {
-  await page.goto("./#/lesson/py-values-names/4");
+  await page.goto("./#/lesson/py-values-names/5");
   await passQuiz(page, [0, 1, 1]);
   await page.getByRole("button", { name: "Progress" }).click();
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export progress" }).click()]);
@@ -86,7 +92,7 @@ test("export, reset, and import restore progress", async ({ page }) => {
 });
 
 test("a corrupt import is rejected and leaves progress unchanged", async ({ page }) => {
-  await page.goto("./#/lesson/py-values-names/4");
+  await page.goto("./#/lesson/py-values-names/5");
   await passQuiz(page, [0, 1, 1]);
   await page.getByRole("button", { name: "Progress" }).click();
   await page.locator("input[type=file]").setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from('{"format":"nope"}') });
@@ -104,7 +110,7 @@ test("book-grounded lessons show their sources; original lessons don't", async (
   await expect(line).toContainText("Dive Into Python 3");
   await expect(line).toContainText("PDF pp. 60–61"); // this book prints no page numbers
 
-  await page.goto("./#/lesson/py-conditionals/8"); // recap: cites nothing itself, so no source line
+  await page.goto("./#/lesson/py-conditionals/9"); // recap: cites nothing itself, so no source line
   await expect(page.getByRole("heading", { name: "What you can do now" })).toBeVisible();
   await expect(page.locator(".step-sources")).toHaveCount(0);
   const reading = page.getByRole("region", { name: "Further reading" });

@@ -75,6 +75,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Group values in tuples, return several values at once, and unpack them into names.",
+  "analogy": "A tuple is a sealed envelope with a fixed set of slips inside: you can open it and read the slips, but not swap them.",
+  "misconceptions": [
+    {
+      "belief": "`(5)` is a one-item tuple.",
+      "correction": "It is just 5 in brackets; a one-item tuple needs a comma: `(5,)`."
+    },
+    {
+      "belief": "Tuples can be changed like lists.",
+      "correction": "Tuples are immutable; build a new tuple instead."
+    },
+    {
+      "belief": "Unpacking works with any number of names.",
+      "correction": "The number of names must match the number of items (or use *rest)."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Right shape",
+      "evidence": "results are tuples of the requested length and order"
+    },
+    {
+      "criterion": "Unpacking used",
+      "evidence": "pairs are unpacked into meaningful names instead of indexed repeatedly"
+    },
+    {
+      "criterion": "Edge cases",
+      "evidence": "single points and empty inputs behave as specified"
+    }
+  ],
+  "review": {
+    "recall": "How do you write a one-item tuple? What does `a, b = b, a` do?"
+  },
   "steps": [
     {
       "id": "why",
@@ -267,6 +300,41 @@
         }
       ],
       "solution": "def closest(points):\n    best = points[0]\n    bx, by = best\n    best_d = bx * bx + by * by\n    for x, y in points:\n        d = x * x + y * y\n        if d < best_d:\n            best, best_d = (x, y), d\n    return best"
+    },
+    {
+      "id": "box",
+      "kind": "transfer",
+      "title": "Transfer: a bounding box",
+      "body": "Points are `(x, y)` tuples. Write `bounding_box(points)`, which returns `((min_x, min_y), (max_x, max_y))` for a non-empty\nlist of points. Then write `swap_pairs(pairs)`, which returns a new list with each `(a, b)` turned into `(b, a)`.",
+      "starter": "def bounding_box(points):\n    return ((0, 0), (0, 0))\n\n\ndef swap_pairs(pairs):\n    return pairs\n",
+      "hints": [
+        "Unpack as you loop: `xs = [x for x, y in points]`, likewise `ys`, then use min and max.",
+        "`[(b, a) for a, b in pairs]`.",
+        "def bounding_box(points):\n    xs = [x for x, y in points]\n    ys = [y for x, y in points]\n    return ((min(xs), min(ys)), (max(xs), max(ys)))\n\n\ndef swap_pairs(pairs):\n    return [(b, a) for a, b in pairs]\n"
+      ],
+      "tests": [
+        {
+          "name": "the box around some points",
+          "code": "assert bounding_box([(1, 5), (-2, 3), (4, -1)]) == ((-2, -1), (4, 5)), bounding_box([(1, 5), (-2, 3), (4, -1)])",
+          "concept": "unpacking"
+        },
+        {
+          "name": "one point is its own box",
+          "code": "assert bounding_box([(3, 3)]) == ((3, 3), (3, 3))",
+          "concept": "tuples"
+        },
+        {
+          "name": "returns tuples",
+          "code": "box = bounding_box([(0, 1), (2, 3)])\nassert isinstance(box, tuple) and all(isinstance(c, tuple) for c in box), 'return a tuple of two (x, y) tuples'",
+          "concept": "tuples"
+        },
+        {
+          "name": "swaps each pair",
+          "code": "pairs = [(1, 'a'), (2, 'b')]\nassert swap_pairs(pairs) == [('a', 1), ('b', 2)]\nassert pairs == [(1, 'a'), (2, 'b')] and swap_pairs([]) == []",
+          "concept": "unpacking"
+        }
+      ],
+      "solution": "def bounding_box(points):\n    xs = [x for x, y in points]\n    ys = [y for x, y in points]\n    return ((min(xs), min(ys)), (max(xs), max(ys)))\n\n\ndef swap_pairs(pairs):\n    return [(b, a) for a, b in pairs]\n"
     },
     {
       "id": "check",

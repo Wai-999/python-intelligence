@@ -68,6 +68,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Index and slice strings, use string methods, and build new strings since strings can't be changed in place.",
+  "analogy": "A string is a row of numbered tiles you can read but not repaint: to change it you lay out a new row.",
+  "misconceptions": [
+    {
+      "belief": "`s[1]` is the first character.",
+      "correction": "Indexes start at 0: `s[0]` is the first, `s[-1]` the last."
+    },
+    {
+      "belief": "`s.upper()` changes s.",
+      "correction": "Strings are immutable; it returns a new string that you must keep."
+    },
+    {
+      "belief": "`s[2:5]` includes position 5.",
+      "correction": "The end of a slice is excluded: positions 2, 3 and 4."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Correct positions",
+      "evidence": "indexes and slices pick exactly the characters asked for"
+    },
+    {
+      "criterion": "Methods used well",
+      "evidence": "methods like replace, strip and isdigit do the work instead of manual loops"
+    },
+    {
+      "criterion": "New strings returned",
+      "evidence": "results are new strings; inputs are left as they were"
+    }
+  ],
+  "review": {
+    "recall": "What do `s[-1]`, `s[:3]` and `s[::-1]` give? Why doesn't `s.upper()` change s?"
+  },
   "steps": [
     {
       "id": "why",
@@ -282,6 +315,51 @@
         }
       ],
       "solution": "def is_palindrome(text):\n    letters = \"\"\n    for ch in text:\n        if ch.isalpha():\n            letters = letters + ch.lower()\n    return letters == letters[::-1]"
+    },
+    {
+      "id": "card",
+      "kind": "transfer",
+      "title": "Transfer: masking a card number",
+      "body": "Card numbers are often written with spaces, like `\"4111 1111 1111 1234\"`. Write `mask(card)`, which removes the spaces\nand replaces every digit except the last four with `*`. Then write `brand(card)`, which ignores spaces and returns\n`\"visa\"` if the first digit is 4, `\"mastercard\"` if it is 5, `\"amex\"` if it is 3, and `\"unknown\"` otherwise\n(including for an empty string).",
+      "starter": "def mask(card):\n    return card\n\n\ndef brand(card):\n    return \"unknown\"\n",
+      "hints": [
+        "`digits = card.replace(\" \", \"\")`, then `\"*\" * (len(digits) - 4) + digits[-4:]`.",
+        "Check `digits[:1]` (an empty slice is safe) against \"4\", \"5\" and \"3\".",
+        "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
+      ],
+      "tests": [
+        {
+          "name": "masks all but the last four",
+          "code": "assert mask('4111 1111 1111 1234') == '************1234', mask('4111 1111 1111 1234')",
+          "concept": "slicing"
+        },
+        {
+          "name": "works without spaces and on short numbers",
+          "code": "assert mask('378282246310005') == '***********0005', mask('378282246310005')\nassert mask('1234') == '1234'",
+          "concept": "string-methods"
+        },
+        {
+          "name": "the brand from the first digit",
+          "code": "assert [brand(c) for c in ('4111 1111', '5500 0000', '3782 8224', '6011 0000')] == ['visa', 'mastercard', 'amex', 'unknown']",
+          "concept": "indexing"
+        },
+        {
+          "name": "spaces and empty input",
+          "code": "assert brand(' 4111') == 'visa' and brand('') == 'unknown'",
+          "concept": "string-methods"
+        },
+        {
+          "name": "the input is unchanged",
+          "code": "card = '4111 1111 1111 1234'\nmask(card)\nassert card == '4111 1111 1111 1234'",
+          "concept": "immutability"
+        },
+        {
+          "name": "strings come back",
+          "code": "assert isinstance(mask('12345678'), str) and isinstance(brand('4'), str)",
+          "concept": "strings"
+        }
+      ],
+      "solution": "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
     },
     {
       "id": "check",

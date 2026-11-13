@@ -33,12 +33,13 @@ for (const scheme of ["light", "dark"] as const) {
       await page.getByRole("button", { name: "Step ▶" }).click();
       await scan(page, "call-trace viewer");
 
-      await page.goto("./#/lesson/py-conditionals/7");
+      await page.goto("./#/lesson/py-conditionals/8");
       await expect(page.locator("fieldset.question").first()).toBeVisible();
       await scan(page, "quiz");
 
-      await page.goto("./#/lesson/py-conditionals/8");
+      await page.goto("./#/lesson/py-conditionals/9");
       await expect(page.getByRole("region", { name: "Further reading" })).toBeVisible();
+      await expect(page.getByRole("region", { name: "Check your own work" })).toBeVisible();
       await scan(page, "recap with further reading");
 
       const trigger = page.getByRole("button", { name: "Progress" });

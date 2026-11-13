@@ -19,6 +19,8 @@ interface Props {
 
 /** Spaced retrieval (master prompt §5): due concepts one question at a time, then the evidence behind each concept. */
 export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: Props) {
+  // Spaced-review metadata: each lesson's free-recall prompt, asked before its retrieval question.
+  const recallFor = (lessonId: string) => lessons.find((l) => l.id === lessonId)?.review?.recall;
   // Only concepts with a question of their own can be reviewed; the others are listed, never faked.
   const allDue = dueReviews(model, now);
   const due = allDue.filter((s) => reviewItem(lessons, s.concept, 0) !== null);
@@ -56,6 +58,7 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
         <form className="quiz" onSubmit={(e) => { e.preventDefault(); if (!shown) submit(); }}>
           <p className="eyebrow" tabIndex={-1} ref={questionLine}>{shown ? "Review" : `${due.length} due`} · {item.concept} · from {titleOf(item.lessonId)}</p>
           <fieldset className="question" disabled={!!shown}>
+            {recallFor(item.lessonId) && <p className="recall"><strong>First, from memory:</strong> {inline(recallFor(item.lessonId)!)}</p>}
             <legend>{inline(item.question.prompt)}</legend>
             {item.question.code && <pre className="code-block"><code>{item.question.code}</code></pre>}
             {item.question.choices.map((c, ci) => {
