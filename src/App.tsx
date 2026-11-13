@@ -45,12 +45,14 @@ export function App() {
   const [assist, setAssist] = useState<Record<string, number>>({});
   const [generation, setGeneration] = useState(0);
   // Bumped synchronously when an import or reset starts; results of runs started earlier are then ignored.
-  const generationRef = useRef(0);
+  // It starts one ahead of `generation`: the first read of saved progress counts as a replacement, so nothing
+  // (not even recording a visit) can write before what is already saved has been read.
+  const generationRef = useRef(1);
   // While an import or reset is being applied, the page is inert and any input that slips through is dropped:
   // `live()` is false from the moment the replacement starts until the views have been rebuilt from it.
-  const [replacing, setReplacing] = useState(false);
-  // Set when reloading after a replacement failed: the page stays locked until a retry succeeds.
-  const [reloadFailed, setReloadFailed] = useState<number | null>(null);
+  const [replacing, setReplacing] = useState(true);
+  // Set when reading progress back (on start, or after a replacement) failed: the page stays locked until a retry succeeds.
+  const [reloadFailed, setReloadFailed] = useState<{ token: number; message: string } | null>(null);
   const live = () => generation === generationRef.current;
   // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
   const [now, setNow] = useState(() => new Date().toISOString());
@@ -87,10 +89,23 @@ export function App() {
   useEffect(() => {
     openProgressStore().then(async (s) => {
       setStore(s);
-      const pos = await reload(s);
-      if (!location.hash && pos && graph.byId.has(pos.lessonId)) location.replace(`#/lesson/${pos.lessonId}/${pos.stepIndex}`);
+      try {
+        const pos = await reload(s);
+        if (!location.hash && pos && graph.byId.has(pos.lessonId)) location.replace(`#/lesson/${pos.lessonId}/${pos.stepIndex}`);
+        setGeneration(1);
+        setReplacing(false);
+      } catch (e) {
+        // Storage opened but couldn't be read: stay locked (so nothing overwrites it) and offer a retry.
+        setReloadFailed({ token: 1, message: String((e as Error)?.message ?? e) });
+      }
       setReady(true);
-    }).catch((e) => { setStoreError(String(e?.message ?? e)); setReady(true); });
+    }).catch((e) => {
+      // No storage at all (e.g. some private modes): the site still works, it just can't save.
+      setStoreError(String(e?.message ?? e));
+      setGeneration(1);
+      setReplacing(false);
+      setReady(true);
+    });
   }, [reload]);
 
   useEffect(() => {
@@ -146,13 +161,11 @@ export function App() {
     setReloadFailed(null);
     reload(store).then(() => {
       if (token !== generationRef.current) return;
-      setStoreError((e) => (e?.startsWith("your progress was replaced") ? null : e));
       setGeneration(token);
       setReplacing(false);
     }, (e) => {
       if (token !== generationRef.current) return;
-      setStoreError(`your progress was replaced but couldn't be read back: ${String(e?.message ?? e)}`);
-      setReloadFailed(token);
+      setReloadFailed({ token, message: String(e?.message ?? e) });
     });
   };
 
@@ -179,8 +192,9 @@ export function App() {
           <button type="button" className="btn ghost" onClick={() => setPanel((x) => !x)} aria-expanded={panel} disabled={!store}>Progress</button>
         </div>
       </header>
-      {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.
-        {reloadFailed !== null && <>{" "}<button type="button" className="btn" onClick={() => finishReplacement(reloadFailed)}>Try loading it again</button></>}</p>}
+      {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
+      {reloadFailed && <p className="pill bad" role="alert">Your saved progress couldn't be read back: {reloadFailed.message}. The page is paused so
+        nothing overwrites it.{" "}<button type="button" className="btn" onClick={() => finishReplacement(reloadFailed.token)}>Try loading it again</button></p>}
       {panel && store && <ProgressPanel store={store} busy={replacing} onReplacing={() => { generationRef.current += 1; setReplacing(true); return generationRef.current; }}
                                   onChanged={finishReplacement}
                                   onClose={() => setPanel(false)} />}

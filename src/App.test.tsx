@@ -17,11 +17,13 @@ let history: LearnerEvent[] = [];
 let drafts: Record<string, string> = {};
 let failExport = false;
 let lessonsAfter: LessonProgress[] = [];
+const savedRecords: LessonProgress[] = [];
+let exportGate: Promise<void> | null = null;
 const fake: ProgressStore & { close(): void } = {
   close: () => {},
   getLesson: async () => undefined,
   allLessons: async () => lessonsAfter,
-  putLesson: async (p) => { saved.push(p.lessonId); },
+  putLesson: async (p) => { saved.push(p.lessonId); savedRecords.push(p); },
   getDraft: async () => undefined,
   putDraft: async () => {},
   getPosition: async () => null,
@@ -30,16 +32,21 @@ const fake: ProgressStore & { close(): void } = {
   allEvents: async () => [],
   getAssistance: async () => 0,
   raiseAssistance: () => { raised += 1; return new Promise<number>((resolve) => { release = resolve; }); },
-  exportAll: async (): Promise<ProgressExport> => failExport ? Promise.reject(new Error("disk went away")) : ({ format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
-    lessons: [], drafts, position: null, events: history, assistance: {} }),
+  exportAll: async (): Promise<ProgressExport> => {
+    if (exportGate) await exportGate;
+    if (failExport) throw new Error("disk went away");
+    return { format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
+    lessons: [], drafts, position: null, events: history, assistance: {} };
+  },
   importAll: () => new Promise<void>((resolve) => { pendingImports.push(resolve); }),
   clear: async () => {},
 };
-vi.mock("./progress/store", () => ({ openProgressStore: async () => fake }));
+let openFails = false;
+vi.mock("./progress/store", () => ({ openProgressStore: async () => { if (openFails) throw new Error("storage blocked"); return fake; } }));
 vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "idle", onStatus: () => () => {}, warm: async () => {}, run: async () => { throw new Error("not used"); } }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -172,5 +179,50 @@ describe("App", () => {
     await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
     expect(screen.queryByText(/couldn't be read back/)).toBeNull();
     expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^1 of /);
+  });
+
+  const completedRecord = () => ({ lessonId: "py-values-names", steps: {}, furthestStep: 9, completed: true, mastery: 1, struggles: {} }) as unknown as LessonProgress;
+
+  it("writes nothing until saved progress has been read on start", async () => {
+    lessonsAfter = [completedRecord()];
+    let open: () => void = () => {};
+    exportGate = new Promise((r) => { open = r; });
+    const { App } = await import("./App");
+    location.hash = "#/lesson/py-values-names/0";
+    render(<App />);
+    await new Promise((r) => setTimeout(r, 30));
+    expect(positions).toBe(0);
+    expect(saved).toEqual([]);
+    await act(async () => { open(); await Promise.resolve(); });
+    await waitFor(() => expect(positions).toBe(1));
+    expect(savedRecords.every((p) => p.completed)).toBe(true); // the saved record is kept, not replaced by a fresh one
+    expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^1 of /);
+  });
+
+  it("stays paused with a retry when saved progress can't be read on start, and keeps the saved record", async () => {
+    lessonsAfter = [completedRecord()];
+    failExport = true;
+    const { App } = await import("./App");
+    location.hash = "#/lesson/py-values-names/0";
+    render(<App />);
+    await screen.findByText(/couldn't be read back: disk went away/);
+    expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(true);
+    expect(positions).toBe(0);
+    expect(saved).toEqual([]);
+    failExport = false;
+    fireEvent.click(screen.getByRole("button", { name: "Try loading it again" }));
+    await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
+    await waitFor(() => expect(positions).toBe(1));
+    expect(savedRecords.every((p) => p.completed)).toBe(true);
+    expect(screen.queryByText(/couldn't be read back/)).toBeNull();
+  });
+
+  it("still works, unsaved, when storage can't be opened at all", async () => {
+    openFails = true;
+    const { App } = await import("./App");
+    location.hash = "#/lesson/py-values-names/0";
+    render(<App />);
+    await screen.findByText(/Progress can't be saved in this browser \(.*storage blocked\)/);
+    expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false);
   });
 });
