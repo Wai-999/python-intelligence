@@ -1,0 +1,169 @@
+{
+ "py-values-names": {
+  "reject": [
+   "price = 2.5\ncount = 4\n",
+   "price = 2.5\ncount = 4\nsubtotal = 10\ntax = 2\ntotal = 11\n"
+  ],
+  "accept": [
+   "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n"
+  ]
+ },
+ "py-functions": {
+  "reject": [
+   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    return price * quantity + 4.0 + 1.5 * weight_kg * quantity\n",
+   "def shipping(weight_kg):\n    print(4.0 + 1.5 * weight_kg)\n\n\ndef order_total(price, quantity, weight_kg):\n    print(price * quantity)\n"
+  ],
+  "accept": [
+   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    goods = price * quantity\n    return goods + shipping(quantity * weight_kg)\n"
+  ]
+ },
+ "py-conditionals": {
+  "reject": [
+   "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age <= 12:\n        return 6\n    elif age >= 65:\n        return 7\n    elif student is True:\n        return 8\n    return 10\n",
+   "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age < 12:\n        return 6\n    elif age >= 65:\n        return 7\n    elif student:\n        return 8\n    return 10\n"
+  ],
+  "accept": [
+   "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age <= 12:\n        return 6.0\n    elif age >= 65:\n        return 7\n    elif student:\n        return 8\n    return 10.0\n"
+  ]
+ },
+ "py-loops": {
+  "reject": [
+   "def years_to_target(balance, rate, target):\n    years = 0\n    while balance < target:\n        balance = balance * (1 + rate)\n        years += 1\n    return years\n\n\ndef first_negative(numbers):\n    found = [i for i in range(len(numbers)) if numbers[i] < 0]\n    return found[0] if found else -1\n",
+   "def years_to_target(balance, rate, target):\n    years = 0\n    while balance <= target:\n        balance = balance * (1 + rate)\n        years += 1\n    return years\n\n\ndef first_negative(numbers):\n    for i in range(len(numbers)):\n        if numbers[i] < 0:\n            return i\n    return -1\n"
+  ],
+  "accept": [
+   "def years_to_target(balance, rate, target):\n    years = 0\n    while balance < target:\n        balance = balance * (1 + rate)\n        years += 1\n    return years\n\n\ndef first_negative(numbers):\n    for i in range(len(numbers)):\n        if numbers[i] < 0 and numbers[i] == numbers[i]:\n            return i\n    return -1\n"
+  ]
+ },
+ "py-strings": {
+  "reject": [
+   "def mask(card):\n    digits = card\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
+  ],
+  "accept": [
+   "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return digits[-4:].rjust(len(digits), \"*\")\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
+  ]
+ },
+ "py-lists": {
+  "reject": [
+   "def move_to_front(songs, title):\n    result = songs\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
+  ],
+  "accept": [
+   "def move_to_front(songs, title):\n    result = list(songs)\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
+  ]
+ },
+ "py-dicts": {
+  "reject": [
+   "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"
+  ],
+  "accept": [
+   "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        if item in stock:\n            stock[item] += quantity\n        else:\n            stock[item] = quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"
+  ]
+ },
+ "py-tuples": {
+  "reject": [
+   "def bounding_box(points):\n    min_x, min_y = points[0]\n    max_x, max_y = points[0]\n    for x, y in points:\n        min_x, max_x = min(min_x, x), max(max_x, x)\n        min_y, max_y = min(min_y, y), max(max_y, y)\n    return [(min_x, min_y), (max_x, max_y)]\n\n\ndef swap_pairs(pairs):\n    swapped = []\n    for a, b in pairs:\n        swapped.append((b, a))\n    return swapped\n"
+  ],
+  "accept": [
+   "def bounding_box(points):\n    min_x, min_y = points[0]\n    max_x, max_y = points[0]\n    for x, y in points:\n        min_x, max_x = min(min_x, x), max(max_x, x)\n        min_y, max_y = min(min_y, y), max(max_y, y)\n    return ((min_x, min_y), (max_x, max_y))\n\n\ndef swap_pairs(pairs):\n    swapped = []\n    for a, b in pairs:\n        swapped = swapped + [(b, a)]\n    return swapped\n"
+  ]
+ },
+ "py-scope-defaults": {
+  "reject": [
+   "total = 100\n\n\ndef format_price(amount, currency=\"\u00a3\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(bill, percent=10):\n    global total\n    total = bill + bill * percent / 100\n    return total\n"
+  ],
+  "accept": [
+   "total = 100\n\n\ndef format_price(amount, currency=\"\u00a3\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total * (1 + percent / 100)\n"
+  ]
+ },
+ "py-comprehensions": {
+  "reject": [
+   "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name: price for name, price in items if price > 0}\n"
+  ],
+  "accept": [
+   "def square_evens(numbers):\n    return [n * n for n in numbers if not n % 2]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n"
+  ]
+ },
+ "py-classes": {
+  "reject": [
+   "class Scoreboard:\n    scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n"
+  ],
+  "accept": [
+   "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        best = max(self.scores.values())\n        return sorted(p for p in self.scores if self.scores[p] == best)[0]\n"
+  ]
+ },
+ "py-exceptions": {
+  "reject": [
+   "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except:\n            pass\n    return ages\n",
+   "def parse_age(text):\n    age = int(text.strip())\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
+  ],
+  "accept": [
+   "def parse_age(text):\n    age = int(text)\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
+  ]
+ },
+ "py-files": {
+  "reject": [
+   "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"w\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []\n",
+   "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"a\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return [line for line in f]\n    except FileNotFoundError:\n        return []\n"
+  ],
+  "accept": [
+   "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"a\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return f.read().splitlines()\n    except FileNotFoundError:\n        return []\n"
+  ]
+ },
+ "py-modules": {
+  "reject": [
+   "def days_between(start, end):\n    return 0\n\n\ndef weekday_name(day):\n    return 'Friday'\n"
+  ],
+  "accept": [
+   "import datetime\n\n\ndef days_between(start, end):\n    a = datetime.date.fromisoformat(start)\n    b = datetime.date.fromisoformat(end)\n    return (b - a).days\n\n\ndef weekday_name(day):\n    names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']\n    return names[datetime.date.fromisoformat(day).weekday()]\n"
+  ]
+ },
+ "py-json-csv": {
+  "reject": [
+   "import json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    lines = [\",\".join(rows[0])]\n    for row in rows:\n        lines.append(\",\".join(str(v) for v in row.values()))\n    return \"\\n\".join(lines)\n"
+  ],
+  "accept": [
+   "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.writer(out)\n    writer.writerow(list(rows[0]))\n    for row in rows:\n        writer.writerow(list(row.values()))\n    return out.getvalue()\n"
+  ]
+ },
+ "py-testing": {
+  "reject": [
+   "import unittest\n\n\ndef word_count(text):\n    return len(text.split())\n\n\nclass TestWordCount(unittest.TestCase):\n    def test_simple(self):\n        self.assertEqual(word_count(\"one two\"), 2)\n"
+  ],
+  "accept": [
+   "import unittest\n\n\ndef word_count(text):\n    return len(text.split())\n\n\nclass TestWordCount(unittest.TestCase):\n    def test_simple(self):\n        self.assertEqual(word_count(\"one two\"), 2)\n\n    def test_empty_and_blank(self):\n        self.assertEqual(word_count(\"\"), 0)\n        self.assertEqual(word_count(\"   \"), 0)\n\n    def test_whitespace(self):\n        self.assertEqual(word_count(\"a  b\"), 2)\n        self.assertEqual(word_count(\"a\\tb\\nc\"), 3)\n\n    def test_punctuation(self):\n        self.assertEqual(word_count(\"Hi, there.\"), 2)\n\n"
+  ]
+ },
+ "py-generators": {
+  "reject": [
+   "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    items = list(items)\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"
+  ],
+  "accept": [
+   "import itertools\n\n\ndef chunked(items, size):\n    if size < 1:\n        raise ValueError('size must be at least 1')\n    it = iter(items)\n    while True:\n        chunk = list(itertools.islice(it, size))\n        if not chunk:\n            return\n        yield chunk\n"
+  ]
+ },
+ "py-typing": {
+  "reject": [
+   "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n",
+   "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = None\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"
+  ],
+  "accept": [
+   "from __future__ import annotations\nfrom dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"
+  ]
+ },
+ "py-sqlite": {
+  "reject": [
+   "def search(con, word):\n    return [row[0] for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\")]\n"
+  ],
+  "accept": [
+   "def search(con, word):\n    rows = con.execute(\n        \"SELECT title FROM books WHERE title LIKE :p ORDER BY year, title\", {\"p\": \"%\" + word + \"%\"}\n    )\n    return [row[0] for row in rows]\n"
+  ]
+ },
+ "algo-complexity": {
+  "reject": [
+   "def first_repeat(items):\n    for i in range(len(items)):\n        if items[i] in items[:i]:\n            return items[i]\n    return None\n"
+  ],
+  "accept": [
+   "def first_repeat(items):\n    seen = {}\n    for item in items:\n        if item in seen:\n            return item\n        seen[item] = True\n    return None\n"
+  ]
+ }
+}

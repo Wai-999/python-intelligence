@@ -349,8 +349,8 @@
           "concept": "truthiness"
         },
         {
-          "name": "returns numbers",
-          "code": "assert all(isinstance(ticket_price(a, s), int) for a in (1, 40) for s in (True, False))",
+          "name": "True and False work as the flag",
+          "code": "assert (ticket_price(30, True), ticket_price(30, False)) == (8, 10)",
           "concept": "booleans"
         }
       ],

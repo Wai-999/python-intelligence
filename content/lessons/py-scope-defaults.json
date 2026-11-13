@@ -231,7 +231,7 @@
         },
         {
           "name": "add_tip returns the new total",
-          "code": "assert add_tip(50) == 55.0 and add_tip(80, percent=25) == 100.0",
+          "code": "assert abs(add_tip(50) - 55.0) < 1e-9 and abs(add_tip(80, percent=25) - 100.0) < 1e-9, (add_tip(50), add_tip(80, percent=25))",
           "concept": "default-arguments"
         },
         {

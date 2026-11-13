@@ -107,7 +107,7 @@
       "id": "bill",
       "kind": "transfer",
       "title": "Transfer: a shopping bill",
-      "body": "A new situation with the same ideas. Four items cost `2.5` each, and tax is 20% of the subtotal. Starting from\nthe names `price` and `count`, make `subtotal`, then `tax`, then `total` (subtotal plus tax), each computed from\nthe names before it, and print the total.",
+      "body": "A new situation with the same ideas. Four items cost `2.5` each, and tax is 20% of the subtotal. Starting from\nthe names `price` and `count`, make `subtotal`, then `tax`, then `total` (subtotal plus tax), each computed from\nthe names before it. (Printing the total is up to you: the checks look at the names.)",
       "starter": "price = 2.5\ncount = 4\n",
       "hints": [
         "`subtotal = price * count`, then `tax = subtotal * 0.2`.",

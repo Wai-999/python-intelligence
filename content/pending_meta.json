@@ -1,7 +1,6 @@
 {
  "_note": "Lessons whose G-5 metadata and transfer problem are not written yet. The content gate requires them for every other lesson; remove ids as batches land, and delete the file's last entry to finish G-5.",
  "lessons": [
-  "algo-complexity",
   "ml-boosting",
   "ml-capstone",
   "ml-classification",
@@ -22,15 +21,6 @@
   "proj-caesar",
   "proj-life",
   "proj-monty-hall",
-  "py-classes",
-  "py-exceptions",
-  "py-files",
-  "py-generators",
-  "py-json-csv",
-  "py-modules",
-  "py-sqlite",
-  "py-testing",
-  "py-typing",
   "stats-bayes",
   "stats-normal",
   "stats-simulation",

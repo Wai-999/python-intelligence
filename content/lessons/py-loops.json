@@ -80,7 +80,7 @@
     },
     {
       "belief": "A while loop stops on its own when it should.",
-      "correction": "It stops only when its condition becomes false, so the body must change what the condition tests."
+      "correction": "It checks its condition before each pass and stops when it is false (or earlier, at a break, return or error); a loop meant to end by its condition must change what the condition tests."
     }
   ],
   "rubric": [
@@ -374,7 +374,7 @@
         },
         {
           "name": "stops at the first one",
-          "code": "class _Spy(list):\n    reads = 0\n    def __getitem__(self, i):\n        _Spy.reads += 1\n        return list.__getitem__(self, i)\n    def __iter__(self):\n        for i in range(len(self)):\n            yield self[i]\ns = _Spy([5, -1, 9, 9, 9, 9])\nassert first_negative(s) == 1\nassert _Spy.reads <= 3, f'it looked at {_Spy.reads} items; stop once you find a negative'",
+          "code": "class _Spy(list):\n    seen = set()\n    def __getitem__(self, i):\n        _Spy.seen.add(i % len(self))\n        return list.__getitem__(self, i)\n    def __iter__(self):\n        for i in range(len(self)):\n            yield self[i]\ns = _Spy([5, -1, 9, 9, 9, 9])\nassert first_negative(s) == 1\nassert max(_Spy.seen) <= 1, f'it looked at position {max(_Spy.seen)}, past the first negative at 1; stop once you find it'",
           "concept": "break"
         },
         {
