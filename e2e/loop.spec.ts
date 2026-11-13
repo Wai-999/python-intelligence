@@ -75,3 +75,15 @@ test("in the browser, Python's own parser tells a misspelt name from a real Name
   expect(tags).toContain("slip:name");
   expect(tags).toContain("error:NameError");
 });
+
+test("a typo inside a function that a check calls is a slip too, while a real NameError there steps back", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.goto("./#/lesson/py-functions/5"); // temps: the checks call celsius_to_fahrenheit
+  for (let i = 0; i < 3; i++) await runCode(page, "def celsius_to_fahrenheit(celsius):\n    return celsuis * 9 / 5 + 32\n");
+  await expect(page.locator("section.meso")).toHaveCount(0);
+  const tags = (await exportEvents(page)).filter((e) => e.task === "exercise").flatMap((e) => e.tags ?? []);
+  expect(tags).toContain("slip:name");
+  expect(tags.some((t) => t.startsWith("check:"))).toBe(false); // a check that raised isn't a wrong result
+  for (let i = 0; i < 3; i++) await runCode(page, "def celsius_to_fahrenheit(celsius):\n    return celsius * conversion_factor + 32\n");
+  await expect(page.locator("section.meso")).toContainText("NameError");
+});

@@ -76,3 +76,12 @@ def test_a_name_error_carries_the_bound_names_and_other_errors_do_not():
     assert "bound" not in harness.run_learner("x = 1 + 'a'")["error"]
     # UnboundLocalError is a NameError subclass with a different message: it gets no list (it is never a typo).
     assert "bound" not in harness.run_learner("c = 0\ndef f():\n    c = c + 1\nf()")["error"]
+
+
+def test_a_name_error_raised_inside_a_check_carries_the_bound_names():
+    code = "def area(width):\n    return wdith * 2\n"
+    result = harness.run_learner(code, [{"name": "doubles", "code": "assert area(3) == 6", "concept": "functions"},
+                                        {"name": "wrong", "code": "assert False, 'nope'", "concept": "functions"}])
+    raised, mismatch = result["tests"]
+    assert raised["errorType"] == "NameError" and raised["bound"] == ["area", "width"]
+    assert mismatch["errorType"] == "AssertionError" and "bound" not in mismatch

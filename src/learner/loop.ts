@@ -51,10 +51,13 @@ export function editDistance(a: string, b: string): number {
 
 /**
  * True when an undefined name looks like a misspelling of a name the code binds (within 1 edit for names up to 4
- * letters, 2 for longer ones) or of a built-in (within 1 edit), or differs from one only in case. `bound` comes from
+ * letters, 2 for longer ones) or of a built-in (within 1 edit), or differs from one only in case, unless the name itself
+ * is bound somewhere (then it is a scope or ordering error). `bound` comes from
  * Python's own parser (harness.bound_names), so strings, comments and attribute names never count.
  */
 export function looksLikeTypo(name: string, bound: readonly string[]): boolean {
+  // The name is bound somewhere, just not where or when it was used: a scope or ordering error, not a typo.
+  if (bound.includes(name)) return false;
   const near = (k: string, limit: number) => k !== name && (k.toLowerCase() === name.toLowerCase() || (k.length > 1 && editDistance(name, k) <= limit));
   const limit = name.length <= 4 ? 1 : 2;
   return bound.some((k) => near(k, limit)) || PY_BUILTINS.some((k) => near(k, 1));
@@ -117,8 +120,11 @@ export function mesoTrigger(events: readonly LearnerEvent[], concept: string, no
   // Explanation mismatch: the code works (an independent exercise success) but explaining the same concept fails
   // repeatedly (quiz or review answers), so the working code may rest on a mental model that doesn't hold.
   const coded = recent.filter((e) => e.passed && e.assistance === 0);
-  const misses = all.filter((e) => e.concept === concept && (e.task === "quiz" || e.task === "review") && Date.parse(e.at) > since)
-    .slice(-MESO.window).filter((e) => !e.passed);
+  // Only misses after the latest independent explanation success count: a success shows the earlier ones resolved.
+  const explained = all.filter((e) => e.concept === concept && (e.task === "quiz" || e.task === "review") && Date.parse(e.at) > since);
+  let resolvedAt = -1;
+  explained.forEach((e, k) => { if (e.passed && e.assistance === 0) resolvedAt = k; });
+  const misses = explained.slice(resolvedAt + 1).slice(-MESO.window).filter((e) => !e.passed);
   if (coded.length > 0 && misses.length >= MESO.explainMisses)
     return { kind: "explanation", concept, signature: "explain:mismatch", supports: ordered([...coded, ...misses]).map((e) => e.id) };
   const leaned = recent.filter((e) => e.passed && e.assistance >= MESO.strongHelp);

@@ -14,7 +14,7 @@ import { classifyError } from "../learner/loop";
 
 export interface AttemptDetail {
   /** Each check's concept and outcome, or null when the code didn't run. */
-  results: { concept?: string; passed: boolean }[] | null;
+  results: { concept?: string; passed: boolean; tags?: string[] }[] | null;
   assistance: Assistance;
   /** The progress generation the run started in; results from before an import or reset are discarded. */
   generation: number;
@@ -108,7 +108,11 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         : step.tests.map((t) => t.concept).filter((c): c is string => !!c).slice(0, 1);
       if (!passed) setFailures((n) => n + 1);
       onResult(passed, failedConcepts, {
-        results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed })) : null,
+        // A check that failed by raising (rather than by a wrong result) is classified like a run error: a NameError
+        // inside a learner function is usually a typo, not a structural mistake.
+        results: r.ok ? r.tests.map((t) => ({ concept: t.concept ?? undefined, passed: t.passed,
+          ...(!t.passed && t.errorType && t.errorType !== "AssertionError"
+            ? { tags: classifyError({ type: t.errorType, message: t.message, line: null, summary: t.message, bound: t.bound }) } : {}) })) : null,
         assistance: helped.current,
         generation: startedIn,
         errorTags: r.error ? classifyError(r.error) : [],

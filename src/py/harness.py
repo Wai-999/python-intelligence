@@ -121,8 +121,11 @@ def _run(code, tests):
             result["tests"].append({"name": name, "passed": False, "errorType": "AssertionError",
                                     "message": str(exc) or "assertion failed", "concept": test.get("concept")})
         except BaseException as exc:
-            result["tests"].append({"name": name, "passed": False, "errorType": type(exc).__name__,
-                                    "message": type(exc).__name__ + ": " + str(exc), "concept": test.get("concept")})
+            entry = {"name": name, "passed": False, "errorType": type(exc).__name__,
+                     "message": type(exc).__name__ + ": " + str(exc), "concept": test.get("concept")}
+            if type(exc) is NameError:  # often a typo inside a learner function the check called
+                entry["bound"] = bound_names(code)
+            result["tests"].append(entry)
         else:
             result["tests"].append({"name": name, "passed": True, "errorType": None, "message": "",
                                     "concept": test.get("concept")})

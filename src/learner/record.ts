@@ -40,7 +40,7 @@ export function suggestedTier(model: LearnerModel, lesson: Lesson, step: Exercis
  * `errorTags` (from classifyError) go on every failed event of the attempt; each failed check adds "check:<concept>" to
  * that concept's event (and to the untested concepts' events, which are credited with the overall result).
  */
-export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { concept?: string; passed: boolean }[] | null,
+export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { concept?: string; passed: boolean; tags?: string[] }[] | null,
                                assistance: Assistance, stamp: Stamp, errorTags: readonly string[] = []): LearnerEvent[] {
   const lessonConcepts = new Set(lesson.concepts);
   const direct = [...new Set(step.tests.map((t) => t.concept).filter((c): c is string => !!c && lessonConcepts.has(c)))];
@@ -48,9 +48,11 @@ export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { co
   const overall = results !== null && results.length === step.tests.length && results.every((r) => r.passed);
   const outcome = (c: string) => results !== null && results.filter((r) => r.concept === c).length > 0
     && results.filter((r) => r.concept === c).every((r) => r.passed);
-  const failedChecks = (results ?? []).filter((r) => !r.passed).map((r) => `check:${r.concept ?? "general"}`);
+  // A failed check carries its own tags (an error raised while it ran, classified like any other) or, by default,
+  // "check:<concept>" for a wrong result.
+  const failed = (results ?? []).filter((r) => !r.passed).map((r) => ({ concept: r.concept, tags: r.tags ?? [`check:${r.concept ?? "general"}`] }));
   const tagsFor = (concept: string, isDirect: boolean) => [...new Set([...errorTags,
-    ...(isDirect ? failedChecks.filter((t) => t === `check:${concept}`) : failedChecks)])];
+    ...failed.filter((f) => !isDirect || f.concept === concept).flatMap((f) => f.tags)])];
   return [...direct.map((c) => [c, outcome(c), true] as const), ...untested.map((c) => [c, overall, false] as const)].map(([concept, passed, isDirect]) => {
     const tags = passed ? [] : tagsFor(concept, isDirect);
     return { id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance,

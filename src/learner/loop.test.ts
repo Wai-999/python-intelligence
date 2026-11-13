@@ -42,6 +42,22 @@ describe("classifying a failed run", () => {
     expect(classifyError(err("TimeoutError"))).toEqual(["error:TimeoutError"]);
   });
 
+  it("never calls a bound name a typo of another: that is a scope or ordering error", () => {
+    expect(classifyError(nameErr("total", ["total", "totals"]))).toEqual(["error:NameError"]); // bound in another function, say
+    expect(classifyError(nameErr("lst", ["lst"]))).toEqual(["error:NameError"]); // even though it is one edit from the built-in list
+    expect(classifyError(nameErr("totl", ["total"]))).toEqual(["slip:name"]);
+  });
+
+  it("classifies an error raised while a check ran the learner's code, per check", () => {
+    const tags = classifyError(nameErr("wdith", ["area", "width"]));
+    const [loops] = exerciseEvents(L, E1, [{ concept: "loops", passed: false, tags }], 0, at(0));
+    expect(loops!.tags).toEqual(["slip:name"]); // not check:loops
+    const runs = [1, 2, 3].flatMap((m) => exerciseEvents(L, E1, [{ concept: "loops", passed: false, tags }], 0, at(m)));
+    expect(mesoTrigger(runs, "loops", now(10))).toBeNull(); // three test-invoked typos never trigger a step back
+    const wrong = [1, 2, 3].flatMap((m) => exerciseEvents(L, E1, [{ concept: "loops", passed: false }], 0, at(m)));
+    expect(mesoTrigger(wrong, "loops", now(10))).toMatchObject({ signature: "check:loops" }); // three wrong results do
+  });
+
   it("measures near-misses by edit distance, stricter for short names and for built-ins", () => {
     expect(editDistance("totl", "total")).toBe(1);
     expect(editDistance("lenght", "length")).toBe(1); // a swap counts once
@@ -142,6 +158,18 @@ describe("the meso trigger", () => {
     expect(mesoTrigger([...coded, answer(false, 2), answer(false, 3), shown, answer(false, 5), answer(false, 6)], "loops", now(60))).toBeNull();
     expect(mesoTrigger([...coded, answer(false, 2), answer(false, 3), shown, ...pass(E2, 20), answer(false, 21), answer(false, 22)], "loops", now(60)))
       .toMatchObject({ kind: "explanation" });
+  });
+
+  it("counts explanation misses only since the last independent explanation success", () => {
+    const answer = (passed: boolean, min: number, assistance: 0 | 4 = 0): LearnerEvent =>
+      ({ id: `r${min}-${++k}`, at: at(min).at, lessonId: L.id, stepId: "check", task: "quiz", concept: "loops", passed, assistance, policy: "learner-heuristic-1" });
+    const coded = pass(E1, 1);
+    expect(mesoTrigger([...coded, answer(false, 2), answer(false, 3), answer(true, 4)], "loops", now(5))).toBeNull(); // recovered
+    expect(mesoTrigger([...coded, answer(false, 2), answer(false, 3), answer(true, 4, 4)], "loops", now(5))).toMatchObject({ kind: "explanation" }); // an assisted pass doesn't count as recovery
+    expect(mesoTrigger([...coded, answer(false, 2), answer(true, 3), answer(false, 4)], "loops", now(5))).toBeNull(); // one miss since the recovery
+    const again = mesoTrigger([...coded, answer(false, 2), answer(true, 3), answer(false, 4), answer(false, 5), answer(false, 6)], "loops", now(7))!;
+    expect(again).toMatchObject({ kind: "explanation" });
+    expect(again.supports).toHaveLength(1 + 3); // the coding success and the three misses after the recovery
   });
 
   it("steps back after repeated reliance on strong hints, but not for light help", () => {

@@ -18,6 +18,8 @@ export interface TestResult {
   errorType: string | null;
   message: string;
   concept?: string | null;
+  /** For a NameError raised while the check ran the learner's code: every name the code binds (harness.bound_names). */
+  bound?: string[];
 }
 
 export interface RunResult {
