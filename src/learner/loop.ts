@@ -16,10 +16,54 @@ export const MESO = { window: 5, similar: 3, strongHelp: 3, cooldownMs: 10 * 60_
 
 // ---- Classifying a failed run -------------------------------------------------------------------------------------
 
-const BUILTINS = ["print", "len", "range", "int", "str", "float", "bool", "list", "dict", "set", "tuple", "sum", "min", "max",
-  "sorted", "reversed", "abs", "round", "input", "enumerate", "zip", "map", "filter", "isinstance", "type", "open", "True",
-  "False", "None", "return", "while", "for", "def", "elif", "else", "import", "from", "lambda", "append", "items", "keys",
-  "values", "split", "join", "strip", "lower", "upper", "format"];
+/**
+ * CPython 3.12's built-in names, without exceptions and dunders (dir(builtins)), grouped by kind.
+ * tests/test_loop_builtins.py checks this list against the real interpreter.
+ */
+export const PY_BUILTINS = [
+  // constants
+  "True", "False", "None", "Ellipsis", "NotImplemented",
+  // types and constructors
+  "int", "float", "complex", "bool", "str", "bytes", "bytearray", "memoryview", "list", "tuple", "dict", "set", "frozenset",
+  "range", "slice", "object", "type", "property", "classmethod", "staticmethod", "super",
+  // numbers
+  "abs", "round", "pow", "divmod", "sum", "min", "max", "hex", "oct", "bin", "hash", "id",
+  // sequences and iteration
+  "len", "sorted", "reversed", "enumerate", "zip", "map", "filter", "iter", "next", "aiter", "anext", "all", "any",
+  // text
+  "chr", "ord", "ascii", "repr", "format", "print", "input",
+  // objects and attributes
+  "isinstance", "issubclass", "callable", "getattr", "setattr", "hasattr", "delattr", "vars", "dir",
+  // execution and environment
+  "eval", "exec", "compile", "globals", "locals", "open", "breakpoint", "help", "exit", "quit", "copyright", "credits", "license",
+];
+
+/** The code with string literals and comments blanked out, so words inside them are never taken for names. */
+export function codeOnly(code: string): string {
+  return code
+    .replace(/[rRbBuUfF]{0,2}("""|\'\'\')[\s\S]*?\1/g, " ")
+    .replace(/[rRbBuUfF]{0,2}("|')(?:\\.|(?!\1)[^\\\n])*\1/g, " ")
+    .replace(/#[^\n]*/g, " ");
+}
+
+/** Names the code binds: assignment and loop targets, functions and their parameters, classes, imports and `as` names. */
+export function boundNames(code: string): Set<string> {
+  const src = codeOnly(code);
+  const names = new Set<string>();
+  const add = (list: string) => { for (const m of list.matchAll(/(?<![.\w])([A-Za-z_]\w*)/g)) names.add(m[1]!); };
+  for (const m of src.matchAll(/^[ \t]*([A-Za-z_][\w, \t()[\]]*?)\s*(?:[-+*/%&|^@]|\/\/|\*\*|<<|>>)?=(?!=)/gm)) add(m[1]!);
+  for (const m of src.matchAll(/\bfor\s+([\w, \t()]+?)\s+in\b/g)) add(m[1]!);
+  for (const m of src.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
+    names.add(m[1]!);
+    for (const p of m[2]!.split(",")) { const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p); if (n) names.add(n[1]!); }
+  }
+  for (const m of src.matchAll(/\blambda\s+([^:]*):/g)) add(m[1]!.replace(/=[^,]*/g, ""));
+  for (const m of src.matchAll(/\bclass\s+([A-Za-z_]\w*)/g)) names.add(m[1]!);
+  for (const m of src.matchAll(/\bimport\s+([\w., \t]+)/g)) for (const part of m[1]!.split(",")) { const n = /^\s*([A-Za-z_]\w*)/.exec(part); if (n) names.add(n[1]!); }
+  for (const m of src.matchAll(/\bas\s+([A-Za-z_]\w*)/g)) names.add(m[1]!);
+  for (const m of src.matchAll(/\b(?:global|nonlocal)\s+([\w, \t]+)/g)) add(m[1]!);
+  return names;
+}
 
 /** Optimal string alignment distance (Levenshtein plus adjacent swaps). */
 export function editDistance(a: string, b: string): number {
@@ -32,12 +76,15 @@ export function editDistance(a: string, b: string): number {
   return d[a.length]![b.length]!;
 }
 
-/** True when an undefined name looks like a misspelling of a name the learner wrote (or a built-in). */
+/**
+ * True when an undefined name looks like a misspelling of a name the code binds (within 1 edit for names up to 4
+ * letters, 2 for longer ones) or of a built-in (within 1 edit), or differs from one only in case. Words in strings,
+ * comments and attribute names (`.values`) don't count: they aren't names the learner could have meant.
+ */
 export function looksLikeTypo(name: string, code: string): boolean {
-  const known = new Set([...(code.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []), ...BUILTINS]);
-  known.delete(name);
+  const near = (k: string, limit: number) => k !== name && (k.toLowerCase() === name.toLowerCase() || (k.length > 1 && editDistance(name, k) <= limit));
   const limit = name.length <= 4 ? 1 : 2;
-  return [...known].some((k) => k.toLowerCase() === name.toLowerCase() || (k.length > 1 && editDistance(name, k) <= limit));
+  return [...boundNames(code)].some((k) => near(k, limit)) || PY_BUILTINS.some((k) => near(k, 1));
 }
 
 /**
@@ -112,15 +159,19 @@ export function interventionEvent(i: Intervention, lessonId: string, stepId: str
 export interface Target { lessonId: string; stepIndex: number; title: string }
 
 /**
- * A different exercise for the concept, not yet solved independently, to try without hints after an intervention:
- * the master prompt's "novel transfer task without hints". The current lesson first, then the others in order.
+ * A different exercise for the concept, not yet solved independently and with no help recorded on it (help stays
+ * counted when a task is reopened, so such a task could never give independent evidence), to try without hints after
+ * an intervention: the master prompt's "novel transfer task without hints". The current lesson first, then the others.
+ * `assistance` is the recorded help per "lessonId:stepId". Null when no such task is left.
  */
-export function transferTarget(lessons: readonly Lesson[], model: LearnerModel, concept: string, lessonId: string, stepId: string): Target | null {
+export function transferTarget(lessons: readonly Lesson[], model: LearnerModel, concept: string, lessonId: string, stepId: string,
+                               assistance: Readonly<Record<string, number>>): Target | null {
   const solved = new Set(model.concepts.get(concept)?.independentTasks ?? []);
   const order = [...lessons].sort((a, b) => (a.id === lessonId ? -1 : b.id === lessonId ? 1 : 0));
   for (const l of order) {
     for (const [stepIndex, s] of l.steps.entries()) {
-      if (!isExercise(s) || (l.id === lessonId && s.id === stepId) || solved.has(`${l.id}:${s.id}`)) continue;
+      const key = `${l.id}:${s.id}`;
+      if (!isExercise(s) || (l.id === lessonId && s.id === stepId) || solved.has(key) || (Object.hasOwn(assistance, key) && assistance[key]! > 0)) continue;
       if (creditedConcepts(l, s as ExerciseStep).includes(concept)) return { lessonId: l.id, stepIndex, title: s.title };
     }
   }

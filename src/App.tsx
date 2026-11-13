@@ -54,7 +54,10 @@ export function App() {
   // The same events, updated synchronously as they are recorded, so the feedback controller sees the run just made.
   const eventsRef = useRef<LearnerEvent[]>([]);
   // A meso-loop step back for one task (lesson:step:generation), shown after the tutor note.
-  const [meso, setMeso] = useState<{ key: string; i: Intervention; target: Target | null } | null>(null);
+  const [meso, setMeso] = useState<{ id: string; key: string; i: Intervention; target: Target | null } | null>(null);
+  // The route on screen right now (a run can finish after the learner has moved on).
+  const routeRef = useRef(route);
+  routeRef.current = route;
   const [assist, setAssist] = useState<Record<string, number>>({});
   const [generation, setGeneration] = useState(0);
   // Bumped synchronously when an import or reset starts; results of runs started earlier are then ignored.
@@ -289,7 +292,7 @@ export function App() {
               generation={generation}
               suggestTier={(step) => suggestedTier(model, graph.byId.get(route.lessonId)!, step)}
               mesoFor={(sid) => meso && meso.key === `${route.lessonId}:${sid}:${generation}` ? (
-                <MesoPanel intervention={meso.i} target={meso.target} titleOf={titleOf} onOutcome={(outcome) => {
+                <MesoPanel key={meso.id} intervention={meso.i} target={meso.target} titleOf={titleOf} onOutcome={(outcome) => {
                   if (!live()) return;
                   record([interventionEvent(meso.i, route.lessonId, sid, outcome, stampNow())]);
                   if (outcome === "postponed") setMeso(null);
@@ -322,12 +325,16 @@ export function App() {
                   .then((stored) => {
                     if (detail.generation !== generationRef.current) return;
                     record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp, detail.errorTags));
-                    // Double loop: after repeated structural errors (or reliance on strong hints), step back once.
+                    // Double loop: after repeated structural errors (or reliance on strong hints), step back once, but only
+                    // while this task is still on screen: a step back is logged as shown only when it really is.
+                    const here = routeRef.current;
+                    if (here.view !== "lesson" || here.lessonId !== l.id || l.steps[here.step]?.id !== sid) return;
                     for (const c of creditedConcepts(l, step)) {
                       const i = mesoTrigger(eventsRef.current, c, Date.parse(stamp.at), `${l.id}:${sid}`);
                       if (!i) continue;
-                      setMeso({ key: `${l.id}:${sid}:${generationRef.current}`, i, target: transferTarget(LESSONS, model, c, l.id, sid) });
-                      record([interventionEvent(i, l.id, sid, "shown", stampNow())]);
+                      const shown = interventionEvent(i, l.id, sid, "shown", stampNow());
+                      setMeso({ id: shown.id, key: `${l.id}:${sid}:${generationRef.current}`, i, target: transferTarget(LESSONS, model, c, l.id, sid, assist) });
+                      record([shown]);
                       break;
                     }
                   });

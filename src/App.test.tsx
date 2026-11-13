@@ -61,11 +61,12 @@ vi.mock("./progress/store", async (importOriginal) => ({ ...(await importOrigina
 // Python runs report every check passed, tagged with the concepts of the step's own tests.
 let runTests: { name: string; concept?: string }[] = [];
 let runPasses = true;
+let runGate: Promise<void> | null = null;
 vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "ready", onStatus: () => () => {}, warm: async () => {},
-  run: async () => ({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: runPasses, message: "" })) }) }) }));
+  run: async () => { if (runGate) await runGate; return { ok: true, stdout: "", stderr: "", durationMs: 1, tests: runTests.map((t) => ({ ...t, passed: runPasses, message: "" })) }; } }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; staleWrites = false; loads = 0; runPasses = true; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; savedRecords.length = 0; exportGate = null; openFails = false; staleLessons = []; failHelp = false; helpGate = null; staleWrites = false; loads = 0; runPasses = true; runGate = null; vi.useRealTimers(); });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -481,5 +482,74 @@ describe("App", () => {
     await act(async () => { location.hash = `#/lesson/py-values-names/${circle}`; dispatchEvent(new HashChangeEvent("hashchange")); });
     await waitFor(async () => expect(await note()).toMatch(/^Suggested support: up to 2 hints\. /));
     runTests = [];
+  });
+
+  describe("the meso loop in the app", () => {
+    const setup = async () => {
+      const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+      const circle = lesson.steps.findIndex((st) => st.id === "circle");
+      runTests = (lesson.steps[circle] as unknown as ExerciseStep).tests;
+      runPasses = false; // every run fails the same checks: a repeated structural error
+      const { App } = await import("./App");
+      location.hash = `#/lesson/py-values-names/${circle}`;
+      render(<App />);
+      await screen.findByRole("button", { name: /Run checks/ });
+      return circle;
+    };
+    // One run records one event per credited concept; count runs by those batches (times may be frozen).
+    const perRun = async () => (await import("./learner/record")).creditedConcepts(
+      (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson,
+      ((await import("../content/lessons/py-values-names.json")).default as unknown as Lesson).steps.find((st) => st.id === "circle") as ExerciseStep).length;
+    let batch = 1;
+    const runs = () => appended.filter((e) => e.task === "exercise").length / batch;
+    const failRun = async () => {
+      batch = await perRun();
+      const n = runs();
+      fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
+      await waitFor(() => expect(runs()).toBe(n + 1));
+    };
+    const decisions = () => appended.filter((e) => e.task === "intervention");
+    const leave = async () => { await act(async () => { location.hash = "#/"; dispatchEvent(new HashChangeEvent("hashchange")); }); };
+
+    it("doesn't log or show a step back when the run finishes after the learner has left (during the help-level read)", async () => {
+      await setup();
+      await failRun(); await failRun();
+      let open: () => void = () => {};
+      helpGate = new Promise((r) => { open = r; });
+      fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
+      await leave();
+      await act(async () => { open(); await Promise.resolve(); });
+      await waitFor(() => expect(runs()).toBe(3)); // the attempt itself still counts
+      await new Promise((r) => setTimeout(r, 20));
+      expect(decisions()).toEqual([]);
+    });
+
+    it("doesn't log or show a step back when the run finishes after the learner has left (during execution)", async () => {
+      await setup();
+      await failRun(); await failRun();
+      let open: () => void = () => {};
+      runGate = new Promise((r) => { open = r; });
+      fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
+      await leave();
+      await act(async () => { open(); await Promise.resolve(); });
+      await waitFor(() => expect(runs()).toBe(3));
+      await new Promise((r) => setTimeout(r, 20));
+      expect(decisions()).toEqual([]);
+    });
+
+    it("starts a later step back on the same exercise fresh, after the cooldown", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-04-01T09:00:00Z"));
+      await setup();
+      for (let k = 0; k < 3; k++) await failRun();
+      fireEvent.click(await screen.findByRole("button", { name: "I've compared them" }));
+      await waitFor(() => expect(screen.queryByRole("button", { name: "I've compared them" })).toBeNull());
+      expect(decisions().map((d) => d.tags!.at(-1))).toEqual(["outcome:shown", "outcome:answered"]);
+      vi.setSystemTime(new Date("2026-04-01T09:11:00Z")); // past the ten-minute cooldown
+      for (let k = 0; k < 3; k++) await failRun();
+      expect(await screen.findByRole("button", { name: "I've compared them" })).toBeTruthy(); // not inherited as done
+      expect(decisions().map((d) => d.tags!.at(-1))).toEqual(["outcome:shown", "outcome:answered", "outcome:shown"]);
+      expect(new Set(decisions().map((d) => d.id)).size).toBe(3);
+    });
   });
 });

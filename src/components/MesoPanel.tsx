@@ -23,10 +23,13 @@ export function MesoPanel({ intervention: i, target, titleOf, onOutcome }: Props
   const finish = (outcome: Exclude<Outcome, "shown">) => { setDone(true); onOutcome(outcome); };
   const what = i.signature.startsWith("check:") ? `the check on ${i.signature.slice(6)}` : i.signature.replace(/^error:/, "");
 
-  const transfer = target && (
+  const transfer = target ? (
     <p className="meso-transfer">Then show yourself it has clicked on a different task, without hints:{" "}
       <a href={`#/lesson/${target.lessonId}/${target.stepIndex}`}>{target.title}</a>
       <span className="muted"> ({titleOf(target.lessonId)})</span>.</p>
+  ) : (
+    <p className="meso-transfer muted">Every other exercise on {i.concept} has already shown you some help, so none of them can
+       count as an independent check now. A later review question will check it instead.</p>
   );
 
   return (

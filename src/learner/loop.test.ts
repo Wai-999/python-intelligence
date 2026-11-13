@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ExerciseStep, Lesson } from "../content/types";
 import type { PyError } from "../py/protocol";
 import { buildModel, ordered, type LearnerEvent } from "./model";
-import { classifyError, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
+import { boundNames, classifyError, codeOnly, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
 import { exerciseEvents } from "./record";
 
 const err = (type: string, message = ""): PyError => ({ type, message, line: 1, summary: `${type}: ${message}` });
@@ -43,6 +43,19 @@ describe("classifying a failed run", () => {
     expect(looksLikeTypo("ab", "xb = 1")).toBe(true); // distance 1 on a short name
     expect(looksLikeTypo("abcd", "xycd = 1")).toBe(false); // distance 2 is too far for a 4-letter name
     expect(looksLikeTypo("abcde", "xycde = 1")).toBe(true);
+  });
+
+  it("only counts names the code binds, never words in strings, comments or attribute names", () => {
+    expect(codeOnly('x = "values" # the values\ny = \'it\\\'s\'\nz = """doc\nvalues"""')).not.toMatch(/values|doc|it/);
+    const bound = boundNames("total, n = 0, 1\nfor i, item in enumerate(xs):\n    pass\ndef area(r, *rest, scale=2):\n    return r\nimport math as m\ncount += 1\nclass Box: pass\nif total == n: pass\n");
+    for (const name of ["total", "n", "i", "item", "area", "r", "rest", "scale", "math", "m", "count", "Box"]) expect(bound).toContain(name);
+    for (const name of ["enumerate", "xs", "pass", "if"]) expect(bound).not.toContain(name);
+    // "value" is undefined and its only look-alikes are in a comment, a string, an attribute and a call: structural.
+    const code = '# add up the values\nprint("values")\ntotals = d.values()\nprint(value)';
+    expect(classifyError(err("NameError", "name 'value' is not defined"), code)).toEqual(["error:NameError"]);
+    expect(classifyError(err("NameError", "name 'value' is not defined"), "values = [1, 2]\nprint(value)")).toEqual(["slip:name"]);
+    expect(looksLikeTypo("lenn", "print(lenn(xs))")).toBe(true); // a built-in, one edit away
+    expect(looksLikeTypo("vale", "print(vale)")).toBe(false); // "vars" is two edits away: too far for a built-in
   });
 
   it("tags failed checks per concept on the events", () => {
@@ -124,11 +137,14 @@ describe("the meso trigger", () => {
 });
 
 describe("the independent transfer check", () => {
-  it("offers a different exercise on the concept that hasn't been solved independently", () => {
+  it("offers a different exercise on the concept that hasn't been solved independently or had help", () => {
     const model = buildModel([L], []);
-    expect(transferTarget([L], model, "loops", L.id, E1.id)).toEqual({ lessonId: L.id, stepIndex: 1, title: "Task e2" });
+    expect(transferTarget([L], model, "loops", L.id, E1.id, {})).toEqual({ lessonId: L.id, stepIndex: 1, title: "Task e2" });
     const solvedE2 = buildModel([L], pass(E2, 1) as LearnerEvent[]);
-    expect(transferTarget([L], solvedE2, "loops", L.id, E1.id)).toBeNull();
-    expect(transferTarget([L], model, "ranges", L.id, E3.id)).toBeNull(); // E3 is the only one on ranges
+    expect(transferTarget([L], solvedE2, "loops", L.id, E1.id, {})).toBeNull();
+    expect(transferTarget([L], model, "ranges", L.id, E3.id, {})).toBeNull(); // E3 is the only one on ranges
+    // A task where hints (or the solution) were already shown can't give independent evidence any more.
+    expect(transferTarget([L], model, "loops", L.id, E1.id, { [`${L.id}:e2`]: 1 })).toBeNull();
+    expect(transferTarget([L], model, "loops", L.id, E1.id, { [`${L.id}:e2`]: 0, "other:e2": 4 })).toEqual({ lessonId: L.id, stepIndex: 1, title: "Task e2" });
   });
 });
