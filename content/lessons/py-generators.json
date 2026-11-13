@@ -278,8 +278,8 @@
           "concept": "generators"
         },
         {
-          "name": "it reads only as many numbers as it is asked for",
-          "code": "import itertools\ndef _source():\n    yield 1\n    yield 2\n    raise AssertionError('running_total read more numbers than it was asked for')\n\nassert list(itertools.islice(running_total(_source()), 2)) == [1, 3]",
+          "name": "it reads exactly one number for each total",
+          "code": "class _Numbers:\n    def __init__(self):\n        self.reads = 0\n\n    def __iter__(self):\n        return self\n\n    def __next__(self):\n        self.reads += 1\n        if self.reads > 50:\n            raise AssertionError('running_total read far more numbers than it was asked for')\n        return self.reads\n\nsrc = _Numbers()\ntotals = running_total(src)\nassert next(totals) == 1\nassert src.reads == 1, f'after the first total it had read {src.reads} numbers; read one number per total'\nassert next(totals) == 3 and next(totals) == 6\nassert src.reads == 3, f'after three totals it had read {src.reads} numbers; read one number per total'",
           "concept": "iterators"
         },
         {
@@ -334,7 +334,7 @@
         },
         {
           "name": "it reads a line only when it needs a word from it",
-          "code": "def _lines():\n    yield 'elephants walk slowly'\n    raise AssertionError('long_words read the next line before it was needed')\n\nwords = long_words(_lines(), 4)\nassert next(words) == 'elephants'\nassert next(words) == 'walk'\nassert next(words) == 'slowly'",
+          "code": "class _Lines:\n    def __init__(self, lines):\n        self.lines, self.reads = iter(lines), 0\n\n    def __iter__(self):\n        return self\n\n    def __next__(self):\n        line = next(self.lines)\n        self.reads += 1\n        return line\n\nsrc = _Lines(['elephants walk slowly', 'giraffes run'])\nwords = long_words(src, 4)\nassert next(words) == 'elephants'\nassert src.reads == 1, f'it had read {src.reads} lines for the first word; read a line only when you need its words'\nassert next(words) == 'walk' and next(words) == 'slowly'\nassert src.reads == 1, f'it had read {src.reads} lines before finishing the first one'\nassert next(words) == 'giraffes' and src.reads == 2\nimport itertools\n\ndef _lines():\n    yield 'elephants walk slowly'\n    raise AssertionError('long_words read the next line before it was needed')\n\nassert list(itertools.islice(long_words(_lines(), 4), 3)) == ['elephants', 'walk', 'slowly']",
           "concept": "iterators"
         },
         {
