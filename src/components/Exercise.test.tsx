@@ -47,6 +47,26 @@ describe("Exercise attempts", () => {
     expect(onResult.mock.calls[0]![2]).toEqual({ results: [{ concept: "names", passed: false }], assistance: 1, generation: 3, errorTags: [] });
   });
 
+  it("tags each check that raised with its own error class, and only wrong results with check:<concept>", async () => {
+    run.mockResolvedValueOnce({ ok: true, stdout: "", stderr: "", durationMs: 1, tests: [
+      { name: "a", passed: false, errorType: "TypeError", message: "TypeError: unsupported operand", concept: "names" },
+      { name: "b", passed: false, errorType: "ValueError", message: "ValueError: bad", concept: "values" },
+      { name: "c", passed: false, errorType: "AssertionError", message: "nope", concept: "print" },
+      { name: "d", passed: false, errorType: "NameError", message: "NameError: name 'totl' is not defined", concept: "names", bound: ["total"] },
+      { name: "e", passed: true, errorType: null, message: "", concept: "names" },
+    ] } as RunResult);
+    const onResult = mount();
+    runChecks();
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(onResult.mock.calls[0]![2].results).toEqual([
+      { concept: "names", passed: false, tags: ["error:TypeError"] },
+      { concept: "values", passed: false, tags: ["error:ValueError"] },
+      { concept: "print", passed: false },
+      { concept: "names", passed: false, tags: ["slip:name"] },
+      { concept: "names", passed: true },
+    ]);
+  });
+
   it("records a timeout as a failed attempt: the learner's code ran too long", async () => {
     run.mockResolvedValueOnce(failed("TimeoutError"));
     const onResult = mount();
