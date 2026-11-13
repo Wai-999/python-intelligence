@@ -62,7 +62,8 @@ export interface ProgressStore {
   allEvents(): Promise<LearnerEvent[]>;
   /** Help seen on an exercise so far (0 if none). It only ever goes up, so reopening a task can't hide earlier help. */
   getAssistance(lessonId: string, stepId: string): Promise<number>;
-  raiseAssistance(lessonId: string, stepId: string, level: number): Promise<void>;
+  /** Atomically raises the stored level (never lowers it) and returns the level stored before, so concurrent tabs agree. */
+  raiseAssistance(lessonId: string, stepId: string, level: number): Promise<number>;
   exportAll(): Promise<ProgressExport>;
   /** Validates fully BEFORE writing; on invalid input throws ImportError and leaves the store unchanged. */
   importAll(data: unknown): Promise<void>;

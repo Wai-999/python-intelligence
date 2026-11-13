@@ -4,7 +4,7 @@ import { LessonView } from "./components/LessonView";
 import { Library } from "./components/Library";
 import { ProgressPanel } from "./components/ProgressPanel";
 import { ReviewView } from "./components/ReviewView";
-import { buildModel, dueReviews, type LearnerEvent } from "./learner/model";
+import { buildModel, dueReviews, type Assistance, type LearnerEvent } from "./learner/model";
 import { exerciseEvents, quizEvents, reviewEvent, reviewItem, type Stamp } from "./learner/record";
 import { isExercise } from "./content/types";
 import { LESSONS } from "./content/lessons";
@@ -60,7 +60,19 @@ export function App() {
     }
     setDrafts(d);
     setEvents(exp.events);
-    setAssist(exp.assistance);
+    // Quizzes attempted before help was tracked (a version 1 file, an upgraded database) have shown their answers.
+    const assistance = { ...exp.assistance };
+    for (const p of all) {
+      const lesson = graph.byId.get(p.lessonId);
+      for (const step of lesson?.steps ?? []) {
+        const key = `${p.lessonId}:${step.id}`;
+        if (step.kind === "quiz" && (p.steps[step.id]?.attempts ?? 0) > 0 && (assistance[key] ?? 0) < 4) {
+          assistance[key] = 4;
+          await s.raiseAssistance(p.lessonId, step.id, 4);
+        }
+      }
+    }
+    setAssist(assistance);
     return exp.position;
   }, []);
 
@@ -194,18 +206,25 @@ export function App() {
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, failedConcepts, attempt: true }));
                 const step = l.steps.find((s) => s.id === sid);
-                if (step && isExercise(step)) record(exerciseEvents(l, step, detail.results, detail.assistance, stampNow()));
+                // Another tab may have revealed help on this task: count the higher of this tab's and the stored level.
+                if (step && isExercise(step) && store) void store.getAssistance(l.id, sid).then((stored) => {
+                  if (detail.generation !== generationRef.current) return;
+                  record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stampNow()));
+                });
               }}
               onQuiz={(sid, score, passed, missed, correct) => {
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, score, failedConcepts: missed, attempt: true }));
                 const step = l.steps.find((s) => s.id === sid);
                 if (step?.kind === "quiz") {
-                  // Submitting reveals every correct answer, so later submissions of this quiz count as assisted.
+                  // Submitting reveals every correct answer, so later submissions of this quiz count as assisted. The store
+                  // raises the level and returns the previous one in one transaction, so two open tabs can't both count as unaided.
                   const key = `${l.id}:${sid}`;
-                  record(quizEvents(l, step, correct, stampNow(), (assist[key] ?? 0) >= 4 ? 4 : 0));
+                  const stamp = stampNow();
                   setAssist((a) => ({ ...a, [key]: 4 }));
-                  void store?.raiseAssistance(l.id, sid, 4).catch((e) => setStoreError(String(e?.message ?? e)));
+                  if (store) void store.raiseAssistance(l.id, sid, 4)
+                    .then((before) => record(quizEvents(l, step, correct, stamp, before >= 4 ? 4 : 0)))
+                    .catch((e) => setStoreError(String(e?.message ?? e)));
                 }
               }}
             />

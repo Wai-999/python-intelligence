@@ -174,3 +174,44 @@ test("a quiz retried after its answers were revealed can't serve as the explanat
   const model = buildModel([valuesNames as unknown as Lesson], events);
   for (const c of ["names", "expressions", "values"]) expect(model.concepts.get(c)!.explanationChecked).toBe(false);
 });
+
+const quizSteps = (valuesNames as unknown as { steps: { id: string; kind: string; questions?: { answer: number; choices: string[] }[] }[] }).steps;
+const quizAt = quizSteps.findIndex((s) => s.kind === "quiz");
+const quizQs = quizSteps[quizAt]!.questions!;
+async function submitQuiz(page: Page, right: boolean) {
+  const sets = page.locator("fieldset.question");
+  for (let i = 0; i < quizQs.length; i++)
+    await sets.nth(i).locator("input[type=radio]").nth(right ? quizQs[i]!.answer : (quizQs[i]!.answer + 1) % quizQs[i]!.choices.length).check();
+  await page.getByRole("button", { name: "Check answers" }).click();
+  await expect(page.getByText(right ? /Passed!/ : /You need/)).toBeVisible();
+  await page.waitForTimeout(500);
+}
+
+test("a second tab opened before the answers were revealed still counts its submission as assisted", async ({ page, context }) => {
+  await page.goto(`./#/lesson/py-values-names/${quizAt}`);
+  const other = await context.newPage();
+  await other.goto(`./#/lesson/py-values-names/${quizAt}`);
+  await submitQuiz(page, false); // reveals the answers in the first tab
+  await submitQuiz(other, true); // the second tab never saw that happen
+  const { events } = await exportEvents(other) as unknown as { events: LearnerEvent[] };
+  const passed = events.filter((e) => e.passed);
+  expect(passed.length).toBeGreaterThan(0);
+  expect(passed.every((e) => e.assistance === 4)).toBe(true);
+  const model = buildModel([valuesNames as unknown as Lesson], events);
+  for (const c of ["names", "expressions", "values"]) expect(model.concepts.get(c)!.explanationChecked).toBe(false);
+});
+
+test("a quiz attempted in a version 1 backup counts as revealed after import", async ({ page }) => {
+  await page.goto(`./#/lesson/py-values-names/${quizAt}`);
+  const v1 = { format: "python-intelligence-progress", version: 1, exportedAt: "2026-03-01T09:00:00.000Z", drafts: {}, position: null,
+    lessons: [{ lessonId: "py-values-names", steps: { check: { passed: false, attempts: 1, score: 0, updatedAt: "2026-03-01T09:00:00.000Z" } },
+      furthestStep: quizAt, completed: false, mastery: 0, struggles: {} }] };
+  await page.getByRole("button", { name: "Progress" }).click();
+  await page.locator("input[type=file]").setInputFiles({ name: "v1.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(v1)) });
+  await expect(page.getByText("Progress imported.")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await submitQuiz(page, true);
+  const { events } = await exportEvents(page) as unknown as { events: LearnerEvent[] };
+  expect(events.length).toBeGreaterThan(0);
+  expect(events.every((e) => e.assistance === 4)).toBe(true);
+});

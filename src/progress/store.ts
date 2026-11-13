@@ -235,11 +235,15 @@ export async function openProgressStore(dbName = "python-intelligence"): Promise
       check(typeof lesson === "string" && lesson.length > 0 && !lesson.includes(":"), "assistance lessonId must be nonempty and contain no colon");
       check(typeof step === "string" && step.length > 0, "assistance stepId must be a nonempty string");
       check(Number.isInteger(level) && level >= 0 && level <= 4, "assistance must be 0..4");
-      await transact<void>(["meta"], "readwrite", (tx) => {
+      return transact<number>(["meta"], "readwrite", (tx, result) => {
         const store = tx.objectStore("meta");
         const key = `${ASSIST}${lesson}:${step}`;
         const current = store.get(key);
-        current.onsuccess = () => { if (level > ((current.result as number | undefined) ?? 0)) store.put(level, key); };
+        current.onsuccess = () => {
+          const before = (current.result as number | undefined) ?? 0;
+          result(before);
+          if (level > before) store.put(level, key);
+        };
       });
     },
     getPosition: async () => (await read<Position | undefined>("meta", "position")) ?? null,

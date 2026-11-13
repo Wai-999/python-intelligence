@@ -313,8 +313,8 @@ describe("learner event log", () => {
   it("keeps the highest help seen per exercise, only ever raising it, and exports it", async () => {
     const store = await open();
     expect(await store.getAssistance("functions", "exercise")).toBe(0);
-    await store.raiseAssistance("functions", "exercise", 2);
-    await store.raiseAssistance("functions", "exercise", 1);
+    expect(await store.raiseAssistance("functions", "exercise", 2)).toBe(0);
+    expect(await store.raiseAssistance("functions", "exercise", 1)).toBe(2); // returns the level stored before
     expect(await store.getAssistance("functions", "exercise")).toBe(2);
     await store.raiseAssistance("functions", "exercise", 4);
     expect(await store.getAssistance("functions", "exercise")).toBe(4);
