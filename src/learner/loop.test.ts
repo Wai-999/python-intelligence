@@ -48,8 +48,21 @@ describe("classifying a failed run", () => {
   it("only counts names the code binds, never words in strings, comments or attribute names", () => {
     expect(codeOnly('x = "values" # the values\ny = \'it\\\'s\'\nz = """doc\nvalues"""')).not.toMatch(/values|doc|it/);
     const bound = boundNames("total, n = 0, 1\nfor i, item in enumerate(xs):\n    pass\ndef area(r, *rest, scale=2):\n    return r\nimport math as m\ncount += 1\nclass Box: pass\nif total == n: pass\n");
-    for (const name of ["total", "n", "i", "item", "area", "r", "rest", "scale", "math", "m", "count", "Box"]) expect(bound).toContain(name);
-    for (const name of ["enumerate", "xs", "pass", "if"]) expect(bound).not.toContain(name);
+    for (const name of ["total", "n", "i", "item", "area", "r", "rest", "scale", "m", "count", "Box"]) expect(bound).toContain(name);
+    for (const name of ["enumerate", "xs", "pass", "if", "math"]) expect(bound).not.toContain(name); // `import math as m` binds only m
+    const names = (code: string) => [...boundNames(code)].sort();
+    expect(names("total: int = 0\ncount: int\n")).toEqual(["count", "total"]); // annotated assignments
+    expect(names("[first, second] = pair\n(a, (b, *c)) = x\np = q = 0\n")).toEqual(["a", "b", "c", "first", "p", "q", "second"]);
+    expect(names("xs[i] = 1\nobj.attr = 2\ngrid[r][c] = 0\nd[k], e = 1, 2\n")).toEqual(["e"]); // subscriptions and attributes bind nothing
+    expect(names("print(x, sep=y)\nif n == 1: pass\nwhile n >= 0: pass\n")).toEqual([]); // keyword arguments and comparisons aren't assignments
+    expect(names("import os.path\nimport numpy as np, json\nfrom os import path as p, sep\nfrom m import (a, b)\nfrom n import *\n"))
+      .toEqual(["a", "b", "json", "np", "os", "p", "sep"]);
+    expect(names("with open(f) as fh, open(g) as gh:\n    pass\nexcept ValueError as err:\n    pass\nif (n := 10) > 5: pass\n"))
+      .toEqual(["err", "fh", "gh", "n"]);
+    // An annotated name's misspelling is a slip; an undefined subscript index or an aliased module's original name isn't.
+    expect(classifyError(err("NameError", "name 'totl' is not defined"), "total: int = 0\nprint(totl)")).toEqual(["slip:name"]);
+    expect(classifyError(err("NameError", "name 'indx' is not defined"), "xs = [0]\nxs[index] = 1\nprint(indx)")).toEqual(["error:NameError"]);
+    expect(classifyError(err("NameError", "name 'mathh' is not defined"), "import math as m\nprint(mathh.pi)")).toEqual(["error:NameError"]);
     // "value" is undefined and its only look-alikes are in a comment, a string, an attribute and a call: structural.
     const code = '# add up the values\nprint("values")\ntotals = d.values()\nprint(value)';
     expect(classifyError(err("NameError", "name 'value' is not defined"), code)).toEqual(["error:NameError"]);

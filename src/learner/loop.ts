@@ -46,22 +46,96 @@ export function codeOnly(code: string): string {
     .replace(/#[^\n]*/g, " ");
 }
 
-/** Names the code binds: assignment and loop targets, functions and their parameters, classes, imports and `as` names. */
+const KEYWORDS = new Set(("and as assert async await break class continue def del elif else except finally for from global if import "
+  + "in is lambda match case nonlocal not or pass raise return try while with yield").split(" "));
+const IDENT = /^[A-Za-z_]\w*$/;
+
+/** Splits `text` at `sep` characters that aren't inside brackets. */
+function splitTop(text: string, sep: string): string[] {
+  const parts: string[] = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if ("([{".includes(ch)) depth++;
+    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
+    else if (depth === 0 && ch === sep) { parts.push(text.slice(start, i)); start = i + 1; }
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
+/**
+ * Positions of each assignment-like `=` (not ==, !=, <=, >=, :=). One inside brackets (a keyword argument) only
+ * yields segments with an unclosed bracket, which targetNames rejects, so no bracket tracking is needed here.
+ */
+function assignmentSplits(line: string): number[] {
+  const at: number[] = [];
+  for (let i = 0; i < line.length; i++)
+    if (line[i] === "=" && line[i + 1] !== "=" && !"=!<>:".includes(line[i - 1] ?? "")) at.push(i);
+  return at;
+}
+
+/** The names a target list binds: `a`, `a, b`, `[a, *rest]`, `(a, (b, c))`; subscriptions and attributes bind nothing. */
+function targetNames(target: string, into: Set<string>) {
+  for (let part of splitTop(target, ",")) {
+    part = part.trim().replace(/^\*/, "").trim();
+    const wrapped = /^[([]([\s\S]*)[)\]]$/.exec(part);
+    if (wrapped && splitTop(part.slice(1, -1), ",").length >= 1 && !/^[A-Za-z_]\w*\s*\[/.test(part)) { targetNames(wrapped[1]!, into); continue; }
+    if (IDENT.test(part) && !KEYWORDS.has(part)) into.add(part);
+  }
+}
+
+/** Names the code binds: assignment, annotation, loop and comprehension targets, walrus names, functions and their
+ *  parameters, lambda parameters, classes, the names imports bind, `with`/`except ... as`, and global/nonlocal. */
 export function boundNames(code: string): Set<string> {
   const src = codeOnly(code);
   const names = new Set<string>();
-  const add = (list: string) => { for (const m of list.matchAll(/(?<![.\w])([A-Za-z_]\w*)/g)) names.add(m[1]!); };
-  for (const m of src.matchAll(/^[ \t]*([A-Za-z_][\w, \t()[\]]*?)\s*(?:[-+*/%&|^@]|\/\/|\*\*|<<|>>)?=(?!=)/gm)) add(m[1]!);
-  for (const m of src.matchAll(/\bfor\s+([\w, \t()]+?)\s+in\b/g)) add(m[1]!);
-  for (const m of src.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
-    names.add(m[1]!);
-    for (const p of m[2]!.split(",")) { const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p); if (n) names.add(n[1]!); }
+  for (const raw of src.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    // import a.b as c, d  ->  c, d (Python binds the alias, or the first part of a dotted name)
+    let m = /^import\s+(.+)$/.exec(line);
+    if (m) {
+      for (const part of m[1]!.split(",")) {
+        const alias = /\bas\s+([A-Za-z_]\w*)\s*$/.exec(part);
+        const first = /^\s*([A-Za-z_]\w*)/.exec(part);
+        if (alias) names.add(alias[1]!); else if (first) names.add(first[1]!);
+      }
+      continue;
+    }
+    // from m import a, b as c  ->  a, c
+    m = /^from\s+[\w.]+\s+import\s+\(?([^)]*)\)?$/.exec(line);
+    if (m) {
+      for (const part of m[1]!.split(",")) {
+        const alias = /\bas\s+([A-Za-z_]\w*)\s*$/.exec(part);
+        const name = /^\s*([A-Za-z_]\w*)\s*$/.exec(part);
+        if (alias) names.add(alias[1]!); else if (name) names.add(name[1]!);
+      }
+      continue;
+    }
+    if (/^(?:with|except)\b/.test(line) || /^async\s+with\b/.test(line))
+      for (const a of line.matchAll(/\bas\s+([A-Za-z_]\w*)/g)) names.add(a[1]!);
+    for (const g of line.matchAll(/^(?:global|nonlocal)\s+(.+)$/g)) targetNames(g[1]!, names);
+    for (const d of line.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
+      names.add(d[1]!);
+      for (const p of splitTop(d[2]!, ",")) { const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p); if (n) names.add(n[1]!); }
+    }
+    for (const c of line.matchAll(/\bclass\s+([A-Za-z_]\w*)/g)) names.add(c[1]!);
+    for (const f of line.matchAll(/\bfor\s+(.+?)\s+in\b/g)) targetNames(f[1]!, names);
+    for (const l of line.matchAll(/\blambda\s+([^:]*):/g)) for (const p of splitTop(l[1]!, ",")) {
+      const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p); if (n) names.add(n[1]!);
+    }
+    for (const w of line.matchAll(/([A-Za-z_]\w*)\s*:=/g)) names.add(w[1]!);
+    if (/^(?:if|elif|while|return|assert|del|raise|yield)\b/.test(line)) continue;
+    // Assignment: every segment before the last top-level "=" is a target (a = b = 0); "x: int = 0" and "x: int" too.
+    const splits = assignmentSplits(line);
+    const segments = splits.length ? [line.slice(0, splits[0]!), ...splits.slice(1).map((p, k) => line.slice(splits[k]! + 1, p))] : [];
+    const augmented = /^([A-Za-z_]\w*)\s*(?:[-+*/%&|^@]|\/\/|\*\*|<<|>>)=/.exec(line);
+    if (augmented) { names.add(augmented[1]!); continue; }
+    const annotated = /^([A-Za-z_]\w*)\s*:(?!=)/.exec(line);
+    if (annotated && !KEYWORDS.has(annotated[1]!)) { names.add(annotated[1]!); continue; }
+    for (const seg of segments) targetNames(seg, names);
   }
-  for (const m of src.matchAll(/\blambda\s+([^:]*):/g)) add(m[1]!.replace(/=[^,]*/g, ""));
-  for (const m of src.matchAll(/\bclass\s+([A-Za-z_]\w*)/g)) names.add(m[1]!);
-  for (const m of src.matchAll(/\bimport\s+([\w., \t]+)/g)) for (const part of m[1]!.split(",")) { const n = /^\s*([A-Za-z_]\w*)/.exec(part); if (n) names.add(n[1]!); }
-  for (const m of src.matchAll(/\bas\s+([A-Za-z_]\w*)/g)) names.add(m[1]!);
-  for (const m of src.matchAll(/\b(?:global|nonlocal)\s+([\w, \t]+)/g)) add(m[1]!);
   return names;
 }
 

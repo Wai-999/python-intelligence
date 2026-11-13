@@ -28,8 +28,8 @@ export function MesoPanel({ intervention: i, target, titleOf, onOutcome }: Props
       <a href={`#/lesson/${target.lessonId}/${target.stepIndex}`}>{target.title}</a>
       <span className="muted"> ({titleOf(target.lessonId)})</span>.</p>
   ) : (
-    <p className="meso-transfer muted">Every other exercise on {i.concept} has already shown you some help, so none of them can
-       count as an independent check now. A later review question will check it instead.</p>
+    <p className="meso-transfer muted">There isn't another exercise on {i.concept} here that could count as an independent
+       check right now.</p>
   );
 
   return (
