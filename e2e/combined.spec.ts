@@ -22,6 +22,7 @@ import bayes from "../content/lessons/stats-bayes.json" with { type: "json" };
 import monty from "../content/lessons/proj-monty-hall.json" with { type: "json" };
 import boosting from "../content/lessons/ml-boosting.json" with { type: "json" };
 import jsoncsv from "../content/lessons/py-json-csv.json" with { type: "json" };
+import sqlite from "../content/lessons/py-sqlite.json" with { type: "json" };
 import typing from "../content/lessons/py-typing.json" with { type: "json" };
 import complexity from "../content/lessons/algo-complexity.json" with { type: "json" };
 import testing from "../content/lessons/py-testing.json" with { type: "json" };
@@ -69,12 +70,14 @@ for (const [name, lesson, example, exercises] of [
   ["proj-monty-hall", monty, "doors", ["simulate", "exact"]],
   ["ml-boosting", boosting, "rounds", ["stump", "boost"]],
   ["py-json-csv", jsoncsv, "round-trip", ["read", "report"]],
+  ["py-sqlite", sqlite, "books", ["scores", "teams"]],
   ["py-typing", typing, "hints", ["item", "cart"]],
   ["algo-complexity", complexity, "searching", ["growth", "common"]],
   ["py-testing", testing, "run-tests", ["testcase", "debug", "median"]],
+  ["py-testing", testing, "traceback", []],
   ["py-generators", generators, "squares", ["running", "pipeline"]],
 ] as const) {
-  test(`${name}: example output and every exercise solution pass in the browser`, async ({ page }) => {
+  test(`${name} (${example}): example output and every exercise solution pass in the browser`, async ({ page }) => {
     test.setTimeout(240_000);
     const l = lesson as L;
     await page.goto(`./#/lesson/${name}/${at(l, example)}`);

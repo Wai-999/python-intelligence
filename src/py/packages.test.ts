@@ -29,7 +29,9 @@ describe("lesson package rules", () => {
 
   it("the shipped manifest is well formed", () => {
     const shipped = packageRules(manifest);
-    expect(Object.keys(shipped.supported).sort()).toEqual(["numpy", "pandas"]);
+    expect(Object.keys(shipped.supported).sort()).toEqual(["numpy", "pandas", "sqlite3"]);
+    expect((manifest as Record<string, unknown>)._cpython_modules).toEqual(["sqlite3"]);
+    expect(shipped.importNameOf("sqlite3")).toBe("sqlite3");
     for (const [pkg, mod] of Object.entries((manifest as Record<string, unknown>)._import_names as Record<string, string>)) {
       expect(shipped.supported[pkg], `${pkg} in _import_names must be a supported package`).toBeDefined();
       expect(mod).toMatch(/^[A-Za-z_][A-Za-z0-9_]*$/);

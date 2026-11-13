@@ -69,7 +69,20 @@ def test_packages_must_be_allowlisted_and_match_the_browser_versions():
 def test_ci_installs_exactly_the_browser_package_versions():
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
     for name, version in vc.PACKAGES.items():
+        if name in vc.CPYTHON_MODULES:
+            assert f'"{name}==' not in ci, f"{name} is part of CPython: there is nothing to pip install"
+            continue
         assert f'"{name}=={version}"' in ci, f"CI must pip install {name}=={version} (src/py/packages.json)"
+
+
+def test_cpython_modules_are_checked_by_import_not_version():
+    assert vc.CPYTHON_MODULES == {"sqlite3"} and vc.PACKAGES["sqlite3"] == "1.0.0"
+    lesson = {"packages": ["sqlite3"], "steps": [{"id": "ex", "code": "import sqlite3"}]}
+    assert vc.check_packages(lesson, {"sqlite3": vc.STDLIB}) == []
+    assert any("doesn't import" in e for e in vc.check_packages(lesson, {"sqlite3": None}))
+    assert any("does not declare" in e for e in vc.check_packages({"packages": [], "steps": lesson["steps"]}, {}))
+    _, installed = vc.interpreter_report()
+    assert installed["sqlite3"] == vc.STDLIB  # the validating CPython really imports it
 
 
 def test_imported_roots():

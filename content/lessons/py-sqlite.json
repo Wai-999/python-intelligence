@@ -1,0 +1,345 @@
+{
+  "id": "py-sqlite",
+  "title": "SQL with sqlite3: asking a database questions",
+  "summary": "Create tables, insert rows safely with placeholders, and ask questions with SELECT, WHERE, ORDER BY, GROUP BY and joins, using the sqlite3 module.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 40,
+  "prerequisites": [
+    "py-tuples",
+    "py-exceptions"
+  ],
+  "packages": [
+    "sqlite3"
+  ],
+  "concepts": [
+    "sql-tables",
+    "sql-queries",
+    "query-parameters",
+    "sql-joins"
+  ],
+  "sources": [
+    {
+      "id": "tp-db",
+      "source_id": "pch-think-python-2nd",
+      "pages": [
+        163,
+        164
+      ],
+      "section": "Databases",
+      "use": "reference"
+    },
+    {
+      "id": "sq-intro",
+      "source_id": "pydocs-312-sqlite3",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "sqlite3 — DB-API 2.0 interface for SQLite databases",
+      "use": "reference"
+    },
+    {
+      "id": "sq-tutorial",
+      "source_id": "pydocs-312-sqlite3",
+      "pages": [
+        2,
+        2
+      ],
+      "section": "Tutorial",
+      "use": "reference"
+    },
+    {
+      "id": "sq-conn",
+      "source_id": "pydocs-312-sqlite3",
+      "pages": [
+        6,
+        6
+      ],
+      "section": "Connection objects",
+      "use": "reference"
+    },
+    {
+      "id": "sq-cursor",
+      "source_id": "pydocs-312-sqlite3",
+      "pages": [
+        7,
+        7
+      ],
+      "section": "Cursor objects",
+      "use": "reference"
+    },
+    {
+      "id": "sq-params",
+      "source_id": "pydocs-312-sqlite3",
+      "pages": [
+        16,
+        16
+      ],
+      "section": "How to use placeholders to bind values in SQL queries",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "Questions about a lot of data",
+      "body": "Which customers spent most this month? Which team scored the most points? With a few rows you can loop over a\nlist of dicts. With a hundred thousand rows, kept on disk between runs and shared by programs, you want a\n**database**: you describe the answer you want in **SQL**, and the database finds it. Python comes with\n`sqlite3`, a complete database in a single file (or in memory) with no server to set up."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "Tables of rows, and questions about them",
+      "body": "A database holds **tables**, like spreadsheets with named, typed columns: `books (title TEXT, year\nINTEGER)`. You don't loop over the rows yourself. You ask a question in SQL, such as `SELECT title FROM\nbooks WHERE year > 1900 ORDER BY year`, and get back rows as Python tuples.\n\nOne rule matters more than any other: never paste values into the SQL text yourself. Put a `?` where each\nvalue goes and pass the values separately. Then a name like `O'Brien`, or text that happens to look like\nSQL, is stored as plain data instead of changing your query.",
+      "cites": [
+        "sq-intro",
+        "sq-tutorial",
+        "sq-params",
+        "tp-db"
+      ],
+      "socratic": {
+        "questions": [
+          "What could go wrong if a user's name were pasted straight into the SQL text?",
+          "Why ask the database to sort and count instead of doing it in a Python loop?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a row go in and come back out",
+      "body": "Each `execute` sends one SQL statement to the database; a SELECT comes back as rows. Each frame shows the variables just before the highlighted line runs; a frame with output shows what its line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE pets (name TEXT, age INTEGER)\")\ncon.execute(\"INSERT INTO pets VALUES (?, ?)\", (\"Rex\", 3))\nrow = con.execute(\"SELECT name, age FROM pets\").fetchone()\nprint(row)",
+        "frames": [
+          {
+            "line": 3,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "sqlite3": "<module 'sqlite3'>"
+            },
+            "note": "Open a database. \":memory:\" keeps it in memory; a file name would keep it on disk."
+          },
+          {
+            "line": 4,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "sqlite3": "<module 'sqlite3'>",
+              "con": "<sqlite3.Connection>"
+            },
+            "note": "Create a table with two typed columns."
+          },
+          {
+            "line": 5,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "sqlite3": "<module 'sqlite3'>",
+              "con": "<sqlite3.Connection>"
+            },
+            "note": "Insert one row. The two `?` are filled from the tuple, safely."
+          },
+          {
+            "line": 6,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "sqlite3": "<module 'sqlite3'>",
+              "con": "<sqlite3.Connection>"
+            },
+            "note": "Ask for the rows; `fetchone()` takes the first, as a tuple."
+          },
+          {
+            "line": 7,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "sqlite3": "<module 'sqlite3'>",
+              "con": "<sqlite3.Connection>",
+              "row": "('Rex', 3)"
+            },
+            "note": "Rows come back as plain tuples.",
+            "output": "('Rex', 3)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Connecting:** `con = sqlite3.connect(\"file.db\")` opens (or creates) a database file; `\":memory:\"` makes\na temporary one. `con.execute(sql, params)` runs one statement and returns a cursor; `executemany` runs it\nonce per item of a list of tuples. Changes to a file are saved by `con.commit()`; `con.close()` closes it.\n\n**Tables:** `CREATE TABLE name (column TYPE, ...)` with types such as `TEXT`, `INTEGER` and `REAL`.\n`INSERT INTO name VALUES (?, ?)` adds a row.\n\n**Queries:** `SELECT columns FROM table`, then optionally `WHERE condition`, `GROUP BY column` (one row per\ngroup, with `COUNT(*)`, `SUM(x)`, `MIN`, `MAX`, `AVG`), `ORDER BY column [DESC], ...` and `LIMIT n`. A\ncursor can be looped over, or read with `fetchone()` (a tuple, or `None` if there are no more rows) and\n`fetchall()` (a list of tuples).\n\n**Placeholders:** each `?` in the SQL takes the next value from the parameters tuple; a single value\nstill needs a tuple, `(n,)`. Never build SQL with f-strings or `+` from values.\n\n**Joins:** `FROM a JOIN b ON a.key = b.key` pairs matching rows; `LEFT JOIN` also keeps rows of `a` with no\nmatch, filling `b`'s columns with `NULL` (`None` in Python). `COALESCE(x, 0)` turns a `NULL` into 0.",
+      "cites": [
+        "sq-tutorial",
+        "sq-conn",
+        "sq-cursor",
+        "sq-params"
+      ]
+    },
+    {
+      "id": "books",
+      "kind": "example",
+      "title": "Run it: create, insert, ask",
+      "body": "A filtered, sorted query; a count and a minimum in one row; and a title full of SQL-looking text that a\nplaceholder treats as an ordinary (unmatched) string.",
+      "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE books (title TEXT, year INTEGER)\")\ncon.executemany(\"INSERT INTO books VALUES (?, ?)\", [(\"Dune\", 1965), (\"Neuromancer\", 1984), (\"Emma\", 1815)])\n\nfor row in con.execute(\"SELECT title, year FROM books WHERE year > ? ORDER BY year\", (1900,)):\n    print(row)\n\nprint(con.execute(\"SELECT COUNT(*), MIN(year) FROM books\").fetchone())\n\nname = \"Emma'; DROP TABLE books; --\"\nprint(con.execute(\"SELECT COUNT(*) FROM books WHERE title = ?\", (name,)).fetchone())\ncon.close()\n",
+      "expected_output": "('Dune', 1965)\n('Neuromancer', 1984)\n(3, 1815)\n(0,)\n"
+    },
+    {
+      "id": "scores",
+      "kind": "guided",
+      "title": "Your turn: safe inserts and a top-n query",
+      "body": "`setup(con)` creates a `scores` table. Fix `add_score(con, name, points)`, which builds its SQL with an\nf-string and breaks on a name like `O'Brien`, so that it uses placeholders. Then write `top(con, n)`: the `n`\nhighest scores as a list of `(name, points)` tuples, highest first, ties in alphabetical order of name.",
+      "starter": "def setup(con):\n    con.execute(\"CREATE TABLE scores (name TEXT, points INTEGER)\")\n\n\ndef add_score(con, name, points):\n    con.execute(f\"INSERT INTO scores VALUES ('{name}', {points})\")\n\n\ndef top(con, n):\n    return []\n",
+      "hints": [
+        "`con.execute(\"INSERT INTO scores VALUES (?, ?)\", (name, points))`.",
+        "`ORDER BY points DESC, name LIMIT ?`, with `(n,)` as the parameters, then `.fetchall()`.",
+        "def setup(con):\n    con.execute(\"CREATE TABLE scores (name TEXT, points INTEGER)\")\n\n\ndef add_score(con, name, points):\n    con.execute(\"INSERT INTO scores VALUES (?, ?)\", (name, points))\n\n\ndef top(con, n):\n    return con.execute(\n        \"SELECT name, points FROM scores ORDER BY points DESC, name LIMIT ?\", (n,)\n    ).fetchall()\n"
+      ],
+      "tests": [
+        {
+          "name": "highest first, ties by name",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nfor row in [('cy', 4), ('ben', 9), ('ana', 9), ('dee', 1)]:\n    add_score(con, *row)\nassert top(con, 3) == [('ana', 9), ('ben', 9), ('cy', 4)], top(con, 3)",
+          "concept": "sql-queries"
+        },
+        {
+          "name": "n can be 0, or more than there are rows",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nadd_score(con, 'ana', 2)\nassert top(con, 0) == []\nassert top(con, 5) == [('ana', 2)]",
+          "concept": "sql-queries"
+        },
+        {
+          "name": "a name with a quote is stored as it is",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nadd_score(con, \"O'Brien\", 7)\nassert top(con, 1) == [(\"O'Brien\", 7)]",
+          "concept": "query-parameters"
+        },
+        {
+          "name": "SQL-looking text is just data",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nname = \"x', 0); DROP TABLE scores; --\"\nadd_score(con, name, 3)\nadd_score(con, 'ana', 5)\nassert top(con, 2) == [('ana', 5), (name, 3)], 'the name should be stored as plain text and the table should still exist'",
+          "concept": "query-parameters"
+        },
+        {
+          "name": "the table holds what was added",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\nsetup(con)\nadd_score(con, 'ana', 2)\nadd_score(con, 'ben', 3)\nassert con.execute('SELECT COUNT(*) FROM scores').fetchone() == (2,)",
+          "concept": "sql-tables"
+        }
+      ],
+      "solution": "def setup(con):\n    con.execute(\"CREATE TABLE scores (name TEXT, points INTEGER)\")\n\n\ndef add_score(con, name, points):\n    con.execute(\"INSERT INTO scores VALUES (?, ?)\", (name, points))\n\n\ndef top(con, n):\n    return con.execute(\n        \"SELECT name, points FROM scores ORDER BY points DESC, name LIMIT ?\", (n,)\n    ).fetchall()\n"
+    },
+    {
+      "id": "teams",
+      "kind": "challenge",
+      "title": "Challenge: totals per team",
+      "body": "The database has `players (name, team)` and `scores (name, points)`, where a player can have many scores\nor none. Write `team_totals(con)`: one `(team, total)` tuple for every team that has players, where `total` is\nthe sum of its players' points (0 if they have none), highest total first, ties in alphabetical order of team.\nScores for names that aren't players don't count.",
+      "starter": "def team_totals(con):\n    return con.execute(\"SELECT team, 0 FROM players\").fetchall()\n",
+      "hints": [
+        "Start from `players` and `LEFT JOIN scores` on the name, so teams without scores are kept.",
+        "`GROUP BY` the team, `COALESCE(SUM(points), 0)` for the total, then `ORDER BY total DESC, team`.",
+        "def team_totals(con):\n    return con.execute(\n        \"SELECT p.team, COALESCE(SUM(s.points), 0) AS total \"\n        \"FROM players AS p LEFT JOIN scores AS s ON s.name = p.name \"\n        \"GROUP BY p.team ORDER BY total DESC, p.team\"\n    ).fetchall()\n"
+      ],
+      "tests": [
+        {
+          "name": "sums each team's scores",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE players (name TEXT, team TEXT)')\ncon.execute('CREATE TABLE scores (name TEXT, points INTEGER)')\ncon.executemany('INSERT INTO players VALUES (?, ?)', [('ana', 'red'), ('ben', 'red'), ('cy', 'blue')])\ncon.executemany('INSERT INTO scores VALUES (?, ?)', [('ana', 3), ('ana', 4), ('ben', 1), ('cy', 5)])\nassert team_totals(con) == [('red', 8), ('blue', 5)], team_totals(con)",
+          "concept": "sql-joins"
+        },
+        {
+          "name": "a team with no scores has total 0",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE players (name TEXT, team TEXT)')\ncon.execute('CREATE TABLE scores (name TEXT, points INTEGER)')\ncon.executemany('INSERT INTO players VALUES (?, ?)', [('ana', 'red'), ('dee', 'green')])\ncon.execute('INSERT INTO scores VALUES (?, ?)', ('ana', 2))\nassert team_totals(con) == [('red', 2), ('green', 0)], team_totals(con)",
+          "concept": "sql-joins"
+        },
+        {
+          "name": "ties are in alphabetical order of team",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE players (name TEXT, team TEXT)')\ncon.execute('CREATE TABLE scores (name TEXT, points INTEGER)')\ncon.executemany('INSERT INTO players VALUES (?, ?)', [('a', 'zeta'), ('b', 'alpha')])\ncon.executemany('INSERT INTO scores VALUES (?, ?)', [('a', 4), ('b', 4)])\nassert team_totals(con) == [('alpha', 4), ('zeta', 4)], team_totals(con)",
+          "concept": "sql-queries"
+        },
+        {
+          "name": "scores for non-players don't count",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE players (name TEXT, team TEXT)')\ncon.execute('CREATE TABLE scores (name TEXT, points INTEGER)')\ncon.execute('INSERT INTO players VALUES (?, ?)', ('ana', 'red'))\ncon.executemany('INSERT INTO scores VALUES (?, ?)', [('ana', 1), ('ghost', 99)])\nassert team_totals(con) == [('red', 1)], team_totals(con)",
+          "concept": "sql-joins"
+        },
+        {
+          "name": "no players, no rows",
+          "code": "import sqlite3\ncon = sqlite3.connect(':memory:')\ncon.execute('CREATE TABLE players (name TEXT, team TEXT)')\ncon.execute('CREATE TABLE scores (name TEXT, points INTEGER)')\nassert team_totals(con) == []",
+          "concept": "sql-tables"
+        }
+      ],
+      "solution": "def team_totals(con):\n    return con.execute(\n        \"SELECT p.team, COALESCE(SUM(s.points), 0) AS total \"\n        \"FROM players AS p LEFT JOIN scores AS s ON s.name = p.name \"\n        \"GROUP BY p.team ORDER BY total DESC, p.team\"\n    ).fetchall()\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "A table `pets` has rows ('Rex', 3), ('Ada', 1) and ('Bo', 5). What does `SELECT name FROM pets WHERE age > 2 ORDER BY name` return?",
+          "choices": [
+            "('Bo',) then ('Rex',)",
+            "('Rex',) then ('Bo',)",
+            "('Ada',) then ('Bo',) then ('Rex',)",
+            "('Bo',) only"
+          ],
+          "answer": 0,
+          "explanation": "WHERE keeps Rex and Bo; ORDER BY name sorts them alphabetically.",
+          "concept": "sql-queries"
+        },
+        {
+          "id": "q2",
+          "prompt": "Why pass values as parameters (`?`) instead of putting them into the SQL with an f-string?",
+          "choices": [
+            "The values are sent separately, so quotes or SQL inside them can't change the query",
+            "It is the only way to insert numbers",
+            "f-strings are slower in Python",
+            "sqlite3 doesn't accept strings in SQL"
+          ],
+          "answer": 0,
+          "explanation": "With placeholders the database never reads your data as SQL: no broken quotes, no injection.",
+          "concept": "query-parameters"
+        },
+        {
+          "id": "q3",
+          "prompt": "What does `con.execute(\"SELECT * FROM pets WHERE age > 99\").fetchone()` return when no row matches?",
+          "choices": [
+            "None",
+            "An empty tuple",
+            "It raises an error",
+            "0"
+          ],
+          "answer": 0,
+          "explanation": "`fetchone()` returns the next row, or `None` when there are no rows left.",
+          "concept": "sql-tables"
+        },
+        {
+          "id": "q4",
+          "prompt": "`players LEFT JOIN scores ON ...`: what happens to a player with no scores?",
+          "choices": [
+            "The player is kept, with NULL (None) for the score columns",
+            "The player is left out",
+            "The query fails",
+            "The player gets a score of 0 automatically"
+          ],
+          "answer": 0,
+          "explanation": "LEFT JOIN keeps every row of the left table; COALESCE can then turn NULL into 0.",
+          "concept": "sql-joins"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Open a database with `sqlite3.connect`, create tables and insert rows.\n- Always pass values with `?` placeholders, never by building SQL text.\n- Ask questions with SELECT, WHERE, ORDER BY, LIMIT and GROUP BY, and read rows as tuples.\n- Combine tables with JOIN and LEFT JOIN, using COALESCE for missing values."
+    }
+  ]
+}

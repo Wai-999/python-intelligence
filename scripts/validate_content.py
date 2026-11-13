@@ -35,6 +35,10 @@ _PKG_MANIFEST = json.loads((ROOT / "src" / "py" / "packages.json").read_text())
 PACKAGES = {k: v for k, v in _PKG_MANIFEST.items() if not k.startswith("_")}
 # The module a learner imports for each package (the same as the package name unless _import_names says otherwise).
 IMPORT_NAMES = {pkg: _PKG_MANIFEST.get("_import_names", {}).get(pkg, pkg) for pkg in PACKAGES}
+# Standard-library modules Pyodide ships separately (e.g. sqlite3): CPython has them built in, so the gate checks they
+# import rather than comparing a pip version.
+CPYTHON_MODULES = set(_PKG_MANIFEST.get("_cpython_modules", []))
+STDLIB = "standard library"
 # Interpreter for lesson snippets: the browser runs CPython 3.12 (Pyodide 0.27.8), so prefer a matching 3.12
 # environment (PI_CONTENT_PYTHON, else the project's .venv312) over whatever runs this script.
 CONTENT_PY = os.environ.get("PI_CONTENT_PYTHON") or (
@@ -184,9 +188,11 @@ def check_verbatim(lesson: dict, index: ExtractIndex | HashedIndex) -> list[str]
 
 def interpreter_report() -> tuple[str, dict[str, str | None]]:
     """(python version, {package: installed version or None}) of CONTENT_PY."""
-    code = ("import sys, json, importlib.metadata as m\nv = {}\nfor n in sys.argv[1:]:\n    try:\n        v[n] = m.version(n)\n"
+    code = ("import sys, json, importlib, importlib.metadata as m\nstd = set(sys.argv[1].split(','))\nv = {}\nfor n in sys.argv[2:]:\n"
+            "    if n in std:\n        try:\n            importlib.import_module(n)\n            v[n] = " + repr(STDLIB) + "\n        except ImportError:\n"
+            "            v[n] = None\n        continue\n    try:\n        v[n] = m.version(n)\n"
             "    except m.PackageNotFoundError:\n        v[n] = None\nprint(json.dumps([sys.version.split()[0], v]))")
-    out = subprocess.run([CONTENT_PY, "-I", "-c", code, *PACKAGES], capture_output=True, text=True, timeout=30)
+    out = subprocess.run([CONTENT_PY, "-I", "-c", code, ",".join(sorted(CPYTHON_MODULES)), *PACKAGES], capture_output=True, text=True, timeout=30)
     ver, pkgs = json.loads(out.stdout)
     return ver, pkgs
 
@@ -225,6 +231,10 @@ def check_packages(lesson: dict, installed: dict[str, str | None] | None) -> lis
                  + ("it" if IMPORT_NAMES[pkg] == pkg else repr(pkg)) + " in packages"
                  for pkg in sorted(used - declared)]
     for x in pk:
+        if x in CPYTHON_MODULES:
+            if installed is not None and installed.get(x) != STDLIB:
+                errs.append(f"needs the standard-library module {x} to validate, but it doesn't import")
+            continue
         if x in PACKAGES and installed is not None and installed.get(x) != PACKAGES[x]:
             errs.append(f"needs {x}=={PACKAGES[x]} (the browser's version) to validate, found {installed.get(x)}; "
                         "use .venv312 or set PI_CONTENT_PYTHON")

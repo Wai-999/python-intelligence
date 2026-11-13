@@ -1,6 +1,10 @@
 {
- "_note": "Packages lessons may declare in \"packages\". Versions must equal those shipped by Pyodide 0.27.8 (pyodide-lock.json); the content gate and CI install exactly these. Keys starting with _ are metadata. _import_names maps a package to its import name when the two differ (e.g. \"scikit-learn\": \"sklearn\").",
+ "_note": "Packages lessons may declare in \"packages\". Versions must equal those shipped by Pyodide 0.27.8 (pyodide-lock.json); the content gate and CI install exactly these. Keys starting with _ are metadata. _import_names maps a package to its import name when the two differ (e.g. \"scikit-learn\": \"sklearn\"). _cpython_modules lists packages that are part of CPython's standard library but that Pyodide ships separately and loads on demand (their version is Pyodide's lockfile version); the content gate checks that they import instead of checking a pip version.",
  "_import_names": {},
  "numpy": "2.0.2",
- "pandas": "2.2.3"
+ "pandas": "2.2.3",
+ "_cpython_modules": [
+  "sqlite3"
+ ],
+ "sqlite3": "1.0.0"
 }
