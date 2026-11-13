@@ -50,6 +50,35 @@ const KEYWORDS = new Set(("and as assert async await break class continue def de
   + "in is lambda match case nonlocal not or pass raise return try while with yield").split(" "));
 const IDENT = /^[A-Za-z_]\w*$/;
 
+/**
+ * Python's logical lines: physical lines joined while brackets are open or after a trailing backslash, so a call or a
+ * `def` written over several lines is read as one statement. Expects code with strings and comments blanked.
+ */
+export function logicalLines(src: string): string[] {
+  const lines: string[] = [];
+  let depth = 0, current = "";
+  for (const physical of src.split("\n")) {
+    current += (current ? " " : "") + physical.replace(/\\\s*$/, "");
+    for (const ch of physical) {
+      if ("([{".includes(ch)) depth++;
+      else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
+    }
+    if (depth === 0 && !/\\\s*$/.test(physical)) { lines.push(current); current = ""; }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+/** The text inside the parentheses that open at `open` (balanced), or the rest of the text if they never close. */
+function insideParens(text: string, open: number): string {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    else if (text[i] === ")" && --depth === 0) return text.slice(open + 1, i);
+  }
+  return text.slice(open + 1);
+}
+
 /** Splits `text` at `sep` characters that aren't inside brackets. */
 function splitTop(text: string, sep: string): string[] {
   const parts: string[] = [];
@@ -95,7 +124,7 @@ function targetNames(target: string, into: Set<string>) {
 export function boundNames(code: string): Set<string> {
   const src = codeOnly(code);
   const names = new Set<string>();
-  for (const raw of src.split("\n")) {
+  for (const raw of logicalLines(src)) {
     const line = raw.trim();
     if (!line) continue;
     // import a.b as c, d  ->  c, d (Python binds the alias, or the first part of a dotted name)
@@ -121,9 +150,12 @@ export function boundNames(code: string): Set<string> {
     if (/^(?:with|except)\b/.test(line) || /^async\s+with\b/.test(line))
       for (const a of line.matchAll(/\bas\s+([A-Za-z_]\w*)/g)) names.add(a[1]!);
     for (const g of line.matchAll(/^(?:global|nonlocal)\s+(.+)$/g)) targetNames(g[1]!, names);
-    for (const d of line.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
+    for (const d of line.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(/g)) {
       names.add(d[1]!);
-      for (const p of splitTop(d[2]!, ",")) { const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p); if (n) names.add(n[1]!); }
+      for (const p of splitTop(insideParens(line, d.index! + d[0].length - 1), ",")) {
+        const n = /^\s*\**\s*([A-Za-z_]\w*)/.exec(p);
+        if (n) names.add(n[1]!);
+      }
     }
     for (const c of line.matchAll(/\bclass\s+([A-Za-z_]\w*)/g)) names.add(c[1]!);
     for (const f of line.matchAll(/\bfor\s+(.+?)\s+in\b/g)) targetNames(f[1]!, names);

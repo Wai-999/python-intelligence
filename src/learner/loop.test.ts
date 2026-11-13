@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ExerciseStep, Lesson } from "../content/types";
 import type { PyError } from "../py/protocol";
 import { buildModel, ordered, type LearnerEvent } from "./model";
-import { boundNames, classifyError, codeOnly, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
+import { boundNames, classifyError, codeOnly, logicalLines, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
 import { exerciseEvents } from "./record";
 
 const err = (type: string, message = ""): PyError => ({ type, message, line: 1, summary: `${type}: ${message}` });
@@ -80,6 +80,23 @@ describe("classifying a failed run", () => {
     expect(classifyError(err("NameError", "name 'value' is not defined"), "values = [1, 2]\nprint(value)")).toEqual(["slip:name"]);
     expect(looksLikeTypo("lenn", "print(lenn(xs))")).toBe(true); // a built-in, one edit away
     expect(looksLikeTypo("vale", "print(vale)")).toBe(false); // "vars" is two edits away: too far for a built-in
+  });
+
+  it("reads statements written over several lines as one", () => {
+    expect(logicalLines("a = f(1,\n      2)\nb = 3\nc = 1 + \\\n    2\n")).toEqual(["a = f(1,       2)", "b = 3", "c = 1 +      2", ""]);
+    const names = (code: string) => [...boundNames(code)].sort();
+    expect(names("plot(xs,\n     color=c,\n     label=name)\n")).toEqual([]); // keyword arguments over several lines
+    expect(names("result = dict(\n    a=1,\n    b=2,\n)\n")).toEqual(["result"]); // on an assignment's right-hand side
+    expect(names("def area(width,\n         height=1,\n         *,\n         unit=(\"m\", 1)):\n    pass\n")).toEqual(["area", "height", "unit", "width"]);
+    expect(names("total = first + \\\n    second\n")).toEqual(["total"]);
+    expect(names("def scale(size=(1, 2), factor=3, *rest):\n    pass\n")).toEqual(["factor", "rest", "scale", "size"]); // after a parenthesised default
+    expect(classifyError(err("NameError", "name 'labl' is not defined"), "plot(xs,\n     color=c,\n     label=name)\nprint(labl)")).toEqual(["error:NameError"]);
+    // A misspelt parameter of a multi-line def is a slip, and repeating it never triggers a step back.
+    const code = "def area(width,\n         height):\n    return wdith * height\n";
+    const tags = classifyError(err("NameError", "name 'wdith' is not defined"), code);
+    expect(tags).toEqual(["slip:name"]);
+    const runs = [1, 2, 3, 4, 5].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags));
+    expect(mesoTrigger(runs, "loops", now(30))).toBeNull();
   });
 
   it("tags failed checks per concept on the events", () => {
