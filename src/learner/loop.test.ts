@@ -55,6 +55,17 @@ describe("classifying a failed run", () => {
     expect(names("[first, second] = pair\n(a, (b, *c)) = x\np = q = 0\n")).toEqual(["a", "b", "c", "first", "p", "q", "second"]);
     expect(names("xs[i] = 1\nobj.attr = 2\ngrid[r][c] = 0\nd[k], e = 1, 2\n")).toEqual(["e"]); // subscriptions and attributes bind nothing
     expect(names("print(x, sep=y)\nif n == 1: pass\nwhile n >= 0: pass\n")).toEqual([]); // keyword arguments and comparisons aren't assignments
+    // Several keyword arguments, alone or on an assignment's right-hand side, bind nothing but the target.
+    expect(names("plot(xs, color=c, width=2, label=name)\nresult = dict(a=1, b=2, c=3)\nf(g(x=1), y=2)\n")).toEqual(["result"]);
+    expect(names("def area(r, scale=1, unit='m'):\n    pass\n")).toEqual(["area", "r", "scale", "unit"]);
+    // Lambda parameters, global/nonlocal declarations and comprehension targets (nested and starred).
+    expect(names("square = lambda n, *more, k=2: n * k\n")).toEqual(["k", "more", "n", "square"]);
+    expect(names("def f():\n    global total, count\n    nonlocal step\n")).toEqual(["count", "f", "step", "total"]);
+    expect(names("pairs = [a + b for a, b in rows]\nflat = [x for (i, (j, *rest)) in grid for x in rest]\nsquares = {k: v * v for k, v in d.items()}\n"))
+      .toEqual(["a", "b", "flat", "i", "j", "k", "pairs", "rest", "squares", "v", "x"]);
+    expect(classifyError(err("NameError", "name 'labl' is not defined"), "plot(xs, color=c, label=name)\nprint(labl)")).toEqual(["error:NameError"]);
+    expect(classifyError(err("NameError", "name 'totl' is not defined"), "def f():\n    global total\n    print(totl)")).toEqual(["slip:name"]);
+    expect(classifyError(err("NameError", "name 'nmu' is not defined"), "sq = lambda num: nmu * num")).toEqual(["slip:name"]);
     expect(names("import os.path\nimport numpy as np, json\nfrom os import path as p, sep\nfrom m import (a, b)\nfrom n import *\n"))
       .toEqual(["a", "b", "json", "np", "os", "p", "sep"]);
     expect(names("with open(f) as fh, open(g) as gh:\n    pass\nexcept ValueError as err:\n    pass\nif (n := 10) > 5: pass\n"))
@@ -128,6 +139,23 @@ describe("the meso trigger", () => {
     const again = [...evs, shown, ...[5, 6, 7].flatMap((m) => exerciseEvents(L2, two, null, 0, at(m), ["error:TypeError"]))];
     expect(mesoTrigger(again, "ranges", now(8), `${L2.id}:two`)).toBeNull(); // same task, within the cooldown
     expect(mesoTrigger(again, "ranges", now(8))).not.toBeNull(); // without the task, "ranges" would trigger from the same runs
+  });
+
+  it("steps back when the code works but explaining it keeps failing (an explanation mismatch)", () => {
+    const answer = (passed: boolean, min: number, task: "quiz" | "review" = "quiz"): LearnerEvent =>
+      ({ id: `q${min}-${++k}`, at: at(min).at, lessonId: L.id, stepId: "check", task, concept: "loops", passed, assistance: 0, policy: "learner-heuristic-1" });
+    const coded = pass(E1, 1);
+    const i = mesoTrigger([...coded, answer(false, 2), answer(false, 3, "review")], "loops", now(4))!;
+    expect(i).toMatchObject({ kind: "explanation", signature: "explain:mismatch" });
+    expect(i.supports).toEqual([coded[0]!.id, ...[2, 3].map((m) => expect.stringMatching(new RegExp(`^q${m}-`)))]);
+    expect(mesoTrigger([...coded, answer(false, 2)], "loops", now(4))).toBeNull(); // one miss is not a pattern
+    expect(mesoTrigger([answer(false, 2), answer(false, 3)], "loops", now(4))).toBeNull(); // no working code: a plain gap, not a mismatch
+    expect(mesoTrigger([...pass(E1, 1, 3), answer(false, 2), answer(false, 3)], "loops", now(4))).toBeNull(); // the code needed strong help
+    // Cooldown and fresh evidence apply as for the other kinds.
+    const shown = interventionEvent(i, L.id, "check", "shown", at(4));
+    expect(mesoTrigger([...coded, answer(false, 2), answer(false, 3), shown, answer(false, 5), answer(false, 6)], "loops", now(60))).toBeNull();
+    expect(mesoTrigger([...coded, answer(false, 2), answer(false, 3), shown, ...pass(E2, 20), answer(false, 21), answer(false, 22)], "loops", now(60)))
+      .toMatchObject({ kind: "explanation" });
   });
 
   it("steps back after repeated reliance on strong hints, but not for light help", () => {

@@ -94,6 +94,7 @@ export function LessonView(p: Props) {
         <Quiz key={`${lesson.id}:${step.id}:${p.generation}`} step={step} record={progress?.steps[step.id]}
               onResult={(score, passed, missed, correct) => p.onQuiz(step.id, score, passed, missed, correct)} />
       )}
+      {step.kind === "quiz" && p.mesoFor(step.id)}
       {step.kind === "summary" && <NextUp {...p} />}
 
       <nav className="pager" aria-label="Step navigation">

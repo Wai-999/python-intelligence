@@ -1,10 +1,10 @@
 /**
  * The double-loop part of the feedback controller (master prompt §6). The micro loop is the tutor note on every failed
- * run; this module decides when to step back (the meso loop): after repeated *structural* errors on a concept, or after
- * repeated reliance on strong hints. Slips (a syntax error, a misspelt name) are recorded but never trigger it, cooldowns
- * keep it from repeating, and every decision is logged with its policy version and the events that triggered it.
- * Pure functions, so the rules are testable without the browser.
- */
+ * run; this module decides when to step back (the meso loop): after repeated *structural* errors on a concept, after code
+ * that works but can't yet be explained (an explanation mismatch), or after repeated reliance on strong hints. Slips (a
+ * syntax error, a misspelt name) are recorded but never trigger it, cooldowns keep it from repeating, and every decision
+ * is logged with its policy version and the events that triggered it.
+ * Pure functions, so the rules are testable without the browser. */
 import { isExercise, type ExerciseStep, type Lesson } from "../content/types";
 import type { PyError } from "../py/protocol";
 import { ordered, SLIP_TAG_PREFIX, type LearnerEvent, type LearnerModel } from "./model";
@@ -12,7 +12,7 @@ import { creditedConcepts, type Stamp } from "./record";
 
 export const LOOP_POLICY = "loop-1";
 /** Starting hypotheses, not constants of nature (master prompt): ≥3 similar errors within 5 relevant attempts. */
-export const MESO = { window: 5, similar: 3, strongHelp: 3, cooldownMs: 10 * 60_000 } as const;
+export const MESO = { window: 5, similar: 3, strongHelp: 3, explainMisses: 2, cooldownMs: 10 * 60_000 } as const;
 
 // ---- Classifying a failed run -------------------------------------------------------------------------------------
 
@@ -65,13 +65,18 @@ function splitTop(text: string, sep: string): string[] {
 }
 
 /**
- * Positions of each assignment-like `=` (not ==, !=, <=, >=, :=). One inside brackets (a keyword argument) only
- * yields segments with an unclosed bracket, which targetNames rejects, so no bracket tracking is needed here.
+ * Positions of assignment `=` at bracket depth 0 (not ==, !=, <=, >=, :=). An `=` inside brackets is a keyword
+ * argument or default: with two of them (`f(a=1, b=2)`) the text between would otherwise look like a target `1, b`.
  */
 function assignmentSplits(line: string): number[] {
   const at: number[] = [];
-  for (let i = 0; i < line.length; i++)
-    if (line[i] === "=" && line[i + 1] !== "=" && !"=!<>:".includes(line[i - 1] ?? "")) at.push(i);
+  let depth = 0;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]!;
+    if ("([{".includes(ch)) depth++;
+    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
+    else if (ch === "=" && depth === 0 && line[i + 1] !== "=" && !"=!<>:".includes(line[i - 1] ?? "")) at.push(i);
+  }
   return at;
 }
 
@@ -178,9 +183,9 @@ export function classifyError(error: PyError, code: string): string[] {
 // ---- The meso trigger ---------------------------------------------------------------------------------------------
 
 export interface Intervention {
-  kind: "counterexample" | "independence";
+  kind: "counterexample" | "explanation" | "independence";
   concept: string;
-  /** The repeated structural tag (e.g. "error:TypeError", "check:loops"), or "help:strong" for hint dependence. */
+  /** The repeated structural tag (e.g. "error:TypeError", "check:loops"), "explain:mismatch", or "help:strong". */
   signature: string;
   /** Ids of the attempts that triggered it. */
   supports: string[];
@@ -214,6 +219,13 @@ export function mesoTrigger(events: readonly LearnerEvent[], concept: string, no
     const [signature, es] = repeated[0]!;
     return { kind: "counterexample", concept, signature, supports: es.map((e) => e.id) };
   }
+  // Explanation mismatch: the code works (an independent exercise success) but explaining the same concept fails
+  // repeatedly (quiz or review answers), so the working code may rest on a mental model that doesn't hold.
+  const coded = recent.filter((e) => e.passed && e.assistance === 0);
+  const misses = all.filter((e) => e.concept === concept && (e.task === "quiz" || e.task === "review") && Date.parse(e.at) > since)
+    .slice(-MESO.window).filter((e) => !e.passed);
+  if (coded.length > 0 && misses.length >= MESO.explainMisses)
+    return { kind: "explanation", concept, signature: "explain:mismatch", supports: ordered([...coded, ...misses]).map((e) => e.id) };
   const leaned = recent.filter((e) => e.passed && e.assistance >= MESO.strongHelp);
   if (leaned.length >= MESO.similar) return { kind: "independence", concept, signature: "help:strong", supports: leaned.map((e) => e.id) };
   return null;

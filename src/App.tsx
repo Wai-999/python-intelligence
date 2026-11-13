@@ -8,7 +8,7 @@ import { buildModel, dueReviews, type Assistance, type LearnerEvent } from "./le
 import { creditedConcepts, exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier, type Stamp } from "./learner/record";
 import { interventionEvent, mesoTrigger, transferTarget, type Intervention, type Target } from "./learner/loop";
 import { MesoPanel } from "./components/MesoPanel";
-import { isExercise } from "./content/types";
+import { isExercise, type Lesson } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
 import { getRunner } from "./py/runner";
@@ -228,6 +228,22 @@ export function App() {
     else setStoreError(String((e as Error)?.message ?? e));
   };
 
+  // Double loop: after recording an attempt, step back once if the controller says so (repeated structural errors, an
+  // explanation mismatch, reliance on strong hints), but only while the task is still on screen, so a step back is
+  // logged as shown only when it really is.
+  const stepBack = (l: Lesson, sid: string, concepts: string[], atMs: number) => {
+    const here = routeRef.current;
+    if (here.view !== "lesson" || here.lessonId !== l.id || l.steps[here.step]?.id !== sid) return;
+    for (const c of concepts) {
+      const i = mesoTrigger(eventsRef.current, c, atMs, `${l.id}:${sid}`);
+      if (!i) continue;
+      const shown = interventionEvent(i, l.id, sid, "shown", stampNow());
+      setMeso({ id: shown.id, key: `${l.id}:${sid}:${generationRef.current}`, i, target: transferTarget(LESSONS, model, c, l.id, sid, assist) });
+      record([shown]);
+      break;
+    }
+  };
+
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };
   const current = route.view === "lesson" ? route.lessonId : undefined;
   const rec = useMemo(() => recommendNext(graph, progress, current), [progress, current]);
@@ -325,18 +341,7 @@ export function App() {
                   .then((stored) => {
                     if (detail.generation !== generationRef.current) return;
                     record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp, detail.errorTags));
-                    // Double loop: after repeated structural errors (or reliance on strong hints), step back once, but only
-                    // while this task is still on screen: a step back is logged as shown only when it really is.
-                    const here = routeRef.current;
-                    if (here.view !== "lesson" || here.lessonId !== l.id || l.steps[here.step]?.id !== sid) return;
-                    for (const c of creditedConcepts(l, step)) {
-                      const i = mesoTrigger(eventsRef.current, c, Date.parse(stamp.at), `${l.id}:${sid}`);
-                      if (!i) continue;
-                      const shown = interventionEvent(i, l.id, sid, "shown", stampNow());
-                      setMeso({ id: shown.id, key: `${l.id}:${sid}:${generationRef.current}`, i, target: transferTarget(LESSONS, model, c, l.id, sid, assist) });
-                      record([shown]);
-                      break;
-                    }
+                    stepBack(l, sid, creditedConcepts(l, step), Date.parse(stamp.at));
                   });
               }}
               onQuiz={(sid, score, passed, missed, correct) => {
@@ -358,7 +363,9 @@ export function App() {
                     .then((before) => {
                       if (startedIn !== generationRef.current) return; // progress was replaced meanwhile
                       // This tab's own record counts too: a reveal whose save failed still happened.
-                      record(quizEvents(l, step, correct, stamp, Math.max(before, shownHere) >= 4 ? 4 : 0));
+                      const evs = quizEvents(l, step, correct, stamp, Math.max(before, shownHere) >= 4 ? 4 : 0);
+                      record(evs);
+                      stepBack(l, sid, [...new Set(evs.map((e) => e.concept))], Date.parse(stamp.at)); // e.g. an explanation mismatch
                     })
                     .catch(fail);
                 }

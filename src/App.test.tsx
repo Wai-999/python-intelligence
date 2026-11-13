@@ -551,5 +551,32 @@ describe("App", () => {
       expect(decisions().map((d) => d.tags!.at(-1))).toEqual(["outcome:shown", "outcome:answered", "outcome:shown"]);
       expect(new Set(decisions().map((d) => d.id)).size).toBe(3);
     });
+
+    it("steps back on the quiz page when the code works but the answers about it keep failing", async () => {
+      const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as Lesson;
+      const circle = lesson.steps.findIndex((st) => st.id === "circle");
+      const step = lesson.steps[circle] as unknown as ExerciseStep;
+      history = creditedConcepts(lesson, step).map((concept, n) => ({ id: `ok${n}`, at: new Date(Date.now() - 3600_000 + n).toISOString(),
+        lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed: true, assistance: 0 as const, policy: "learner-heuristic-1" }));
+      const quizAt = lesson.steps.findIndex((st) => st.kind === "quiz");
+      const quiz = lesson.steps[quizAt] as QuizStep;
+      const { App } = await import("./App");
+      location.hash = `#/lesson/py-values-names/${quizAt}`;
+      render(<App />);
+      const wrong = async () => {
+        const sets = await waitFor(() => { const f = document.querySelectorAll("fieldset.question"); expect(f.length).toBe(quiz.questions.length); return f; });
+        quiz.questions.forEach((q, j) => fireEvent.click(sets[j]!.querySelectorAll("input[type=radio]")[(q.answer + 1) % q.choices.length]!));
+        fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
+        await screen.findByText(/You need/);
+        await act(async () => { release(0); await Promise.resolve(); });
+      };
+      await wrong();
+      expect(screen.queryByText(/questions about it have gone wrong more than once/)).toBeNull();
+      await act(async () => { location.hash = "#/"; dispatchEvent(new HashChangeEvent("hashchange")); });
+      await act(async () => { location.hash = `#/lesson/py-values-names/${quizAt}`; dispatchEvent(new HashChangeEvent("hashchange")); });
+      await wrong();
+      expect(await screen.findByText(/questions about it have gone wrong more than once/)).toBeTruthy();
+      expect(decisions().map((d) => d.tags)).toEqual([["loop:meso", "kind:explanation", "signature:explain:mismatch", "outcome:shown"]]);
+    });
   });
 });

@@ -35,7 +35,19 @@ export function MesoPanel({ intervention: i, target, titleOf, onOutcome }: Props
   return (
     <section className="meso" aria-labelledby="meso-title">
       <h3 id="meso-title" tabIndex={-1} ref={heading}>Let's step back for a moment</h3>
-      {i.kind === "independence" ? (
+      {i.kind === "explanation" ? (
+        <>
+          <p>Your code for <strong>{i.concept}</strong> works, but questions about it have gone wrong more than once. Code can
+             work for a reason that isn't quite the one you have in mind. Write one sentence on what your code does and why,
+             then compare it with the explanation for the question you missed.</p>
+          {!done ? (
+            <p>
+              <button type="button" className="btn primary" onClick={() => finish("answered")}>I've written it down</button>{" "}
+              <button type="button" className="btn ghost" onClick={() => finish("postponed")}>Not now</button>
+            </p>
+          ) : <div role="status">{transfer}</div>}
+        </>
+      ) : i.kind === "independence" ? (
         <>
           <p>Your last few successes on <strong>{i.concept}</strong> leaned on strong hints or the solution. That's fine, and
              the next step is doing one on your own. Hints stay a click away if you need them.</p>
