@@ -87,6 +87,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Convert data between Python objects, JSON text and CSV tables with the json and csv modules.",
+  "analogy": "JSON and CSV are two shipping boxes for the same goods: json packs nested objects, csv packs flat tables, and each module knows how to pack and unpack its box.",
+  "misconceptions": [
+    {
+      "belief": "CSV values come back as numbers.",
+      "correction": "csv gives every value as a string; convert them yourself."
+    },
+    {
+      "belief": "You can build CSV by joining values with commas.",
+      "correction": "A value containing a comma or a quote breaks that; csv.writer quotes it correctly."
+    },
+    {
+      "belief": "json.dumps keeps tuples and integer keys as they were.",
+      "correction": "Tuples become lists and keys become strings in JSON."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Uses the modules",
+      "evidence": "json and csv do the parsing and quoting"
+    },
+    {
+      "criterion": "Round-trips",
+      "evidence": "data read back equals the data written"
+    },
+    {
+      "criterion": "Edge cases",
+      "evidence": "commas, quotes and empty input are handled"
+    }
+  ],
+  "review": {
+    "recall": "Why should you use csv.writer instead of joining values with commas? What happens to a tuple in json.dumps?"
+  },
   "steps": [
     {
       "id": "why",
@@ -280,6 +313,41 @@
         }
       ],
       "solution": "import csv\nimport io\nimport json\n\n\ndef team_report(text):\n    reader = csv.DictReader(io.StringIO(text))\n    if reader.fieldnames is None or 'team' not in reader.fieldnames or 'score' not in reader.fieldnames:\n        raise ValueError('the header must name a team and a score column')\n    totals = {}\n    for row in reader:\n        if row['team'] is None or row['score'] is None:\n            raise ValueError(f'row {reader.line_num} is incomplete')\n        count, total = totals.get(row['team'], (0, 0))\n        totals[row['team']] = (count + 1, total + int(row['score']))\n    report = {team: {'count': c, 'mean': t / c} for team, (c, t) in totals.items()}\n    return json.dumps(report, sort_keys=True)\n\n\ndef best_team(report_json):\n    report = json.loads(report_json)\n    if not isinstance(report, dict) or not report:\n        raise ValueError('expected a non-empty JSON object')\n    top = max(v['mean'] for v in report.values())\n    return min(team for team, v in report.items() if v['mean'] == top)\n"
+    },
+    {
+      "id": "export",
+      "kind": "transfer",
+      "title": "Transfer: JSON to CSV",
+      "body": "Write `json_to_csv(json_text)`. The text is a JSON list of objects that all have the same keys. Return CSV text: a header\nrow with the keys in the first object's order, then one row per object, written with the csv module so that values\ncontaining commas or quotes are quoted correctly. An empty list gives an empty string.",
+      "starter": "import json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    lines = [\",\".join(rows[0])]\n    for row in rows:\n        lines.append(\",\".join(str(v) for v in row.values()))\n    return \"\\n\".join(lines)\n",
+      "hints": [
+        "Write into `io.StringIO()` with `csv.DictWriter(out, fieldnames=list(rows[0]))`, then `writeheader()` and `writerows(rows)`.",
+        "Check for an empty list first, and return `out.getvalue()` at the end.",
+        "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.DictWriter(out, fieldnames=list(rows[0]))\n    writer.writeheader()\n    writer.writerows(rows)\n    return out.getvalue()\n"
+      ],
+      "tests": [
+        {
+          "name": "header and rows",
+          "code": "import csv, io, json\ntext = json_to_csv(json.dumps([{'name': 'Ann', 'age': 31}, {'name': 'Bo', 'age': 4}]))\nassert list(csv.reader(io.StringIO(text))) == [['name', 'age'], ['Ann', '31'], ['Bo', '4']], text",
+          "concept": "csv-files"
+        },
+        {
+          "name": "commas and quotes are quoted",
+          "code": "import csv, io, json\ndata = [{'title': 'Salt, Fat', 'note': 'he said \"hi\"'}]\ntext = json_to_csv(json.dumps(data))\nassert list(csv.DictReader(io.StringIO(text))) == data, text",
+          "concept": "csv-files"
+        },
+        {
+          "name": "an empty list gives empty text",
+          "code": "assert json_to_csv('[]') == ''",
+          "concept": "serialization"
+        },
+        {
+          "name": "reads the JSON with the json module",
+          "code": "import json\nassert json_to_csv(json.dumps([{'k': True, 'n': None}])).splitlines()[1] == 'True,', json_to_csv(json.dumps([{'k': True, 'n': None}]))",
+          "concept": "json"
+        }
+      ],
+      "solution": "import csv\nimport io\nimport json\n\n\ndef json_to_csv(json_text):\n    rows = json.loads(json_text)\n    if not rows:\n        return \"\"\n    out = io.StringIO()\n    writer = csv.DictWriter(out, fieldnames=list(rows[0]))\n    writer.writeheader()\n    writer.writerows(rows)\n    return out.getvalue()\n"
     },
     {
       "id": "check",

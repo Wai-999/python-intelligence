@@ -86,6 +86,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Describe data with type hints and dataclasses, and check at run time what hints can't.",
+  "analogy": "A type hint is a label on a box saying what should go in; a dataclass is a box that builds itself from its labels, and __post_init__ is the inspector at the door.",
+  "misconceptions": [
+    {
+      "belief": "Type hints make Python reject wrong types.",
+      "correction": "Hints are not enforced at run time; checks must be written (or a tool like mypy run)."
+    },
+    {
+      "belief": "A dataclass field can default to an empty list with `= []`.",
+      "correction": "That is refused; use `field(default_factory=list)`."
+    },
+    {
+      "belief": "`isinstance(True, int)` is false.",
+      "correction": "bool is a subclass of int, so it is true; exclude bool explicitly if needed."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Accurate hints",
+      "evidence": "every field, parameter and return value is annotated correctly"
+    },
+    {
+      "criterion": "Validated",
+      "evidence": "__post_init__ refuses wrong types and out-of-range values"
+    },
+    {
+      "criterion": "Safe defaults",
+      "evidence": "mutable defaults use default_factory"
+    }
+  ],
+  "review": {
+    "recall": "Do type hints stop a wrong type at run time? Why does a list default need default_factory?"
+  },
   "steps": [
     {
       "id": "why",
@@ -281,6 +314,46 @@
         }
       ],
       "solution": "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def __post_init__(self):\n        if isinstance(self.price, bool) or not isinstance(self.price, (int, float)):\n            raise TypeError(\"price must be a number\")\n        if isinstance(self.quantity, bool) or not isinstance(self.quantity, int):\n            raise TypeError(\"quantity must be a whole number\")\n        if self.price < 0:\n            raise ValueError(\"price can't be negative\")\n        if self.quantity < 1:\n            raise ValueError(\"quantity must be at least 1\")\n\n    def total(self) -> float:\n        return self.price * self.quantity\n\n\n@dataclass\nclass Cart:\n    items: list[Item] = field(default_factory=list)\n\n    def add(self, item: Item) -> None:\n        self.items.append(item)\n\n    def total(self) -> float:\n        return sum(item.total() for item in self.items)\n"
+    },
+    {
+      "id": "library",
+      "kind": "transfer",
+      "title": "Transfer: a book record",
+      "body": "Write a dataclass `Book` with fields `title: str`, `pages: int` and `tags: list[str]` (default: a new empty list). In\n`__post_init__`, raise `TypeError` if `title` isn't a `str` or `pages` isn't an `int` (a `bool` doesn't count), and\n`ValueError` if `pages` is below 1. Then write `longest(books: list[Book]) -> Book | None`, which returns the book with\nthe most pages (the first such book on a tie), or `None` for an empty list.",
+      "starter": "from dataclasses import dataclass\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n\n\ndef longest(books):\n    return None\n",
+      "hints": [
+        "`tags: list[str] = field(default_factory=list)`; in `__post_init__`, `if isinstance(self.pages, bool) or not isinstance(self.pages, int): raise TypeError(...)`.",
+        "`max(books, key=lambda b: b.pages)` returns the first of the longest; check for an empty list first.",
+        "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"
+      ],
+      "tests": [
+        {
+          "name": "a valid book, with its own tags list",
+          "code": "a, b = Book('Emma', 474), Book('Kim', 300)\na.tags.append('classic')\nassert b.tags == [] and a.pages == 474, 'each book needs its own tags list: use default_factory'",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "wrong types raise TypeError",
+          "code": "for args in [(3, 100), ('X', '100'), ('X', True), ('X', 10.0)]:\n    try:\n        Book(*args)\n    except TypeError:\n        pass\n    else:\n        raise AssertionError(f'Book{args!r} should raise TypeError')",
+          "concept": "validation"
+        },
+        {
+          "name": "too few pages raise ValueError",
+          "code": "for pages in (0, -5):\n    try:\n        Book('X', pages)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'Book(\"X\", {pages}) should raise ValueError')",
+          "concept": "validation"
+        },
+        {
+          "name": "the longest book, first on a tie",
+          "code": "books = [Book('A', 10), Book('B', 30), Book('C', 30)]\nassert longest(books).title == 'B' and longest([]) is None",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "annotations say what they mean",
+          "code": "import typing\nhints = typing.get_type_hints(longest, globals())\nassert hints.get('books') == list[Book] and hints.get('return') == (Book | None), hints\nfields = typing.get_type_hints(Book, globals())\nassert fields == {'title': str, 'pages': int, 'tags': list[str]}, fields",
+          "concept": "type-hints"
+        }
+      ],
+      "solution": "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"
     },
     {
       "id": "check",

@@ -66,6 +66,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Import modules from Python's standard library and use their functions instead of writing your own.",
+  "analogy": "The standard library is a toolbox that came with Python: `import` takes a tool out of the box so you don't have to build it.",
+  "misconceptions": [
+    {
+      "belief": "`import math` makes `sqrt` available directly.",
+      "correction": "Use `math.sqrt`, or `from math import sqrt` to bring in just that name."
+    },
+    {
+      "belief": "A file named like a module (random.py) is harmless.",
+      "correction": "It shadows the real module, so `import random` loads your file instead."
+    },
+    {
+      "belief": "You need to install the standard library.",
+      "correction": "It ships with Python; only third-party packages need installing."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Uses the library",
+      "evidence": "standard modules (math, datetime, collections, ...) do the work"
+    },
+    {
+      "criterion": "Clear imports",
+      "evidence": "imports are at the top and named clearly"
+    },
+    {
+      "criterion": "Correct results",
+      "evidence": "dates, counts and numbers match the task, including edge cases"
+    }
+  ],
+  "review": {
+    "recall": "Name three standard-library modules and one function from each. What is the difference between `import math` and `from math import pi`?"
+  },
   "steps": [
     {
       "id": "why",
@@ -240,6 +273,41 @@
         }
       ],
       "solution": "from collections import Counter\n\ndef top_letters(text, n):\n    letters = [ch.lower() for ch in text if ch.isalpha()]\n    return [letter for letter, count in Counter(letters).most_common(n)]"
+    },
+    {
+      "id": "dates",
+      "kind": "transfer",
+      "title": "Transfer: working with dates",
+      "body": "Using the `datetime` module, write `days_between(start, end)`, where both are dates written like `\"2024-01-31\"`, returning\nthe number of days from `start` to `end` (negative if `end` is earlier); and `weekday_name(day)`, returning the English\nname of that date's weekday, like `\"Friday\"`.",
+      "starter": "def days_between(start, end):\n    return 0\n\n\ndef weekday_name(day):\n    return \"\"\n",
+      "hints": [
+        "`from datetime import date`, then `date.fromisoformat(\"2024-01-31\")` turns the text into a date.",
+        "Subtracting dates gives a timedelta; its `.days` is the answer. `d.strftime(\"%A\")` gives the weekday name.",
+        "from datetime import date\n\n\ndef days_between(start, end):\n    return (date.fromisoformat(end) - date.fromisoformat(start)).days\n\n\ndef weekday_name(day):\n    return date.fromisoformat(day).strftime(\"%A\")\n"
+      ],
+      "tests": [
+        {
+          "name": "counts days, leap years included",
+          "code": "assert days_between('2024-01-01', '2024-03-01') == 60 and days_between('2025-01-01', '2025-03-01') == 59",
+          "concept": "standard-library"
+        },
+        {
+          "name": "negative when the end is earlier",
+          "code": "assert days_between('2024-03-01', '2024-01-01') == -60 and days_between('2024-05-05', '2024-05-05') == 0",
+          "concept": "standard-library"
+        },
+        {
+          "name": "the weekday's name",
+          "code": "assert [weekday_name(d) for d in ('2026-11-13', '2000-01-01', '2024-02-29')] == ['Friday', 'Saturday', 'Thursday']",
+          "concept": "modules"
+        },
+        {
+          "name": "uses the datetime module",
+          "code": "import sys\nassert 'datetime' in sys.modules, 'import the datetime module'",
+          "concept": "imports"
+        }
+      ],
+      "solution": "from datetime import date\n\n\ndef days_between(start, end):\n    return (date.fromisoformat(end) - date.fromisoformat(start)).days\n\n\ndef weekday_name(day):\n    return date.fromisoformat(day).strftime(\"%A\")\n"
     },
     {
       "id": "check",

@@ -86,6 +86,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Read and write text files safely with `with`, choosing the right mode for writing, appending and reading.",
+  "analogy": "Opening a file is borrowing a library book: `with` makes sure it's handed back (closed) even if something goes wrong.",
+  "misconceptions": [
+    {
+      "belief": "Mode \"w\" adds to the end of a file.",
+      "correction": "\"w\" empties the file first; use \"a\" to append."
+    },
+    {
+      "belief": "Lines read from a file have no newline.",
+      "correction": "Each line keeps its \"\\n\"; strip it if you don't want it."
+    },
+    {
+      "belief": "Forgetting to close a file is harmless.",
+      "correction": "Unclosed files may not be fully written; `with` closes them for you."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Safe handling",
+      "evidence": "every file is opened in a with block"
+    },
+    {
+      "criterion": "Right modes",
+      "evidence": "write replaces, append adds, read reads"
+    },
+    {
+      "criterion": "Clean data",
+      "evidence": "newlines are written and stripped where the task asks, and a missing file is handled"
+    }
+  ],
+  "review": {
+    "recall": "What is the difference between modes \"w\", \"a\" and \"r\"? Why use `with open(...)`?"
+  },
   "steps": [
     {
       "id": "why",
@@ -276,6 +309,46 @@
         }
       ],
       "solution": "def append_log(path, message):\n    with open(path, \"a\", encoding=\"utf-8\") as f:\n        f.write(message + \"\\n\")\n\ndef read_log(path):\n    try:\n        with open(path, encoding=\"utf-8\") as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []"
+    },
+    {
+      "id": "notes",
+      "kind": "transfer",
+      "title": "Transfer: a notes file",
+      "body": "Write `save_notes(path, notes)`, which writes each note on its own line, replacing anything in the file; `add_note(path,\nnote)`, which adds one note at the end without losing the others; and `read_notes(path)`, which returns the notes as a\nlist of strings without their newlines, or an empty list if the file doesn't exist yet.",
+      "starter": "def save_notes(path, notes):\n    pass\n\n\ndef add_note(path, note):\n    pass\n\n\ndef read_notes(path):\n    return []\n",
+      "hints": [
+        "`with open(path, \"w\") as f:` then `f.write(note + \"\\n\")` for each note; \"a\" instead of \"w\" to append.",
+        "Read with `[line.rstrip(\"\\n\") for line in f]`, inside `try`/`except FileNotFoundError: return []`.",
+        "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"a\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []\n"
+      ],
+      "tests": [
+        {
+          "name": "save then read",
+          "code": "save_notes('n.txt', ['buy milk', 'call Sam'])\nassert read_notes('n.txt') == ['buy milk', 'call Sam'], read_notes('n.txt')",
+          "concept": "files"
+        },
+        {
+          "name": "saving replaces the old notes",
+          "code": "save_notes('n.txt', ['old'])\nsave_notes('n.txt', ['new'])\nassert read_notes('n.txt') == ['new']",
+          "concept": "file-modes"
+        },
+        {
+          "name": "adding keeps the others",
+          "code": "save_notes('n.txt', ['a'])\nadd_note('n.txt', 'b')\nadd_note('n.txt', 'c')\nassert read_notes('n.txt') == ['a', 'b', 'c'], read_notes('n.txt')",
+          "concept": "file-modes"
+        },
+        {
+          "name": "one note per line on disk",
+          "code": "save_notes('n.txt', ['x', 'y'])\nassert open('n.txt').read() == 'x\\ny\\n', repr(open('n.txt').read())",
+          "concept": "with-statement"
+        },
+        {
+          "name": "a missing file means no notes",
+          "code": "assert read_notes('nothing-here.txt') == []",
+          "concept": "files"
+        }
+      ],
+      "solution": "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"a\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []\n"
     },
     {
       "id": "check",

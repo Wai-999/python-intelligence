@@ -88,6 +88,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Write tests that pass on correct code and fail on broken code, choosing the edge cases where bugs hide.",
+  "analogy": "Tests are a smoke detector: one that never goes off isn't proof there's no fire, so you test it with smoke (broken code) to see it sound.",
+  "misconceptions": [
+    {
+      "belief": "If all my tests pass, the code is correct.",
+      "correction": "Passing tests show only the cases they try; a good suite would fail on likely bugs."
+    },
+    {
+      "belief": "A test only needs the obvious example.",
+      "correction": "Bugs hide at edges: empty input, boundaries, repeats and unusual spacing."
+    },
+    {
+      "belief": "The first line of a traceback shows where the error happened.",
+      "correction": "The last frame, just above the message, is where it was raised."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Catches bugs",
+      "evidence": "each likely bug makes at least one test fail"
+    },
+    {
+      "criterion": "Passes correct code",
+      "evidence": "no test fails on a correct implementation"
+    },
+    {
+      "criterion": "Edge cases",
+      "evidence": "empty, single and unusual inputs are covered"
+    }
+  ],
+  "review": {
+    "recall": "How can you tell whether a test suite is any good? Which part of a traceback names the line that raised?"
+  },
   "steps": [
     {
       "id": "why",
@@ -346,6 +379,51 @@
         }
       ],
       "solution": "def check_median(median):\n    assert median([3]) == 3, 'one value is its own median'\n    assert median([5, 1, 3]) == 3, 'sort before taking the middle'\n    assert median([4, 1, 3, 2]) == 2.5, 'an even count averages the two middle values'\n    assert median([1, 2]) == 1.5, 'not integer division'\n    assert median([-4, -1, -7]) == -4, 'negative numbers'\n    assert median([1, 2, 10]) == 2, 'the middle value, not the mean'\n    data = [9, 2, 7]\n    median(data)\n    assert data == [9, 2, 7], 'the input list must not change'\n    try:\n        median([])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError('an empty list must raise ValueError')\n"
+    },
+    {
+      "id": "wordtests",
+      "kind": "transfer",
+      "title": "Transfer: tests for a word counter",
+      "body": "`word_count(text)` returns the number of words in `text`, where words are separated by any whitespace (spaces, tabs or\nnewlines, one or more), punctuation stays part of its word, and an empty or blank string has 0 words. The starter\ngives you a correct version. Complete `TestWordCount` so that every test passes on it and at least one fails on each\nof several broken versions the checks will swap in.",
+      "starter": "import unittest\n\n\ndef word_count(text):\n    return len(text.split())\n\n\nclass TestWordCount(unittest.TestCase):\n    def test_simple(self):\n        self.assertEqual(word_count(\"one two\"), 2)\n",
+      "hints": [
+        "Try an empty string, double spaces, a tab or newline, and punctuation like \"Hi, there.\"",
+        "One method can hold several assertEqual lines; what matters is that each bug fails somewhere.",
+        "import unittest\n\n\ndef word_count(text):\n    return len(text.split())\n\n\nclass TestWordCount(unittest.TestCase):\n    def test_simple(self):\n        self.assertEqual(word_count(\"one two\"), 2)\n\n    def test_empty_and_blank(self):\n        self.assertEqual(word_count(\"\"), 0)\n        self.assertEqual(word_count(\"   \"), 0)\n\n    def test_whitespace(self):\n        self.assertEqual(word_count(\"a  b\"), 2)\n        self.assertEqual(word_count(\"a\\tb\\nc\"), 3)\n\n    def test_punctuation(self):\n        self.assertEqual(word_count(\"Hi, there.\"), 2)\n\n    def test_one_word(self):\n        self.assertEqual(word_count(\"word\"), 1)\n"
+      ],
+      "tests": [
+        {
+          "name": "your tests pass on the correct word_count",
+          "code": "import unittest\n\ndef _run(impl):\n    global word_count\n    saved = word_count\n    word_count = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWordCount)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        word_count = saved\n\nran, bad = _run(lambda text: len(text.split()))\nassert ran >= 1, 'TestWordCount has no test methods yet: name each one test_something'\nassert bad == 0, f'{bad} of your tests fail on a correct word_count'",
+          "concept": "unit-testing"
+        },
+        {
+          "name": "your tests catch a word_count that counts spaces plus one",
+          "code": "import unittest\n\ndef _run(impl):\n    global word_count\n    saved = word_count\n    word_count = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWordCount)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        word_count = saved\n\nran, bad = _run(lambda text: text.count(' ') + 1)\nassert bad > 0, \"none of your tests fails on a word_count that counts spaces plus one\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a word_count that splits on spaces only",
+          "code": "import unittest\n\ndef _run(impl):\n    global word_count\n    saved = word_count\n    word_count = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWordCount)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        word_count = saved\n\nran, bad = _run(lambda text: len([w for w in text.split(' ') if w]))\nassert bad > 0, \"none of your tests fails on a word_count that splits on spaces only\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a word_count that says an empty string has one word",
+          "code": "import unittest\n\ndef _run(impl):\n    global word_count\n    saved = word_count\n    word_count = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWordCount)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        word_count = saved\n\nran, bad = _run(lambda text: len(text.split()) or 1)\nassert bad > 0, \"none of your tests fails on a word_count that says an empty string has one word\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a word_count that counts punctuation as words",
+          "code": "import unittest\n\ndef _run(impl):\n    global word_count\n    saved = word_count\n    word_count = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWordCount)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        word_count = saved\n\nran, bad = _run(lambda text: len(text.replace(',', ' , ').replace('.', ' . ').split()))\nassert bad > 0, \"none of your tests fails on a word_count that counts punctuation as words\"",
+          "concept": "edge-cases"
+        },
+        {
+          "name": "your tests catch a word_count that ignores the last word",
+          "code": "import unittest\n\ndef _run(impl):\n    global word_count\n    saved = word_count\n    word_count = impl\n    try:\n        suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestWordCount)\n        result = unittest.TestResult()\n        suite.run(result)\n        return result.testsRun, len(result.failures) + len(result.errors)\n    finally:\n        word_count = saved\n\nran, bad = _run(lambda text: max(0, len(text.split()) - 1))\nassert bad > 0, \"none of your tests fails on a word_count that ignores the last word\"",
+          "concept": "edge-cases"
+        }
+      ],
+      "solution": "import unittest\n\n\ndef word_count(text):\n    return len(text.split())\n\n\nclass TestWordCount(unittest.TestCase):\n    def test_simple(self):\n        self.assertEqual(word_count(\"one two\"), 2)\n\n    def test_empty_and_blank(self):\n        self.assertEqual(word_count(\"\"), 0)\n        self.assertEqual(word_count(\"   \"), 0)\n\n    def test_whitespace(self):\n        self.assertEqual(word_count(\"a  b\"), 2)\n        self.assertEqual(word_count(\"a\\tb\\nc\"), 3)\n\n    def test_punctuation(self):\n        self.assertEqual(word_count(\"Hi, there.\"), 2)\n\n    def test_one_word(self):\n        self.assertEqual(word_count(\"word\"), 1)\n"
     },
     {
       "id": "check",

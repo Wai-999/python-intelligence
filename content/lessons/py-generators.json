@@ -87,6 +87,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Write generator functions and expressions that produce values one at a time, only when asked.",
+  "analogy": "A generator is a ticket dispenser: each press gives the next ticket, and it never prints the whole roll in advance.",
+  "misconceptions": [
+    {
+      "belief": "Calling a generator function runs its body.",
+      "correction": "It only creates the generator; the body runs as values are requested."
+    },
+    {
+      "belief": "You can loop over the same generator twice.",
+      "correction": "A generator is used up as you go; the second loop finds it empty."
+    },
+    {
+      "belief": "A generator expression is just a list comprehension.",
+      "correction": "It produces values lazily instead of building a list."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Lazy",
+      "evidence": "values are produced only when asked, without reading ahead"
+    },
+    {
+      "criterion": "Correct values",
+      "evidence": "every value and the last partial group are right"
+    },
+    {
+      "criterion": "Works on any iterable",
+      "evidence": "lists, generators and endless streams all work"
+    }
+  ],
+  "review": {
+    "recall": "When does a generator's body start running? What happens if you loop over a used-up generator?"
+  },
   "steps": [
     {
       "id": "why",
@@ -344,6 +377,46 @@
         }
       ],
       "solution": "def long_words(lines, min_len):\n    for line in lines:\n        for word in line.split():\n            word = word.strip(\".,!?;:\").lower()\n            if len(word) >= min_len:\n                yield word\n"
+    },
+    {
+      "id": "chunks",
+      "kind": "transfer",
+      "title": "Transfer: chunks of a stream",
+      "body": "Write a generator function `chunked(items, size)` that yields lists of `size` consecutive items from any iterable, with a\nshorter list at the end if items are left over. It must be lazy: to give the first chunk it reads only the first `size`\nitems. A `size` below 1 raises `ValueError` when the first chunk is asked for.",
+      "starter": "def chunked(items, size):\n    items = list(items)\n    return [items[i:i + size] for i in range(0, len(items), size)]\n",
+      "hints": [
+        "Collect items into a `chunk` list; when it reaches `size`, `yield chunk` and start a new one.",
+        "After the loop, yield what is left if it isn't empty; check `size` at the top of the function.",
+        "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"
+      ],
+      "tests": [
+        {
+          "name": "groups of size, with a shorter last one",
+          "code": "assert list(chunked([1, 2, 3, 4, 5], 2)) == [[1, 2], [3, 4], [5]] and list(chunked([], 3)) == []",
+          "concept": "generators"
+        },
+        {
+          "name": "it is a generator function",
+          "code": "import inspect\nassert inspect.isgeneratorfunction(chunked), 'use yield, so that chunked is a generator function'",
+          "concept": "generators"
+        },
+        {
+          "name": "reads only what the first chunk needs",
+          "code": "class _Numbers:\n    def __init__(self, values):\n        self.values, self.reads = iter(values), 0\n\n    def __iter__(self):\n        return self\n\n    def __next__(self):\n        value = next(self.values)\n        self.reads += 1\n        return value\n\nsrc = _Numbers(range(100))\nfirst = next(chunked(src, 3))\nassert first == [0, 1, 2] and src.reads == 3, f'it read {src.reads} items to give the first chunk of 3'",
+          "concept": "iterators"
+        },
+        {
+          "name": "works on a generator expression",
+          "code": "assert list(chunked((c.upper() for c in 'abc'), 2)) == [['A', 'B'], ['C']]",
+          "concept": "generator-expressions"
+        },
+        {
+          "name": "a size below 1 is refused",
+          "code": "try:\n    next(chunked([1], 0))\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('chunked(items, 0) should raise ValueError')",
+          "concept": "generators"
+        }
+      ],
+      "solution": "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"
     },
     {
       "id": "check",

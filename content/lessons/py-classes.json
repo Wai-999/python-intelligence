@@ -87,6 +87,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Define classes whose objects keep their own state in attributes and change it through methods.",
+  "analogy": "A class is a cookie cutter and each object is a cookie: same shape, but each cookie has its own icing.",
+  "misconceptions": [
+    {
+      "belief": "Attributes set in the class body belong to each object separately.",
+      "correction": "A mutable class attribute is shared by every object; set per-object state in __init__ on self."
+    },
+    {
+      "belief": "`self` is a keyword Python fills in by magic.",
+      "correction": "`self` is just the first parameter: Python passes the object the method was called on."
+    },
+    {
+      "belief": "Calling a method without parentheses runs it.",
+      "correction": "`obj.method` is the method itself; `obj.method()` calls it."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "State per object",
+      "evidence": "each object keeps its own data, set up in __init__"
+    },
+    {
+      "criterion": "Behaviour in methods",
+      "evidence": "operations on the data are methods that use self"
+    },
+    {
+      "criterion": "Clear results",
+      "evidence": "methods return values (or change the object) as specified"
+    }
+  ],
+  "review": {
+    "recall": "What does __init__ do, and why must a list attribute be created there rather than in the class body?"
+  },
   "steps": [
     {
       "id": "why",
@@ -272,6 +305,41 @@
         }
       ],
       "solution": "class Stack:\n    def __init__(self):\n        self.items = []\n\n    def push(self, x):\n        self.items.append(x)\n\n    def pop(self):\n        if self.is_empty():\n            raise IndexError(\"pop from empty stack\")\n        return self.items.pop()\n\n    def is_empty(self):\n        return len(self.items) == 0"
+    },
+    {
+      "id": "scoreboard",
+      "kind": "transfer",
+      "title": "Transfer: a scoreboard",
+      "body": "Write a class `Scoreboard`. `add(player, points)` adds points to a player (starting from 0), `score(player)` returns a\nplayer's total (0 for someone with no points), and `leader()` returns the player with the most points, ties going to\nthe name that comes first alphabetically, or `None` if nobody has scored. Two scoreboards must not share their scores.",
+      "starter": "class Scoreboard:\n    scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = points\n",
+      "hints": [
+        "Create `self.scores = {}` in `__init__`, so each scoreboard gets its own dict.",
+        "For the leader: `min(self.scores, key=lambda p: (-self.scores[p], p))`, once you know the dict isn't empty.",
+        "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n"
+      ],
+      "tests": [
+        {
+          "name": "points add up per player",
+          "code": "b = Scoreboard()\nb.add('ana', 3)\nb.add('ana', 4)\nb.add('ben', 2)\nassert (b.score('ana'), b.score('ben'), b.score('cy')) == (7, 2, 0)",
+          "concept": "methods"
+        },
+        {
+          "name": "the leader, ties alphabetical",
+          "code": "b = Scoreboard()\nassert b.leader() is None\nb.add('zed', 5)\nb.add('amy', 5)\nb.add('bob', 1)\nassert b.leader() == 'amy', b.leader()",
+          "concept": "methods"
+        },
+        {
+          "name": "two scoreboards are separate",
+          "code": "a, b = Scoreboard(), Scoreboard()\na.add('ana', 9)\nassert b.score('ana') == 0 and b.leader() is None, 'the scoreboards share their scores: create them in __init__'",
+          "concept": "objects"
+        },
+        {
+          "name": "Scoreboard is a class",
+          "code": "assert isinstance(Scoreboard, type) and isinstance(Scoreboard(), Scoreboard)",
+          "concept": "classes"
+        }
+      ],
+      "solution": "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n"
     },
     {
       "id": "check",

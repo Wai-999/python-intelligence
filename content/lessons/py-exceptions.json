@@ -86,6 +86,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Raise exceptions for bad input and catch the specific ones you expect, letting the rest through.",
+  "analogy": "An exception is a fire alarm: the code that detects the problem pulls it, and only the part of the program that knows what to do should answer.",
+  "misconceptions": [
+    {
+      "belief": "A bare `except:` is a safe way to handle errors.",
+      "correction": "It hides every error, even bugs and Ctrl-C; catch the specific exceptions you expect."
+    },
+    {
+      "belief": "Code after the line that raised still runs.",
+      "correction": "Execution jumps to the matching except (or stops the program); the rest of the try block is skipped."
+    },
+    {
+      "belief": "Returning an error message is the same as raising.",
+      "correction": "A returned string looks like a normal result; raising forces the caller to deal with the problem."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Raises for bad input",
+      "evidence": "invalid values raise a fitting exception with a clear message"
+    },
+    {
+      "criterion": "Catches narrowly",
+      "evidence": "only the expected exception types are caught"
+    },
+    {
+      "criterion": "Other errors surface",
+      "evidence": "unexpected problems are not hidden"
+    }
+  ],
+  "review": {
+    "recall": "Why is `except ValueError:` better than a bare `except:`? What does `raise ValueError('...')` do?"
+  },
   "steps": [
     {
       "id": "why",
@@ -277,6 +310,41 @@
         }
       ],
       "solution": "def withdraw(balance, amount):\n    if amount <= 0:\n        raise ValueError(\"amount must be positive\")\n    if amount > balance:\n        raise ValueError(\"insufficient funds\")\n    return balance - amount"
+    },
+    {
+      "id": "ages",
+      "kind": "transfer",
+      "title": "Transfer: reading ages",
+      "body": "Write `parse_age(text)`, which returns the whole number in `text` (spaces around it are fine) and raises `ValueError`\nwith a message if it isn't a whole number or isn't between 0 and 150. Then write `valid_ages(texts)`, which returns the\nages that parse, in order, skipping the ones `parse_age` rejects, but which does not hide other kinds of error.",
+      "starter": "def parse_age(text):\n    return int(text)\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except:\n            pass\n    return ages\n",
+      "hints": [
+        "`int(text.strip())` already raises ValueError for text like `\"ten\"`; add a range check that raises too.",
+        "Catch only `ValueError` in `valid_ages`, so a `None` in the list still raises its own error.",
+        "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
+      ],
+      "tests": [
+        {
+          "name": "parses whole numbers",
+          "code": "assert parse_age(' 42 ') == 42 and parse_age('0') == 0 and parse_age('150') == 150",
+          "concept": "exceptions"
+        },
+        {
+          "name": "raises ValueError for bad input",
+          "code": "for bad in ['ten', '4.5', '', '-1', '151']:\n    try:\n        parse_age(bad)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'parse_age({bad!r}) should raise ValueError')",
+          "concept": "raising"
+        },
+        {
+          "name": "skips the rejected ones",
+          "code": "assert valid_ages(['12', 'x', '200', ' 7']) == [12, 7], valid_ages(['12', 'x', '200', ' 7'])",
+          "concept": "try-except"
+        },
+        {
+          "name": "doesn't hide other errors",
+          "code": "try:\n    valid_ages(['3', None])\nexcept ValueError:\n    raise AssertionError('None is not text: that error should not become a ValueError')\nexcept Exception:\n    pass\nelse:\n    raise AssertionError('valid_ages hid an error that is not a ValueError: catch only ValueError')",
+          "concept": "try-except"
+        }
+      ],
+      "solution": "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
     },
     {
       "id": "check",

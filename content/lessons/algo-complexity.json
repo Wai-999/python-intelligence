@@ -87,6 +87,39 @@
     }
   ],
   "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "objective": "Count the steps an algorithm takes, read its order of growth, and choose data structures that keep it fast.",
+  "analogy": "Choosing a data structure is choosing how to find a name: flipping through every page of a notebook, or jumping straight to it in an indexed address book.",
+  "misconceptions": [
+    {
+      "belief": "Timing a program once tells you how it scales.",
+      "correction": "Timings vary; counting steps as the input doubles shows the growth."
+    },
+    {
+      "belief": "`x in my_list` is as fast as `x in my_set`.",
+      "correction": "A list is scanned item by item (O(n)); a set looks up by hash (O(1) on average)."
+    },
+    {
+      "belief": "Constant factors decide which algorithm wins for big inputs.",
+      "correction": "The order of growth dominates as the input grows."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Scales",
+      "evidence": "the work grows linearly (or better) with the input"
+    },
+    {
+      "criterion": "Right structure",
+      "evidence": "sets or dicts are used for repeated membership tests"
+    },
+    {
+      "criterion": "Correct",
+      "evidence": "the answer is right, including empty input and no repeats"
+    }
+  ],
+  "review": {
+    "recall": "Why is `x in a_set` faster than `x in a_list` for big collections? What happens to an O(n²) loop when n doubles?"
+  },
   "steps": [
     {
       "id": "why",
@@ -335,6 +368,41 @@
         }
       ],
       "solution": "def common_items(a, b):\n    seen = set(a)\n    return [item for item in b if item in seen]\n"
+    },
+    {
+      "id": "repeat",
+      "kind": "transfer",
+      "title": "Transfer: the first repeat",
+      "body": "Write `first_repeat(items)`: return the first item that appears for the second time as you read the list from the start,\nor `None` if no item repeats. It must scale: the checks count comparisons and hash computations on 1,000 items.",
+      "starter": "def first_repeat(items):\n    for i in range(len(items)):\n        if items[i] in items[:i]:\n            return items[i]\n    return None\n",
+      "hints": [
+        "Keep a set of the items seen so far.",
+        "For each item: if it is already in the set, return it; otherwise add it.",
+        "def first_repeat(items):\n    seen = set()\n    for item in items:\n        if item in seen:\n            return item\n        seen.add(item)\n    return None\n"
+      ],
+      "tests": [
+        {
+          "name": "the first item seen twice",
+          "code": "assert first_repeat([3, 1, 4, 1, 5, 3]) == 1 and first_repeat(['a', 'b', 'a']) == 'a'",
+          "concept": "data-structure-choice"
+        },
+        {
+          "name": "no repeat gives None",
+          "code": "assert first_repeat([1, 2, 3]) is None and first_repeat([]) is None",
+          "concept": "data-structure-choice"
+        },
+        {
+          "name": "scales to 1,000 items",
+          "code": "class _C:\n    ops = 0\n\n    def __init__(self, v):\n        self.v = v\n\n    def __eq__(self, other):\n        _C.ops += 1\n        return isinstance(other, _C) and self.v == other.v\n\n    def __hash__(self):\n        _C.ops += 1\n        return hash(self.v)\n\nitems = [_C(i) for i in range(1000)] + [_C(500)]\n_C.ops = 0\nresult = first_repeat(items)\nassert result is not None and result.v == 500\nassert _C.ops < 5000, f'first_repeat made {_C.ops} comparisons and hash computations; remember what you have seen in a set'",
+          "concept": "operation-counting"
+        },
+        {
+          "name": "grows linearly",
+          "code": "class _C:\n    ops = 0\n\n    def __init__(self, v):\n        self.v = v\n\n    def __eq__(self, other):\n        _C.ops += 1\n        return isinstance(other, _C) and self.v == other.v\n\n    def __hash__(self):\n        _C.ops += 1\n        return hash(self.v)\n\ndef _ops(n):\n    items = [_C(i) for i in range(n)]\n    _C.ops = 0\n    first_repeat(items)\n    return _C.ops\nsmall, big = _ops(400), _ops(800)\nassert big <= 3 * small, f'doubling the input took the work from {small} to {big} operations'",
+          "concept": "order-of-growth"
+        }
+      ],
+      "solution": "def first_repeat(items):\n    seen = set()\n    for item in items:\n        if item in seen:\n            return item\n        seen.add(item)\n    return None\n"
     },
     {
       "id": "check",
