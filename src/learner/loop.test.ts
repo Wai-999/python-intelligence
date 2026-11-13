@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ExerciseStep, Lesson } from "../content/types";
 import type { PyError } from "../py/protocol";
 import { buildModel, ordered, type LearnerEvent } from "./model";
-import { boundNames, classifyError, codeOnly, logicalLines, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
+import { boundNames, classifyError, codeOnly, logicalLines, statements, editDistance, interventionEvent, looksLikeTypo, LOOP_POLICY, MESO, mesoTrigger, transferTarget } from "./loop";
 import { exerciseEvents } from "./record";
 
 const err = (type: string, message = ""): PyError => ({ type, message, line: 1, summary: `${type}: ${message}` });
@@ -97,6 +97,35 @@ describe("classifying a failed run", () => {
     expect(tags).toEqual(["slip:name"]);
     const runs = [1, 2, 3, 4, 5].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags));
     expect(mesoTrigger(runs, "loops", now(30))).toBeNull();
+  });
+
+  it("blanks strings and comments in one pass, so quotes inside them start nothing", () => {
+    const names = (code: string) => [...boundNames(code)].sort();
+    expect(names("# don't use ''' here\ntotal = 0\n")).toEqual(["total"]); // a quote in a comment
+    expect(names("s = \"'''\"\ntotal = 1\nt = '\"\"\"'\ncount = 2\n")).toEqual(["count", "s", "t", "total"]); // triple quotes inside strings
+    expect(names("doc = \"\"\"first\nwidth = 3\n\"\"\"\nheight = 2\n")).toEqual(["doc", "height"]); // text inside a real triple-quoted string
+    expect(names("msg = f\"{x}\" + rb'y'\n")).toEqual(["msg"]); // prefixes are part of the string
+    expect(codeOnly("a = 'it\\'s'  # done\nb = 2")).toBe("a =                \nb = 2");
+    expect(codeOnly("x = 'open\ny = 1")).toBe("x =      \ny = 1"); // an unterminated string ends at the line
+    expect(classifyError(err("NameError", "name 'totl' is not defined"), "# don't use ''' here\ntotal = 0\nprint(totl)")).toEqual(["slip:name"]);
+  });
+
+  it("finds assignments after semicolons and in one-line suites", () => {
+    expect(statements("if ready: total = 0; count = 1")).toEqual(["if ready:", "total = 0", "count = 1"]);
+    expect(statements("for i in r: acc = i")).toEqual(["for i in r:", "acc = i"]);
+    expect(statements("f = lambda x: x")).toEqual(["f = lambda x: x"]); // a lambda's colon isn't a suite
+    expect(statements("if d == {1: 2}: hit = 1")).toEqual(["if d == {1: 2}:", "hit = 1"]);
+    const names = (code: string) => [...boundNames(code)].sort();
+    expect(names("total = 0; count = 1\n")).toEqual(["count", "total"]);
+    expect(names("if ready: flag = 1\nelse: other = 2\nwhile n: step = n\ntry: value = 1\nexcept E as e: pass\nwith open(p) as fh: data = fh.read()\nclass C: size = 3\n"))
+      .toEqual(["C", "data", "e", "fh", "flag", "other", "size", "step", "value"]);
+    expect(names("for i in r: acc = i\ndef f(a): return a\n")).toEqual(["a", "acc", "f", "i"]);
+    // Three runs of the same ordinary typo in these forms are slips, so no step back.
+    for (const code of ["if ready: total = 0\nprint(totl)", "total = 0; count = 1\nprint(totl)", "# it's ''' odd\ntotal = 0\nprint(totl)"]) {
+      const tags = classifyError(err("NameError", "name 'totl' is not defined"), code);
+      expect(tags).toEqual(["slip:name"]);
+      expect(mesoTrigger([1, 2, 3].flatMap((m) => exerciseEvents(L, E1, null, 0, at(m), tags)), "loops", now(10))).toBeNull();
+    }
   });
 
   it("tags failed checks per concept on the events", () => {

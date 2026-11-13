@@ -38,12 +38,36 @@ export const PY_BUILTINS = [
   "eval", "exec", "compile", "globals", "locals", "open", "breakpoint", "help", "exit", "quit", "copyright", "credits", "license",
 ];
 
-/** The code with string literals and comments blanked out, so words inside them are never taken for names. */
+/**
+ * The code with string literals and comments blanked out, so words inside them are never taken for names (a prefix
+ * letter such as f or rb may remain; it can never stand where a name is bound). One left-to-right scan, as Python's
+ * tokenizer reads it: a quote inside a comment, or triple quotes inside an ordinary string, start nothing. Newlines are
+ * kept, so line structure is unchanged.
+ */
 export function codeOnly(code: string): string {
-  return code
-    .replace(/[rRbBuUfF]{0,2}("""|\'\'\')[\s\S]*?\1/g, " ")
-    .replace(/[rRbBuUfF]{0,2}("|')(?:\\.|(?!\1)[^\\\n])*\1/g, " ")
-    .replace(/#[^\n]*/g, " ");
+  let out = "";
+  const blank = (text: string) => text.replace(/[^\n]/g, " ");
+  for (let i = 0; i < code.length;) {
+    const ch = code[i]!;
+    if (ch === "#") {
+      const end = code.indexOf("\n", i);
+      const stop = end === -1 ? code.length : end;
+      out += blank(code.slice(i, stop));
+      i = stop;
+    } else if (ch === "'" || ch === '"') {
+      const triple = code.startsWith(ch.repeat(3), i);
+      let j = i + (triple ? 3 : 1);
+      while (j < code.length) {
+        if (code[j] === "\\") { j += 2; continue; }
+        if (triple ? code.startsWith(ch.repeat(3), j) : code[j] === ch) { j += triple ? 3 : 1; break; }
+        if (!triple && code[j] === "\n") break; // an unterminated string ends at the line
+        j++;
+      }
+      out += blank(code.slice(i, j));
+      i = j;
+    } else { out += ch; i++; }
+  }
+  return out;
 }
 
 const KEYWORDS = new Set(("and as assert async await break class continue def del elif else except finally for from global if import "
@@ -77,6 +101,37 @@ function insideParens(text: string, open: number): string {
     else if (text[i] === ")" && --depth === 0) return text.slice(open + 1, i);
   }
   return text.slice(open + 1);
+}
+
+const COMPOUND = /^(?:if|elif|else|for|while|def|class|with|try|except|finally|async\s+(?:for|with|def))\b/;
+
+/**
+ * The simple statements of a logical line: split at top-level semicolons, and after a compound statement's header colon
+ * (`if ready: total = 0`, `for x in xs: acc = x`), so assignments in a one-line suite are seen.
+ */
+export function statements(line: string): string[] {
+  const out: string[] = [];
+  for (const part of splitTop(line, ";")) {
+    const stmt = part.trim();
+    if (!stmt) continue;
+    const colon = COMPOUND.test(stmt) ? topLevelColon(stmt) : -1;
+    if (colon === -1) { out.push(stmt); continue; }
+    out.push(stmt.slice(0, colon + 1));
+    out.push(...statements(stmt.slice(colon + 1)));
+  }
+  return out;
+}
+
+/** The first colon outside brackets that isn't part of `:=`, or -1. */
+function topLevelColon(text: string): number {
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if ("([{".includes(ch)) depth++;
+    else if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
+    else if (ch === ":" && depth === 0 && text[i + 1] !== "=") return i;
+  }
+  return -1;
 }
 
 /** Splits `text` at `sep` characters that aren't inside brackets. */
@@ -124,8 +179,7 @@ function targetNames(target: string, into: Set<string>) {
 export function boundNames(code: string): Set<string> {
   const src = codeOnly(code);
   const names = new Set<string>();
-  for (const raw of logicalLines(src)) {
-    const line = raw.trim();
+  for (const line of logicalLines(src).flatMap(statements)) {
     if (!line) continue;
     // import a.b as c, d  ->  c, d (Python binds the alias, or the first part of a dotted name)
     let m = /^import\s+(.+)$/.exec(line);
