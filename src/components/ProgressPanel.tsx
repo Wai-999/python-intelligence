@@ -30,9 +30,12 @@ export function ProgressPanel({ store, onReplacing, onChanged, onClose }: { stor
     try {
       const data = JSON.parse(await f.text());
       onReplacing(); // before storage changes, so a run still in flight can't write into the replacement
-      await store.importAll(data);
-      onChanged();
-      setMsg({ ok: true, text: "Progress imported." });
+      try {
+        await store.importAll(data);
+        setMsg({ ok: true, text: "Progress imported." });
+      } finally {
+        onChanged(); // even after a rejected import: reload (unchanged) storage and catch the views up
+      }
     } catch (e) {
       setMsg({ ok: false, text: `Import failed, and your current progress was left unchanged. ${(e as Error).message}` });
     }
@@ -53,7 +56,7 @@ export function ProgressPanel({ store, onReplacing, onChanged, onClose }: { stor
           <button type="button" className="btn danger" onClick={() => setConfirmReset(true)}>Reset…</button>
         ) : (
           <span className="confirm">This erases all progress and drafts in this browser.{" "}
-            <button type="button" className="btn danger" onClick={async () => { onReplacing(); await store.clear(); onChanged(); setConfirmReset(false); setMsg({ ok: true, text: "Progress reset." }); }}>Erase everything</button>{" "}
+            <button type="button" className="btn danger" onClick={async () => { onReplacing(); try { await store.clear(); } finally { onChanged(); } setConfirmReset(false); setMsg({ ok: true, text: "Progress reset." }); }}>Erase everything</button>{" "}
             <button type="button" className="btn ghost" onClick={() => setConfirmReset(false)}>Cancel</button>
           </span>
         )}

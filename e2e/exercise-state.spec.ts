@@ -131,3 +131,20 @@ test("an import while review feedback is showing starts the review over, and rev
   const second = await form.locator("legend").innerText();
   expect(pick(second).text).not.toBe(pick(first).text);
 });
+
+test("after a rejected import, practice is still recorded", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.goto(`./#/lesson/py-values-names/${circle}`);
+  await page.getByRole("button", { name: "Progress" }).click();
+  await page.locator("input[type=file]").setInputFiles({ name: "bad.json", mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ format: "python-intelligence-progress", version: 2, exportedAt: "nope" })) });
+  await expect(page.getByText(/Import failed/)).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await page.locator("textarea.editor-input").fill(lesson.steps[circle]!.solution!);
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
+  await page.waitForTimeout(500);
+  const data = await exportEvents(page) as unknown as { events: { stepId: string }[]; lessons: { lessonId: string; steps: Record<string, { passed: boolean }> }[] };
+  expect(data.events.length).toBe(4);
+  expect(data.lessons.find((l) => l.lessonId === "py-values-names")?.steps.circle?.passed).toBe(true);
+});

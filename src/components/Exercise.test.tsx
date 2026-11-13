@@ -1,0 +1,57 @@
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExerciseStep } from "../content/types";
+import type { RunResult } from "../py/protocol";
+import { Exercise } from "./Exercise";
+
+const run = vi.fn<(...args: unknown[]) => Promise<RunResult>>();
+vi.mock("../py/runner", () => ({ getRunner: () => ({ run }) }));
+vi.mock("./usePython", () => ({ usePythonStatus: () => "ready", STATUS_TEXT: { ready: "Python ready" } }));
+
+const step = { id: "e1", kind: "guided", title: "t", body: "", starter: "x = 1\n", hints: ["one"], solution: "x = 2\n",
+  tests: [{ name: "x is 2", code: "assert x == 2", concept: "names" }] } as unknown as ExerciseStep;
+const failed = (type: string): RunResult => ({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 1,
+  error: { type, message: type, line: null, summary: type } });
+
+function mount() {
+  const onResult = vi.fn();
+  render(<Exercise step={step} lessonId="l" draft={undefined} record={undefined} assistance={0} onAssist={() => {}}
+                   generation={3} onDraft={() => {}} onResult={onResult} />);
+  return onResult;
+}
+const runChecks = () => fireEvent.click(screen.getByRole("button", { name: /Run checks/ }));
+
+describe("Exercise attempts", () => {
+  beforeEach(() => run.mockReset());
+  afterEach(cleanup);
+
+  it("records no attempt when Python itself failed to load or a package failed", async () => {
+    for (const type of ["LoadError", "PackageError"]) {
+      run.mockResolvedValueOnce(failed(type));
+      const onResult = mount();
+      runChecks();
+      await waitFor(() => expect(run).toHaveBeenCalled());
+      await waitFor(() => expect((screen.getByRole("button", { name: /Run checks/ }) as HTMLButtonElement).disabled).toBe(false));
+      expect(onResult).not.toHaveBeenCalled();
+      cleanup();
+      run.mockReset();
+    }
+  });
+
+  it("records one attempt for an ordinary failure, tagged with its generation and the help seen", async () => {
+    run.mockResolvedValueOnce({ ok: true, tests: [{ name: "x is 2", passed: false, message: "no", concept: "names" }], stdout: "", stderr: "", durationMs: 1 } as RunResult);
+    const onResult = mount();
+    fireEvent.click(screen.getByRole("button", { name: /Show a hint/ }));
+    runChecks();
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(onResult.mock.calls[0]![2]).toEqual({ results: [{ concept: "names", passed: false }], assistance: 1, generation: 3 });
+  });
+
+  it("records a code error as a failed attempt for every concept (results null)", async () => {
+    run.mockResolvedValueOnce(failed("NameError"));
+    const onResult = mount();
+    runChecks();
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(onResult.mock.calls[0]![2]).toMatchObject({ results: null, assistance: 0 });
+  });
+});
