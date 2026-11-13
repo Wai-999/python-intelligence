@@ -49,21 +49,21 @@ export function App() {
   // While an import or reset is being applied, the page is inert and any input that slips through is dropped:
   // `live()` is false from the moment the replacement starts until the views have been rebuilt from it.
   const [replacing, setReplacing] = useState(false);
+  // Set when reloading after a replacement failed: the page stays locked until a retry succeeds.
+  const [reloadFailed, setReloadFailed] = useState<number | null>(null);
   const live = () => generation === generationRef.current;
   // "Now" for the review schedule: re-read at the next review deadline, and whenever the window regains focus.
   const [now, setNow] = useState(() => new Date().toISOString());
 
+  // Reads everything first and publishes it only if every read succeeded, so the views never mix old and new state.
   const reload = useCallback(async (s: ProgressStore) => {
     const all = await s.allLessons();
-    setProgress(new Map(all.map((p) => [p.lessonId, p])));
     const exp = await s.exportAll();
     const d: Record<string, Record<string, string>> = {};
     for (const [k, v] of Object.entries(exp.drafts)) {
       const [lid, sid] = k.split(":") as [string, string];
       (d[lid] ??= {})[sid] = v;
     }
-    setDrafts(d);
-    setEvents(exp.events);
     // Quizzes attempted before help was tracked (a version 1 file, an upgraded database) have shown their answers.
     const assistance = { ...exp.assistance };
     for (const p of all) {
@@ -76,6 +76,9 @@ export function App() {
         }
       }
     }
+    setProgress(new Map(all.map((p) => [p.lessonId, p])));
+    setDrafts(d);
+    setEvents(exp.events);
     setAssist(assistance);
     return exp.position;
   }, []);
@@ -137,6 +140,22 @@ export function App() {
   useEffect(() => { setNow(new Date().toISOString()); }, [route, events]);
   const dueCount = dueReviews(model, now).filter((s) => reviewItem(LESSONS, s.concept, 0) !== null).length;
 
+  // Only the latest replacement unlocks the page, and only once its reload has succeeded.
+  const finishReplacement = (token: number) => {
+    if (!store) return;
+    setReloadFailed(null);
+    reload(store).then(() => {
+      if (token !== generationRef.current) return;
+      setStoreError((e) => (e?.startsWith("your progress was replaced") ? null : e));
+      setGeneration(token);
+      setReplacing(false);
+    }, (e) => {
+      if (token !== generationRef.current) return;
+      setStoreError(`your progress was replaced but couldn't be read back: ${String(e?.message ?? e)}`);
+      setReloadFailed(token);
+    });
+  };
+
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };
   const current = route.view === "lesson" ? route.lessonId : undefined;
   const rec = useMemo(() => recommendNext(graph, progress, current), [progress, current]);
@@ -160,16 +179,10 @@ export function App() {
           <button type="button" className="btn ghost" onClick={() => setPanel((x) => !x)} aria-expanded={panel} disabled={!store}>Progress</button>
         </div>
       </header>
-      {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
+      {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.
+        {reloadFailed !== null && <>{" "}<button type="button" className="btn" onClick={() => finishReplacement(reloadFailed)}>Try loading it again</button></>}</p>}
       {panel && store && <ProgressPanel store={store} busy={replacing} onReplacing={() => { generationRef.current += 1; setReplacing(true); return generationRef.current; }}
-                                  onChanged={(token) => {
-                                    // Only the latest replacement unlocks the page, and only once its reload has finished.
-                                    void reload(store).finally(() => {
-                                      if (token !== generationRef.current) return;
-                                      setGeneration(token);
-                                      setReplacing(false);
-                                    });
-                                  }}
+                                  onChanged={finishReplacement}
                                   onClose={() => setPanel(false)} />}
 
       <div className={`layout layout--${route.view}`} inert={replacing}>

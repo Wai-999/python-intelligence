@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LearnerEvent } from "./learner/model";
-import type { ProgressExport, ProgressStore } from "./progress/types";
+import type { LessonProgress, ProgressExport, ProgressStore } from "./progress/types";
 
 // A deterministic race: the quiz's raiseAssistance stays pending while progress is reset, then resolves.
 // Nothing from before the reset may reach memory or storage.
@@ -14,10 +14,13 @@ const pendingImports: (() => void)[] = [];
 const finishImport = () => pendingImports.shift()?.();
 let positions = 0;
 let history: LearnerEvent[] = [];
+let drafts: Record<string, string> = {};
+let failExport = false;
+let lessonsAfter: LessonProgress[] = [];
 const fake: ProgressStore & { close(): void } = {
   close: () => {},
   getLesson: async () => undefined,
-  allLessons: async () => [],
+  allLessons: async () => lessonsAfter,
   putLesson: async (p) => { saved.push(p.lessonId); },
   getDraft: async () => undefined,
   putDraft: async () => {},
@@ -27,16 +30,16 @@ const fake: ProgressStore & { close(): void } = {
   allEvents: async () => [],
   getAssistance: async () => 0,
   raiseAssistance: () => { raised += 1; return new Promise<number>((resolve) => { release = resolve; }); },
-  exportAll: async (): Promise<ProgressExport> => ({ format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
-    lessons: [], drafts: {}, position: null, events: history, assistance: {} }),
+  exportAll: async (): Promise<ProgressExport> => failExport ? Promise.reject(new Error("disk went away")) : ({ format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
+    lessons: [], drafts, position: null, events: history, assistance: {} }),
   importAll: () => new Promise<void>((resolve) => { pendingImports.push(resolve); }),
   clear: async () => {},
 };
 vi.mock("./progress/store", () => ({ openProgressStore: async () => fake }));
-vi.mock("./py/runner", () => ({ getRunner: () => ({ warm: async () => {}, run: async () => { throw new Error("not used"); } }) }));
+vi.mock("./py/runner", () => ({ getRunner: () => ({ status: "idle", onStatus: () => () => {}, warm: async () => {}, run: async () => { throw new Error("not used"); } }) }));
 vi.mock("./sw-register", () => ({ waitForController: () => new Promise(() => {}) }));
 
-afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; });
+afterEach(() => { cleanup(); appended.length = 0; saved.length = 0; raised = 0; positions = 0; history = []; pendingImports.length = 0; drafts = {}; failExport = false; lessonsAfter = []; });
 
 /** Opens the Progress panel and starts an import whose storage write stays pending until finishImport(). */
 async function startImport() {
@@ -133,5 +136,41 @@ describe("App", () => {
     expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(true); // the earlier one can't unlock it
     await act(async () => { finishImport(); await Promise.resolve(); });
     await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
+  });
+
+  it("shows the imported drafts and practice once the import has been read back", async () => {
+    await openQuiz();
+    await startImport();
+    const at = new Date(Date.now() - 3600_000).toISOString();
+    history = [{ id: "i1", at, lessonId: "py-values-names", stepId: "a", task: "exercise", concept: "names", passed: true, assistance: 0, policy: "learner-heuristic-1" }];
+    drafts = { "py-values-names:circle": "radius = 'from the backup'\n" };
+    await act(async () => { finishImport(); await Promise.resolve(); });
+    await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
+    const lesson = (await import("../content/lessons/py-values-names.json")).default as unknown as { steps: { id: string }[] };
+    await act(async () => { location.hash = `#/lesson/py-values-names/${lesson.steps.findIndex((s) => s.id === "circle")}`; dispatchEvent(new HashChangeEvent("hashchange")); });
+    await waitFor(() => expect((document.querySelector("textarea.editor-input") as HTMLTextAreaElement).value).toBe("radius = 'from the backup'\n"));
+    await act(async () => { location.hash = "#/review"; dispatchEvent(new HashChangeEvent("hashchange")); });
+    await waitFor(() => expect(screen.getByRole("row", { name: /^names/ })).toBeTruthy());
+  });
+
+  it("keeps the page locked, with a retry, when the replaced progress can't be read back", async () => {
+    await openQuiz();
+    await startImport();
+    failExport = true;
+    lessonsAfter = [{ lessonId: "py-values-names", steps: {}, furthestStep: 0, completed: true, mastery: 1, struggles: {} } as unknown as LessonProgress];
+    await act(async () => { finishImport(); await Promise.resolve(); });
+    await screen.findByText(/couldn't be read back: disk went away/);
+    // Nothing from the half-finished read is shown: the lesson list read succeeded, but it isn't published alone.
+    expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^0 of /);
+    expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(appended).toEqual([]);
+    expect(raised).toBe(0);
+    failExport = false;
+    fireEvent.click(screen.getByRole("button", { name: "Try loading it again" }));
+    await waitFor(() => expect(document.querySelector(".layout")!.hasAttribute("inert")).toBe(false));
+    expect(screen.queryByText(/couldn't be read back/)).toBeNull();
+    expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^1 of /);
   });
 });
