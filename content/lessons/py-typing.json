@@ -1,0 +1,348 @@
+{
+  "id": "py-typing",
+  "title": "Type hints and dataclasses: say what you mean",
+  "summary": "Annotate functions and classes with type hints, know what hints do and don't check, and write dataclasses with defaults, default factories and __post_init__ checks.",
+  "track": "python-core",
+  "level": 3,
+  "estimated_minutes": 35,
+  "prerequisites": [
+    "py-classes"
+  ],
+  "concepts": [
+    "type-hints",
+    "dataclasses",
+    "validation"
+  ],
+  "sources": [
+    {
+      "id": "ty-intro",
+      "source_id": "pydocs-312-typing",
+      "pages": [
+        1,
+        1
+      ],
+      "section": "typing — Support for type hints",
+      "use": "reference"
+    },
+    {
+      "id": "ty-generics",
+      "source_id": "pydocs-312-typing",
+      "pages": [
+        6,
+        6
+      ],
+      "section": "Generics",
+      "use": "reference"
+    },
+    {
+      "id": "st-alias",
+      "source_id": "pydocs-312-stdtypes",
+      "pages": [
+        33,
+        33
+      ],
+      "section": "Type Annotation Types — Generic Alias, Union",
+      "use": "reference"
+    },
+    {
+      "id": "dc-intro",
+      "source_id": "pydocs-312-dataclasses",
+      "pages": [
+        1,
+        2
+      ],
+      "section": "dataclasses — Data Classes",
+      "use": "reference"
+    },
+    {
+      "id": "dc-post",
+      "source_id": "pydocs-312-dataclasses",
+      "pages": [
+        3,
+        3
+      ],
+      "section": "Post-init processing",
+      "use": "reference"
+    },
+    {
+      "id": "dc-factory",
+      "source_id": "pydocs-312-dataclasses",
+      "pages": [
+        9,
+        9
+      ],
+      "section": "Default factory functions",
+      "use": "reference"
+    },
+    {
+      "id": "dc-mutable",
+      "source_id": "pydocs-312-dataclasses",
+      "pages": [
+        10,
+        10
+      ],
+      "section": "Mutable default values",
+      "use": "reference"
+    }
+  ],
+  "license": "Original work for Python Intelligence; license to be chosen by the owner",
+  "steps": [
+    {
+      "id": "why",
+      "kind": "motivation",
+      "title": "What does this function expect?",
+      "body": "`def price_after(discount, total):` is a riddle: is `discount` 0.1 or 10? Is `total` a number, or a list of\nprices? You find out by reading the body, or by guessing wrong. **Type hints** write the answer next to\nthe name: `def price_after(discount: float, total: float) -> float:`. Editors use them to warn you, tools\ncan check a whole program with them before it runs, and the next reader (often you) doesn't have to guess.\n**Dataclasses** use the same hints to write the boring parts of a class for you."
+    },
+    {
+      "id": "picture",
+      "kind": "intuition",
+      "title": "A label on a box, not a lock",
+      "body": "A type hint is a **label** saying what should go in a box. Python itself never reads the label at run time:\n`double(\"ab\")` still runs, even if `n` is labelled `int`. The labels are for people, editors and\nchecking tools (such as mypy, which isn't available in this browser). If a wrong value must be refused,\nyour code has to check it.\n\nA **dataclass** reads the labels on a class (`name: str`, `price: float`) and writes `__init__`, a\nreadable `__repr__` and `==` for you. Defaults work like default arguments, a list default needs\n`field(default_factory=list)` so each object gets its own list, and `__post_init__` runs right after the\ngenerated `__init__`: the place for checks the labels can't do.",
+      "cites": [
+        "ty-intro",
+        "dc-intro",
+        "dc-post",
+        "dc-factory"
+      ],
+      "socratic": {
+        "questions": [
+          "If `n: int` doesn't stop `double(\"ab\")`, what is the hint for?",
+          "Why would every `Cart` share one list if the default were `items = []`?"
+        ]
+      }
+    },
+    {
+      "id": "trace",
+      "kind": "visual",
+      "title": "Watch a dataclass check its fields",
+      "body": "The decorator writes `__init__` from the annotated fields; after storing them it calls `__post_init__`. Each frame shows the variables just before the highlighted line runs; a frame with output shows what its line printed.",
+      "visual": {
+        "type": "call-trace",
+        "code": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n\n    def __post_init__(self):\n        if self.price < 0:\n            raise ValueError(\"price can't be negative\")\n\npen = Item(\"pen\", 1.5)\nprint(pen)",
+        "frames": [
+          {
+            "line": 12,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "dataclass": "<function dataclass>",
+              "Item": "<class Item>"
+            },
+            "note": "`@dataclass` read the two annotated fields and wrote `__init__`, `__repr__` and `==`. Now create an Item."
+          },
+          {
+            "line": 9,
+            "stack": [
+              "<module>",
+              "Item(\"pen\", 1.5)",
+              "self.__post_init__()"
+            ],
+            "locals": {
+              "self": "Item(name='pen', price=1.5)"
+            },
+            "note": "The generated `__init__` stored both fields, then called `__post_init__`. 1.5 < 0 is false, so no error."
+          },
+          {
+            "line": 13,
+            "stack": [
+              "<module>"
+            ],
+            "locals": {
+              "dataclass": "<function dataclass>",
+              "Item": "<class Item>",
+              "pen": "Item(name='pen', price=1.5)"
+            },
+            "note": "The generated `__repr__` names every field.",
+            "output": "Item(name='pen', price=1.5)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rules",
+      "kind": "formal",
+      "title": "The precise rules",
+      "body": "**Annotations:** `name: type` on a parameter, `-> type` for the return value, and `name: type = value` for a\nvariable or a class field. Built-in types work directly: `int`, `str`, `list[int]`, `dict[str, float]`,\n`tuple[int, int]`, and `int | None` for \"an int or None\". Python stores them (`f.__annotations__`) but\ndoes not enforce them.\n\n**@dataclass:** every annotated class attribute becomes a field, in order. The generated `__init__`\ntakes them as parameters (fields with defaults must come after those without), `__repr__` shows them and\n`==` compares them field by field.\n\n**Defaults:** `quantity: int = 1` is a plain default. A mutable default such as `[]` is refused with a\n`ValueError`; use `field(default_factory=list)`, which calls `list()` for each new object.\n\n**__post_init__:** if the class defines it, the generated `__init__` calls it last. Use it to check or\nderive fields, raising `TypeError` or `ValueError` for bad values. Remember that `bool` is a subclass of\n`int`: `isinstance(True, int)` is true.",
+      "cites": [
+        "ty-intro",
+        "ty-generics",
+        "st-alias",
+        "dc-intro",
+        "dc-post",
+        "dc-mutable",
+        "dc-factory"
+      ]
+    },
+    {
+      "id": "hints",
+      "kind": "example",
+      "title": "Run it: labels, not locks",
+      "body": "The hint says `int`, but a string goes through. Then a dataclass with a default and a default factory: each\norder gets its own list of tags.",
+      "code": "from dataclasses import dataclass, field\n\ndef double(n: int) -> int:\n    return n * 2\n\nprint(double(4), double(\"ab\"))\nprint(double.__annotations__)\n\n@dataclass\nclass Order:\n    item: str\n    qty: int = 1\n    tags: list[str] = field(default_factory=list)\n\na = Order(\"pen\")\nb = Order(\"pen\")\na.tags.append(\"gift\")\nprint(a)\nprint(b)\nprint(a == Order(\"pen\", 1, [\"gift\"]))\n",
+      "expected_output": "8 abab\n{'n': <class 'int'>, 'return': <class 'int'>}\nOrder(item='pen', qty=1, tags=['gift'])\nOrder(item='pen', qty=1, tags=[])\nTrue\n"
+    },
+    {
+      "id": "item",
+      "kind": "guided",
+      "title": "Your turn: a dataclass",
+      "body": "The starter is a hand-written class. Turn `Item` into a dataclass with the fields `name: str`,\n`price: float` and `quantity: int` (default 1), in that order, and add a method `total(self) -> float`\nthat returns the price times the quantity.",
+      "starter": "from dataclasses import dataclass\n\n\nclass Item:\n    def __init__(self, name, price, quantity=1):\n        self.name = name\n        self.price = price\n        self.quantity = quantity\n",
+      "hints": [
+        "Put `@dataclass` on the line before `class Item:` and replace `__init__` with three annotated fields.",
+        "`quantity: int = 1` gives the default; then `def total(self) -> float: return self.price * self.quantity`.",
+        "from dataclasses import dataclass\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def total(self) -> float:\n        return self.price * self.quantity\n"
+      ],
+      "tests": [
+        {
+          "name": "Item is a dataclass",
+          "code": "import dataclasses\nassert dataclasses.is_dataclass(Item), 'put @dataclass above the class'",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "fields, types and order",
+          "code": "import dataclasses\n\ndef _types(cls):\n    out = {}\n    for f in dataclasses.fields(cls):\n        out[f.name] = f.type if isinstance(f.type, str) else f.type.__name__\n    return out\n\nassert _types(Item) == {'name': 'str', 'price': 'float', 'quantity': 'int'}, _types(Item)\nassert list(_types(Item)) == ['name', 'price', 'quantity'], 'keep the fields in the order name, price, quantity'",
+          "concept": "type-hints"
+        },
+        {
+          "name": "quantity defaults to 1",
+          "code": "assert Item('pen', 1.5).quantity == 1",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "== and repr come from the dataclass",
+          "code": "assert Item('pen', 1.5) == Item('pen', 1.5)\nassert repr(Item('pen', 1.5)) == \"Item(name='pen', price=1.5, quantity=1)\", repr(Item('pen', 1.5))",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "total multiplies price by quantity",
+          "code": "assert Item('pen', 1.5, 4).total() == 6.0\nassert Item('book', 12.0).total() == 12.0",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "total is annotated to return a float",
+          "code": "assert Item.total.__annotations__.get('return') in (float, 'float'), 'annotate total with -> float'",
+          "concept": "type-hints"
+        }
+      ],
+      "solution": "from dataclasses import dataclass\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def total(self) -> float:\n        return self.price * self.quantity\n"
+    },
+    {
+      "id": "cart",
+      "kind": "challenge",
+      "title": "Challenge: checks the hints can't do",
+      "body": "Hints don't stop `Item(\"pen\", \"cheap\")`. Add a `__post_init__` to `Item` that raises `TypeError` if `price`\nisn't an `int` or a `float`, or `quantity` isn't an `int` (in both cases a `bool` doesn't count), and\n`ValueError` if `price` is negative or `quantity` is below 1. Then make `Cart` a dataclass with one field,\n`items: list[Item]`, defaulting to a new empty list for every cart, a method `add(item)` that appends to it,\nand `total() -> float`, the sum of the items' totals.",
+      "starter": "from dataclasses import dataclass\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def total(self) -> float:\n        return self.price * self.quantity\n\n\n@dataclass\nclass Cart:\n    pass\n",
+      "hints": [
+        "Check `bool` first: `isinstance(x, bool) or not isinstance(x, (int, float))`.",
+        "`items: list[Item] = field(default_factory=list)` (import `field` from dataclasses).",
+        "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def __post_init__(self):\n        if isinstance(self.price, bool) or not isinstance(self.price, (int, float)):\n            raise TypeError(\"price must be a number\")\n        if isinstance(self.quantity, bool) or not isinstance(self.quantity, int):\n            raise TypeError(\"quantity must be a whole number\")\n        if self.price < 0:\n            raise ValueError(\"price can't be negative\")\n        if self.quantity < 1:\n            raise ValueError(\"quantity must be at least 1\")\n\n    def total(self) -> float:\n        return self.price * self.quantity\n\n\n@dataclass\nclass Cart:\n    items: list[Item] = field(default_factory=list)\n\n    def add(self, item: Item) -> None:\n        self.items.append(item)\n\n    def total(self) -> float:\n        return sum(item.total() for item in self.items)\n"
+      ],
+      "tests": [
+        {
+          "name": "a good item is accepted, including a whole-number price",
+          "code": "assert Item('pen', 2).total() == 2\nassert Item('pen', 1.5, 3).total() == 4.5",
+          "concept": "validation"
+        },
+        {
+          "name": "a price that isn't a number raises TypeError",
+          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nassert _raises(TypeError, 'pen', 'cheap'), \"Item('pen', 'cheap') should raise TypeError\"\nassert _raises(TypeError, 'pen', True), \"Item('pen', True) should raise TypeError: a bool isn't a price\"",
+          "concept": "validation"
+        },
+        {
+          "name": "a quantity that isn't a whole number raises TypeError",
+          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nassert _raises(TypeError, 'pen', 1.0, 2.5), \"Item('pen', 1.0, 2.5) should raise TypeError\"\nassert _raises(TypeError, 'pen', 1.0, True), \"Item('pen', 1.0, True) should raise TypeError\"",
+          "concept": "validation"
+        },
+        {
+          "name": "out-of-range values raise ValueError",
+          "code": "def _raises(kind, *args):\n    try:\n        Item(*args)\n    except kind:\n        return True\n    except Exception:\n        return False\n    return False\n\nassert _raises(ValueError, 'pen', -1), \"Item('pen', -1) should raise ValueError\"\nassert _raises(ValueError, 'pen', 1.0, 0), \"Item('pen', 1.0, 0) should raise ValueError\"\nassert Item('free', 0).total() == 0",
+          "concept": "validation"
+        },
+        {
+          "name": "Cart is a dataclass that starts empty",
+          "code": "import dataclasses\nassert dataclasses.is_dataclass(Cart)\nassert Cart().items == []\nassert Cart().total() == 0",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "every cart has its own list",
+          "code": "c1, c2 = Cart(), Cart()\nc1.add(Item('pen', 1.0))\nassert c2.items == [], 'the carts share one list: use field(default_factory=list)'",
+          "concept": "dataclasses"
+        },
+        {
+          "name": "total adds the items' totals",
+          "code": "c = Cart()\nc.add(Item('pen', 1.5, 2))\nc.add(Item('book', 10.0))\nassert c.total() == 13.0, c.total()",
+          "concept": "dataclasses"
+        }
+      ],
+      "solution": "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def __post_init__(self):\n        if isinstance(self.price, bool) or not isinstance(self.price, (int, float)):\n            raise TypeError(\"price must be a number\")\n        if isinstance(self.quantity, bool) or not isinstance(self.quantity, int):\n            raise TypeError(\"quantity must be a whole number\")\n        if self.price < 0:\n            raise ValueError(\"price can't be negative\")\n        if self.quantity < 1:\n            raise ValueError(\"quantity must be at least 1\")\n\n    def total(self) -> float:\n        return self.price * self.quantity\n\n\n@dataclass\nclass Cart:\n    items: list[Item] = field(default_factory=list)\n\n    def add(self, item: Item) -> None:\n        self.items.append(item)\n\n    def total(self) -> float:\n        return sum(item.total() for item in self.items)\n"
+    },
+    {
+      "id": "check",
+      "kind": "quiz",
+      "title": "Check your understanding",
+      "body": "Predict before running anything.",
+      "pass_mark": 0.75,
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "What does this print?\n\n```python\ndef double(n: int) -> int:\n    return n * 2\n\nprint(double(\"ab\"))\n```",
+          "choices": [
+            "abab",
+            "It raises a TypeError",
+            "None",
+            "4"
+          ],
+          "answer": 0,
+          "explanation": "Python doesn't enforce hints at run time; `\"ab\" * 2` is `\"abab\"`. A checking tool would flag the call before it ran.",
+          "concept": "type-hints"
+        },
+        {
+          "id": "q2",
+          "prompt": "With `@dataclass class P:` and one field `x: int`, what does `print(P(1) == P(1))` show?",
+          "choices": [
+            "True",
+            "False",
+            "It raises an error",
+            "P(x=1)"
+          ],
+          "answer": 0,
+          "explanation": "A dataclass compares its fields, so two P(1) objects are equal.",
+          "concept": "dataclasses"
+        },
+        {
+          "id": "q3",
+          "prompt": "What happens if a dataclass field is written `items: list = []`?",
+          "choices": [
+            "Defining the class raises a ValueError: use field(default_factory=list)",
+            "Every object shares one list",
+            "Each object gets its own list",
+            "The hint makes it a list of nothing"
+          ],
+          "answer": 0,
+          "explanation": "Dataclasses refuse a mutable default outright, to stop every object sharing one list.",
+          "concept": "dataclasses"
+        },
+        {
+          "id": "q4",
+          "prompt": "Where does a dataclass let you check its fields after they are set?",
+          "choices": [
+            "In __post_init__",
+            "In the type hints",
+            "In __repr__",
+            "Nowhere: dataclasses can't check values"
+          ],
+          "answer": 0,
+          "explanation": "The generated `__init__` calls `__post_init__` last, if the class defines it.",
+          "concept": "validation"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "kind": "summary",
+      "title": "What you can do now",
+      "body": "- Annotate parameters, return values and fields, including `list[int]` and `int | None`.\n- Know that hints document and help tools, but Python doesn't enforce them.\n- Write dataclasses with defaults and `field(default_factory=...)`.\n- Validate fields in `__post_init__`, remembering that `bool` is an `int`."
+    }
+  ]
+}
