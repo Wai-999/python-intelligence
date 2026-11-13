@@ -104,5 +104,9 @@ describe("suggested support", () => {
     expect(mixed.concepts.get("loops")!.hintTier).toBe(MAX_AUTO_HINT_TIER);
     expect(suggestedTier(mixed, L, E2)).toBe(START_HINT_TIER - 1);
     expect(suggestedTier(mixed, L, E1)).toBe(MAX_AUTO_HINT_TIER);
+    // An untested concept the exercise is credited to ("style") counts too: it alone can raise the suggestion.
+    const styleNeedy = buildModel([L], [...[1, 2, 3, 4].map((n) => ev("style", false, n)), ...[5, 6].map((n) => ev("ranges", true, n))]);
+    expect(styleNeedy.concepts.get("ranges")!.hintTier).toBe(START_HINT_TIER - 1);
+    expect(suggestedTier(styleNeedy, L, E2)).toBe(MAX_AUTO_HINT_TIER);
   });
 });
