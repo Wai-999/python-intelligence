@@ -5,7 +5,7 @@ import { Library } from "./components/Library";
 import { ProgressPanel } from "./components/ProgressPanel";
 import { ReviewView } from "./components/ReviewView";
 import { buildModel, dueReviews, type Assistance, type LearnerEvent } from "./learner/model";
-import { exerciseEvents, quizEvents, reviewEvent, reviewItem, type Stamp } from "./learner/record";
+import { exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier, type Stamp } from "./learner/record";
 import { isExercise } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -278,6 +278,7 @@ export function App() {
               titleOf={titleOf}
               go={go}
               generation={generation}
+              suggestTier={(step) => suggestedTier(model, graph.byId.get(route.lessonId)!, step)}
               assistance={Object.fromEntries(Object.entries(assist).filter(([k]) => k.startsWith(`${route.lessonId}:`)).map(([k, v]) => [k.slice(route.lessonId.length + 1), v]))}
               onAssist={(sid, level) => {
                 if (!live()) return;

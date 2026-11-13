@@ -8,7 +8,7 @@ import { Editor } from "./Editor";
 import { inline } from "./Prose";
 import { TutorNote } from "./TutorNote";
 import type { StepResult } from "../progress/types";
-import type { Assistance } from "../learner/model";
+import { MAX_AUTO_HINT_TIER, START_HINT_TIER, type Assistance } from "../learner/model";
 import { assistanceFor } from "../learner/record";
 
 export interface AttemptDetail {
@@ -29,6 +29,8 @@ interface Props {
   assistance: number;
   onAssist: (level: Assistance) => void;
   generation: number;
+  /** The learner model's suggested support for this exercise (0 = predict first, 1–3 = hints); see suggestedTier(). */
+  suggestedTier: number;
   onDraft: (code: string) => void;
   onResult: (passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
 }
@@ -36,7 +38,22 @@ interface Props {
 /** Hints are revealed one at a time. The solution becomes available only after this many failed attempts. */
 export const SOLUTION_AFTER = 2;
 
-export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, onDraft, onResult }: Props) {
+/** Failed runs on one task that restore one tier of suggested support (the master prompt's "two comparable failures"). */
+const RESTORE_AFTER = 2;
+
+function SupportNote({ offered, suggested, hints }: { offered: number; suggested: number; hints: number }) {
+  const n = Math.min(offered, hints);
+  return (
+    <p className="support muted" role="note">
+      {offered === 0
+        ? "Predict first: decide what your code should do before you run it. Hints are here whenever you want them."
+        : `Suggested support: up to ${n} hint${n === 1 ? "" : "s"}${offered > suggested ? ", raised after repeated tries"
+          : suggested < START_HINT_TIER ? ", fewer than at first since you've solved similar tasks on your own" : ""}. Use more or fewer as you like.`}
+    </p>
+  );
+}
+
+export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, suggestedTier, onDraft, onResult }: Props) {
   const [code, setCode] = useState(draft ?? step.starter);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -44,6 +61,9 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
   // Earlier help is shown again on return, and counted: reopening a task never makes it count as unaided.
   const [hintsShown, setHintsShown] = useState(() => Math.min(step.hints.length, assistance >= 4 ? step.hints.length : assistance));
   const [failures, setFailures] = useState(record && !record.passed ? record.attempts : 0);
+  // Support fades with independent successes (the model's suggestion) and is restored, one tier per two failed runs
+  // on this task, up to tier 3. A worked solution (tier 4) is never suggested: it stays an explicit request.
+  const offered = Math.min(MAX_AUTO_HINT_TIER, suggestedTier + Math.floor(failures / RESTORE_AFTER));
   const [confirmSolution, setConfirmSolution] = useState(false);
   const [showSolution, setShowSolution] = useState(assistance >= 4);
   // The highest help seen so far, read when a run finishes (help revealed while a run is pending counts too).
@@ -130,6 +150,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         </details>
       )}
 
+      {!allPassed && step.hints.length > 0 && <SupportNote offered={offered} suggested={suggestedTier} hints={step.hints.length} />}
       <div className="hints">
         {step.hints.slice(0, hintsShown).map((h, i) => (
           // Prose hints end with a period; bare code hints (usually the last, most explicit one) don't.
@@ -138,7 +159,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         ))}
         {hintsShown < step.hints.length && !allPassed && (
           <button type="button" className="btn ghost" onClick={() => { setHintsShown(hintsShown + 1); reveal(hintsShown + 1, showSolution); }}>
-            {hintsShown === 0 ? "Show a hint" : "Another hint"} ({step.hints.length - hintsShown} left)
+            {hintsShown === 0 ? "Show a hint" : "Another hint"} ({hintsShown < offered ? "suggested, " : ""}{step.hints.length - hintsShown} left)
           </button>
         )}
         {failures >= SOLUTION_AFTER && !allPassed && !showSolution && (

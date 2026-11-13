@@ -5,7 +5,7 @@
  * gather evidence. Pure functions, so the rules are testable without the browser.
  */
 import { isExercise, type ExerciseStep, type Lesson, type QuizQuestion, type QuizStep } from "../content/types";
-import { POLICY_VERSION, type Assistance, type LearnerEvent } from "./model";
+import { POLICY_VERSION, START_HINT_TIER, type Assistance, type LearnerEvent, type LearnerModel } from "./model";
 
 export interface Stamp {
   at: string;
@@ -17,6 +17,23 @@ const testedBy = (lesson: Lesson) =>
   new Set(lesson.steps.filter(isExercise).flatMap((s) => s.tests.map((t) => t.concept)).filter((c): c is string => !!c));
 const askedBy = (lesson: Lesson) =>
   new Set(lesson.steps.flatMap((s) => (s.kind === "quiz" ? s.questions.map((q) => q.concept) : [])));
+
+/** The concepts an attempt at this exercise is credited to: those its checks test, and the lesson's untested ones. */
+export function creditedConcepts(lesson: Lesson, step: ExerciseStep): string[] {
+  const lessonConcepts = new Set(lesson.concepts);
+  const direct = [...new Set(step.tests.map((t) => t.concept).filter((c): c is string => !!c && lessonConcepts.has(c)))];
+  return [...direct, ...lesson.concepts.filter((c) => !testedBy(lesson).has(c))];
+}
+
+/**
+ * How much help to suggest up front for this exercise (0 = predict first, 1–3 = that many hints): the most support any
+ * of its concepts currently calls for, so a concept the learner is struggling with isn't left unsupported. Concepts with
+ * no evidence yet start at START_HINT_TIER. Hints are only suggested, never shown unasked.
+ */
+export function suggestedTier(model: LearnerModel, lesson: Lesson, step: ExerciseStep): number {
+  const tiers = creditedConcepts(lesson, step).map((c) => model.concepts.get(c)?.hintTier ?? START_HINT_TIER);
+  return tiers.length ? Math.max(...tiers) : START_HINT_TIER; // the model keeps each tier within 0..MAX_AUTO_HINT_TIER
+}
 
 /**
  * `results` lists each check's concept and outcome; `null` means the code didn't run (every concept counts as failed).

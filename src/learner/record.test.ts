@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ExerciseStep, Lesson, QuizStep } from "../content/types";
-import { buildModel } from "./model";
-import { assistanceFor, exerciseEvents, quizEvents, reviewEvent, reviewItem } from "./record";
+import { buildModel, MAX_AUTO_HINT_TIER, START_HINT_TIER } from "./model";
+import { assistanceFor, creditedConcepts, exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier } from "./record";
 
 const ex = (id: string, concepts: (string | undefined)[]): ExerciseStep =>
   ({ id, kind: "guided", title: id, body: "", starter: "", hints: [], solution: "", tests: concepts.map((c, i) => ({ name: `t${i}`, code: "", ...(c ? { concept: c } : {}) })) }) as unknown as ExerciseStep;
@@ -75,5 +75,27 @@ describe("reviews", () => {
 describe("assistance", () => {
   it("counts hints up to 3 and the solution as 4", () => {
     expect([assistanceFor(0, false), assistanceFor(1, false), assistanceFor(5, false), assistanceFor(0, true), assistanceFor(2, true)]).toEqual([0, 1, 3, 4, 4]);
+  });
+});
+
+describe("suggested support", () => {
+  const at = (n: number) => ({ at: new Date(Date.UTC(2026, 0, 5, 9, n)).toISOString(), id: () => `s${n}-${++k}` });
+  const run = (step: ExerciseStep, passed: boolean, n: number, help: 0 | 1 = 0) =>
+    exerciseEvents(L, step, step.tests.map((t) => ({ concept: t.concept, passed })), help, at(n));
+
+  it("starts every concept at tier 2, eases off after two independent successes, and takes the neediest concept", () => {
+    expect(suggestedTier(buildModel([L], []), L, E1)).toBe(START_HINT_TIER);
+    expect(suggestedTier(buildModel([], []), L, E1)).toBe(START_HINT_TIER); // a lesson the model wasn't built with
+    // One success each isn't enough for "loops" (E2 doesn't check it), so the neediest concept keeps tier 2.
+    expect(suggestedTier(buildModel([L], [...run(E1, true, 1), ...run(E2, true, 2)]), L, E1)).toBe(START_HINT_TIER);
+    const eased = buildModel([L], [...run(E1, true, 1), ...run(E1, true, 2)]);
+    expect(suggestedTier(eased, L, E1)).toBe(START_HINT_TIER - 1);
+    // An assisted success doesn't ease it off.
+    expect(suggestedTier(buildModel([L], [...run(E1, true, 1, 1), ...run(E1, true, 2, 1)]), L, E1)).toBe(START_HINT_TIER);
+    // Two comparable failures restore support, capped at the most a model may suggest unasked.
+    const struggling = buildModel([L], [1, 2, 3, 4, 5, 6].flatMap((n) => run(E1, false, n)));
+    expect(suggestedTier(struggling, L, E1)).toBe(MAX_AUTO_HINT_TIER);
+    // Credited concepts are those its checks test plus the lesson's untested ones ("style" here).
+    expect(creditedConcepts(L, E2)).toEqual(["ranges", "style"]);
   });
 });
