@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import type { Lesson } from "../src/content/types";
+import { buildModel, type LearnerEvent } from "../src/learner/model";
 import valuesNames from "../content/lessons/py-values-names.json" with { type: "json" };
 import functionsLesson from "../content/lessons/py-functions.json" with { type: "json" };
 
@@ -147,4 +149,28 @@ test("after a rejected import, practice is still recorded", async ({ page }) => 
   const data = await exportEvents(page) as unknown as { events: { stepId: string }[]; lessons: { lessonId: string; steps: Record<string, { passed: boolean }> }[] };
   expect(data.events.length).toBe(4);
   expect(data.lessons.find((l) => l.lessonId === "py-values-names")?.steps.circle?.passed).toBe(true);
+});
+
+test("a quiz retried after its answers were revealed can't serve as the explanation check", async ({ page }) => {
+  const quiz = (valuesNames as unknown as { steps: { id: string; kind: string; questions?: { answer: number; choices: string[] }[] }[] }).steps;
+  const at = quiz.findIndex((s) => s.kind === "quiz");
+  const questions = quiz[at]!.questions!;
+  await page.goto(`./#/lesson/py-values-names/${at}`);
+  const sets = page.locator("fieldset.question");
+  for (let i = 0; i < questions.length; i++) await sets.nth(i).locator("input[type=radio]").nth((questions[i]!.answer + 1) % questions[i]!.choices.length).check();
+  await page.getByRole("button", { name: "Check answers" }).click();
+  await expect(page.getByText(/You need/)).toBeVisible();
+  await page.waitForTimeout(500); // let IndexedDB finish writing
+  await page.reload(); // the answers stay "seen" across a reload
+  await page.goto(`./#/lesson/py-values-names/${at}`);
+  for (let i = 0; i < questions.length; i++) await sets.nth(i).locator("input[type=radio]").nth(questions[i]!.answer).check();
+  await page.getByRole("button", { name: "Check answers" }).click();
+  await expect(page.getByText(/Passed!/)).toBeVisible();
+  await page.waitForTimeout(300);
+  const { events } = await exportEvents(page) as unknown as { events: LearnerEvent[] };
+  const [firstAt, secondAt] = [...new Set(events.map((e) => e.at))].sort();
+  expect(events.filter((e) => e.at === firstAt).every((e) => e.assistance === 0 && !e.passed)).toBe(true);
+  expect(events.filter((e) => e.at === secondAt).every((e) => e.assistance === 4)).toBe(true);
+  const model = buildModel([valuesNames as unknown as Lesson], events);
+  for (const c of ["names", "expressions", "values"]) expect(model.concepts.get(c)!.explanationChecked).toBe(false);
 });

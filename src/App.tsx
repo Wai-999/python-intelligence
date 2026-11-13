@@ -200,7 +200,13 @@ export function App() {
                 const l = graph.byId.get(route.lessonId)!;
                 void save(applyOutcome(l, progress.get(l.id), sid, { passed, score, failedConcepts: missed, attempt: true }));
                 const step = l.steps.find((s) => s.id === sid);
-                if (step?.kind === "quiz") record(quizEvents(l, step, correct, stampNow()));
+                if (step?.kind === "quiz") {
+                  // Submitting reveals every correct answer, so later submissions of this quiz count as assisted.
+                  const key = `${l.id}:${sid}`;
+                  record(quizEvents(l, step, correct, stampNow(), (assist[key] ?? 0) >= 4 ? 4 : 0));
+                  setAssist((a) => ({ ...a, [key]: 4 }));
+                  void store?.raiseAssistance(l.id, sid, 4).catch((e) => setStoreError(String(e?.message ?? e)));
+                }
               }}
             />
           )}

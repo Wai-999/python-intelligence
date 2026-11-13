@@ -34,8 +34,11 @@ export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { co
   }));
 }
 
-/** `correct[i]` says whether question i was answered correctly. */
-export function quizEvents(lesson: Lesson, step: QuizStep, correct: boolean[], stamp: Stamp): LearnerEvent[] {
+/**
+ * `correct[i]` says whether question i was answered correctly. `assistance` is 4 once this quiz's answers have been
+ * revealed by an earlier submission: a retry can still pass the step, but it is no longer an independent explanation check.
+ */
+export function quizEvents(lesson: Lesson, step: QuizStep, correct: boolean[], stamp: Stamp, assistance: Assistance = 0): LearnerEvent[] {
   const lessonConcepts = new Set(lesson.concepts);
   const byConcept = new Map<string, boolean>();
   step.questions.forEach((q, i) => {
@@ -44,7 +47,7 @@ export function quizEvents(lesson: Lesson, step: QuizStep, correct: boolean[], s
   const passed = correct.filter(Boolean).length / Math.max(1, step.questions.length) >= step.pass_mark;
   for (const c of lesson.concepts) if (!askedBy(lesson).has(c)) byConcept.set(c, passed);
   return [...byConcept].map(([concept, ok]) => ({
-    id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "quiz" as const, concept, passed: ok, assistance: 0 as const, policy: POLICY_VERSION,
+    id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "quiz" as const, concept, passed: ok, assistance, policy: POLICY_VERSION,
   }));
 }
 

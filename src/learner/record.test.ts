@@ -48,6 +48,8 @@ describe("quiz events", () => {
     expect(evs.map((e) => [e.concept, e.passed, e.task])).toEqual([["loops", false, "quiz"], ["ranges", true, "quiz"], ["style", false, "quiz"]]);
     expect(quizEvents(L, Q, [true, true, true], stamp).map((e) => e.passed)).toEqual([true, true, true]);
     expect(quizEvents(L, quiz("c", ["loops", "ranges", "ranges", "ranges"]), [false, true, true, true], stamp).find((e) => e.concept === "style")!.passed).toBe(true);
+    expect(quizEvents(L, Q, [true, true, true], stamp).every((e) => e.assistance === 0)).toBe(true);
+    expect(quizEvents(L, Q, [true, true, true], stamp, 4).every((e) => e.assistance === 4)).toBe(true);
   });
 });
 
