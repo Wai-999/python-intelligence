@@ -500,12 +500,12 @@
       "kind": "transfer",
       "difficulty": 3,
       "title": "Transfer: a pipeline audit",
-      "body": "Write `clean(df)`: return a new DataFrame without rows that have any missing value and without duplicate rows (keep the\nfirst), with a fresh 0..n−1 index. Write `majority_baseline(y_train, y_test)`: the accuracy on `y_test` of always\npredicting the most common label in `y_train` (ties to the smallest label). Write `leaky_columns(df, target)`: the\nsorted names of other columns whose values equal the target column in every row.",
+      "body": "Write `clean(df)`: return a new DataFrame without rows that have any missing value and without duplicate rows (keep the\nfirst), with a fresh 0..n−1 index. Write `majority_baseline(y_train, y_test)`: the accuracy on `y_test` of always\npredicting the most common label in `y_train` (ties to the smallest label). Write `leaky_columns(df, target)`: the\nsorted names of other columns whose values equal the target column in every row (two missing values count as\nequal; a missing value against a present one doesn't).",
       "starter": "import pandas as pd\n\n\ndef clean(df):\n    return df\n\n\ndef majority_baseline(y_train, y_test):\n    return 0.0\n\n\ndef leaky_columns(df, target):\n    return []\n",
       "hints": [
         "`df.dropna().drop_duplicates().reset_index(drop=True)`.",
-        "Count labels with `value_counts()`; for leakage, compare values with `(df[c] == df[target]).all()` (1 and 1.0 count as equal).",
-        "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    def same(c):\n        return bool(((df[c] == df[target]) | (df[c].isna() & df[target].isna())).all())\n    return sorted(c for c in df.columns if c != target and same(c))\n"
+        "Count labels with `value_counts()`; for leakage, compare values with `df[c] == df[target]` (1 and 1.0 count as equal), treating a comparison with a missing value as no match (`.fillna(False)`) and two missing values as a match (`df[c].isna() & df[target].isna()`).",
+        "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    def same(c):\n        a, b = df[c], df[target]\n        equal = (a == b).fillna(False).astype(bool)\n        return bool((equal | (a.isna() & b.isna())).all())\n    return sorted(c for c in df.columns if c != target and same(c))\n"
       ],
       "tests": [
         {
@@ -537,9 +537,14 @@
           "name": "a copy stored with another number type is still a copy",
           "code": "import pandas as pd\ndf = pd.DataFrame({'y': [0, 1, 1], 'yf': [0.0, 1.0, 1.0], 'n': [0.0, 1.0, 0.0]})\nassert leaky_columns(df, 'y') == ['yf'], leaky_columns(df, 'y')",
           "concept": "data-leakage"
+        },
+        {
+          "name": "missing values: two match, one doesn't",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'y': [1.0, None, 0.0], 'c': [1.0, None, 0.0], 'd': [1.0, 2.0, 0.0], 'e': [None, None, 0.0]})\nassert leaky_columns(df, 'y') == ['c'], leaky_columns(df, 'y')\nnullable = pd.DataFrame({'y': pd.array([1, None, 0], dtype='Int64'), 'n': pd.array([1, 2, 0], dtype='Int64'), 'm': pd.array([1, None, 0], dtype='Int64')})\nassert leaky_columns(nullable, 'y') == ['m'], leaky_columns(nullable, 'y')",
+          "concept": "data-leakage"
         }
       ],
-      "solution": "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    def same(c):\n        return bool(((df[c] == df[target]) | (df[c].isna() & df[target].isna())).all())\n    return sorted(c for c in df.columns if c != target and same(c))\n"
+      "solution": "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    def same(c):\n        a, b = df[c], df[target]\n        equal = (a == b).fillna(False).astype(bool)\n        return bool((equal | (a.isna() & b.isna())).all())\n    return sorted(c for c in df.columns if c != target and same(c))\n"
     },
     {
       "id": "check",

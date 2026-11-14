@@ -329,6 +329,11 @@
           "name": "no Python loops",
           "code": "import ast\n_loops = [n for n in ast.walk(ast.parse(__source__)) if isinstance(n, (ast.For, ast.While, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))]\nassert not _loops, f'line {_loops[0].lineno if _loops else 0} uses a Python loop or comprehension; use masks and numpy functions instead'",
           "concept": "vectorization"
+        },
+        {
+          "name": "means that aren't whole numbers",
+          "code": "import numpy as np\nassert np.allclose(column_means(np.array([[1.0, -1.0], [2.0, -2.0]])), [1.5, -1.5]), column_means(np.array([[1.0, -1.0], [2.0, -2.0]]))",
+          "concept": "array-aggregation"
         }
       ],
       "solution": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
