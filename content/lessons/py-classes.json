@@ -345,6 +345,11 @@
           "name": "Scoreboard is a class",
           "code": "assert isinstance(Scoreboard, type) and isinstance(Scoreboard(), Scoreboard)",
           "concept": "classes"
+        },
+        {
+          "name": "a leader even when every total is negative",
+          "code": "sb = Scoreboard()\nsb.add('bo', -5)\nsb.add('al', -5)\nassert sb.leader() == 'al', f'with only negative totals the leader is still the highest; got {sb.leader()!r}'\nsb.add('cy', -1)\nassert sb.leader() == 'cy', sb.leader()",
+          "concept": "methods"
         }
       ],
       "solution": "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        best = None\n        for player in self.scores:\n            if best is None or self.scores[player] > self.scores[best]:\n                best = player\n            elif self.scores[player] == self.scores[best] and player < best:\n                best = player\n        return best\n"
