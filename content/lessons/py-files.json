@@ -354,6 +354,11 @@
           "name": "notes come back exactly, spaces and empty notes included",
           "code": "notes = ['  indented', '', 'trailing space ']\nsave_notes('n.txt', notes)\nassert read_notes('n.txt') == notes, read_notes('n.txt')\nadd_note('n.txt', ' spaced ')\nadd_note('n.txt', '')\nassert read_notes('n.txt') == notes + [' spaced ', ''], read_notes('n.txt')",
           "concept": "files"
+        },
+        {
+          "name": "saving no notes empties the file",
+          "code": "save_notes('n.txt', ['old'])\nsave_notes('n.txt', [])\nassert open('n.txt').read() == '' and read_notes('n.txt') == [], repr(open('n.txt').read())",
+          "concept": "file-modes"
         }
       ],
       "solution": "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"a\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []\n"

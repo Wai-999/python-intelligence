@@ -383,6 +383,11 @@
           "name": "the i-th split tests point i",
           "code": "assert all(t.tolist() == [i] for i, (_, t) in enumerate(leave_one_out(4)))",
           "concept": "cross-validation"
+        },
+        {
+          "name": "the arrays work as numpy indices",
+          "code": "import numpy as np\nX = np.array([10.0, 11.0, 12.0, 13.0])\nfor train, test in leave_one_out(4):\n    assert X[train].shape == (3,) and X[test].shape == (1,)\n(train, test), = leave_one_out(1)\nassert np.asarray(train).dtype.kind in 'iu' and X[:1][train].shape == (0,), 'an empty train array must still be an integer index array'",
+          "concept": "train-test-split"
         }
       ],
       "solution": "import numpy as np\n\n\ndef leave_one_out(n):\n    return [(np.array([j for j in range(n) if j != i], dtype=int), np.array([i])) for i in range(n)]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"
