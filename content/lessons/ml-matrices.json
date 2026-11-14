@@ -369,6 +369,11 @@
           "concept": "matrices"
         },
         {
+          "name": "any angle, not just quarter turns",
+          "code": "import numpy as np\nc, s = np.cos(np.radians(37)), np.sin(np.radians(37))\nassert np.allclose(rotate(np.array([[1.0, 0.0], [0.0, 1.0]]), 37), [[c, s], [-s, c]]), 'rotate by exactly the angle given'",
+          "concept": "matrix-multiplication"
+        },
+        {
           "name": "solves the mix",
           "code": "import numpy as np\nA = np.array([[2.0, 1.0], [1.0, 3.0]])\nx = mix(A, np.array([5.0, 10.0]))\nassert np.allclose(A @ x, [5, 10]) and np.allclose(x, [1, 3]), x",
           "concept": "linear-systems"

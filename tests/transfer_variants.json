@@ -199,7 +199,8 @@
  },
  "ml-matrices": {
   "reject": [
-   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n",
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(round(degrees / 90) * 90)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.inv(np.asarray(A, dtype=float)) @ np.asarray(b, dtype=float)\n"
