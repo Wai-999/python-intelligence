@@ -393,6 +393,11 @@
           "name": "a validation tie isn't broken by training error",
           "code": "assert pick([0.5, 0.1], [0.2, 0.2]) == 0",
           "concept": "overfitting"
+        },
+        {
+          "name": "the last candidate can win",
+          "code": "assert pick([0.0, 0.0, 0.0], [0.5, 0.4, 0.1]) == 2",
+          "concept": "overfitting"
         }
       ],
       "solution": "import numpy as np\n\n\ndef leave_one_out(n):\n    return [(np.array([j for j in range(n) if j != i], dtype=int), np.array([i])) for i in range(n)]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"

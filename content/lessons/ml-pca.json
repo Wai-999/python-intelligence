@@ -384,6 +384,16 @@
           "name": "fractional column means, with integer input too",
           "code": "import numpy as np\nX = np.array([[1, 2], [2, 4], [4, 5]])\nexpected = X - np.array([7 / 3, 11 / 3])\nassert np.allclose(project(X, np.eye(2)), expected) and np.allclose(project(X.astype(float), np.eye(2)), expected)",
           "concept": "principal-components"
+        },
+        {
+          "name": "three features",
+          "code": "import numpy as np\nX = np.array([[1.0, 0.0, 2.0], [3.0, 0.0, 0.0], [2.0, 3.0, 4.0]])\nassert np.allclose(project(X, np.array([[0.0, 0.0, 1.0]])), [[0.0], [-2.0], [2.0]])",
+          "concept": "dimensionality-reduction"
+        },
+        {
+          "name": "shares just past a boundary",
+          "code": "assert components_needed([6.0, 3.0, 1.0], 0.61) == 2 and components_needed([6.0, 3.0, 1.0], 0.91) == 3",
+          "concept": "explained-variance"
         }
       ],
       "solution": "import numpy as np\n\n\ndef project(X, components):\n    X = np.asarray(X, dtype=float)\n    return (X - X.mean(axis=0)) @ np.asarray(components, dtype=float).T\n\n\ndef components_needed(eigenvalues, share):\n    ratios = np.sort(np.asarray(eigenvalues, dtype=float))[::-1] / np.sum(eigenvalues)\n    return int(np.searchsorted(np.cumsum(ratios), share - 1e-12) + 1)\n"

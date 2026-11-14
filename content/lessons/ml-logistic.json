@@ -440,6 +440,16 @@
           "name": "clipped at both ends",
           "code": "assert abs(log_loss([0], [1.0]) - 27.63104323789336) < 1e-6, 'clip p to 1 - 1e-12 as well'",
           "concept": "log-loss"
+        },
+        {
+          "name": "every feature counts",
+          "code": "assert abs(predict_proba([1.0, 1.0, 1.0], 0.0, [1.0, 1.0, -3.0]) - 0.2689414213699951) < 1e-12",
+          "concept": "logistic-regression"
+        },
+        {
+          "name": "the mean over observations",
+          "code": "import math\nassert abs(log_loss([1, 1, 0], [0.8, 0.8, 0.1]) - (-(2 * math.log(0.8) + math.log(0.9)) / 3)) < 1e-12",
+          "concept": "log-loss"
         }
       ],
       "solution": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + b)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = min(max(p, 1e-12), 1 - 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n"

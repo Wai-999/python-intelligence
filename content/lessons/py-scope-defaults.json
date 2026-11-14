@@ -251,6 +251,11 @@
           "name": "an explicit 0% tip",
           "code": "assert add_tip(50, percent=0) == 50, add_tip(50, percent=0)",
           "concept": "default-arguments"
+        },
+        {
+          "name": "the parameter names, as keywords",
+          "code": "assert add_tip(total=50, percent=0) == 50 and format_price(amount=3.5) == '£3.50'",
+          "concept": "keyword-arguments"
         }
       ],
       "solution": "total = 100\n\n\ndef format_price(amount, currency=\"£\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total + total * percent / 100\n"
