@@ -116,6 +116,12 @@ export function DiagnosticView({ diagnostic, placement, recommendation, titleOf,
 
 function PlacementSummary({ placement, diagnostic, titleOf }: { placement: Placement; diagnostic: Diagnostic; titleOf: (id: string) => string }) {
   const tested = diagnostic.checkpoints.filter((c) => placement.passed.includes(c.id)).flatMap((c) => c.covers);
+  if (placement.outdated) return (
+    <div className="placement">
+      <p className="pill warn">The placement check has changed since you took it, so your earlier result no longer skips any
+        lessons. Take it again to find your starting point.</p>
+    </div>
+  );
   return (
     <div className="placement">
       {tested.length === 0 ? <p>You'll start from the first lesson: nothing was skipped.</p> : (

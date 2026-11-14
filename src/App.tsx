@@ -296,7 +296,9 @@ export function App() {
                 <p>Short lessons that build on one another: a motivating problem, an intuition, a visual walkthrough,
                    the precise rules, runnable code, and practice that is checked as you go. Python runs right here in your
                    browser, with nothing to install.</p>
-                <p className="placement-link">{place.at
+                <p className="placement-link">{place.outdated
+                  ? <>The placement check has changed since you took it, so it no longer skips lessons. <a href="#/diagnostic">Retake it</a></>
+                  : place.at
                   ? <>Placement check: you tested out of {place.testedOut.size} lesson{place.testedOut.size === 1 ? "" : "s"}. <a href="#/diagnostic">Retake it</a></>
                   : <>Know some Python already? <a href="#/diagnostic">Take the placement check</a> to find your starting point.</>}</p>
               </section>

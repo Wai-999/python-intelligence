@@ -405,6 +405,10 @@ def check_diagnostic(diag, lessons: dict[str, dict]) -> list[str]:
         if not isinstance(qs, list) or not qs:
             errs.append(f"{where}: needs questions")
             continue
+        asked = {q.get("lesson") for q in qs if isinstance(q, dict)}
+        for lid in covers:
+            if lid not in asked:
+                errs.append(f"{where}: {lid} has no question of its own, so a learner could test out of it untested")
         for q in qs:
             qw = f"{where}/{q.get('id')}"
             missing = QUESTION_FIELDS - set(q)

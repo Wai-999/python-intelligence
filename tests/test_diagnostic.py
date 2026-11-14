@@ -52,6 +52,13 @@ def test_a_question_must_test_a_concept_of_its_lesson():
     assert any("not one this checkpoint covers" in x for x in e), e
 
 
+def test_every_covered_lesson_needs_its_own_question():
+    def drop(d):  # keep py-functions covered but remove its only question
+        d["checkpoints"][0]["questions"] = [x for x in d["checkpoints"][0]["questions"] if x["lesson"] != "py-functions"]
+    e = errs(drop)
+    assert any("py-functions has no question of its own" in x for x in e), e
+
+
 def test_structure_checks():
     assert any("covered by more than one" in x for x in errs(lambda d: d["checkpoints"][1]["covers"].append("py-functions")))
     assert any("unknown lesson" in x for x in errs(lambda d: d["checkpoints"][0]["covers"].append("nope")))

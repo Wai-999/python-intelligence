@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LESSONS } from "../content/lessons";
 import { buildModel, ordered } from "../learner/model";
 import { buildGraph, isUnlocked, recommendNext } from "./graph";
-import { DIAGNOSTIC, diagnosticEvents, placement, type Answer, type Diagnostic } from "./placement";
+import { DIAGNOSTIC, diagnosticEvents, fingerprint, placement, type Answer, type Diagnostic } from "./placement";
 
 const graph = buildGraph(LESSONS);
 let n = 0;
@@ -96,5 +96,48 @@ describe("placement check", () => {
     const evs = diagnosticEvents(DIAGNOSTIC, "r", upTo(DIAGNOSTIC, 2), stamp("2026-11-14T10:00:00Z"));
     const bad = [{ ...evs[0]!, id: "x1", stepId: "diagnostic:nocolon" }, { ...evs[0]!, id: "x2", task: "quiz" as const }];
     expect(placement(DIAGNOSTIC, bad).at).toBeNull();
+  });
+
+  describe("content changes between runs", () => {
+    const clone = (): Diagnostic => JSON.parse(JSON.stringify(DIAGNOSTIC));
+    const run = (d: Diagnostic) => diagnosticEvents(d, "r", upTo(d, 2), stamp("2026-11-14T10:00:00Z"));
+    it("a run on today's content places normally", () => {
+      expect(placement(DIAGNOSTIC, run(DIAGNOSTIC)).outdated).toBe(false);
+    });
+    it("a changed answer or coverage makes an older run place nothing, and says so", () => {
+      const old = run(DIAGNOSTIC);
+      const answer = clone();
+      answer.checkpoints[0]!.questions[0]!.answer = 1;
+      const coverage = clone();
+      coverage.checkpoints[1]!.covers = [...coverage.checkpoints[1]!.covers].reverse();
+      for (const d of [answer, coverage]) {
+        expect(fingerprint(d)).not.toBe(fingerprint(DIAGNOSTIC));
+        const p = placement(d, old);
+        expect(p.outdated).toBe(true);
+        expect(p.testedOut.size).toBe(0);
+        expect(p.at).toBe("2026-11-14T10:00:00Z");
+        expect(recommendNext(graph, new Map(), undefined, p.testedOut)).toEqual({ kind: "next", lessonId: "py-values-names" });
+      }
+    });
+    it("wording and explanations can change without invalidating a run", () => {
+      const reworded = clone();
+      reworded.checkpoints[0]!.questions[0]!.prompt = "What gets printed?";
+      reworded.checkpoints[0]!.questions[0]!.explanation = "Reworded.";
+      expect(placement(reworded, run(DIAGNOSTIC)).outdated).toBe(false);
+    });
+    it("an imported run without a fingerprint, or mixing two, fails closed", () => {
+      const legacy = run(DIAGNOSTIC).map((e) => ({ ...e, policy: "placement-1" }));
+      expect(placement(DIAGNOSTIC, legacy).outdated).toBe(true);
+      const mixed = run(DIAGNOSTIC).map((e, i) => (i === 0 ? { ...e, policy: "placement-1@00000000" } : e));
+      expect(placement(DIAGNOSTIC, mixed).testedOut.size).toBe(0);
+    });
+    it("a retake on the new content places again", () => {
+      const changed = clone();
+      changed.checkpoints[0]!.questions[0]!.answer = 1;
+      const later = diagnosticEvents(changed, "r2", upTo(changed, 1), stamp("2026-11-15T10:00:00Z"));
+      const p = placement(changed, [...run(DIAGNOSTIC), ...later]);
+      expect(p.outdated).toBe(false);
+      expect(p.testedOut).toEqual(new Set(changed.checkpoints[0]!.covers));
+    });
   });
 });
