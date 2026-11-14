@@ -329,6 +329,11 @@
           "name": "up, down and flat",
           "code": "assert [direction(lambda x: x * x, x) for x in (2.0, -2.0, 0.0)] == ['up', 'down', 'flat']",
           "concept": "finite-differences"
+        },
+        {
+          "name": "the flat band is plus or minus 1e-6",
+          "code": "assert [direction(lambda x: c * x, 0.0) for c in (5e-7, -5e-7, 2e-6, -2e-6)] == ['flat', 'flat', 'up', 'down']",
+          "concept": "finite-differences"
         }
       ],
       "solution": "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n"

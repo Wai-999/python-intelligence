@@ -342,6 +342,16 @@
           "name": "a later price replaces an earlier one",
           "code": "assert price_index([('Tea', 2), ('tea', 3)]) == {'tea': 3}",
           "concept": "dict-comprehensions"
+        },
+        {
+          "name": "negative prices are left out",
+          "code": "assert price_index([('Bad', -1), ('Ok', 1)]) == {'ok': 1}",
+          "concept": "dict-comprehensions"
+        },
+        {
+          "name": "square_evens uses a list comprehension",
+          "code": "import ast\n_fn = next(n for n in ast.walk(ast.parse(__source__)) if isinstance(n, ast.FunctionDef) and n.name == 'square_evens')\nassert any(isinstance(n, ast.ListComp) for n in ast.walk(_fn)), 'build the list with a list comprehension'",
+          "concept": "list-comprehensions"
         }
       ],
       "solution": "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n"

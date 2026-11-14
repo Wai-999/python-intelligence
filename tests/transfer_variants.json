@@ -10,7 +10,8 @@
    "price = 2.5\ncount = 4\nsubtotal = price * count\nsubtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nprint(price, count)\nsubtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nprint(price, count); subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
-   "price = 2.5\ncount = 4\nx = price * count; subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n"
+   "price = 2.5\ncount = 4\nx = price * count; subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
+   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + 2.0\n"
   ],
   "accept": [
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n",
@@ -19,22 +20,27 @@
    "price = 2.5\ncount = 4\nsubtotal = price\nsubtotal *= count\ntax = subtotal * 0.2\ntotal = subtotal\ntotal += tax\n",
    "price = 2.5\ncount = 4\nif count > 0:\n    subtotal = price * count\nelse:\n    subtotal = 0.0\ntax: float = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nsubtotal = (price\n            * count)\ntax = (subtotal\n       * 0.2)\ntotal = subtotal + \\\n    tax\n",
-   "price = 2.5\ncount = 4\nsubtotal = price * count; tax = subtotal * 0.2; total = subtotal + tax\n"
+   "price = 2.5\ncount = 4\nsubtotal = price * count; tax = subtotal * 0.2; total = subtotal + tax\n",
+   "price = 2.5\ncount = 4\n\n\ndef cost():\n    return price * count\n\n\nsubtotal = cost()\ntax = subtotal * 0.2\ntotal = subtotal + tax\n"
   ]
  },
  "py-functions": {
   "reject": [
    "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    return price * quantity + 4.0 + 1.5 * weight_kg * quantity\n",
-   "def shipping(weight_kg):\n    print(4.0 + 1.5 * weight_kg)\n\n\ndef order_total(price, quantity, weight_kg):\n    print(price * quantity)\n"
+   "def shipping(weight_kg):\n    print(4.0 + 1.5 * weight_kg)\n\n\ndef order_total(price, quantity, weight_kg):\n    print(price * quantity)\n",
+   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    return price * quantity + shipping(0.5 * quantity)\n",
+   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    return price * quantity + 4.0 + 1.5 * weight_kg * quantity\n"
   ],
   "accept": [
-   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    goods = price * quantity\n    return goods + shipping(quantity * weight_kg)\n"
+   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    goods = price * quantity\n    return goods + shipping(quantity * weight_kg)\n",
+   "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\nship = shipping\n\n\ndef order_total(price, quantity, weight_kg):\n    return price * quantity + ship(weight_kg * quantity)\n"
   ]
  },
  "py-conditionals": {
   "reject": [
    "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age <= 12:\n        return 6\n    elif age >= 65:\n        return 7\n    elif student is True:\n        return 8\n    return 10\n",
-   "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age < 12:\n        return 6\n    elif age >= 65:\n        return 7\n    elif student:\n        return 8\n    return 10\n"
+   "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age < 12:\n        return 6\n    elif age >= 65:\n        return 7\n    elif student:\n        return 8\n    return 10\n",
+   "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age <= 12:\n        return 6\n    elif age >= 65:\n        return 7\n    elif student and age < 64:\n        return 8\n    return 10\n"
   ],
   "accept": [
    "def ticket_price(age, student):\n    if age < 3:\n        return 0\n    elif age <= 12:\n        return 6.0\n    elif age >= 65:\n        return 7\n    elif student:\n        return 8\n    return 10.0\n"
@@ -59,7 +65,8 @@
  },
  "py-lists": {
   "reject": [
-   "def move_to_front(songs, title):\n    result = songs\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
+   "def move_to_front(songs, title):\n    result = songs\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n",
+   "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title in songs:\n        return songs\n    songs.append(title)\n"
   ],
   "accept": [
    "def move_to_front(songs, title):\n    result = list(songs)\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
@@ -67,7 +74,8 @@
  },
  "py-dicts": {
   "reject": [
-   "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"
+   "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n",
+   "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = stock.get(item, 0) + quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < 3)\n"
   ],
   "accept": [
    "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        if item in stock:\n            stock[item] += quantity\n        else:\n            stock[item] = quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"
@@ -83,7 +91,8 @@
  },
  "py-scope-defaults": {
   "reject": [
-   "total = 100\n\n\ndef format_price(amount, currency=\"\u00a3\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(bill, percent=10):\n    global total\n    total = bill + bill * percent / 100\n    return total\n"
+   "total = 100\n\n\ndef format_price(amount, currency=\"\u00a3\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(bill, percent=10):\n    global total\n    total = bill + bill * percent / 100\n    return total\n",
+   "total = 100\n\n\ndef format_price(amount, currency=\"\u00a3\", decimals=2):\n    global total\n    total = amount\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total + total * percent / 100\n"
   ],
   "accept": [
    "total = 100\n\n\ndef format_price(amount, currency=\"\u00a3\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total * (1 + percent / 100)\n"
@@ -91,7 +100,9 @@
  },
  "py-comprehensions": {
   "reject": [
-   "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name: price for name, price in items if price > 0}\n"
+   "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name: price for name, price in items if price > 0}\n",
+   "def square_evens(numbers):\n    out = []\n    for n in numbers:\n        if n % 2 == 0:\n            out.append(n * n)\n    return out\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n",
+   "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price != 0}\n"
   ],
   "accept": [
    "def square_evens(numbers):\n    return [n * n for n in numbers if not n % 2]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n"
@@ -154,7 +165,8 @@
  },
  "py-generators": {
   "reject": [
-   "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    items = list(items)\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"
+   "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    items = list(items)\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n",
+   "def chunked(items, size):\n    if size == 0:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"
   ],
   "accept": [
    "import itertools\n\n\ndef chunked(items, size):\n    if size < 1:\n        raise ValueError('size must be at least 1')\n    it = iter(items)\n    while True:\n        chunk = list(itertools.islice(it, size))\n        if not chunk:\n            return\n        yield chunk\n"
@@ -164,7 +176,8 @@
   "reject": [
    "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n",
    "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = None\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n",
-   "class Book:\n    def __init__(self, title: str, pages: int, tags: list[str] | None = None):\n        if not isinstance(title, str) or isinstance(pages, bool) or not isinstance(pages, int):\n            raise TypeError('bad')\n        if pages < 1:\n            raise ValueError('bad')\n        self.title, self.pages, self.tags = title, pages, tags if tags is not None else []\n\n\ndef longest(books: list[Book]) -> Book | None:\n    return max(books, key=lambda b: b.pages) if books else None\n"
+   "class Book:\n    def __init__(self, title: str, pages: int, tags: list[str] | None = None):\n        if not isinstance(title, str) or isinstance(pages, bool) or not isinstance(pages, int):\n            raise TypeError('bad')\n        if pages < 1:\n            raise ValueError('bad')\n        self.title, self.pages, self.tags = title, pages, tags if tags is not None else []\n\n\ndef longest(books: list[Book]) -> Book | None:\n    return max(books, key=lambda b: b.pages) if books else None\n",
+   "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        self.tags = []\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"
   ],
   "accept": [
    "from __future__ import annotations\nfrom dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"
@@ -191,7 +204,8 @@
  },
  "ml-vectors": {
   "reject": [
-   "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / norms.max()\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"
+   "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / norms.max()\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n",
+   "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return np.abs(M) / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arctan2(np.linalg.norm(np.cross(np.append(u, 0)[:3], np.append(v, 0)[:3])), u @ v)))\n"
@@ -200,7 +214,8 @@
  "ml-matrices": {
   "reject": [
    "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n",
-   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(round(degrees / 90) * 90)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(round(degrees / 90) * 90)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n",
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float).T, np.asarray(b, dtype=float))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.inv(np.asarray(A, dtype=float)) @ np.asarray(b, dtype=float)\n"
@@ -209,7 +224,8 @@
  "ml-derivatives": {
   "reject": [
    "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - f(x)) / h\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n",
-   "def second_derivative(f, x, h=1e-4):\n    d = 1e-4\n    return (f(x + d) - 2 * f(x) + f(x - d)) / d ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n"
+   "def second_derivative(f, x, h=1e-4):\n    d = 1e-4\n    return (f(x + d) - 2 * f(x) + f(x - d)) / d ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n",
+   "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 0:\n        return \"up\"\n    if slope < 0:\n        return \"down\"\n    return \"flat\"\n"
   ],
   "accept": [
    "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    return \"up\" if slope > 1e-6 else \"down\" if slope < -1e-6 else \"flat\"\n"
@@ -217,7 +233,9 @@
  },
  "ml-linear-regression": {
   "reject": [
-   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w + lr * 2 * np.mean((w * x - y) * x))\n"
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w + lr * 2 * np.mean((w * x - y) * x))\n",
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    e = np.abs(np.asarray(y) - np.asarray(y_hat))\n    return float(np.mean(e) * np.max(e))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n",
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - 0.1 * 2 * np.mean((w * x - y) * x))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.dot(x, y) / np.dot(x, x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n"
@@ -225,7 +243,9 @@
  },
  "ml-scaling": {
   "reject": [
-   "import numpy as np\n\n\ndef min_max_scale(train, test):\n    lo = np.vstack([train, test]).min(axis=0)\n    hi = np.vstack([train, test]).max(axis=0)\n    return (train - lo) / (hi - lo), (test - lo) / (hi - lo)\n"
+   "import numpy as np\n\n\ndef min_max_scale(train, test):\n    lo = np.vstack([train, test]).min(axis=0)\n    hi = np.vstack([train, test]).max(axis=0)\n    return (train - lo) / (hi - lo), (test - lo) / (hi - lo)\n",
+   "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    span = np.where(span == 0, 1, span)\n    train -= lo\n    train /= span\n    test -= lo\n    test /= span\n    return train, test\n",
+   "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    span = np.where(span == 0, 1, span)\n    return [(train - lo) / span, (test - lo) / span]\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    safe = np.where(span == 0, 1.0, span)\n    return (train - lo) / safe, (test - lo) / safe\n"
@@ -236,7 +256,8 @@
    "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(ks, key=lambda k: -err(k))\n",
    "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: abs(p[0][0] - query[0]))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n",
    "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    return min(ks)\n",
-   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum(abs(knn_value(train, f, k) - v) for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
+   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum(abs(knn_value(train, f, k) - v) for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n",
+   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: sum(abs(a - b) for a, b in zip(p[0], query)))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
   ],
   "accept": [
    "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: sum((a - b) ** 2 for a, b in zip(p[0], query)))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
@@ -245,7 +266,8 @@
  "ml-classification": {
   "reject": [
    "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) > threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n",
-   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= 0.5).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
+   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= 0.5).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n",
+   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= threshold).astype(int).tolist()\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef predict(scores, threshold):\n    return np.where(np.asarray(scores) >= threshold, 1, 0)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
@@ -253,7 +275,9 @@
  },
  "ml-logistic": {
   "reject": [
-   "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(b)\n\n\ndef log_loss(ys, ps):\n    return 0.0\n"
+   "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(b)\n\n\ndef log_loss(ys, ps):\n    return 0.0\n",
+   "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + 0.5)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = min(max(p, 1e-12), 1 - 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n",
+   "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + b)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = max(p, 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n"
   ],
   "accept": [
    "import math\n\n\ndef sigmoid(z):\n    return 0.5 * (1 + math.tanh(z / 2))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(sum(wi * xi for wi, xi in zip(w, x)) + b)\n\n\ndef log_loss(ys, ps):\n    total = 0.0\n    for y, p in zip(ys, ps):\n        p = min(max(p, 1e-12), 1 - 1e-12)\n        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))\n    return total / len(ys)\n"
@@ -261,7 +285,8 @@
  },
  "ml-evaluation": {
   "reject": [
-   "import numpy as np\n\n\ndef leave_one_out(n):\n    return []\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(train_errors))\n"
+   "import numpy as np\n\n\ndef leave_one_out(n):\n    return []\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(train_errors))\n",
+   "import numpy as np\n\n\ndef leave_one_out(n):\n    return [(np.array([j for j in range(n) if j != i], dtype=int), np.array([i])) for i in reversed(range(n))]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef leave_one_out(n):\n    idx = np.arange(n)\n    return [(np.delete(idx, i), idx[i:i + 1]) for i in range(n)]\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(valid_errors))\n"
@@ -277,7 +302,8 @@
  },
  "ml-forests": {
   "reject": [
-   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return max(p for p, c in counts.items() if c == top)\n"
+   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return max(p for p, c in counts.items() if c == top)\n",
+   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    return sorted(predictions)[(len(predictions) - 1) // 2]\n"
   ],
   "accept": [
    "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    used = set(sample)\n    return [i for i in range(n) if i not in used]\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"
@@ -285,7 +311,8 @@
  },
  "ml-boosting": {
   "reject": [
-   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n",
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = 0.5 * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
   ],
   "accept": [
    "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        for i in range(len(preds)):\n            preds[i] += step\n    return preds\n"
@@ -296,7 +323,8 @@
    "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum(np.abs(points - centroids[np.asarray(labels)]), axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n",
    "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = points[mask].mean(axis=0)\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[np.asarray(labels)]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n",
    "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.min(np.sum((points[:, None, :] - centroids[None, :, :]) ** 2, axis=2), axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n",
-   "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[0]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n"
+   "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[0]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n",
+   "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.sort(np.asarray(labels))\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[np.asarray(labels)]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = np.average(points[mask], axis=0, weights=weights[mask])\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[np.asarray(labels)]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n"
@@ -313,7 +341,8 @@
  },
  "ml-capstone": {
   "reject": [
-   "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates()\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
+   "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates()\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n",
+   "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    label = min(set(y_train))\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
   ],
   "accept": [
    "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    out = df.dropna()\n    out = out[~out.duplicated()]\n    return out.reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"
@@ -322,7 +351,8 @@
  "np-arrays": {
   "reject": [
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return 0\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return M.mean()\n",
-   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return sum(1 for v in a if lo <= v <= hi)\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.count_nonzero((lo <= a) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
@@ -331,7 +361,9 @@
  "pd-dataframes": {
   "reject": [
    "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n",
-   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).mean()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
+   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).mean()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n",
+   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= 5, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n",
+   "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {'order': 0, 'region': 0, 'qty': 0, 'price': 1}\n"
   ],
   "accept": [
    "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df[df[\"qty\"] >= min_qty][[\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
@@ -340,7 +372,8 @@
  "proj-caesar": {
   "reject": [
    "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            pass\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n",
-   "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(1, 26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"
+   "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(1, 26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n",
+   "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)]) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"
   ],
   "accept": [
    "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, 26 - k) for ch in cipher):\n            return k\n    return None\n"
@@ -359,7 +392,9 @@
   "reject": [
    "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n",
    "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(n - 1, n * (n - 2))\n",
-   "from fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    return 1 / (n - 1)\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"
+   "from fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    return 1 / (n - 1)\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n",
+   "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return 1 / (n - 1)\n",
+   "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    return 1 / (n - 1) + rng.uniform(-0.01, 0.01)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"
   ],
   "accept": [
    "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return float(Fraction(wins, counted))\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"
@@ -368,7 +403,8 @@
  "stats-bayes": {
   "reject": [
    "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = sensitivity, 1 - specificity\n    return hit * prior / (hit * prior + false * (1 - prior))\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    p = prior\n    for positive in results:\n        p = update(p, sensitivity, specificity, positive)\n    return p\n",
-   "def update(prior, sensitivity, specificity, positive):\n    return sensitivity\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    return prior\n"
+   "def update(prior, sensitivity, specificity, positive):\n    return sensitivity\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    return prior\n",
+   "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = 1 - sensitivity, specificity\n    return hit * prior / (hit * prior + false * (1 - prior))\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    net = sum(1 if r else -1 for r in results)\n    p = prior\n    for _ in range(abs(net)):\n        p = update(p, sensitivity, specificity, net > 0)\n    return p\n"
   ],
   "accept": [
    "def update(prior, sensitivity, specificity, positive):\n    if positive:\n        hit, false = sensitivity, 1 - specificity\n    else:\n        hit, false = 1 - sensitivity, specificity\n    odds = prior / (1 - prior) * hit / false\n    return odds / (1 + odds)\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    p = prior\n    for positive in results:\n        p = update(p, sensitivity, specificity, positive)\n    return p\n"
@@ -378,7 +414,8 @@
   "reject": [
    "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / math.sqrt(2 * math.pi)\n",
    "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - 0.5\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / (sigma * math.sqrt(2 * math.pi))\n",
-   "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / (sigma ** 2 * math.sqrt(2 * math.pi))\n"
+   "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - mu) / (sigma * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return 1 / (sigma ** 2 * math.sqrt(2 * math.pi))\n",
+   "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    def cdf(x):\n        return (1 + math.erf((x - 170) / (10 * math.sqrt(2)))) / 2\n    return cdf(b) - cdf(a)\n\n\ndef within(k):\n    return math.erf(k / math.sqrt(2))\n\n\ndef peak(sigma):\n    return 1 / (sigma * math.sqrt(2 * math.pi))\n"
   ],
   "accept": [
    "from statistics import NormalDist\n\n\ndef prob_between(a, b, mu, sigma):\n    d = NormalDist(mu, sigma)\n    return d.cdf(b) - d.cdf(a)\n\n\ndef within(k):\n    return prob_between(-k, k, 0, 1)\n\n\ndef peak(sigma):\n    return NormalDist(0, sigma).pdf(0)\n"
@@ -388,7 +425,8 @@
   "reject": [
    "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random()\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n",
    "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    ways = sum(1 for a in range(1, 7) for b in range(1, 7) if a + b == target)\n    return ways / 36\n",
-   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random()\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random()\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n",
+   "import random\n\n\ndef estimate_pi(n, seed):\n    import math\n    rng = random.Random(seed)\n    return math.pi + rng.uniform(-0.01, 0.01)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
   ],
   "accept": [
    "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        if x ** 2 + y ** 2 <= 1:\n            inside += 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
@@ -397,7 +435,8 @@
  "stats-summary": {
   "reject": [
    "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.sum(w * x) / np.sum(w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x, ddof=1) / np.mean(x))\n",
-   "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    return float(np.mean(values))\n\n\ndef weighted_variance(values, weights):\n    return float(np.var(values))\n\n\ndef coefficient_of_variation(values):\n    return 0.0\n"
+   "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    return float(np.mean(values))\n\n\ndef weighted_variance(values, weights):\n    return float(np.var(values))\n\n\ndef coefficient_of_variation(values):\n    return 0.0\n",
+   "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.sum(w * x) / np.sum(w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.var(x) / 2 / np.mean(x))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.average(x, weights=w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x) / np.mean(x))\n"

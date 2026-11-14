@@ -527,6 +527,11 @@
           "name": "the steps fit together",
           "code": "import pandas as pd\ndf = pd.DataFrame({'f': [1, 2, 2, None], 'label': [1, 0, 0, 1]})\nc = clean(df)\nassert majority_baseline(c['label'], c['label']) == 0.5 and leaky_columns(c, 'label') == []",
           "concept": "ml-pipeline"
+        },
+        {
+          "name": "the majority isn't always the smallest label",
+          "code": "assert majority_baseline([2, 2, 2, 1, 0], [2, 2, 0, 1]) == 0.5 and abs(majority_baseline([0, 1, 1], [1, 1, 0]) - 2 / 3) < 1e-12",
+          "concept": "baselines"
         }
       ],
       "solution": "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    return sorted(c for c in df.columns if c != target and df[c].equals(df[target]))\n"

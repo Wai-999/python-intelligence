@@ -324,6 +324,11 @@
           "name": "works on big arrays quickly",
           "code": "import numpy as np\na = np.arange(-500_000, 500_000)\nassert count_in_range(a, 0, 9) == 10 and zero_negatives(a).min() == 0",
           "concept": "vectorization"
+        },
+        {
+          "name": "no Python loops",
+          "code": "import ast\n_tree = ast.parse(__source__)\nfor _name in ('count_in_range', 'zero_negatives', 'column_means'):\n    _fn = next(n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef) and n.name == _name)\n    _loops = [n for n in ast.walk(_fn) if isinstance(n, (ast.For, ast.While, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))]\n    assert not _loops, f'{_name} uses a Python loop; use masks and numpy functions instead'",
+          "concept": "vectorization"
         }
       ],
       "solution": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"

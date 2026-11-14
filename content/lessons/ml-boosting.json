@@ -372,6 +372,11 @@
           "name": "training error never grows",
           "code": "ys = [1.0, 2.0, 9.0]\ndef sse(r):\n    preds = boost(ys, r, 0.3)\n    return sum((y - p) ** 2 for y, p in zip(ys, preds))\nerrs = [sse(r) for r in range(8)]\nassert all(b <= a + 1e-12 for a, b in zip(errs, errs[1:])), errs",
           "concept": "boosting"
+        },
+        {
+          "name": "the learning rate is used",
+          "code": "assert all(abs(p - 0.6) < 1e-12 for p in boost([2.0, 4.0], 1, 0.2)) and all(abs(p - 1.3125) < 1e-12 for p in boost([2.0, 4.0], 2, 0.25))\nassert boost([2.0, 4.0], 3, 0) == [0.0, 0.0]",
+          "concept": "shrinkage"
         }
       ],
       "solution": "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"

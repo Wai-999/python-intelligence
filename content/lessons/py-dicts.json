@@ -333,6 +333,11 @@
           "name": "nothing low",
           "code": "assert low_stock({'pen': 5}, 3) == [] and low_stock({}, 3) == []",
           "concept": "key-lookup"
+        },
+        {
+          "name": "the limit is used",
+          "code": "stock = {'a': 1, 'b': 5, 'c': 3}\nassert low_stock(stock, 1) == [] and low_stock(stock, 5) == ['a', 'c'] and low_stock(stock, 6) == ['a', 'b', 'c']",
+          "concept": "key-lookup"
         }
       ],
       "solution": "def restock(stock, deliveries):\n    for pair in deliveries:\n        item, quantity = pair[0], pair[1]\n        stock[item] = stock.get(item, 0) + quantity\n\n\ndef low_stock(stock, limit):\n    return sorted(name for name in stock if stock[name] < limit)\n"

@@ -444,6 +444,11 @@
           "name": "each neighbourhood uses its own shop",
           "code": "import numpy as np\nP = np.array([[0.0, 0.0], [10.0, 0.0], [1.0, 0.0]])\nout = weighted_inertia(P, np.array([1.0, 2.0, 3.0]), np.array([0, 1, 1]), np.array([[0.0, 0.0], [10.0, 0.0]]))\nassert abs(out - 243.0) < 1e-9, 'use the shop given by labels, even if another is nearer'",
           "concept": "inertia"
+        },
+        {
+          "name": "labels stay with their points",
+          "code": "import numpy as np\nP = np.array([[10.0, 10.0], [0.0, 0.0], [4.0, 0.0]])\nC = weighted_update(P, np.array([5.0, 3.0, 1.0]), np.array([1, 0, 0]), np.array([[9.0, 9.0], [0.0, 0.0]]))\nassert np.allclose(C, [[1, 0], [10, 10]]), C\nout = weighted_inertia(np.array([[1.0, 0.0], [10.0, 0.0], [0.0, 0.0]]), np.array([3.0, 2.0, 1.0]), np.array([1, 0, 1]), np.array([[10.0, 0.0], [0.0, 0.0]]))\nassert abs(out - 3.0) < 1e-9, out",
+          "concept": "k-means"
         }
       ],
       "solution": "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[np.asarray(labels)]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n"

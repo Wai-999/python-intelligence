@@ -417,6 +417,11 @@
           "name": "a size below 1 is refused",
           "code": "try:\n    next(chunked([1], 0))\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('chunked(items, 0) should raise ValueError')",
           "concept": "generators"
+        },
+        {
+          "name": "any size below 1 is refused",
+          "code": "for items, size in (([1], -2), ([], -1), ([], 0)):\n    try:\n        next(chunked(items, size))\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'chunked({items!r}, {size}) should raise ValueError')",
+          "concept": "generators"
         }
       ],
       "solution": "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"

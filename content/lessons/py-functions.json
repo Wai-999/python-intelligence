@@ -256,8 +256,13 @@
         },
         {
           "name": "order_total uses shipping",
-          "code": "_real = shipping\nshipping = lambda w: 100.0\ntry:\n    got = order_total(1, 1, 1)\nfinally:\n    shipping = _real\nassert got == 101.0, 'order_total should call shipping instead of repeating its formula'",
+          "code": "import ast\n_fn = next(n for n in ast.walk(ast.parse(__source__)) if isinstance(n, ast.FunctionDef) and n.name == 'order_total')\n_nums = {c.value for c in ast.walk(_fn) if isinstance(c, ast.Constant) and type(c.value) in (int, float)}\nassert not ({4.0, 1.5} & _nums), \"order_total should call shipping instead of repeating its formula (4.0 + 1.5 per kg)\"\nassert any(isinstance(c, ast.Call) for c in ast.walk(_fn)), 'order_total should call shipping'",
           "concept": "functions"
+        },
+        {
+          "name": "order_total uses each argument",
+          "code": "assert order_total(2, 4, 1.25) == 19.5 and order_total(5, 1, 0) == 9.0, (order_total(2, 4, 1.25), order_total(5, 1, 0))",
+          "concept": "parameters"
         }
       ],
       "solution": "def shipping(weight_kg):\n    return 4.0 + 1.5 * weight_kg\n\n\ndef order_total(price, quantity, weight_kg):\n    return price * quantity + shipping(weight_kg * quantity)\n"

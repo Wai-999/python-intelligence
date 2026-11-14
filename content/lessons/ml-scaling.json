@@ -387,6 +387,11 @@
           "name": "a constant column: its span of 0 is replaced by 1",
           "code": "import numpy as np\ntr, te = min_max_scale(np.array([[3.0, 1.0], [3.0, 2.0]]), np.array([[4.0, 1.5]]))\nassert np.allclose(tr[:, 0], 0) and np.allclose(te[:, 0], 1) and np.allclose(te[:, 1], 0.5), (tr, te)",
           "concept": "standardization"
+        },
+        {
+          "name": "the inputs are unchanged and a tuple comes back",
+          "code": "import numpy as np\ntrain, test = np.array([[0.0, 10.0], [10.0, 30.0]]), np.array([[5.0, 20.0]])\na, b = train.copy(), test.copy()\nout = min_max_scale(train, test)\nassert np.array_equal(train, a) and np.array_equal(test, b), 'scale copies; leave the inputs alone'\nassert isinstance(out, tuple) and len(out) == 2, 'return a tuple of two arrays'",
+          "concept": "feature-scaling"
         }
       ],
       "solution": "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    span = np.where(span == 0, 1, span)\n    return (train - lo) / span, (test - lo) / span\n"

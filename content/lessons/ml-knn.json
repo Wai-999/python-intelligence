@@ -413,6 +413,11 @@
           "name": "ties go to the smaller k",
           "code": "train = [((0,), 1.0), ((10,), 1.0)]\nassert best_k(train, [((5,), 1.0)], [2, 1]) == 1",
           "concept": "hyperparameters"
+        },
+        {
+          "name": "Euclidean, not Manhattan, distance",
+          "code": "train = [((0, 5), 1.0), ((3, 3), 2.0)]\nassert knn_value(train, (0, 0), 1) == 2.0, '(3, 3) is nearer by Euclidean distance (4.24 against 5)'",
+          "concept": "k-nearest-neighbours"
         }
       ],
       "solution": "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"

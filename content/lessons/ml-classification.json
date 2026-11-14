@@ -381,6 +381,11 @@
           "name": "zero denominators give 0.0",
           "code": "assert precision_recall([1, 1], [0, 0]) == (0.0, 0.0) and precision_recall([0, 0], [0, 0]) == (0.0, 0.0)",
           "concept": "classification"
+        },
+        {
+          "name": "predict returns a numpy array",
+          "code": "import numpy as np\nassert isinstance(predict([0.1, 0.7], 0.5), np.ndarray)",
+          "concept": "decision-boundary"
         }
       ],
       "solution": "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"

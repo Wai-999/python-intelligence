@@ -389,6 +389,11 @@
           "name": "relative spread",
           "code": "assert abs(coefficient_of_variation([2, 4, 4, 4, 5, 5, 7, 9]) - 0.4) < 1e-12 and coefficient_of_variation([5, 5]) == 0",
           "concept": "standard-deviation"
+        },
+        {
+          "name": "the standard deviation, whatever the scale",
+          "code": "assert abs(coefficient_of_variation([1, 2, 3]) - 0.408248290463863) < 1e-12\nassert abs(coefficient_of_variation([10, 20, 30]) - coefficient_of_variation([1, 2, 3])) < 1e-12",
+          "concept": "standard-deviation"
         }
       ],
       "solution": "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    return float(np.sum(w * x) / np.sum(w))\n\n\ndef weighted_variance(values, weights):\n    x, w = np.asarray(values, dtype=float), np.asarray(weights, dtype=float)\n    m = np.sum(w * x) / np.sum(w)\n    return float(np.sum(w * (x - m) ** 2) / np.sum(w))\n\n\ndef coefficient_of_variation(values):\n    x = np.asarray(values, dtype=float)\n    return float(np.std(x) / np.mean(x))\n"

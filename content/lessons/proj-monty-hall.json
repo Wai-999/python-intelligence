@@ -316,6 +316,16 @@
           "name": "it really simulates",
           "code": "values = {simulate(3, 300, seed) for seed in range(6)}\nassert len(values) > 1, 'different seeds should give slightly different estimates: play the games'\nassert all(0 <= v <= 1 for v in values)",
           "concept": "monte-carlo-estimates"
+        },
+        {
+          "name": "an exact Fraction",
+          "code": "from fractions import Fraction\nassert isinstance(exact(3), Fraction) and exact(4) == Fraction(1, 3)",
+          "concept": "exact-probabilities"
+        },
+        {
+          "name": "the estimate is a share of games played",
+          "code": "for seed in range(6):\n    v = simulate(3, 10, seed)\n    assert any(abs(v * k - round(v * k)) < 1e-9 for k in range(1, 11)), f'with 10 games the estimate must be wins / counted games, got {v}'",
+          "concept": "monte-carlo-estimates"
         }
       ],
       "solution": "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"

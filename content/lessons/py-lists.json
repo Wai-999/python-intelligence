@@ -323,6 +323,11 @@
           "name": "add_unique skips duplicates",
           "code": "songs = ['a', 'b']\nadd_unique(songs, 'a')\nassert songs == ['a', 'b']",
           "concept": "lists"
+        },
+        {
+          "name": "add_unique returns nothing either way",
+          "code": "assert add_unique(['a'], 'a') is None and add_unique(['a'], 'b') is None",
+          "concept": "mutability"
         }
       ],
       "solution": "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"

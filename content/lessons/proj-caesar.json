@@ -319,6 +319,11 @@
           "name": "finds the Caesar shift by trying them all",
           "code": "assert find_shift('wkh txlfn eurzq ira', 'quick') == 3 and find_shift('abc', 'zzz') is None and find_shift('hello', 'hello') == 0",
           "concept": "brute-force-search"
+        },
+        {
+          "name": "upper-case keywords",
+          "code": "assert vigenere('attack', 'LEMON') == 'lxfopv' and unvigenere('LXFOPV', 'Lemon') == 'ATTACK'",
+          "concept": "modular-arithmetic"
         }
       ],
       "solution": "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"

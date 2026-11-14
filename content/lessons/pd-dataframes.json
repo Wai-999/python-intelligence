@@ -375,6 +375,11 @@
           "name": "the input DataFrame is unchanged",
           "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3, 4, 5], 'region': ['north', 'south', 'north', 'east', 'south'],\n    'qty': [2, 5, 1, 10, 3], 'price': [10.0, 2.0, float('nan'), 1.5, 4.0]})\nbefore = df.copy()\nrevenue_by_region(df)\nbig_orders(df, 2)\nassert df.equals(before)",
           "concept": "dataframes"
+        },
+        {
+          "name": "other thresholds and other frames",
+          "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3, 4, 5], 'region': ['north', 'south', 'north', 'east', 'south'],\n    'qty': [2, 5, 1, 10, 3], 'price': [10.0, 2.0, float('nan'), 1.5, 4.0]})\nassert big_orders(df, 3)['order'].tolist() == [2, 4, 5] and big_orders(df, 11).empty\nother = pd.DataFrame({'x': [None, 1.0, None], 'y': ['a', None, 'c']})\nassert missing_counts(other) == {'x': 2, 'y': 1}, missing_counts(other)",
+          "concept": "missing-data"
         }
       ],
       "solution": "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"
