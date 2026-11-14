@@ -13,7 +13,7 @@ describe("tutor feedback for verified failures", () => {
     const fb = feedbackForError({ type: "IndexError", message: "list index out of range", line: 7, summary: "" });
     expect(fb.diagnosis).toContain("Line 7");
     expect(fb.diagnosis).toContain("list index out of range");
-    expect(fb.question).toContain("its last index is len(x) - 1");
+    expect(fb.question).toContain("If it isn't empty, its last index is len(x) - 1");
     expect(fb.question).toContain("an empty one has no valid index"); // len(x) - 1 is -1 for an empty list, still out of range
     expect(fb.action).toMatch(/Print len\(x\)/);
   });
