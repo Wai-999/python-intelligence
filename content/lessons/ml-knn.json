@@ -405,6 +405,11 @@
           "concept": "validation-set"
         },
         {
+          "name": "k is chosen by mean squared error",
+          "code": "train = [((0,), 0.0), ((1,), 4.0), ((2,), 0.0), ((3,), 4.0)]\nassert best_k(train, [((0,), 0.0), ((3,), 0.0)], [1, 2]) == 2, 'k=1 misses by 0 and 4 (squared: 8), k=2 by 2 and 2 (squared: 4); compare squared errors'",
+          "concept": "validation-set"
+        },
+        {
           "name": "ties go to the smaller k",
           "code": "train = [((0,), 1.0), ((10,), 1.0)]\nassert best_k(train, [((5,), 1.0)], [2, 1]) == 1",
           "concept": "hyperparameters"
