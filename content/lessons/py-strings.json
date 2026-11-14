@@ -365,6 +365,11 @@
           "name": "numbers of four digits or fewer are shown whole",
           "code": "assert [mask(c) for c in ('123', '1', '', '12 3')] == ['123', '1', '', '123'], [mask(c) for c in ('123', '1', '', '12 3')]",
           "concept": "slicing"
+        },
+        {
+          "name": "a card of only spaces",
+          "code": "assert brand('   ') == 'unknown' and mask('   ') == ''",
+          "concept": "string-methods"
         }
       ],
       "solution": "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"

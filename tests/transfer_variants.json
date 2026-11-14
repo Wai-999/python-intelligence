@@ -60,7 +60,8 @@
  "py-strings": {
   "reject": [
    "def mask(card):\n    digits = card\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n",
-   "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[len(digits) - 4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
+   "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[len(digits) - 4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n",
+   "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    if not card:\n        return \"unknown\"\n    first = card.replace(\" \", \"\")[0]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
   ],
   "accept": [
    "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return digits[-4:].rjust(len(digits), \"*\")\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
@@ -69,7 +70,8 @@
  "py-lists": {
   "reject": [
    "def move_to_front(songs, title):\n    result = songs\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n",
-   "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title in songs:\n        return songs\n    songs.append(title)\n"
+   "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title in songs:\n        return songs\n    songs.append(title)\n",
+   "def move_to_front(songs, title):\n    if songs and songs[0] == title:\n        return songs\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
   ],
   "accept": [
    "def move_to_front(songs, title):\n    result = list(songs)\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"
@@ -134,7 +136,8 @@
   ],
   "accept": [
    "def parse_age(text):\n    age = int(text)\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n",
-   "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts, parse=parse_age):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse(t))\n        except ValueError:\n            pass\n    return ages\n"
+   "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts, parse=parse_age):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse(t))\n        except ValueError:\n            pass\n    return ages\n",
+   "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts, parse=parse_age):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse(t))\n        except ValueError:\n            pass\n    return ages\n\n\nprint(valid_ages(['3', 'x']))\n"
   ]
  },
  "py-files": {
@@ -261,7 +264,8 @@
    "import numpy as np\n\n\ndef mse(y, y_hat):\n    e = np.abs(np.asarray(y) - np.asarray(y_hat))\n    return float(np.mean(e) * np.max(e))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n",
    "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - 0.1 * 2 * np.mean((w * x - y) * x))\n",
    "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w + abs(lr * 2 * np.mean((w * x - y) * x)))\n",
-   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(abs(np.sum(x * y)) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n"
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(abs(np.sum(x * y)) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n",
+   "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.sum(x * y) / np.sum(x * x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * np.sum((w * x - y) * x))\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef mse(y, y_hat):\n    return float(np.mean((np.asarray(y) - np.asarray(y_hat)) ** 2))\n\n\ndef fit_through_origin(x, y):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(np.dot(x, y) / np.dot(x, x))\n\n\ndef step(w, x, y, lr):\n    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)\n    return float(w - lr * 2 * np.mean((w * x - y) * x))\n"
