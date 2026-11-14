@@ -360,6 +360,11 @@
           "name": "strings come back",
           "code": "assert isinstance(mask('12345678'), str) and isinstance(brand('4'), str)",
           "concept": "strings"
+        },
+        {
+          "name": "numbers of four digits or fewer are shown whole",
+          "code": "assert [mask(c) for c in ('123', '1', '', '12 3')] == ['123', '1', '', '123'], [mask(c) for c in ('123', '1', '', '12 3')]",
+          "concept": "slicing"
         }
       ],
       "solution": "def mask(card):\n    digits = card.replace(\" \", \"\")\n    return \"*\" * (len(digits) - 4) + digits[-4:]\n\n\ndef brand(card):\n    first = card.replace(\" \", \"\")[:1]\n    if first == \"4\":\n        return \"visa\"\n    if first == \"5\":\n        return \"mastercard\"\n    if first == \"3\":\n        return \"amex\"\n    return \"unknown\"\n"
