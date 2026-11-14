@@ -400,6 +400,11 @@
           "concept": "validation-set"
         },
         {
+          "name": "a larger k can win, depending on the validation data",
+          "code": "train = [((0,), 0.0), ((1,), 4.0), ((2,), 0.0), ((3,), 4.0)]\nassert best_k(train, [((1,), 2.0)], [1, 4]) == 4, 'averaging all four points fits this validation value best'\nassert best_k(train, [((1,), 4.0)], [1, 4]) == 1, 'the same k values, different validation targets'",
+          "concept": "validation-set"
+        },
+        {
           "name": "ties go to the smaller k",
           "code": "train = [((0,), 1.0), ((10,), 1.0)]\nassert best_k(train, [((5,), 1.0)], [2, 1]) == 1",
           "concept": "hyperparameters"

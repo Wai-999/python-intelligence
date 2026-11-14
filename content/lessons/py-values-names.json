@@ -136,6 +136,11 @@
           "name": "the starting names are unchanged",
           "code": "assert (price, count) == (2.5, 4), 'keep price = 2.5 and count = 4'",
           "concept": "names"
+        },
+        {
+          "name": "each value is computed from the names before it",
+          "code": "import ast\n_uses = {}\nfor _n in ast.parse(__source__).body:\n    if isinstance(_n, ast.Assign):\n        for _x in _n.targets:\n            if isinstance(_x, ast.Name):\n                _uses[_x.id] = {v.id for v in ast.walk(_n.value) if isinstance(v, ast.Name)}\nassert {'price', 'count'} <= _uses.get('subtotal', set()), 'compute subtotal from price and count'\nassert 'subtotal' in _uses.get('tax', set()), 'compute tax from subtotal'\nassert _uses.get('total', set()) & {'subtotal', 'tax'}, 'compute total from subtotal and tax'",
+          "concept": "expressions"
         }
       ],
       "solution": "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + tax\nprint(total)\n"

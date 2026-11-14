@@ -91,7 +91,8 @@ published, and a 12-word shingle check keeps book text out of lessons and out of
 ## BLOCKED, PARTIAL and UNVERIFIED
 
 - **PARTIAL (§5 optional controls):** "Show execution trace" exists as the call-trace viewer on visual steps, and
-  "Challenge me independently" is each lesson's help-free transfer problem. There is no separate "Why?" button or
+  each lesson's transfer problem is a new problem to attempt independently (its hints and solution stay optional, and
+  any help used is recorded), which is close to "Challenge me independently" but not a dedicated control. There is no separate "Why?" button or
   "Try another example" generator.
 - **BLOCKED (owner gate G-T):** server-side tutor gateway, structured LLM prompts, cost caps. Needs a separately hosted
   server and API keys. GitHub Pages can't host it, and no keys belong in the client.

@@ -85,3 +85,12 @@ def test_a_name_error_raised_inside_a_check_carries_the_bound_names():
     raised, mismatch = result["tests"]
     assert raised["errorType"] == "NameError" and raised["bound"] == ["area", "width"]
     assert mismatch["errorType"] == "AssertionError" and "bound" not in mismatch
+
+
+def test_checks_can_read_the_learner_source():
+    """Structure checks (e.g. "computed from these names") parse __source__; the values alone can't show it."""
+    code = "price = 2.5\ntotal = price * 2\n"
+    res = harness.run_learner(code, [{"name": "source", "code": "assert __source__ == " + repr(code)},
+                                     {"name": "structure", "code": "import ast\nassert any(isinstance(n, ast.Name) and n.id == 'price' "
+                                      "for n in ast.walk(ast.parse(__source__).body[1].value))"}])
+    assert res["ok"] and all(t["passed"] for t in res["tests"]), res

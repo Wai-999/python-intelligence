@@ -2,10 +2,12 @@
  "py-values-names": {
   "reject": [
    "price = 2.5\ncount = 4\n",
-   "price = 2.5\ncount = 4\nsubtotal = 10\ntax = 2\ntotal = 11\n"
+   "price = 2.5\ncount = 4\nsubtotal = 10\ntax = 2\ntotal = 11\n",
+   "price = 2.5\ncount = 4\nsubtotal = 10.0\ntax = 2.0\ntotal = 12.0\nprint(total)\n"
   ],
   "accept": [
-   "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n"
+   "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n",
+   "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = tax + subtotal\n"
   ]
  },
  "py-functions": {
@@ -219,7 +221,8 @@
  "ml-knn": {
   "reject": [
    "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(ks, key=lambda k: -err(k))\n",
-   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: abs(p[0][0] - query[0]))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"
+   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: abs(p[0][0] - query[0]))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n",
+   "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    return min(ks)\n"
   ],
   "accept": [
    "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: sum((a - b) ** 2 for a, b in zip(p[0], query)))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"

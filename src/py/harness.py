@@ -105,7 +105,8 @@ def run_learner(code, tests=None):
 
 
 def _run(code, tests):
-    ns = {"__name__": "__main__"}
+    # __source__ lets a check inspect how the code is written (e.g. with ast), not just the values it leaves behind.
+    ns = {"__name__": "__main__", "__source__": code}
     result = {"ok": True, "error": None, "tests": []}
     try:
         exec(compile(code, LEARNER_FILE, "exec"), ns)
