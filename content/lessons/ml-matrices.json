@@ -220,10 +220,10 @@
           "expected_output": "[[1. 2.]\n [3. 4.]]\n[[2. 3.]\n [4. 7.]]\nFalse\n[[7.]] (1, 1)\n"
         },
         {
-          "title": "Adult and child tickets",
-          "body": "Two adult tickets and three child tickets cost 31; one of each costs 13. Predict the two prices that `solve` finds, then the rank of a system whose second row just doubles the first, so it has no single answer.",
-          "code": "import numpy as np\n\nA = np.array([[2.0, 3.0], [1.0, 1.0]])\nb = np.array([31.0, 13.0])\nx = np.linalg.solve(A, b)\nprint(x)\nprint(np.allclose(A @ x, b))\n\nsame = np.array([[1.0, 1.0], [2.0, 2.0]])\nprint(np.linalg.matrix_rank(A), np.linalg.matrix_rank(same))",
-          "expected_output": "[8. 5.]\nTrue\n2 1\n"
+          "title": "Turning and flipping a point",
+          "body": "`R` turns a point a quarter turn anticlockwise and `F` flips it upside down. Predict where `p` lands when you turn then flip, and when you flip then turn; whether grouping the products differently matters; what four quarter turns do; and which point `solve` says `R` sent to `[-1, 2]`.",
+          "code": "import numpy as np\n\nR = np.array([[0.0, -1.0], [1.0, 0.0]])\nF = np.array([[1.0, 0.0], [0.0, -1.0]])\np = np.array([2.0, 1.0])\nprint(F @ (R @ p), R @ (F @ p))\nprint(np.allclose((F @ R) @ p, F @ (R @ p)))\nprint(np.allclose(R @ R @ R @ R, np.array([[1.0, 0.0], [0.0, 1.0]])))\nprint(np.linalg.solve(R, np.array([-1.0, 2.0])))",
+          "expected_output": "[-1. -2.] [1. 2.]\nTrue\nTrue\n[2. 1.]\n"
         }
       ]
     },
