@@ -229,7 +229,7 @@
         },
         {
           "title": "A bootstrap of 100 rows",
-          "body": "A bootstrap sample of 100 rows leaves some rows out and repeats others. Then three random picks of 3 features out of 9, the way a forest chooses at each split. Guess how many rows end up out of bag.",
+          "body": "A bootstrap sample of 100 rows leaves some rows out and repeats others. Then `rng.sample(features, 3)` makes three random picks of 3 different features out of 9, the way a forest chooses at each split. Guess how many rows end up out of bag.",
           "code": "import random\n\nrng = random.Random(5)\nn = 100\nsample = [rng.randrange(n) for _ in range(n)]\nunique = set(sample)\nprint('unique rows:', len(unique), 'out of bag:', n - len(unique))\nprint('most repeated row count:', max(sample.count(i) for i in unique))\n\nfeatures = ['age', 'income', 'height', 'score', 'tenure', 'visits', 'debt', 'kids', 'rent']\nfor _ in range(3):\n    print(sorted(rng.sample(features, 3)))",
           "expected_output": "unique rows: 63 out of bag: 37\nmost repeated row count: 3\n['age', 'kids', 'rent']\n['age', 'height', 'score']\n['height', 'kids', 'score']\n"
         }

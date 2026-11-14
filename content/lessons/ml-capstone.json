@@ -331,7 +331,7 @@
         },
         {
           "title": "A baseline before any model",
-          "body": "Ten fruits, shuffled with a fixed `random_state` and split seven/three. The baseline always guesses the training majority; the rule says orange when `weight > 160`. Predict both accuracies on the three test rows.",
+          "body": "Ten fruits, shuffled by `sample(frac=1)` (every row, in a random order fixed by `random_state`) and split seven/three. The baseline always guesses the training majority, the label `idxmax()` picks out as having the highest count; the rule says orange when `weight > 160`. Predict both accuracies on the three test rows.",
           "code": "import io\nimport pandas as pd\n\nROWS = 'size,weight,kind\\n7.1,150,apple\\n8.0,170,orange\\n6.5,130,apple\\n7.8,165,orange\\n6.9,140,apple\\n8.4,180,orange\\n7.3,155,apple\\n8.1,172,orange\\n6.7,135,apple\\n7.9,168,orange\\n'\n\ndf = pd.read_csv(io.StringIO(ROWS))\nshuffled = df.sample(frac=1, random_state=0).reset_index(drop=True)\ntrain, test = shuffled.iloc[:7], shuffled.iloc[7:]\nprint(len(train), len(test))\nprint(train['kind'].value_counts().to_dict())\n\nmajority = train['kind'].value_counts().idxmax()\nprint('baseline:', majority, round((test['kind'] == majority).mean(), 2))\nsays_orange = test['weight'] > 160\nis_orange = test['kind'] == 'orange'\nprint('rule:', round((says_orange == is_orange).mean(), 2))",
           "expected_output": "7 3\n{'apple': 4, 'orange': 3}\nbaseline: apple 0.33\nrule: 1.0\n"
         }

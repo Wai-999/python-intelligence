@@ -214,7 +214,7 @@
       "more": [
         {
           "title": "A key that undoes itself",
-          "body": "With a key of 13, encrypting twice brings the message back, because 13 + 13 is 26. Predict all three lines, including what happens to `xyz` with key 3.",
+          "body": "With a key of 13, encrypting twice brings the letters back, because 13 + 13 is 26. Predict all three lines: why does the message come back in capitals rather than as `Hello, World`, and what happens to `xyz` with key 3?",
           "code": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\nonce = encrypt(\"Hello, World\", 13)\nprint(once)\nprint(encrypt(once, 13))\nprint(encrypt(\"xyz\", 3))",
           "expected_output": "URYYB, JBEYQ\nHELLO, WORLD\nABC\n"
         },

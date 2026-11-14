@@ -248,7 +248,7 @@
         },
         {
           "title": "Counting stock from a file",
-          "body": "Tally the fruit names in a file into a dictionary, then open the same file in `\"w\"` mode again and see what survives. The last `open` points into a folder that does not exist; predict which exception fires.",
+          "body": "Tally the fruit names in a file into a dictionary, then open the same file in `\"w\"` mode again and use `read()`, which returns the whole file as one string, to see what survives. The last `open` points into a folder that does not exist; predict which exception fires.",
           "code": "with open(\"stock.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"apple\\npear\\napple\\nplum\\napple\\n\")\n\ncounts = {}\nwith open(\"stock.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        fruit = line.strip()\n        counts[fruit] = counts.get(fruit, 0) + 1\nprint(counts)\n\nwith open(\"stock.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"kiwi\\n\")\nwith open(\"stock.txt\", encoding=\"utf-8\") as f:\n    print(f.read().strip())\n\ntry:\n    with open(\"nowhere/stock.txt\", encoding=\"utf-8\") as f:\n        print(f.read())\nexcept FileNotFoundError:\n    print(\"folder missing\")",
           "expected_output": "{'apple': 3, 'pear': 1, 'plum': 1}\nkiwi\nfolder missing\n"
         }

@@ -313,7 +313,7 @@
       "more": [
         {
           "title": "Twenty coin flips, then five thousand",
-          "body": "A seeded `random.Random` makes the run repeatable. Twenty flips can land well away from half heads; predict whether the 5000-flip share lands closer to 0.5.",
+          "body": "A seeded `random.Random` makes the run repeatable; `rng.choice(\"HT\")` picks one letter and `\"\".join` glues the twenty picks into one string. Twenty flips can land well away from half heads; predict whether the 5000-flip share lands closer to 0.5.",
           "code": "import random\n\nrng = random.Random(7)\nflips = [rng.choice(\"HT\") for _ in range(20)]\nprint(\"\".join(flips))\nprint(flips.count(\"H\") / len(flips))\n\nheads = 0\nfor _ in range(5000):\n    if rng.random() < 0.5:\n        heads = heads + 1\nprint(heads / 5000)",
           "expected_output": "THTHHHTHHHHTTHHHTHHH\n0.7\n0.4986\n"
         },

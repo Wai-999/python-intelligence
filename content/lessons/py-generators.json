@@ -280,7 +280,7 @@
       "more": [
         {
           "title": "A countdown that announces liftoff",
-          "body": "`countdown` prints `liftoff` only after its last `yield`. Predict the order of the first lines, then what happens when `next` is called on a finished generator, and finally two one-line generator expressions over some readings.",
+          "body": "`countdown` prints `liftoff` only after its last `yield`. Predict the order of the first lines, then what happens when `next` is called on a finished generator, and finally two one-line generator expressions over some readings (`any` is `True` as soon as one value is true).",
           "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n    print('liftoff')\n\ngen = countdown(3)\nprint(next(gen))\nprint(list(gen))\ntry:\n    next(gen)\nexcept StopIteration:\n    print('nothing left')\n\nreadings = [3, 8, 12, 5, 20, 1]\nprint(any(r > 10 for r in readings))\nprint(sum(1 for r in readings if r % 2 == 0))",
           "expected_output": "3\nliftoff\n[2, 1]\nnothing left\nTrue\n3\n"
         },

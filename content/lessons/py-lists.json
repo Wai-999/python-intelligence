@@ -211,13 +211,13 @@
       "more": [
         {
           "title": "Editing a shopping list",
-          "body": "`insert` puts coffee at the front and `remove` takes out the eggs. The slice `items[:]` makes a real copy, unlike the `backup` alias earlier; predict the last two lines before running.",
+          "body": "`insert` puts coffee at the front, `remove` takes out the eggs and `index` reports where an item sits. The slice `items[:]` makes a real copy, unlike the `backup` alias earlier; predict the last two lines before running.",
           "code": "items = [\"milk\", \"eggs\", \"bread\"]\nitems.insert(0, \"coffee\")\nitems.remove(\"eggs\")\nprint(items)\nprint(len(items), items.index(\"bread\"))\ncopy = items[:]\ncopy.append(\"jam\")\nprint(items)\nprint(copy)",
           "expected_output": "['coffee', 'milk', 'bread']\n3 2\n['coffee', 'milk', 'bread']\n['coffee', 'milk', 'bread', 'jam']\n"
         },
         {
           "title": "Race times",
-          "body": "`pop()` removes and returns the last time, `reverse()` flips the list in place, and `in` asks whether a value is present. Work out each line, especially the sum after the pop.",
+          "body": "`min()` gives the smallest value and `sum()` adds them all up; `pop()` removes and returns the last time, `reverse()` flips the list in place, and `in` asks whether a value is present. Work out each line, especially the sum after the pop.",
           "code": "times = [52, 48, 61, 45, 57]\nfastest = min(times)\nlast = times.pop()\nprint(last, times)\nprint(fastest, sum(times))\ntimes.reverse()\nprint(times[:2])\nprint(45 in times, 57 in times)",
           "expected_output": "57 [52, 48, 61, 45]\n45 206\n[45, 61]\nTrue False\n"
         }
