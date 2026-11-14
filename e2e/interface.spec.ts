@@ -55,3 +55,38 @@ test("the map is grouped by track, locked lessons fold away, and the lesson rail
   await expect(page.locator("aside .map .full-map a")).toHaveAttribute("href", "#/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(first.title);
 });
+
+test("one primary action when a passed quiz is retaken and failed, and while a step back is unanswered", async ({ page }) => {
+  test.setTimeout(240_000);
+  const quiz = first.steps.findIndex((s) => s.kind === "quiz");
+  const q = first.steps[quiz] as unknown as { questions: { answer: number }[] };
+  await page.goto(`./#/lesson/py-values-names/${quiz}`);
+  const sets = page.locator("fieldset.question");
+  for (const [i, x] of q.questions.entries()) await sets.nth(i).locator("input[type=radio]").nth(x.answer).check();
+  await page.getByRole("button", { name: "Check answers" }).click();
+  await expect(page.getByText(/Passed!/)).toBeVisible();
+  await page.waitForTimeout(700); // let the result reach IndexedDB before revisiting
+  await page.reload(); // revisit: credit saved, Next leads
+  await expect(primaries(page)).toHaveText(["Next →"]);
+  for (let i = 0; i < q.questions.length; i++) await sets.nth(i).locator("input[type=radio]").nth((q.questions[i]!.answer + 1) % 2).check();
+  await page.getByRole("button", { name: "Check answers" }).click();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(primaries(page)).toHaveText(["Next →"]);
+
+  // Three structural errors bring the step back; until it's answered it holds the primary action.
+  const guided = first.steps.findIndex((s) => s.kind === "guided");
+  await page.goto(`./#/lesson/py-values-names/${guided}`);
+  for (let i = 0; i < 3; i++) {
+    await page.locator("textarea.editor-input").fill('radius = "3"\narea = 3.14 * radius + 1\n');
+    await page.getByRole("button", { name: "▶ Run checks" }).click();
+    await expect(page.getByRole("button", { name: "▶ Run checks" })).toBeEnabled({ timeout: 90_000 });
+  }
+  const panel = page.locator("section.meso");
+  await expect(panel).toBeVisible();
+  await expect(primaries(page)).toHaveCount(1);
+  await expect(panel.locator(".btn.primary")).toHaveCount(1);
+  await panel.getByRole("radio").first().check();
+  await panel.locator(".btn.primary").click();
+  await expect(panel.getByRole("status")).toBeVisible();
+  await expect(primaries(page)).toHaveText(["▶ Run checks"]); // answered: the exercise leads again
+});

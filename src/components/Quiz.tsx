@@ -8,9 +8,11 @@ interface Props {
   record: StepResult | undefined;
   /** `correct[i]` says whether question i was answered correctly. */
   onResult: (score: number, passed: boolean, missedConcepts: string[], correct: boolean[]) => void;
+  /** Whether the quiz's own buttons are the screen's primary action: not once it was passed (Next leads) or while a step back shows. */
+  lead?: boolean;
 }
 
-export function Quiz({ step, record, onResult }: Props) {
+export function Quiz({ step, record, onResult, lead = true }: Props) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const all = step.questions.every((q) => answers[q.id] !== undefined);
@@ -54,13 +56,13 @@ export function Quiz({ step, record, onResult }: Props) {
         );
       })}
       {!submitted ? (
-        <button type="submit" className="btn primary" disabled={!all}>Check answers</button>
+        <button type="submit" className={lead ? "btn primary" : "btn"} disabled={!all}>Check answers</button>
       ) : (
         <div role="status" className={score >= step.pass_mark ? "pill ok" : "pill warn"}>
           You scored {correct}/{step.questions.length}.{" "}
           {score >= step.pass_mark ? "Passed!" : `You need ${Math.ceil(step.pass_mark * step.questions.length)} to pass. Review the explanations, then try again.`}
           {score < step.pass_mark && (
-            <button type="button" className="btn primary" onClick={() => { setSubmitted(false); setAnswers({}); }}>Try again</button>
+            <button type="button" className={lead ? "btn primary" : "btn"} onClick={() => { setSubmitted(false); setAnswers({}); }}>Try again</button>
           )}
         </div>
       )}

@@ -36,6 +36,8 @@ interface Props {
   suggestedTier: number;
   /** A meso-loop step back triggered by this task's runs (shown after the tutor note), if any. */
   meso?: ReactNode;
+  /** The step back is showing and unanswered: it holds the primary action, so Run checks steps back. */
+  mesoActive?: boolean;
   onDraft: (code: string) => void;
   onResult: (passed: boolean, failedConcepts: string[], detail: AttemptDetail) => void;
 }
@@ -56,7 +58,7 @@ function SupportNote({ offered, hints }: { offered: number; hints: number }) {
   );
 }
 
-export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, suggestedTier, meso, onDraft, onResult }: Props) {
+export function Exercise({ step, packages, lessonId, draft, record, assistance, onAssist, generation, suggestedTier, meso, mesoActive = false, onDraft, onResult }: Props) {
   const [code, setCode] = useState(draft ?? step.starter);
   const [result, setResult] = useState<RunResult | null>(null);
   const [live, setLive] = useState("");
@@ -138,7 +140,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         <span aria-hidden="true"> {"●".repeat(step.difficulty)}{"○".repeat(3 - step.difficulty)}</span></p>
       {record?.passed && !result && <p className="pill ok">✓ Completed earlier. You can keep experimenting.</p>}
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
-      <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed)} />
+      <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed) && !mesoActive} />
       <Console result={result} live={live} />
 
       {result && result.ok && (

@@ -36,6 +36,8 @@ interface Props {
   suggestTier: (step: ExerciseStep) => number;
   /** The meso-loop panel for this lesson's step, if one is showing. */
   mesoFor: (stepId: string) => ReactNode | undefined;
+  /** An unanswered step back is showing for this step: it holds the primary action, so the step's own action steps back. */
+  mesoActive?: (stepId: string) => boolean;
   /** Why this lesson (§1.4): the lessons it builds on and the ones it opens. */
   why: { buildsOn: string[]; opens: string[] };
 }
@@ -122,12 +124,12 @@ export function LessonView(p: Props) {
       {isExercise(step) && (
         <Exercise key={`${lesson.id}:${step.id}:${p.generation}`} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
-                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)} generation={p.generation} suggestedTier={p.suggestTier(step)} meso={p.mesoFor(step.id)}
+                  assistance={p.assistance[step.id] ?? 0} onAssist={(level) => p.onAssist(step.id, level)} generation={p.generation} suggestedTier={p.suggestTier(step)} meso={p.mesoFor(step.id)} mesoActive={!!p.mesoActive?.(step.id)}
                   onDraft={(c) => p.onDraft(step.id, c)}
                   onResult={(passed, fc, detail) => p.onExercise(step.id, passed, fc, detail)} />
       )}
       {step.kind === "quiz" && (
-        <Quiz key={`${lesson.id}:${step.id}:${p.generation}`} step={step} record={progress?.steps[step.id]}
+        <Quiz key={`${lesson.id}:${step.id}:${p.generation}`} step={step} record={progress?.steps[step.id]} lead={!progress?.steps[step.id]?.passed && !p.mesoActive?.(step.id)}
               onResult={(score, passed, missed, correct) => p.onQuiz(step.id, score, passed, missed, correct)} />
       )}
       {step.kind === "quiz" && p.mesoFor(step.id)}

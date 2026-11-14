@@ -61,7 +61,8 @@ export function App() {
   // The same events, updated synchronously as they are recorded, so the feedback controller sees the run just made.
   const eventsRef = useRef<LearnerEvent[]>([]);
   // A meso-loop step back for one task (lesson:step:generation), shown after the tutor note.
-  const [meso, setMeso] = useState<{ id: string; key: string; i: Intervention; target: Target | null } | null>(null);
+  // answered: the learner has answered the step back; until then it holds the screen's primary action (§10).
+  const [meso, setMeso] = useState<{ id: string; key: string; i: Intervention; target: Target | null; answered?: boolean } | null>(null);
   // The route on screen right now (a run can finish after the learner has moved on).
   const routeRef = useRef(route);
   routeRef.current = route;
@@ -351,11 +352,14 @@ export function App() {
               go={go}
               generation={generation}
               suggestTier={(step) => suggestedTier(model, graph.byId.get(route.lessonId)!, step)}
+              // The "independence" nudge has no answer button, so it never takes over the primary action.
+              mesoActive={(sid) => !!meso && !meso.answered && meso.i.kind !== "independence" && meso.key === `${route.lessonId}:${sid}:${generation}`}
               mesoFor={(sid) => meso && meso.key === `${route.lessonId}:${sid}:${generation}` ? (
                 <MesoPanel key={meso.id} intervention={meso.i} target={meso.target} titleOf={titleOf} onOutcome={(outcome) => {
                   if (!live()) return;
                   record([interventionEvent(meso.i, route.lessonId, sid, outcome, stampNow())]);
                   if (outcome === "postponed") setMeso(null);
+                  else setMeso((m) => (m && m.id === meso.id ? { ...m, answered: true } : m));
                 }} />
               ) : undefined}
               assistance={Object.fromEntries(Object.entries(assist).filter(([k]) => k.startsWith(`${route.lessonId}:`)).map(([k, v]) => [k.slice(route.lessonId.length + 1), v]))}
