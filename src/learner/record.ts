@@ -53,10 +53,11 @@ export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { co
   const failed = (results ?? []).filter((r) => !r.passed).map((r) => ({ concept: r.concept, tags: r.tags ?? [`check:${r.concept ?? "general"}`] }));
   const tagsFor = (concept: string, isDirect: boolean) => [...new Set([...errorTags,
     ...failed.filter((f) => !isDirect || f.concept === concept).flatMap((f) => f.tags)])];
+  const attempt = stamp.id(); // shared by this attempt's events
   return [...direct.map((c) => [c, outcome(c), true] as const), ...untested.map((c) => [c, overall, false] as const)].map(([concept, passed, isDirect]) => {
     const tags = passed ? [] : tagsFor(concept, isDirect);
     return { id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance,
-      policy: POLICY_VERSION, stepPassed: overall, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}) };
+      policy: POLICY_VERSION, stepPassed: overall, attempt, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}) };
   });
 }
 
@@ -72,9 +73,10 @@ export function quizEvents(lesson: Lesson, step: QuizStep, correct: boolean[], s
   });
   const passed = correct.filter(Boolean).length / Math.max(1, step.questions.length) >= step.pass_mark;
   for (const c of lesson.concepts) if (!askedBy(lesson).has(c)) byConcept.set(c, passed);
+  const attempt = stamp.id(); // shared by this attempt's events
   return [...byConcept].map(([concept, ok]) => ({
     id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "quiz" as const, concept, passed: ok, assistance, policy: POLICY_VERSION,
-    stepPassed: passed,
+    stepPassed: passed, attempt,
   }));
 }
 

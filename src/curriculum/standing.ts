@@ -25,8 +25,9 @@ export function whyThisLesson(g: Graph, lessonId: string): { buildsOn: string[];
 export type Completion = "independent" | "assisted" | "unknown";
 
 function stepPassedBy(group: LearnerEvent[]): boolean | null {
-  const flagged = group.find((e) => e.stepPassed !== undefined);
-  if (flagged) return flagged.stepPassed!;
+  // Any evidenced whole-step pass in the group counts (a group is one attempt when events carry attempt ids).
+  if (group.some((e) => e.stepPassed === true)) return true;
+  if (group.some((e) => e.stepPassed === false)) return false;
   // Older exercise attempts: the step passed when every concept it recorded passed (exerciseEvents' rule).
   if (group[0]!.task === "exercise") return group.every((e) => e.passed);
   return null; // an older quiz attempt: per-concept results can't tell whether the quiz's pass mark was met
@@ -38,21 +39,23 @@ export function completionOf(lesson: Lesson, events: readonly LearnerEvent[]): C
     const attempts = new Map<string, LearnerEvent[]>();
     for (const e of events) {
       if (e.lessonId !== lesson.id || e.stepId !== step.id || (e.task !== "exercise" && e.task !== "quiz")) continue;
-      const key = `${e.at}|${e.assistance}`;
+      // One attempt per id; older events without one are grouped by time and help level, judged conservatively.
+      const key = e.attempt !== undefined ? `id:${e.attempt}` : `t:${e.at}|${e.assistance}`;
       attempts.set(key, [...(attempts.get(key) ?? []), e]);
     }
-    let independent = false;
-    let assisted = false;
-    let unclear = false;
+    let independent = false;      // an evidenced unaided pass
+    let maybeIndependent = false; // an older unaided attempt whose whole-step result is unknown
+    let assisted = false;         // a pass, or a possible pass, made with help
     for (const group of attempts.values()) {
       const passed = stepPassedBy(group);
-      if (passed === null) { unclear = true; continue; }
-      if (!passed) continue;
-      if (group[0]!.assistance === 0) independent = true;
-      else assisted = true;
+      const unaided = group.every((e) => e.assistance === 0);
+      if (passed === false) continue;
+      if (passed === true && unaided) independent = true;
+      else if (passed === null && unaided) maybeIndependent = true;
+      else assisted = true; // with help: it can only ever be an assisted pass
     }
     if (independent) continue;
-    if (assisted && !unclear) return "assisted";
+    if (assisted && !maybeIndependent) return "assisted";
     unknown = true;
   }
   return unknown ? "unknown" : "independent";

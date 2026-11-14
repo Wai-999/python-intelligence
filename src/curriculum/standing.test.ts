@@ -42,6 +42,30 @@ describe("how a lesson was completed", () => {
     // ...nor turn an assisted step into an unknown one when they can't have been the pass
     expect(completionOf(L, [...passEx(2, 4), ...legacy])).toBe("assisted");
   });
+  it("an older quiz attempt made with help can't block the assisted label; an older unaided one leaves it unknown", () => {
+    const strip = (evs: LearnerEvent[]) => evs.map(({ stepPassed: _s, attempt: _a, ...e }) => e);
+    expect(completionOf(L, [...passEx(2), ...strip(halfQuiz(3, 4)), ...halfQuiz(4, 4)])).toBe("assisted");
+    expect(completionOf(L, [...passEx(2), ...strip(halfQuiz(3, 0)), ...halfQuiz(4, 4)])).toBe("unknown");
+    expect(completionOf(L, [...passEx(2), ...strip(halfQuiz(3, 4))])).toBe("assisted"); // only assisted attempts exist
+  });
+  it("attempts recorded at the same moment stay separate, in any order", () => {
+    // A failed and a passed unaided exercise attempt with the same timestamp (e.g. two tabs).
+    const same = { at: "2026-11-14T10:05:00Z", id: () => `c${++n}` };
+    const failed = exerciseEvents(L, E, [{ concept: "loops", passed: false }], 0, same);
+    const passed = exerciseEvents(L, E, [{ concept: "loops", passed: true }], 0, same);
+    expect(failed[0]!.attempt).not.toBe(passed[0]!.attempt);
+    const quizOk = halfQuiz(6);
+    expect(completionOf(L, [...failed, ...passed, ...quizOk])).toBe("independent");
+    expect(completionOf(L, [...passed, ...failed, ...quizOk])).toBe("independent");
+    // Without attempt ids (older data) a collision is judged conservatively: the merged group isn't an evidenced pass.
+    const strip = (evs: LearnerEvent[]) => evs.map(({ stepPassed: _s, attempt: _a, ...e }) => e);
+    expect(completionOf(L, [...strip(failed), ...strip(passed), ...quizOk])).toBe("unknown");
+  });
+  it("every event of one attempt shares its attempt id", () => {
+    const evs = exerciseEvents({ ...L, concepts: ["loops", "style"] } as Lesson, E, [{ concept: "loops", passed: true }], 0, at(7));
+    expect(evs.length).toBe(2);
+    expect(new Set(evs.map((e) => e.attempt)).size).toBe(1);
+  });
   it("older exercise events are judged by their concepts' results", () => {
     const legacy: LearnerEvent[] = passEx(2).map(({ stepPassed: _drop, ...e }) => e);
     expect(completionOf(L, [...legacy, ...halfQuiz(3)])).toBe("independent");

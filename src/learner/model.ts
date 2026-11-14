@@ -50,6 +50,8 @@ export interface LearnerEvent {
   difficulty?: 1 | 2 | 3;
   /** For an exercise or quiz attempt: whether the whole step passed (all checks; the quiz's pass mark). Older events lack it. */
   stepPassed?: boolean;
+  /** For an exercise or quiz: an id shared by the events of one attempt (one per concept). Older events lack it. */
+  attempt?: string;
 }
 
 export class LearnerDataError extends Error {
@@ -160,6 +162,8 @@ function validate(e: unknown, i: number): LearnerEvent {
     throw bad("difficulty must be 1..3, on an exercise event");
   if (v.stepPassed !== undefined && !(typeof v.stepPassed === "boolean" && (v.task === "exercise" || v.task === "quiz")))
     throw bad("stepPassed must be a boolean, on an exercise or quiz event");
+  if (v.attempt !== undefined && !(typeof v.attempt === "string" && v.attempt.length > 0 && (v.task === "exercise" || v.task === "quiz")))
+    throw bad("attempt must be a nonempty string, on an exercise or quiz event");
   if (v.confidence !== undefined && !(Number.isInteger(v.confidence) && (v.confidence as number) >= 1 && (v.confidence as number) <= 5))
     throw bad("confidence must be 1..5");
   return v as unknown as LearnerEvent;
