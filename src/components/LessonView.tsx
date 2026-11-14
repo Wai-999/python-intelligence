@@ -57,6 +57,8 @@ export function LessonView(p: Props) {
   const firstOf = (...kinds: Step["kind"][]) => kinds.map((k) => lesson.steps.find((s) => s.kind === k)).find(Boolean)?.id;
   const analogyStep = firstOf("intuition", "motivation");
   const mixUpStep = firstOf("formal", "example");
+  // §5 "Challenge me independently": the lesson's transfer problem, reachable from every other step.
+  const transferAt = lesson.steps.findIndex((s) => s.kind === "transfer");
 
   return (
     <article className="lesson" aria-labelledby="step-title">
@@ -66,6 +68,10 @@ export function LessonView(p: Props) {
         <p className="why"><strong>Why this lesson:</strong>{" "}
           {p.why.buildsOn.length ? <>it builds on {links(p.why.buildsOn, p.titleOf)}</> : <>it's where the course starts</>}
           {p.why.opens.length ? <>, and it opens {links(p.why.opens, p.titleOf)}.</> : <>, and it rounds off this path.</>}</p>
+        {transferAt >= 0 && transferAt !== stepIndex && (
+          <p className="challenge-link"><a href={`#/lesson/${lesson.id}/${transferAt}`}>Challenge me independently →</a>{" "}
+            <span className="muted">a new problem using this lesson's ideas; hints stay hidden unless you ask</span></p>
+        )}
         <nav aria-label="Lesson steps">
           <ol className="stepper">
             {lesson.steps.map((s, i) => {

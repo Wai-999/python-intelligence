@@ -1,5 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import type { ExerciseStep, Lesson } from "../src/content/types";
+import valuesNames from "../content/lessons/py-values-names.json" with { type: "json" };
+import conditionals from "../content/lessons/py-conditionals.json" with { type: "json" };
+import diagnostic from "../content/diagnostic.json" with { type: "json" };
 
 // Automated WCAG 2.1 A/AA checks (axe-core) on every distinct page state, in light and dark colour schemes.
 // Automated checks find roughly a third of accessibility problems; they complement, not replace, manual review.
@@ -68,6 +72,51 @@ for (const scheme of ["light", "dark"] as const) {
       await scan(page, "failed checks + tutor note");
       await expect(page.getByRole("note")).toBeVisible();
       await scan(page, "suggested-support note");
+    });
+
+    test(`every step of a lesson, a passed transfer, the Review page and the placement check have no violations (${scheme})`, async ({ page }) => {
+      test.setTimeout(300_000);
+      const lesson = valuesNames as unknown as Lesson;
+      // Every step of a lesson that has all ten step kinds.
+      const full = conditionals as unknown as Lesson;
+      expect(new Set(full.steps.map((s) => s.kind)).size).toBe(10);
+      for (let i = 0; i < full.steps.length; i++) {
+        await page.goto(`./#/lesson/${full.id}/${i}`);
+        await expect(page.locator("#step-title")).toHaveText(full.steps[i]!.title);
+        await scan(page, `${full.id} step ${i} (${full.steps[i]!.kind})`);
+      }
+      const at = lesson.steps.findIndex((s) => s.kind === "transfer");
+      await page.goto(`./#/lesson/${lesson.id}/${at}`);
+      await page.locator("textarea.editor-input").fill((lesson.steps[at] as ExerciseStep).solution);
+      await page.getByRole("button", { name: "▶ Run checks" }).click();
+      await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
+      await scan(page, "passed transfer problem");
+
+      await page.goto("./#/review");
+      await expect(page.getByText("Nothing is due for review right now.")).toBeVisible();
+      await scan(page, "review page, nothing due");
+      // A concept completed two days ago is due: two unaided exercises and an unaided quiz, imported as a backup.
+      const t = (h: number) => new Date(Date.now() - (48 - h) * 3600_000).toISOString();
+      const events = [["circle", "exercise", 0], ["practice-2", "exercise", 0.5], ["check", "quiz", 1]].map(([stepId, task, h], i) => ({
+        id: `a11y-${i}`, at: t(h as number), lessonId: lesson.id, stepId, task, concept: "names", passed: true, assistance: 0, policy: "learner-heuristic-1" }));
+      const backup = { format: "python-intelligence-progress", version: 2, exportedAt: t(2), lessons: [], drafts: {}, position: null, assistance: {}, events };
+      await page.getByRole("button", { name: "Progress" }).click();
+      await page.locator("input[type=file]").setInputFiles({ name: "h.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+      await expect(page.getByText("Progress imported.")).toBeVisible();
+      await page.getByRole("button", { name: "Close" }).click();
+      await expect(page.locator("form.quiz")).toBeVisible();
+      await scan(page, "review page with a review due");
+
+      await page.goto("./#/diagnostic");
+      await scan(page, "placement check intro");
+      await page.getByRole("button", { name: /placement check|Take it again/ }).click();
+      const qs = diagnostic.checkpoints[0]!.questions;
+      for (const [i, q] of qs.entries())
+        await page.locator("fieldset.question").nth(i).getByRole("radio", { name: q.choices[(q.answer + 1) % q.choices.length], exact: true }).check();
+      await page.getByRole("button", { name: "Check answers" }).click();
+      await scan(page, "placement check, a checked group");
+      await page.getByRole("button", { name: "See your starting point" }).click();
+      await scan(page, "placement check result");
     });
 
     test(`the meso-loop step back has no violations (${scheme})`, async ({ page }) => {

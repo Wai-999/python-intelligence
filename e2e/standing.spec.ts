@@ -66,3 +66,13 @@ test("a completion saved before the lesson gained its transfer problem doesn't s
   await page.reload(); // re-read from IndexedDB: still not complete
   await expect(page.locator(".map-item.done")).toHaveCount(0);
 });
+
+test("every step offers the transfer problem as an independent challenge", async ({ page }) => {
+  const at = first.steps.findIndex((s) => s.kind === "transfer");
+  await page.goto("./#/lesson/py-values-names/0");
+  await page.getByRole("link", { name: "Challenge me independently →" }).click();
+  await expect(page).toHaveURL(new RegExp(`#/lesson/py-values-names/${at}$`));
+  await expect(page.getByRole("region", { name: "Transfer problem" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Challenge me independently →" })).toHaveCount(0); // not on the challenge itself
+  await expect(page.locator("p.hint")).toHaveCount(0);
+});

@@ -225,3 +225,4 @@ main { min-width: 0; outline: none; }
 .lesson-head .why { margin: 4px 0 8px; font-size: 14px; color: var(--muted); }
 .lesson-head .why strong { color: var(--text); }
 .map-item.due { border-left: 4px solid var(--accent); }
+.lesson-head .challenge-link { margin: 0 0 8px; font-size: 14px; }
