@@ -63,7 +63,8 @@ export function LessonView(p: Props) {
   return (
     <article className="lesson" aria-labelledby="step-title">
       <header className="lesson-head">
-        <p className="eyebrow">{lesson.title} · {passedCount}/{graded.length} graded steps passed
+        <h1 className="lesson-title">{lesson.title}</h1>
+        <p className="eyebrow">{passedCount}/{graded.length} graded steps passed
           {progress?.completed && <> · <span className="ok">completed ✓</span></>}</p>
         <p className="why"><strong>Why this lesson:</strong>{" "}
           {p.why.buildsOn.length ? <>it builds on {links(p.why.buildsOn, p.titleOf)}</> : <>it's where the course starts</>}
@@ -134,7 +135,9 @@ export function LessonView(p: Props) {
 
       <nav className="pager" aria-label="Step navigation">
         <button type="button" className="btn" disabled={stepIndex === 0} onClick={() => p.go(lesson.id, stepIndex - 1)}>← Back</button>
-        {!last && <button type="button" className="btn primary" onClick={() => p.go(lesson.id, stepIndex + 1)}>Next →</button>}
+        {/* One primary action (§10): on a graded step not yet passed, the step's own action leads and Next steps back. */}
+        {!last && <button type="button" className={isGraded(step) && !progress?.steps[step.id]?.passed ? "btn" : "btn primary"}
+                          onClick={() => p.go(lesson.id, stepIndex + 1)}>Next →</button>}
       </nav>
     </article>
   );
@@ -152,15 +155,17 @@ function NextUp({ lesson, progress, recommendation: r, titleOf, go }: Props) {
           {remaining.map(([s, i], k) => (
             <span key={s.id}>{k > 0 && ", "}<a href={`#/lesson/${lesson.id}/${i}`}>{s.title}</a></span>
           ))}
+          {remaining[0] && <p><button type="button" className="btn primary" onClick={() => go(lesson.id, remaining[0]![1])}>Finish: {remaining[0][0].title} →</button></p>}
         </div>
       )}
-      <Recommend r={r} titleOf={titleOf} go={go} currentId={lesson.id} />
+      <Recommend r={r} titleOf={titleOf} go={go} currentId={lesson.id} secondary={!progress?.completed} />
       <FurtherReading lesson={lesson} />
     </section>
   );
 }
 
-export function Recommend({ r, titleOf, go, currentId }: { r: Recommendation; titleOf: (id: string) => string; go: (id: string, s: number) => void; currentId?: string }) {
+/** `secondary`: shown below another primary action (an unfinished recap's "Finish"), so its button isn't primary. */
+export function Recommend({ r, titleOf, go, currentId, secondary = false }: { r: Recommendation; titleOf: (id: string) => string; go: (id: string, s: number) => void; currentId?: string; secondary?: boolean }) {
   if (r.kind === "done") return <p className="recommend">🎓 You've worked through every lesson available so far. More are on the way.</p>;
   if (r.kind === "continue" && r.lessonId === currentId) return null;
   const label = { remediate: "Review first", continue: "Continue", next: "Next lesson" }[r.kind];
@@ -173,7 +178,7 @@ export function Recommend({ r, titleOf, go, currentId }: { r: Recommendation; ti
       )}
       {r.kind === "continue" && <p className="muted">You started it and haven't finished it yet.</p>}
       {r.kind === "next" && <p className="muted">It's the first lesson whose prerequisites are all done (or tested out).</p>}
-      <button type="button" className="btn primary" onClick={() => go(r.lessonId, 0)}>
+      <button type="button" className={secondary ? "btn" : "btn primary"} onClick={() => go(r.lessonId, 0)}>
         {label}: {titleOf(r.lessonId)} →
       </button>
     </div>

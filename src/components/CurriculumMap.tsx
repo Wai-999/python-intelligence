@@ -1,6 +1,7 @@
 import type { Graph, ProgressMap, Recommendation } from "../curriculum/graph";
 import { isUnlocked } from "../curriculum/graph";
 import { Recommend } from "./LessonView";
+import { TRACK_LABEL, TRACK_ORDER } from "../curriculum/tracks";
 import type { Completion } from "../curriculum/standing";
 
 interface Props {
@@ -20,12 +21,14 @@ const DONE_TEXT: Record<Completion, string> = { independent: "Completed independ
 
 export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact, testedOut = new Set(), standing }: Props) {
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
-  return (
-    <nav className={`map ${compact ? "compact" : ""}`} aria-label="Curriculum">
-      {!compact && <Recommend r={recommendation} titleOf={titleOf} go={go} />}
-      <h2 className="map-title">Python fundamentals</h2>
-      <ol className="map-list">
-        {graph.order.map((id, n) => {
+  const index = new Map(graph.order.map((id, n) => [id, n]));
+  const isLocked = (id: string) => !progress.get(id)?.completed && !testedOut.has(id) && !isUnlocked(graph, id, progress, testedOut);
+  // Lessons grouped by track, in curriculum order; the rail (compact) shows only the current lesson's track.
+  const currentTrack = currentId ? graph.byId.get(currentId)?.track : undefined;
+  const groups = TRACK_ORDER.map((track) => ({ track, ids: graph.order.filter((id) => graph.byId.get(id)!.track === track) }))
+    .filter((g) => g.ids.length > 0 && (!compact || !currentTrack || g.track === currentTrack));
+  const item = (id: string) => {
+    const n = index.get(id)!;
           const l = graph.byId.get(id)!;
           const p = progress.get(id);
           const unlocked = isUnlocked(graph, id, progress, testedOut);
@@ -53,8 +56,28 @@ export function CurriculumMap({ graph, progress, recommendation, currentId, go, 
               </div>
             </li>
           );
-        })}
-      </ol>
+  };
+  return (
+    <nav className={`map ${compact ? "compact" : ""}`} aria-label="Curriculum">
+      {!compact && <Recommend r={recommendation} titleOf={titleOf} go={go} />}
+      {groups.map((g) => {
+        const visible = g.ids.filter((id) => !isLocked(id));
+        const locked = g.ids.filter(isLocked);
+        const done = g.ids.filter((id) => progress.get(id)?.completed).length;
+        return (
+          <section key={g.track} className="track" aria-labelledby={`track-${g.track}`}>
+            <h2 className="map-title" id={`track-${g.track}`}>{TRACK_LABEL[g.track]} <span className="track-count">· {done} of {g.ids.length} done</span></h2>
+            {visible.length > 0 && <ol className="map-list">{visible.map(item)}</ol>}
+            {locked.length > 0 && (
+              <details className="locked-group">
+                <summary>{visible.length ? "and " : ""}{locked.length} locked lesson{locked.length === 1 ? "" : "s"}</summary>
+                <ol className="map-list">{locked.map(item)}</ol>
+              </details>
+            )}
+          </section>
+        );
+      })}
+      {compact && <p className="full-map"><a href="#/">Full course map</a></p>}
     </nav>
   );
 }

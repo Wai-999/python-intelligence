@@ -228,3 +228,18 @@ main { min-width: 0; outline: none; }
 .lesson-head .challenge-link { margin: 0 0 8px; font-size: 14px; }
 .examples .another h3 { margin: 12px 0 4px; font-size: 17px; }
 .another-bar { margin: 8px 0 0; }
+
+/* Learning header (G-20): course, lesson and standing, and Resume. */
+.top .now { margin: 0; flex: 1 1 auto; min-width: 0; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .now-lesson { color: var(--text); font-weight: 600; }
+@media (max-width: 700px) { .top .now-course, .top .now-sep { display: none; } .top .now { flex-basis: 100%; order: 3; } }
+
+/* Course map by track (G-20) and the lesson title as the page heading. */
+.track + .track { margin-top: 20px; }
+.track-count { font-weight: 400; color: var(--muted); font-size: 14px; }
+.locked-group { margin-top: 8px; }
+.locked-group > summary { cursor: pointer; color: var(--muted); padding: 6px 0; }
+.locked-group > .map-list { margin-top: 8px; }
+.full-map { margin: 12px 0 0; }
+.lesson-title { font-size: 15px; font-weight: 650; margin: 0 0 2px; color: var(--muted); }
+.trace h3 { font-size: 14px; margin: 8px 0 4px; }

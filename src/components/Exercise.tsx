@@ -138,7 +138,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         <span aria-hidden="true"> {"●".repeat(step.difficulty)}{"○".repeat(3 - step.difficulty)}</span></p>
       {record?.passed && !result && <p className="pill ok">✓ Completed earlier. You can keep experimenting.</p>}
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
-      <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" />
+      <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed)} />
       <Console result={result} live={live} />
 
       {result && result.ok && (

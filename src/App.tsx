@@ -10,7 +10,8 @@ import { interventionEvent, mesoTrigger, transferTarget, type Intervention, type
 import { MesoPanel } from "./components/MesoPanel";
 import { DiagnosticView } from "./components/DiagnosticView";
 import { DIAGNOSTIC, diagnosticEvents, placement } from "./curriculum/placement";
-import { completionOf, reviewDueFor, whyThisLesson } from "./curriculum/standing";
+import { completionOf, lessonLabel, reviewDueFor, whyThisLesson } from "./curriculum/standing";
+import { TRACK_LABEL } from "./curriculum/tracks";
 import { isExercise, type Lesson } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -52,6 +53,8 @@ export function App() {
   const [progress, setProgress] = useState<ProgressMap>(new Map());
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
+  // Where the learner last was (the saved position), for the header's Resume link.
+  const [position, setPosition] = useState<{ lessonId: string; stepIndex: number } | null>(null);
   const [panel, setPanel] = useState(false);
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<LearnerEvent[]>([]);
@@ -101,6 +104,7 @@ export function App() {
     setEvents(exp.events);
     eventsRef.current = exp.events;
     setAssist(assistance);
+    setPosition(exp.position && graph.byId.has(exp.position.lessonId) ? { lessonId: exp.position.lessonId, stepIndex: exp.position.stepIndex } : null);
     return exp.position;
   }, []);
 
@@ -174,6 +178,7 @@ export function App() {
     if (route.view !== "lesson" || !store || !live()) return;
     const lesson = graph.byId.get(route.lessonId)!;
     void store.setPosition(route.lessonId, route.step).catch(fail);
+    setPosition({ lessonId: route.lessonId, stepIndex: route.step });
     const prev = progress.get(route.lessonId);
     const next = visitStep(lesson, prev, route.step);
     if (!prev || next.furthestStep !== prev.furthestStep) void save(next);
@@ -258,6 +263,13 @@ export function App() {
   const rec = useMemo(() => recommendNext(graph, progress, current, place.testedOut), [progress, current, place]);
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
   const completed = [...progress.values()].filter((p) => p.completed).length;
+  // The header's lesson: the one on screen, else the saved position, else the recommendation.
+  const nowId = current ?? position?.lessonId ?? (rec.kind !== "done" ? rec.lessonId : undefined);
+  const nowLesson = nowId ? graph.byId.get(nowId) : undefined;
+  const atNow = !!current;
+  // Resume is offered whenever the saved position isn't the step on screen.
+  const resumeHref = ready && position && !(route.view === "lesson" && route.lessonId === position.lessonId && route.step === position.stepIndex)
+    ? `#/lesson/${position.lessonId}/${position.stepIndex}` : null;
   const standing = (id: string) => {
     const l = graph.byId.get(id)!;
     return { completion: progress.get(id)?.completed ? completionOf(l, events) : null, reviewDue: reviewDueFor(l, dueConcepts) };
@@ -268,7 +280,17 @@ export function App() {
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <a className="brand" href="#/"><span className="logo" aria-hidden="true">py</span> Python Intelligence</a>
+        {nowLesson && (
+          <p className="now">
+            <span className="now-course"><span className="sr-only">Course: </span>{TRACK_LABEL[nowLesson.track]}</span>
+            <span className="now-sep" aria-hidden="true"> · </span>
+            <span className="now-lesson"><span className="sr-only">{atNow ? "Current lesson: " : "Last lesson: "}</span>{nowLesson.title}</span>
+            <span className="now-sep" aria-hidden="true"> · </span>
+            <span className="now-label">{lessonLabel(nowLesson, progress.get(nowLesson.id), events, place.testedOut.has(nowLesson.id))}</span>
+          </p>
+        )}
         <div className="top-right">
+          {resumeHref && <a className="btn ghost resume" href={resumeHref}>Resume ▶<span className="sr-only">: {graph.byId.get(position!.lessonId)!.title}</span></a>}
           <a className="btn ghost" href="#/library" aria-current={route.view === "library" ? "page" : undefined}>Library</a>
           <a className="btn ghost" href="#/review" aria-current={route.view === "review" ? "page" : undefined}>
             Review{dueCount > 0 && <> <span className="badge" aria-label={`${dueCount} due`}>{dueCount}</span></>}

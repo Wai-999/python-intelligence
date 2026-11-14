@@ -18,11 +18,12 @@ export function Console({ result, live }: { result: RunResult | null; live: stri
   );
 }
 
-export function RunBar({ onRun, onReset, busy, runLabel = "Run", packages = [] }: { onRun: () => void; onReset?: () => void; busy: boolean; runLabel?: string; packages?: string[] }) {
+/** `primary`: whether Run is the screen's one primary action (§10); an example's Run isn't, its step's Next is. */
+export function RunBar({ onRun, onReset, busy, runLabel = "Run", packages = [], primary = true }: { onRun: () => void; onReset?: () => void; busy: boolean; runLabel?: string; packages?: string[]; primary?: boolean }) {
   const status = usePythonStatus();
   return (
     <div className="run-bar">
-      <button type="button" className="btn primary" onClick={onRun} disabled={busy} aria-busy={busy}>
+      <button type="button" className={primary ? "btn primary" : "btn"} onClick={onRun} disabled={busy} aria-busy={busy}>
         {busy ? "Running…" : `▶ ${runLabel}`}
       </button>
       {onReset && <button type="button" className="btn" onClick={onReset} disabled={busy}>Reset</button>}
@@ -57,7 +58,7 @@ export function CodeCell({ id, initial, packages }: { id: string; initial: strin
   return (
     <section className="cell" aria-label="Runnable example">
       <Editor id={id} label="Example code" value={code} onChange={setCode} onRun={run} />
-      <RunBar onRun={run} onReset={() => { setCode(initial); setResult(null); }} busy={busy} packages={packages} />
+      <RunBar onRun={run} onReset={() => { setCode(initial); setResult(null); }} busy={busy} packages={packages} primary={false} />
       <Console result={result} live={live} />
       {result?.error && !INFRASTRUCTURE_ERRORS.has(result.error.type) && <TutorNote fb={feedbackForError(result.error)} />}
     </section>

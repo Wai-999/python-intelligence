@@ -60,7 +60,7 @@ export function Quiz({ step, record, onResult }: Props) {
           You scored {correct}/{step.questions.length}.{" "}
           {score >= step.pass_mark ? "Passed!" : `You need ${Math.ceil(step.pass_mark * step.questions.length)} to pass. Review the explanations, then try again.`}
           {score < step.pass_mark && (
-            <button type="button" className="btn" onClick={() => { setSubmitted(false); setAnswers({}); }}>Try again</button>
+            <button type="button" className="btn primary" onClick={() => { setSubmitted(false); setAnswers({}); }}>Try again</button>
           )}
         </div>
       )}

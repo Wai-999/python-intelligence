@@ -21,18 +21,18 @@ export function TraceViewer({ visual }: { visual: VisualStep["visual"] }) {
           ))}
         </ol>
         <div className="trace-state">
-          <h4>Call stack</h4>
+          <h3>Call stack</h3>
           <ol className="stack">
             {[...f.stack].reverse().map((s, k) => <li key={k} className={k === 0 ? "top" : ""}><code>{s}</code></li>)}
           </ol>
-          <h4>Names in the active frame</h4>
+          <h3>Names in the active frame</h3>
           {Object.keys(f.locals).length === 0 ? <p className="muted">(none yet)</p> : (
             <table className="locals">
               <thead><tr><th scope="col">name</th><th scope="col">value</th></tr></thead>
               <tbody>{Object.entries(f.locals).map(([k, v]) => <tr key={k}><td><code>{k}</code></td><td><code>{v}</code></td></tr>)}</tbody>
             </table>
           )}
-          <h4>Output</h4>
+          <h3>Output</h3>
           <pre className="trace-out">{output || " "}</pre>
         </div>
       </div>

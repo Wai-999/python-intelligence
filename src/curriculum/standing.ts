@@ -65,3 +65,17 @@ export function completionOf(lesson: Lesson, events: readonly LearnerEvent[]): C
 export function reviewDueFor(lesson: Lesson, dueConcepts: ReadonlySet<string>): boolean {
   return lesson.concepts.some((c) => dueConcepts.has(c));
 }
+
+/**
+ * A plain-language label for where the learner stands on a lesson (§10 "progress confidence label"): from its saved
+ * progress and how it was completed. It describes recorded evidence, not a calibrated probability.
+ */
+export function lessonLabel(lesson: Lesson, progress: { completed: boolean; furthestStep: number } | undefined, events: readonly LearnerEvent[],
+                            testedOut: boolean): string {
+  if (progress?.completed) {
+    const c = completionOf(lesson, events);
+    return c === "independent" ? "Completed independently" : c === "assisted" ? "Completed with help" : "Completed";
+  }
+  if (progress && progress.furthestStep > 0) return "In progress";
+  return testedOut ? "Tested out" : "Not started";
+}
