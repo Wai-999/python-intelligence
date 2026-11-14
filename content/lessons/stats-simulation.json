@@ -319,8 +319,8 @@
         },
         {
           "title": "Shared birthdays in a room of 23",
-          "body": "Put 23 random birthdays in a room 4000 times and count how often at least two match, using `set` to spot a repeat. Guess the share before running; most people guess too low.",
-          "code": "import random\n\nrng = random.Random(3)\ntrials = 4000\nmatches = 0\nfor _ in range(trials):\n    birthdays = [rng.randint(1, 365) for _ in range(23)]\n    if len(set(birthdays)) < 23:\n        matches = matches + 1\nprint(matches)\nprint(round(matches / trials, 2))",
+          "body": "Put 23 random birthdays in a room 4000 times and count how often at least two match, keeping a list of the days seen so far and using `in` to spot a repeat. Guess the share before running; most people guess too low.",
+          "code": "import random\n\nrng = random.Random(3)\ntrials = 4000\nmatches = 0\nfor _ in range(trials):\n    seen = []\n    repeat = False\n    for _ in range(23):\n        day = rng.randint(1, 365)\n        if day in seen:\n            repeat = True\n        seen.append(day)\n    if repeat:\n        matches = matches + 1\nprint(matches)\nprint(round(matches / trials, 2))",
           "expected_output": "2036\n0.51\n"
         }
       ]
