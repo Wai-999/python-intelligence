@@ -329,6 +329,11 @@
           "name": "every shift is tried, 25 included",
           "code": "assert find_shift('gdkkn', 'hello') == 25",
           "concept": "brute-force-search"
+        },
+        {
+          "name": "punctuation doesn't use up keyword letters",
+          "code": "assert vigenere('a,a', 'bc') == 'b,c' and unvigenere('b,c', 'bc') == 'a,a', vigenere('a,a', 'bc')",
+          "concept": "modular-arithmetic"
         }
       ],
       "solution": "def shift_letter(ch, k):\n    if ch.isupper():\n        return chr((ord(ch) - ord(\"A\") + k) % 26 + ord(\"A\"))\n    if ch.islower():\n        return chr((ord(ch) - ord(\"a\") + k) % 26 + ord(\"a\"))\n    return ch\n\n\ndef _apply(text, key, sign):\n    out, i = [], 0\n    for ch in text:\n        if ch.isalpha():\n            out.append(shift_letter(ch, sign * (ord(key[i % len(key)].lower()) - ord(\"a\"))))\n            i += 1\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef vigenere(text, key):\n    return _apply(text, key, 1)\n\n\ndef unvigenere(text, key):\n    return _apply(text, key, -1)\n\n\ndef find_shift(cipher, word):\n    for k in range(26):\n        if word in \"\".join(shift_letter(ch, -k) for ch in cipher):\n            return k\n    return None\n"

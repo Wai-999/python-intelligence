@@ -416,7 +416,7 @@
         },
         {
           "name": "repeatable with a seed, varying across seeds",
-          "code": "assert estimate_pi(5000, 1) == estimate_pi(5000, 1)\nassert len({estimate_pi(5000, seed) for seed in range(5)}) > 1, 'different seeds should give different random points'",
+          "code": "for seed in range(5):\n    runs = {estimate_pi(20000, seed) for _ in range(3)}\n    assert len(runs) == 1, 'the same seed must give the same estimate: create the generator with random.Random(seed)'\nassert len({estimate_pi(5000, seed) for seed in range(5)}) > 1, 'different seeds should give different random points'",
           "concept": "randomness"
         },
         {
