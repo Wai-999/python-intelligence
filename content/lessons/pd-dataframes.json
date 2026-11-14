@@ -385,6 +385,11 @@
           "name": "a region with only missing prices totals 0",
           "code": "import pandas as pd\ndf = pd.DataFrame({'order': [1, 2, 3], 'region': ['n', 'w', 'n'], 'qty': [2, 3, 1], 'price': [5.0, float('nan'), 1.0]})\nout = revenue_by_region(df)\nassert out == {'n': 11.0, 'w': 0.0} and list(out) == ['n', 'w'], out",
           "concept": "groupby"
+        },
+        {
+          "name": "each function leaves df unchanged, missing values and all",
+          "code": "import pandas as pd\ndef _frame():\n    return pd.DataFrame({'order': [1, 2, 3], 'region': ['n', 's', None], 'qty': [2, None, 4], 'price': [1.0, float('nan'), 3.0]})\nfor _call in (lambda d: revenue_by_region(d), lambda d: big_orders(d, 2), lambda d: missing_counts(d)):\n    _df = _frame()\n    _before = _df.copy(deep=True)\n    _call(_df)\n    assert _df.equals(_before), 'none of the functions may change df (missing values included)'",
+          "concept": "dataframes"
         }
       ],
       "solution": "import pandas as pd\n\n\ndef revenue_by_region(df):\n    revenue = (df[\"qty\"] * df[\"price\"].fillna(0)).groupby(df[\"region\"]).sum()\n    return revenue.sort_values(ascending=False).to_dict()\n\n\ndef big_orders(df, min_qty):\n    return df.loc[df[\"qty\"] >= min_qty, [\"order\", \"qty\"]]\n\n\ndef missing_counts(df):\n    return {col: int(n) for col, n in df.isna().sum().items()}\n"

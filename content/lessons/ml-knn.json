@@ -423,6 +423,11 @@
           "name": "a tie goes to the earlier point, whatever its value",
           "code": "assert knn_value([((1,), 7.0), ((-1,), 5.0)], (0,), 1) == 7.0",
           "concept": "k-nearest-neighbours"
+        },
+        {
+          "name": "all features count, however many there are",
+          "code": "train = [((0, 0, 5), 1.0), ((1, 1, 0), 2.0)]\nassert knn_value(train, (0, 0, 0), 1) == 2.0, 'the third feature puts (0, 0, 5) further away'",
+          "concept": "k-nearest-neighbours"
         }
       ],
       "solution": "import math\n\n\ndef knn_value(train, query, k):\n    nearest = sorted(train, key=lambda p: math.dist(p[0], query))[:k]\n    return sum(v for _, v in nearest) / len(nearest)\n\n\ndef best_k(train, valid, ks):\n    def err(k):\n        return sum((knn_value(train, f, k) - v) ** 2 for f, v in valid) / len(valid)\n    return min(sorted(ks), key=err)\n"

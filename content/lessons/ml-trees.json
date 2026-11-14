@@ -448,6 +448,11 @@
           "name": "depth of a tree",
           "code": "leaf = 'yes'\nassert depth(leaf) == 0 and depth({'left': 'a', 'right': 'b'}) == 1\nassert depth({'left': {'left': 1, 'right': {'left': 2, 'right': 3}}, 'right': 0}) == 3",
           "concept": "tree-depth"
+        },
+        {
+          "name": "the longest path, not the number of splits",
+          "code": "assert depth({'left': {'left': 1, 'right': 2}, 'right': {'left': 3, 'right': 4}}) == 2",
+          "concept": "tree-depth"
         }
       ],
       "solution": "import math\n\n\ndef entropy(labels):\n    n = len(labels)\n    total = 0.0\n    for c in set(labels):\n        p = labels.count(c) / n\n        total -= p * math.log2(p)\n    return total\n\n\ndef information_gain(parent, left, right):\n    n = len(parent)\n    return entropy(parent) - len(left) / n * entropy(left) - len(right) / n * entropy(right)\n\n\ndef depth(tree):\n    if not isinstance(tree, dict):\n        return 0\n    return 1 + max(depth(tree[\"left\"]), depth(tree[\"right\"]))\n"

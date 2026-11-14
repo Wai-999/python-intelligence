@@ -547,6 +547,11 @@
           "name": "every column counts for missing values and duplicates",
           "code": "import pandas as pd\ndf = pd.DataFrame({'a': [1, 1, 1, 2, None], 'b': ['x', 'y', 'x', None, 'z']})\nout = clean(df)\nassert out.to_dict('list') == {'a': [1.0, 1.0], 'b': ['x', 'y']} and list(out.index) == [0, 1], out",
           "concept": "data-cleaning"
+        },
+        {
+          "name": "a tie goes to the smaller label, wherever it first appears",
+          "code": "assert abs(majority_baseline([1, 1, 0, 0], [0, 0, 1]) - 2 / 3) < 1e-12, majority_baseline([1, 1, 0, 0], [0, 0, 1])",
+          "concept": "baselines"
         }
       ],
       "solution": "import numpy as np\nimport pandas as pd\n\n\ndef clean(df):\n    return df.dropna().drop_duplicates().reset_index(drop=True)\n\n\ndef majority_baseline(y_train, y_test):\n    counts = pd.Series(y_train).value_counts()\n    label = min(counts[counts == counts.max()].index)\n    return float(np.mean(np.asarray(y_test) == label))\n\n\ndef leaky_columns(df, target):\n    def same(c):\n        a, b = df[c], df[target]\n        equal = (a == b).fillna(False).astype(bool)\n        return bool((equal | (a.isna() & b.isna())).all())\n    return sorted(c for c in df.columns if c != target and same(c))\n"
