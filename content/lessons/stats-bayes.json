@@ -206,6 +206,7 @@
     {
       "id": "condition",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: conditioning and Bayes' rule",
       "body": "Complete two functions.\n\n`posterior(prior, sensitivity, specificity)` returns `P(ill | positive)` by Bayes' rule. Raise\n`ValueError` if any argument is outside `[0, 1]`, or if a positive result is impossible (`P(+) = 0`).\n\n`p_given(pairs, a, b)` takes observations `(x, y)` and returns the fraction of those with `y == b` that\nalso have `x == a`, as a float. Raise `ValueError` if no observation has `y == b`.",
       "starter": "def posterior(prior, sensitivity, specificity):\n    return sensitivity\n\n\ndef p_given(pairs, a, b):\n    return sum(x == a for x, y in pairs) / len(pairs)\n",
@@ -256,6 +257,7 @@
     {
       "id": "classify",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a naive Bayes spam filter",
       "body": "Write three functions by the precise rules. `fit_nb(docs, labels)` learns from documents (each a list of\nwords) and their labels and returns a model in any form you like; raise `ValueError` if there are no\ndocuments or `docs` and `labels` differ in length. `nb_scores(model, doc)` returns a dictionary from each\nclass to its log score for `doc`. `predict_nb(model, doc)` returns the best class, with the lesson's tie\nrule. Don't change the inputs.",
       "starter": "import math\n\n\ndef fit_nb(docs, labels):\n    return {'labels': labels}\n\n\ndef nb_scores(model, doc):\n    return {c: 0.0 for c in set(model['labels'])}\n\n\ndef predict_nb(model, doc):\n    return sorted(set(model['labels']))[0]\n",
@@ -331,6 +333,7 @@
     {
       "id": "retest",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: testing twice",
       "body": "A test has a given sensitivity (P(positive | condition)) and specificity (P(negative | no condition)). Write\n`update(prior, sensitivity, specificity, positive)`: the probability of the condition after one result (`positive` is True or\nFalse). Then write `after_results(prior, sensitivity, specificity, results)`, applying one update per result in order, assuming\nthe results are independent given the condition.",
       "starter": "def update(prior, sensitivity, specificity, positive):\n    return sensitivity\n\n\ndef after_results(prior, sensitivity, specificity, results):\n    return prior\n",

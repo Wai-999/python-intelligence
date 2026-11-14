@@ -244,6 +244,7 @@
     {
       "id": "rect",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: rectangles",
       "body": "Complete the class so `Rectangle(3, 4)` stores `width` and `height`, and has methods `area()` and\n`perimeter()`.",
       "starter": "class Rectangle:\n    def __init__(self, width, height):\n        self.width = width\n\n    def area(self):\n        return 0",
@@ -279,6 +280,7 @@
     {
       "id": "stack",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a stack that isn't shared",
       "body": "A stack is last-in, first-out. The starter `Stack` has `push`, `pop` and `is_empty`, and *seems* to work,\nuntil you make two stacks. Fix it so every stack is independent, and make `pop` on an empty stack\nraise `IndexError(\"pop from empty stack\")`.",
       "starter": "class Stack:\n    items = []\n\n    def push(self, x):\n        self.items.append(x)\n\n    def pop(self):\n        return self.items.pop()\n\n    def is_empty(self):\n        return len(self.items) == 0",
@@ -309,6 +311,7 @@
     {
       "id": "scoreboard",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a scoreboard",
       "body": "Write a class `Scoreboard`. `add(player, points)` adds points to a player (starting from 0), `score(player)` returns a\nplayer's total (0 for someone with no points), and `leader()` returns the player with the most points, ties going to\nthe name that comes first alphabetically, or `None` if nobody has scored. Two scoreboards must not share their scores.",
       "starter": "class Scoreboard:\n    scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = points\n",

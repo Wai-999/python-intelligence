@@ -243,6 +243,7 @@
     {
       "id": "parity",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: even or odd",
       "body": "Complete `parity(n)` so it **returns** the text `\"even\"` when `n` is even and `\"odd\"` otherwise.\n\nThe remainder operator `%` helps: `n % 2` is `0` exactly when `n` divides evenly by 2.",
       "starter": "def parity(n):\n    # return \"even\" or \"odd\"\n    pass",
@@ -278,6 +279,7 @@
     {
       "id": "leap",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: leap years",
       "body": "In the Gregorian calendar a year is a leap year if it divides by 4, **except** years that divide by 100,\nwhich are leap years only if they also divide by 400. So 2024 is a leap year, 1900 is not, and 2000 is.\n\nWrite `is_leap(year)` that **returns** `True` or `False` (bools, not text). Order your checks carefully;\nremember that the first true condition wins.",
       "starter": "def is_leap(year):\n    return year % 4 == 0",
@@ -319,6 +321,7 @@
     {
       "id": "cinema",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: cinema tickets",
       "body": "Write `ticket_price(age, student)`. Children under 3 go free (0). Ages 3 to 12 pay 6, and 65 or over pay 7. Everyone\nelse pays 10, except that a student (any truthy `student` value) aged 13 to 64 pays 8.",
       "starter": "def ticket_price(age, student):\n    return 10\n",

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { ExerciseStep } from "../content/types";
+import { DIFFICULTY_LABEL, type ExerciseStep } from "../content/types";
 import { INFRASTRUCTURE_ERRORS, type RunResult } from "../py/protocol";
 import { getRunner } from "../py/runner";
 import { feedbackForError, feedbackForTests } from "../tutor/feedback";
@@ -134,6 +134,8 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
 
   return (
     <section className="cell exercise" aria-label={step.kind === "challenge" ? "Challenge" : step.kind === "transfer" ? "Transfer problem" : "Guided exercise"}>
+      <p className="difficulty" data-level={step.difficulty}>Difficulty: <strong>{DIFFICULTY_LABEL[step.difficulty]}</strong>
+        <span aria-hidden="true"> {"●".repeat(step.difficulty)}{"○".repeat(3 - step.difficulty)}</span></p>
       {record?.passed && !result && <p className="pill ok">✓ Completed earlier. You can keep experimenting.</p>}
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
       <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" />

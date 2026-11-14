@@ -239,6 +239,7 @@
     {
       "id": "stats",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: total and count",
       "body": "Complete `total_and_count(numbers)` so it returns **two values**: the sum of the numbers and how many\nthere are. `total_and_count([2, 4, 6])` returns `(12, 3)`.",
       "starter": "def total_and_count(numbers):\n    total = 0\n    for n in numbers:\n        total = total + n\n    return total",
@@ -269,6 +270,7 @@
     {
       "id": "closest",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: the closest point",
       "body": "Points are `(x, y)` tuples. Write `closest(points)` that returns the point nearest the origin `(0, 0)`.\nCompare **squared** distances, `x * x + y * y` (no square roots needed). If two are equally close,\nreturn the one that comes first. Unpack each point in your loop.",
       "starter": "def closest(points):\n    return points[0]",
@@ -304,6 +306,7 @@
     {
       "id": "box",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a bounding box",
       "body": "Points are `(x, y)` tuples. Write `bounding_box(points)`, which returns `((min_x, min_y), (max_x, max_y))` for a non-empty\nlist of points. Then write `swap_pairs(pairs)`, which returns a new list with each `(a, b)` turned into `(b, a)`.",
       "starter": "def bounding_box(points):\n    return ((0, 0), (0, 0))\n\n\ndef swap_pairs(pairs):\n    return pairs\n",

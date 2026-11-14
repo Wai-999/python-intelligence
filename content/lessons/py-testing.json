@@ -233,6 +233,7 @@
     {
       "id": "testcase",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: tests that catch bugs",
       "body": "`clamp(x, lo, hi)` returns `x` limited to the range `lo..hi` (inclusive), and raises `ValueError` if `lo > hi`.\nThe starter gives you a correct `clamp`. Complete `TestClamp`, a `unittest.TestCase`, so that every test\npasses on the correct `clamp`, and so that at least one test fails on each of several broken versions\n(which the checks will swap in for `clamp`). Think about the boundaries, a range below zero, a range of a\nsingle value, and the error.",
       "starter": "import unittest\n\n\ndef clamp(x, lo, hi):\n    if lo > hi:\n        raise ValueError('lo must not be greater than hi')\n    return max(lo, min(x, hi))\n\n\nclass TestClamp(unittest.TestCase):\n    def test_inside(self):\n        self.assertEqual(clamp(5, 0, 10), 5)\n",
@@ -293,6 +294,7 @@
     {
       "id": "debug",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: follow the traceback to the fix",
       "body": "`report(groups)` should give each group's average, rounded to one decimal place, and `None` for an empty\ngroup. Run the checks: `report([[2, 4], [], [5]])` crashes, and the failed check shows the traceback's frames,\nmost recent call last. Which function raised the error, and which caller passed the bad value in? Fix the code so that the checks pass, and keep `average` raising for\nan empty list (that is a reasonable thing for `average` to do).",
       "starter": "def average(xs):\n    return sum(xs) / len(xs)\n\n\ndef report(groups):\n    return [round(average(g), 1) for g in groups]\n",
@@ -323,6 +325,7 @@
     {
       "id": "median",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: write the tests first",
       "body": "`median(xs)` should return the middle value of the sorted numbers, or the mean of the two middle values when\nthere is an even count; raise `ValueError` for an empty list; and not change `xs`. Write\n`check_median(median)`, which takes *some* implementation and returns quietly if it is correct, but raises an\nexception (normally an `AssertionError`) if it gets any of those rules wrong. This is writing the tests\nfirst: you pin down what `median` must do before seeing any version of it. The checks then give your\nfunction a correct median and several broken ones.",
       "starter": "def check_median(median):\n    assert median([5, 1, 3]) == 3\n",
@@ -383,6 +386,7 @@
     {
       "id": "wordtests",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: tests for a word counter",
       "body": "`word_count(text)` returns the number of words in `text`, where words are separated by any whitespace (spaces, tabs or\nnewlines, one or more), punctuation stays part of its word, and an empty or blank string has 0 words. The starter\ngives you a correct version. Complete `TestWordCount` so that every test passes on it and at least one fails on each\nof several broken versions the checks will swap in.",
       "starter": "import unittest\n\n\ndef word_count(text):\n    return len(text.split())\n\n\nclass TestWordCount(unittest.TestCase):\n    def test_simple(self):\n        self.assertEqual(word_count(\"one two\"), 2)\n",

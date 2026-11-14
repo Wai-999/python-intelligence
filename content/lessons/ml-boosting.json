@@ -191,6 +191,7 @@
     {
       "id": "stump",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: a regression stump",
       "body": "Complete two functions by the precise rules.\n\n`fit_stump(X, r)` takes rows (lists of numbers) and their targets and returns `(feature, threshold,\nleft_mean, right_mean)`, or `None` if no feature has two distinct values. Raise `ValueError` if there are\nno rows, `X` and `r` differ in length, or the rows differ in length. Don't change the inputs.\n\n`predict_stump(stump, x)` returns the stump's prediction for one row.",
       "starter": "def fit_stump(X, r):\n    m = sum(r) / len(r)\n    return 0, X[0][0], m, m\n\n\ndef predict_stump(stump, x):\n    return stump[2]\n",
@@ -266,6 +267,7 @@
     {
       "id": "boost",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: boost the stumps",
       "body": "The starter gives you `fit_stump` and `predict_stump`. Write `fit_boost(X, y, rounds, lr)`, returning a\nmodel in any form you like, and `predict_boost(model, X)`, returning a list of predictions, by the precise\nrules. Raise `ValueError` if `rounds < 0`, unless `lr > 0`, or if `X` and `y` are invalid (as for\n`fit_stump`), even when `rounds` is 0. Don't change the inputs.",
       "starter": "def fit_stump(X, r):\n    if not X or len(X) != len(r) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one target each')\n    candidates = []\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [v for row, v in zip(X, r) if row[f] <= t]\n            right = [v for row, v in zip(X, r) if row[f] > t]\n            ml, mr = sum(left) / len(left), sum(right) / len(right)\n            sse = sum((v - ml) * (v - ml) for v in left) + sum((v - mr) * (v - mr) for v in right)\n            candidates.append((sse, f, t, ml, mr))\n    if not candidates:\n        return None\n    low = min(c[0] for c in candidates)\n    sse, f, t, ml, mr = next(c for c in candidates if c[0] <= low + 1e-9)\n    return f, t, ml, mr\n\n\ndef predict_stump(stump, x):\n    f, t, ml, mr = stump\n    return ml if x[f] <= t else mr\n\n\ndef fit_boost(X, y, rounds, lr):\n    return {'base': sum(y) / len(y)}\n\n\ndef predict_boost(model, X):\n    return [model['base'] for _ in X]\n",
@@ -341,6 +343,7 @@
     {
       "id": "constant",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: boosting the simplest learner",
       "body": "The simplest weak learner predicts one constant: the mean of its targets. Write `residuals(ys, preds)` (target minus\nprediction, element by element), and `boost(ys, rounds, lr)`: start every prediction at 0, and in each round fit the\nconstant learner to the residuals and add `lr` times its prediction to every prediction. Return the final predictions.",
       "starter": "def residuals(ys, preds):\n    return ys\n\n\ndef boost(ys, rounds, lr):\n    return [0.0] * len(ys)\n",

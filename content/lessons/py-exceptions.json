@@ -244,6 +244,7 @@
     {
       "id": "toint",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: read a number safely",
       "body": "Complete `to_int(text, default)` so it returns `int(text)` when that works, and `default` when the text\nisn't a whole number. Catch only `ValueError`.",
       "starter": "def to_int(text, default):\n    return int(text)",
@@ -279,6 +280,7 @@
     {
       "id": "withdraw",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: refuse a bad withdrawal",
       "body": "Write `withdraw(balance, amount)` that returns the new balance, but **raises** `ValueError` with a\nhelpful message if `amount` is not positive or is more than `balance`. Validate before changing\nanything.",
       "starter": "def withdraw(balance, amount):\n    return balance - amount",
@@ -314,6 +316,7 @@
     {
       "id": "ages",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: reading ages",
       "body": "Write `parse_age(text)`, which returns the whole number in `text` (spaces around it are fine) and raises `ValueError`\nwith a message if it isn't a whole number or isn't between 0 and 150. Then write `valid_ages(texts)`, which returns the\nages that parse, in order, skipping the ones `parse_age` rejects, but which does not hide other kinds of error.",
       "starter": "def parse_age(text):\n    return int(text)\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except:\n            pass\n    return ages\n",

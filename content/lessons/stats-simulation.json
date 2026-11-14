@@ -314,6 +314,7 @@
     {
       "id": "birthday",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: one room of people",
       "body": "Complete `birthday_trial(rng, people)`: draw one birthday per person with `rng.randint(1, 365)`\nand return `True` if any two are the same. Use the `rng` you are given, not the `random` module\ndirectly: that lets the tests hand you a scripted generator.",
       "starter": "import random\n\ndef birthday_trial(rng, people):\n    return False\n",
@@ -357,6 +358,7 @@
     {
       "id": "estimate",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a reusable estimator",
       "body": "Write `estimate(trial, trials, seed)`. Make **one** generator with `random.Random(seed)`, call\n`trial(rng)` `trials` times with that same generator, and return the fraction of calls that returned\n`True`, rounded to 3 decimal places. Then try `estimate(lambda r: birthday_trial(r, 23), 2000, 0)`.",
       "starter": "import random\n\ndef birthday_trial(rng, people):\n    days = [rng.randint(1, 365) for _ in range(people)]\n    return len(set(days)) < len(days)\n\n\ndef estimate(trial, trials, seed):\n    rng = random.Random(seed)\n    return trial(rng)\n",
@@ -397,6 +399,7 @@
     {
       "id": "montecarlo",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: estimating π and a dice probability",
       "body": "Write `estimate_pi(n, seed)`: drop n random points in the unit square and return 4 × the share that land inside the quarter\ncircle x² + y² ≤ 1, using `random.Random(seed)`. Write `dice_probability(target, trials, seed)`: the estimated probability\nthat two dice add up to `target`.",
       "starter": "def estimate_pi(n, seed):\n    return 3.0\n\n\ndef dice_probability(target, trials, seed):\n    return 0.0\n",

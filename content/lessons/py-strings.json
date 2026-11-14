@@ -244,6 +244,7 @@
     {
       "id": "initials",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: initials",
       "body": "Complete `initials(full_name)` so it returns the capital first letter of every word:\n`initials(\"ada lovelace\")` is `\"AL\"`. Extra spaces between or around words must not matter.\n\n`full_name.split()` gives you the words as a list you can loop over.",
       "starter": "def initials(full_name):\n    result = \"\"\n    # add the first letter of each word\n    return result",
@@ -279,6 +280,7 @@
     {
       "id": "palindrome",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: palindromes",
       "body": "A palindrome reads the same backwards. Write `is_palindrome(text)` that returns `True` or `False`,\n**ignoring capitals and anything that isn't a letter**, so `\"Never odd or even\"` counts.\n\nBuild a cleaned-up string first, then compare it with its reverse.",
       "starter": "def is_palindrome(text):\n    return text == text[::-1]",
@@ -319,6 +321,7 @@
     {
       "id": "card",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: masking a card number",
       "body": "Card numbers are often written with spaces, like `\"4111 1111 1111 1234\"`. Write `mask(card)`, which removes the spaces\nand replaces every digit except the last four with `*`. Then write `brand(card)`, which ignores spaces and returns\n`\"visa\"` if the first digit is 4, `\"mastercard\"` if it is 5, `\"amex\"` if it is 3, and `\"unknown\"` otherwise\n(including for an empty string).",
       "starter": "def mask(card):\n    return card\n\n\ndef brand(card):\n    return \"unknown\"\n",

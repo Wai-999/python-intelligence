@@ -212,6 +212,7 @@
     {
       "id": "avgword",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: average word length",
       "body": "Complete `average_word_length(text)` using `statistics.mean` on the **lengths** of the words, rounded\nto 2 decimal places. Return `0.0` when the text has no words (`mean` of an empty list is an error).",
       "starter": "import statistics\n\ndef average_word_length(text):\n    words = text.split()\n    return statistics.mean(words)",
@@ -247,6 +248,7 @@
     {
       "id": "letters",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: the most common letters",
       "body": "Write `top_letters(text, n)` that returns a list of the `n` most common **letters** in `text`, ignoring\ncase and anything that isn't a letter, most common first. Use `collections.Counter` and its\n`most_common(n)` method, which returns `(item, count)` pairs.",
       "starter": "def top_letters(text, n):\n    return list(text[:n])",
@@ -277,6 +279,7 @@
     {
       "id": "dates",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: working with dates",
       "body": "Using the `datetime` module, write `days_between(start, end)`, where both are dates written like `\"2024-01-31\"`, returning\nthe number of days from `start` to `end` (negative if `end` is earlier); and `weekday_name(day)`, returning the English\nname of that date's weekday, like `\"Friday\"`.",
       "starter": "def days_between(start, end):\n    return 0\n\n\ndef weekday_name(day):\n    return \"\"\n",

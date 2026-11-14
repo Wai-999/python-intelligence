@@ -243,6 +243,7 @@
     {
       "id": "countlines",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: count the non-blank lines",
       "body": "Complete `count_lines(path)` so it returns how many lines of the file contain something other than\nspaces. Use `with` and `encoding=\"utf-8\"`. A missing file should raise `FileNotFoundError` as usual.",
       "starter": "def count_lines(path):\n    return 0",
@@ -278,6 +279,7 @@
     {
       "id": "log",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a message log",
       "body": "Write two functions. `append_log(path, message)` adds `message` as a new line at the **end** of the file\n(creating it if needed). `read_log(path)` returns the list of messages exactly as they were given (keep any spaces; drop only the\nnewline), or `[]` if\nthe file doesn't exist yet. The starter has two bugs; find them.",
       "starter": "def append_log(path, message):\n    with open(path, \"w\", encoding=\"utf-8\") as f:\n        f.write(message + \"\\n\")\n\ndef read_log(path):\n    with open(path, encoding=\"utf-8\") as f:\n        return [line.strip() for line in f]",
@@ -313,6 +315,7 @@
     {
       "id": "notes",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a notes file",
       "body": "Write `save_notes(path, notes)`, which writes each note on its own line, replacing anything in the file; `add_note(path,\nnote)`, which adds one note at the end without losing the others; and `read_notes(path)`, which returns the notes as a\nlist of strings without their newlines, or an empty list if the file doesn't exist yet.",
       "starter": "def save_notes(path, notes):\n    pass\n\n\ndef add_note(path, note):\n    pass\n\n\ndef read_notes(path):\n    return []\n",

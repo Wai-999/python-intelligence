@@ -105,8 +105,13 @@ export interface PyTest {
   concept?: string;
 }
 
+/** 1 = warm-up (worked through with the lesson), 2 = core (on your own), 3 = stretch (a new problem). */
+export type Difficulty = 1 | 2 | 3;
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = { 1: "Warm-up", 2: "Core", 3: "Stretch" };
+
 export interface ExerciseStep extends BaseStep {
   kind: "guided" | "challenge" | "transfer";
+  difficulty: Difficulty;
   starter: string;
   hints: string[];
   tests: PyTest[];

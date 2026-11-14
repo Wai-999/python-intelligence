@@ -241,6 +241,7 @@
     {
       "id": "closed",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: fit_line",
       "body": "Complete `fit_line(x, y)` so it returns the least-squares `(w, b)` as plain floats, using the\nclosed-form rules. Raise `ValueError` if every `x` is the same: then no single slope and intercept fit best (many lines tie), so the fit is not unique.",
       "starter": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w = y.mean() / x.mean()\n    return float(w), 0.0\n",
@@ -291,6 +292,7 @@
     {
       "id": "descent",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: gradient descent",
       "body": "Write `gd_fit(x, y, lr=0.01, steps=5000)`. Start at `w = b = 0.0` and take exactly `steps` gradient\ndescent steps on the mean squared error with learning rate `lr`, updating `w` and `b` together from\nthe same old values. Return `(w, b)` as floats. With enough steps it should agree with `fit_line`.",
       "starter": "import numpy as np\n\ndef gd_fit(x, y, lr=0.01, steps=5000):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    w, b = 0.0, 0.0\n    for _ in range(steps):\n        err = w * x + b - y\n        w = w - lr * 2 * np.mean(err * x)\n    return float(w), float(b)\n",
@@ -336,6 +338,7 @@
     {
       "id": "origin",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a line through the origin",
       "body": "Some quantities are zero when their cause is zero (cost against weight, say). Write `mse(y, y_hat)`, the mean squared\nerror, and `fit_through_origin(x, y)`, the slope w of the least-squares line y ≈ w·x with no intercept (w = Σxy / Σx²).\nThen write `step(w, x, y, lr)`: one gradient-descent step on the mean squared error of that model, which returns\nw − lr · 2·mean((w·x − y)·x).",
       "starter": "import numpy as np\n\n\ndef mse(y, y_hat):\n    return 0.0\n\n\ndef fit_through_origin(x, y):\n    return 0.0\n\n\ndef step(w, x, y, lr):\n    return w\n",

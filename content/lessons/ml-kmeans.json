@@ -218,6 +218,7 @@
     {
       "id": "assign",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: the assignment step",
       "body": "Complete `assign(X, centroids)`: return a list with, for each row of `X`, the position (an `int`) of\nits nearest centroid in Euclidean distance; on a tie, the lowest position. Return `[]` when `X` has\nno rows, and raise `ValueError` when there are no centroids. Don't change the inputs.",
       "starter": "import numpy as np\n\ndef assign(X, centroids):\n    return [0 for _ in X]\n",
@@ -293,6 +294,7 @@
     {
       "id": "kmeans",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: k-means from scratch",
       "body": "The starter gives you `assign`. Write `kmeans(X, init, max_iter=100)` following the rules above:\nstart from the centroids `init`, and each iteration assign every row, then move each centroid to the\nmean of its rows (a centroid with none stays put). Stop after an iteration in which no assignment\nchanged, or after `max_iter` iterations. Return `{'centroids': [...], 'labels': [...], 'inertia': ...}`:\nthe centroids after the last update (lists of floats), the labels from the last assignment (ints),\nand the inertia of those labels and centroids (a float). Raise `ValueError` if `X` or `init` is empty,\ntheir widths differ, or `max_iter < 1`. Don't change `X` or `init`.",
       "starter": "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n\n\ndef kmeans(X, init, max_iter=100):\n    labels = assign(X, init)\n    return {'centroids': [list(c) for c in init], 'labels': labels, 'inertia': 0.0}\n",
@@ -408,6 +410,7 @@
     {
       "id": "stores",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: placing shops for weighted customers",
       "body": "Neighbourhoods are points, and each has a number of customers (its weight). Write `weighted_update(points, weights, labels,\ncentroids)`: a new (k, d) array where shop j moves to the weighted mean of the neighbourhoods assigned to it (Σ w·p / Σ w),\nor stays where it was if none are. Then write `weighted_inertia(points, weights, labels, centroids)`: the sum over\nneighbourhoods of weight × squared distance to its shop.",
       "starter": "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    return centroids\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    return 0.0\n",

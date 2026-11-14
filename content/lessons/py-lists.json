@@ -212,6 +212,7 @@
     {
       "id": "evens",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: keep the even numbers",
       "body": "Complete `evens(numbers)` so it returns a **new** list containing only the even numbers, in their\noriginal order. The list you were given must not change.",
       "starter": "def evens(numbers):\n    return numbers",
@@ -252,6 +253,7 @@
     {
       "id": "dedupe",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: remove duplicates",
       "body": "Write `remove_duplicates(items)` that returns a new list with each item kept only the **first** time it\nappears, in the original order: `[3, 1, 3, 2, 1]` becomes `[3, 1, 2]`. Don't change `items`.",
       "starter": "def remove_duplicates(items):\n    result = []\n    for x in items:\n        result.append(x)\n    return result",
@@ -292,6 +294,7 @@
     {
       "id": "playlist",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a playlist",
       "body": "Write `move_to_front(songs, title)`, which returns a new list with the first occurrence of `title` moved to the front;\nif it isn't there, a copy of the list. It must not change `songs`. Then write `add_unique(songs, title)`, which\nchanges `songs` itself, appending `title` only if it isn't already there, and returns nothing.",
       "starter": "def move_to_front(songs, title):\n    return songs\n\n\ndef add_unique(songs, title):\n    songs.append(title)\n",

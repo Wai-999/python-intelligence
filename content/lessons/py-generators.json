@@ -281,6 +281,7 @@
     {
       "id": "running",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: make it lazy",
       "body": "`running_total(numbers)` gives the total so far after each number: for `[3, 1, 4]` it gives 3, 4, 8. The\nstarter works, but it builds the whole list before returning anything. Rewrite it as a generator\nfunction that yields each total as soon as it knows it, so that it works on an endless stream of numbers\nand never reads more numbers than it has been asked for.",
       "starter": "def running_total(numbers):\n    total = 0\n    result = []\n    for x in numbers:\n        total += x\n        result.append(total)\n    return result\n",
@@ -326,6 +327,7 @@
     {
       "id": "pipeline",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a lazy word pipeline",
       "body": "Write a generator function `long_words(lines, min_len)`. `lines` is any iterable of strings (a list, an open\nfile, another generator). Yield, in order, every word of at least `min_len` letters, in lower case and with\nthe punctuation `.,!?;:` stripped from its ends. Words are separated by whitespace. It must read the lines\none at a time: it should not look at a line before it needs a word from it.",
       "starter": "def long_words(lines, min_len):\n    words = []\n    return words\n",
@@ -381,6 +383,7 @@
     {
       "id": "chunks",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: chunks of a stream",
       "body": "Write a generator function `chunked(items, size)` that yields lists of `size` consecutive items from any iterable, with a\nshorter list at the end if items are left over. It must be lazy: to give the first chunk it reads only the first `size`\nitems. A `size` below 1 raises `ValueError` when the first chunk is asked for.",
       "starter": "def chunked(items, size):\n    items = list(items)\n    return [items[i:i + size] for i in range(0, len(items), size)]\n",

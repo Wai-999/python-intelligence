@@ -282,6 +282,7 @@
     {
       "id": "growth",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: order of growth by experiment",
       "body": "`steps` is a function: `steps(n)` returns how many steps some algorithm takes on an input of size `n`. Write\n`order_of_growth(steps)`, which compares `steps(1000)` with `steps(2000)` and returns one of\n`\"constant\"` (the two counts are equal), `\"logarithmic\"` (ratio below 1.5), `\"linear\"` (ratio below\n3) or `\"quadratic\"` (anything larger). This is a rule of thumb for these four shapes, not a proof: two\nsizes can mislead when small terms still dominate, and other growth rates exist (n log n doubles to about\n2.2 times, so this rule would call it linear).",
       "starter": "def order_of_growth(steps):\n    small = steps(1000)\n    big = steps(2000)\n    return \"linear\"\n",
@@ -337,6 +338,7 @@
     {
       "id": "common",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: the right data structure",
       "body": "Write `common_items(a, b)`: return the items of `b` that also appear in `a`, in `b`'s order, keeping repeats\nfrom `b`. The starter is correct, but `item in a` scans the whole list `a` for every item of `b`, which\nis O(len(a) × len(b)). Make it scale: the checks count how many times your code compares two items for\nequality or computes an item's hash, using 400 items in each list (a generous budget a little under five\noperations per item). Items are hashable.",
       "starter": "def common_items(a, b):\n    result = []\n    for item in b:\n        if item in a:\n            result.append(item)\n    return result\n",
@@ -372,6 +374,7 @@
     {
       "id": "repeat",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: the first repeat",
       "body": "Write `first_repeat(items)`: return the first item that appears for the second time as you read the list from the start,\nor `None` if no item repeats. It must scale: the checks count comparisons and hash computations on 1,000 items.",
       "starter": "def first_repeat(items):\n    for i in range(len(items)):\n        if items[i] in items[:i]:\n            return items[i]\n    return None\n",

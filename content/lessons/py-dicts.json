@@ -242,6 +242,7 @@
     {
       "id": "words",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: count words",
       "body": "Complete `word_counts(text)` so it returns a dictionary mapping each word to how many times it appears.\nTreat capitals as the same word: `word_counts(\"The cat the\")` is `{\"the\": 2, \"cat\": 1}`.",
       "starter": "def word_counts(text):\n    counts = {}\n    # count each word in text.lower().split()\n    return counts",
@@ -272,6 +273,7 @@
     {
       "id": "invert",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: group by value",
       "body": "Given favourite colours by person, `{\"ann\": \"red\", \"bo\": \"blue\", \"cy\": \"red\"}`, write\n`group_by_value(d)` returning who likes each colour: `{\"red\": [\"ann\", \"cy\"], \"blue\": [\"bo\"]}`.\nKeep the people in the order they appear in `d`.",
       "starter": "def group_by_value(d):\n    result = {}\n    for key, value in d.items():\n        result[value] = key\n    return result",
@@ -302,6 +304,7 @@
     {
       "id": "restock",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a stock list",
       "body": "A shop's `stock` maps item names to quantities. Write `restock(stock, deliveries)`, where `deliveries` is a list of\n`[item, quantity]` pairs: add each quantity to the stock, creating items that aren't there yet (change `stock` itself).\nThen write `low_stock(stock, limit)`: the names of the items with fewer than `limit` left, in alphabetical order.",
       "starter": "def restock(stock, deliveries):\n    pass\n\n\ndef low_stock(stock, limit):\n    return []\n",

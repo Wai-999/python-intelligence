@@ -235,6 +235,7 @@
     {
       "id": "linear",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: classify many examples at once",
       "body": "Complete `predict_linear(w, b, X)`, where each row of `X` is one example. Compute every score\n`w · x + b` with NumPy, then return a plain list of `1` or `-1` per row (`1` when the score is\n`>= 0`).",
       "starter": "import numpy as np\n\ndef predict_linear(w, b, X):\n    return [1 for _ in X]\n",
@@ -280,6 +281,7 @@
     {
       "id": "nearest",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a nearest-centroid classifier",
       "body": "Write two functions. `fit_centroids(X, y)` returns a dictionary mapping each label to its centroid\n(the mean of that label's rows) as a list of floats; raise `ValueError` if `X` and `y` differ in\nlength or are empty. `predict_centroids(centroids, X)` returns a list with the label of the\nnearest centroid (Euclidean distance) for each row; if several are equally near, choose the label\nthat comes first in sorted order. Labels can be any sortable values, such as strings or numbers.",
       "starter": "import numpy as np\n\ndef fit_centroids(X, y):\n    return {label: list(X[y.index(label)]) for label in set(y)}\n\n\ndef predict_centroids(centroids, X):\n    first = sorted(centroids)[0]\n    return [first for _ in X]\n",
@@ -350,6 +352,7 @@
     {
       "id": "metrics",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: thresholds, precision and recall",
       "body": "Write `predict(scores, threshold)`: a numpy array with 1 where the score is at least the threshold and 0 elsewhere. Then\nwrite `precision_recall(y_true, y_pred)` for 0/1 labels, returning `(precision, recall)`; when a denominator is 0, that\nvalue is 0.0.",
       "starter": "import numpy as np\n\n\ndef predict(scores, threshold):\n    return np.zeros(len(scores), dtype=int)\n\n\ndef precision_recall(y_true, y_pred):\n    return (0.0, 0.0)\n",

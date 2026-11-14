@@ -146,6 +146,7 @@
     {
       "id": "discount",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Guided practice: a default discount",
       "body": "Write `apply_discount(price, percent=10)`. It returns the price after taking off `percent` percent,\nrounded to 2 decimal places with `round(value, 2)`.",
       "starter": "def apply_discount(price):\n    pass",
@@ -181,6 +182,7 @@
     {
       "id": "points",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: replace a global with a return",
       "body": "This scoring function tries to change a global `score`, which crashes with `UnboundLocalError`. Rewrite it\nas `add_points(score, points)`, so that it **returns** the new score and the caller decides what to do with\nit. Don't use the `global` keyword.",
       "starter": "score = 0\n\ndef add_points(points):\n    score = score + points",
@@ -210,6 +212,7 @@
     {
       "id": "money",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: formatting money",
       "body": "Write `format_price(amount, currency=\"£\", decimals=2)`, which returns the amount with the currency symbol in front and\nthe given number of decimal places, like `\"£3.50\"`. Then write `add_tip(total, percent=10)`, which returns the total\nplus the tip. A global named `total` exists; your functions must not change it.",
       "starter": "total = 100\n\n\ndef format_price(amount):\n    return str(amount)\n\n\ndef add_tip(bill):\n    global total\n    total = bill * 1.1\n",

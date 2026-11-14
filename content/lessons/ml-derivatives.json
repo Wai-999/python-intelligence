@@ -183,6 +183,7 @@
     {
       "id": "estimate",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: numerical derivatives",
       "body": "Complete two functions using central differences.\n\n`derivative(f, x, h=1e-5)` estimates `f′(x)` for a function of one number.\n\n`gradient(f, point, h=1e-5)` takes a function of a list of numbers and returns the list of partial\nderivatives at `point`, moving one coordinate at a time on copies, so `point` itself never changes.\n\nBoth raise `ValueError` unless `h > 0`; `gradient` also raises it for an empty `point`.",
       "starter": "def derivative(f, x, h=1e-5):\n    return (f(x + h) - f(x)) / h\n\n\ndef gradient(f, point, h=1e-5):\n    return [0.0 for _ in point]\n",
@@ -233,6 +234,7 @@
     {
       "id": "verify",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: check a gradient formula",
       "body": "The starter gives you `derivative` and `gradient`. Write `check_gradient(f, grad, point, h=1e-5, tol=1e-6)`:\ncompute the numerical gradient of `f` at `point` and the hand-written one, `grad(point)`, and return\n`(passed, worst)`, where `worst` is the largest relative error by the precise rules (a float) and `passed`\nis `worst <= tol`. Raise `ValueError` if `tol` is negative or `grad` returns the wrong number of\ncomponents (and let `gradient` reject a bad `h` or an empty point).",
       "starter": "def derivative(f, x, h=1e-5):\n    if not h > 0:\n        raise ValueError('h must be positive')\n    return (f(x + h) - f(x - h)) / (2 * h)\n\n\ndef gradient(f, point, h=1e-5):\n    if not h > 0:\n        raise ValueError('h must be positive')\n    if not point:\n        raise ValueError('need at least one coordinate')\n    out = []\n    for i in range(len(point)):\n        up, down = list(point), list(point)\n        up[i] += h\n        down[i] -= h\n        out.append((f(up) - f(down)) / (2 * h))\n    return out\n\n\ndef check_gradient(f, grad, point, h=1e-5, tol=1e-6):\n    return True, 0.0\n",
@@ -298,6 +300,7 @@
     {
       "id": "curvature",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: curvature and direction",
       "body": "Write `second_derivative(f, x, h=1e-4)` using the central second difference (f(x+h) − 2f(x) + f(x−h)) / h², and\n`direction(f, x)`, which returns `\"up\"`, `\"down\"` or `\"flat\"` depending on whether the central first difference at `x`\n(with h = 1e-5) is above 1e-6, below −1e-6, or in between.",
       "starter": "def second_derivative(f, x, h=1e-4):\n    return 0.0\n\n\ndef direction(f, x):\n    return \"flat\"\n",

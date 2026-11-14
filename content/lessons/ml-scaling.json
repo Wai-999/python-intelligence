@@ -196,6 +196,7 @@
     {
       "id": "standardize",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: standardize train and test",
       "body": "Complete `standardize(X_train, X_test)`. Learn each column's mean and standard deviation (dividing\nby `N`) from `X_train` only; use 1 for any column whose standard deviation is 0. Return the\nstandardized training and test sets as two lists of lists of floats. Raise `ValueError` if\n`X_train` has no rows; `X_test` may be empty. Don't change the inputs.",
       "starter": "import numpy as np\n\ndef standardize(X_train, X_test):\n    A = np.array(X_train, dtype=float)\n    B = np.array(X_test, dtype=float)\n    return (A - A.mean()).tolist(), (B - B.mean()).tolist()\n",
@@ -266,6 +267,7 @@
     {
       "id": "model",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a classifier that ignores units",
       "body": "The starter gives you `fit_centroids` and `predict_centroids`. Write two functions.\n`fit_scaled_centroids(X, y)` learns each column's mean and standard deviation (dividing by `N`,\nwith 1 for a zero spread) from `X`, standardizes `X`, fits centroids to the standardized rows, and\nreturns `{'means': [...], 'stds': [...], 'centroids': {...}}` with plain lists of floats. Raise\n`ValueError` if `X` is empty or its length differs from `y`.\n`predict_scaled(model, X)` standardizes the new rows with the model's **stored** means and standard\ndeviations and returns the nearest centroid's label for each row (it must work for a single row,\nand return `[]` for no rows);\nequally near centroids go to the label first in sorted order, as `predict_centroids` does.",
       "starter": "import numpy as np\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef fit_scaled_centroids(X, y):\n    return {'means': [], 'stds': [], 'centroids': fit_centroids(X, y)}\n\n\ndef predict_scaled(model, X):\n    return predict_centroids(model['centroids'], X)\n",
@@ -361,6 +363,7 @@
     {
       "id": "minmax",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: min-max scaling",
       "body": "Write `min_max_scale(train, test)`: for each column, map the training minimum to 0 and the training maximum to 1, and\napply the same mapping to `test` (test values may land outside [0, 1]). A column that is constant in the training data has a\nspan of 0: use 1 instead, so its training values become 0 and test values keep their difference from that constant.\nReturn the two scaled arrays as a tuple; don't change the inputs.",
       "starter": "import numpy as np\n\n\ndef min_max_scale(train, test):\n    lo = np.vstack([train, test]).min(axis=0)\n    hi = np.vstack([train, test]).max(axis=0)\n    return (train - lo) / (hi - lo), (test - lo) / (hi - lo)\n",

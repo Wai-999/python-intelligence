@@ -192,6 +192,7 @@
     {
       "id": "pdf",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: the density from its formula",
       "body": "Complete `normal_pdf(x, mu, sigma)` from the formula above, using the `math` module. The checks compare\nyour values with `NormalDist(mu, sigma).pdf(x)`, which you can also call yourself to compare. Raise\n`ValueError` if `sigma` is not positive.",
       "starter": "import math\n\ndef normal_pdf(x, mu, sigma):\n    return math.exp(-(x - mu) ** 2)\n",
@@ -242,6 +243,7 @@
     {
       "id": "probabilities",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: answer probability questions",
       "body": "Write three functions (raise `ValueError` whenever `sigma` is not positive):\n\n- `prob_between(mu, sigma, a, b)`: the exact `P(a < X ≤ b)` with `NormalDist`; `0.0` when `a >= b`.\n  `a` may be `-math.inf` and `b` may be `math.inf`.\n- `value_at(mu, sigma, p)`: the value with a fraction `p` of the distribution below it; raise\n  `ValueError` unless `0 < p < 1`.\n- `estimate_between(mu, sigma, a, b, n, seed)`: the fraction of `n` draws that land in `a < x ≤ b`,\n  drawing in order with one `random.Random(seed)` and its `.gauss(mu, sigma)`; raise `ValueError`\n  if `n < 1`.",
       "starter": "import random\nfrom statistics import NormalDist\n\n\ndef prob_between(mu, sigma, a, b):\n    return 0.5\n\n\ndef value_at(mu, sigma, p):\n    return mu\n\n\ndef estimate_between(mu, sigma, a, b, n, seed):\n    return 0.5\n",
@@ -307,6 +309,7 @@
     {
       "id": "measure",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: answering questions about heights",
       "body": "Write `prob_between(a, b, mu, sigma)`: the probability that a normal value lies between a and b, using the cumulative\ndistribution Φ(z) = (1 + erf(z/√2))/2. Write `within(k)`: the probability of lying within k standard deviations of the\nmean. Write `peak(sigma)`: the height of the density at its mean, 1/(σ√(2π)).",
       "starter": "import math\n\n\ndef prob_between(a, b, mu, sigma):\n    return 0.0\n\n\ndef within(k):\n    return 0.0\n\n\ndef peak(sigma):\n    return 1.0\n",

@@ -241,6 +241,7 @@
     {
       "id": "positives",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: tidy the readings",
       "body": "Complete `positive_rounded(readings)` with a **single list comprehension** (a check looks for exactly one\ncomprehension loop and no `.append`) that keeps only readings\nabove 0 and rounds each to a whole number with `round(r)`. The input list must not change.",
       "starter": "def positive_rounded(readings):\n    return [r for r in readings]",
@@ -276,6 +277,7 @@
     {
       "id": "index",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: an index of word lengths",
       "body": "Write `length_index(words)` returning a dictionary that maps each **lower-case** word to its length,\nbut only for words of at least 3 letters: `length_index([\"Hi\", \"Owl\", \"swan\"])` is\n`{\"owl\": 3, \"swan\": 4}`. Use a dictionary comprehension (a check looks for one).",
       "starter": "def length_index(words):\n    return {w: len(w) for w in words}",
@@ -311,6 +313,7 @@
     {
       "id": "menu",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a price list",
       "body": "Write `square_evens(numbers)`, which returns the squares of the even numbers, in order, using a list comprehension.\nThen write `price_index(items)`, where `items` is a list of `(name, price)` pairs: return a dict from each name in\nlower case to its price, keeping only items with a price above 0.",
       "starter": "def square_evens(numbers):\n    return []\n\n\ndef price_index(items):\n    return {}\n",

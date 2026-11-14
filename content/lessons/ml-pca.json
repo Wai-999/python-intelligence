@@ -228,6 +228,7 @@
     {
       "id": "covariance",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: the covariance matrix",
       "body": "Complete `covariance_matrix(X)`: centre each column of `X` on its mean, then return `Xcᵀ Xc / N` as a\nlist of lists of floats (`N` is the number of rows). Raise `ValueError` if `X` has no rows, and don't\nchange `X`.",
       "starter": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    return (A.T @ A).tolist()\n",
@@ -283,6 +284,7 @@
     {
       "id": "pca",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: PCA from scratch",
       "body": "The starter gives you `covariance_matrix`. Write `pca_fit(X, k)`, which returns a dictionary with\n`'mean'` (the column means), `'components'` (the top `k` eigenvectors of the covariance matrix, largest\neigenvalue first, each a list with the sign rule above), `'variances'` (their eigenvalues) and\n`'explained'` (each eigenvalue divided by the sum of **all** eigenvalues). Raise `ValueError` if `X`\nhas no rows, if `k` is not between 1 and the number of features, or if the data has no spread (every\nrow identical; compare the rows, since rounding can leave a tiny variance).\nThen write `pca_transform(model, X)`, which centres new rows with the model's **stored** mean and\nreturns their coordinates along the components (one list of `k` floats per row; `[]` for no rows).\nYou may assume the eigenvalues you keep are all different.",
       "starter": "import numpy as np\n\ndef covariance_matrix(X):\n    A = np.array(X, dtype=float)\n    if A.ndim != 2 or len(A) == 0:\n        raise ValueError('need at least one row')\n    C = A - A.mean(axis=0)\n    return (C.T @ C / len(A)).tolist()\n\n\ndef pca_fit(X, k):\n    A = np.array(X, dtype=float)\n    first = [1.0] + [0.0] * (A.shape[1] - 1)\n    return {'mean': A.mean(axis=0).tolist(), 'components': [first] * k, 'variances': [0.0] * k, 'explained': [0.0] * k}\n\n\ndef pca_transform(model, X):\n    return [[row[0]] * len(model['components']) for row in X]\n",
@@ -353,6 +355,7 @@
     {
       "id": "project",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: projecting and keeping enough variance",
       "body": "Write `project(X, components)`: centre the rows of X by their column means and return their coordinates along each\ncomponent (components is a (k, d) array of unit vectors). Then write `components_needed(eigenvalues, share)`: the\nsmallest number of components (taken largest eigenvalue first) whose explained-variance ratios add up to at least `share`.",
       "starter": "import numpy as np\n\n\ndef project(X, components):\n    return X @ components.T\n\n\ndef components_needed(eigenvalues, share):\n    return len(eigenvalues)\n",

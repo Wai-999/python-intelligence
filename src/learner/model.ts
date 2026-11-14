@@ -46,6 +46,8 @@ export interface LearnerEvent {
   confidence?: 1 | 2 | 3 | 4 | 5;
   /** For an intervention: the ids of the events that triggered it. */
   supports?: string[];
+  /** For an exercise: its difficulty tag (1 warm-up, 2 core, 3 stretch). A label for reports; it doesn't weight evidence. */
+  difficulty?: 1 | 2 | 3;
 }
 
 export class LearnerDataError extends Error {
@@ -152,6 +154,8 @@ function validate(e: unknown, i: number): LearnerEvent {
     throw bad("tags must be a list of nonempty strings");
   if (v.supports !== undefined && (!Array.isArray(v.supports) || !v.supports.every((x) => typeof x === "string" && x.length > 0)))
     throw bad("supports must be a list of nonempty event ids");
+  if (v.difficulty !== undefined && !(v.task === "exercise" && [1, 2, 3].includes(v.difficulty as number)))
+    throw bad("difficulty must be 1..3, on an exercise event");
   if (v.confidence !== undefined && !(Number.isInteger(v.confidence) && (v.confidence as number) >= 1 && (v.confidence as number) <= 5))
     throw bad("confidence must be 1..5");
   return v as unknown as LearnerEvent;

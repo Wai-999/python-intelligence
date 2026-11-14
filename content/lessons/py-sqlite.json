@@ -230,6 +230,7 @@
     {
       "id": "scores",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: safe inserts and a top-n query",
       "body": "`setup(con)` creates a `scores` table. Fix `add_score(con, name, points)`, which builds its SQL with an\nf-string and breaks on a name like `O'Brien`, so that it uses placeholders. Then write `top(con, n)`: the `n`\nhighest scores as a list of `(name, points)` tuples, highest first, ties in alphabetical order of name.",
       "starter": "def setup(con):\n    con.execute(\"CREATE TABLE scores (name TEXT, points INTEGER)\")\n\n\ndef add_score(con, name, points):\n    con.execute(f\"INSERT INTO scores VALUES ('{name}', {points})\")\n\n\ndef top(con, n):\n    return []\n",
@@ -275,6 +276,7 @@
     {
       "id": "teams",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: totals per team",
       "body": "The database has `players (name, team)` and `scores (name, points)`, where a player can have many scores\nor none. Write `team_totals(con)`: one `(team, total)` tuple for every team that has players, where `total` is\nthe sum of its players' points (0 if they have none), highest total first, ties in alphabetical order of team.\nScores for names that aren't players don't count.",
       "starter": "def team_totals(con):\n    return con.execute(\"SELECT team, 0 FROM players\").fetchall()\n",
@@ -315,6 +317,7 @@
     {
       "id": "search",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: searching a catalogue",
       "body": "A `books (title, year)` table exists. Write `search(con, word)`, which returns the titles that contain `word` anywhere,\nignoring case, oldest first (ties by title), using SQL `LIKE` with the word passed as a parameter (build the pattern\n`%word%` in Python and pass it with `?`).",
       "starter": "def search(con, word):\n    titles = []\n    for row in con.execute(f\"SELECT title FROM books WHERE title LIKE '%{word}%'\"):\n        titles.append(row[0])\n    return titles\n",

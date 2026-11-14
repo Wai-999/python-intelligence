@@ -228,6 +228,7 @@
     {
       "id": "above",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: above average",
       "body": "Complete `above_average(values)` so it returns a NumPy array of the values strictly greater than their\nmean, in their original order. Use a boolean mask rather than a loop.",
       "starter": "import numpy as np\n\ndef above_average(values):\n    arr = np.array(values)\n    return arr",
@@ -258,6 +259,7 @@
     {
       "id": "zscores",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: standard scores",
       "body": "A standard score (z-score) says how many standard deviations a value is from the mean:\n`(x - mean) / std`. Write `zscores(values)` that returns them as a plain list rounded to 2 decimals\n(use `np.round(..., 2).tolist()`). If every value is the same, `std` is 0: return a list of zeros\ninstead of dividing by zero.",
       "starter": "import numpy as np\n\ndef zscores(values):\n    arr = np.array(values, dtype=float)\n    return np.round(arr - arr.mean(), 2).tolist()",
@@ -293,6 +295,7 @@
     {
       "id": "sensors",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: cleaning sensor readings",
       "body": "Write `count_in_range(a, lo, hi)`: how many values lie between `lo` and `hi`, inclusive. Write `zero_negatives(a)`: a new array\nwith negative values replaced by 0 (don't change `a`). Write `column_means(M)`: the mean of each column of a 2-D array.\nUse masks and numpy functions rather than Python loops.",
       "starter": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return 0\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return M.mean()\n",

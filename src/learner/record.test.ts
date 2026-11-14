@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ExerciseStep, Lesson, QuizStep } from "../content/types";
-import { buildModel, MAX_AUTO_HINT_TIER, START_HINT_TIER } from "./model";
+import { buildModel, MAX_AUTO_HINT_TIER, ordered, START_HINT_TIER } from "./model";
 import { assistanceFor, creditedConcepts, exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier } from "./record";
 
 const ex = (id: string, concepts: (string | undefined)[]): ExerciseStep =>
@@ -19,6 +19,18 @@ let k = 0;
 const stamp = { at: "2026-01-05T09:00:00.000Z", id: () => `id${++k}` };
 
 describe("exercise events", () => {
+  it("carry the exercise's difficulty tag, which the store's validation accepts only on exercises", () => {
+    const tagged = { ...E1, difficulty: 3 } as ExerciseStep;
+    const evs = exerciseEvents(L, tagged, [{ concept: "loops", passed: true }, { concept: "loops", passed: true }, { concept: "ranges", passed: true }], 0, stamp);
+    expect(evs.every((e) => e.difficulty === 3)).toBe(true);
+    expect(ordered(evs)).toHaveLength(evs.length);
+    expect(() => ordered([{ ...evs[0]!, id: "d1", task: "quiz" }])).toThrow(/difficulty must be 1..3, on an exercise event/);
+    expect(() => ordered([{ ...evs[0]!, id: "d2", difficulty: 4 }])).toThrow(/difficulty/);
+    // The tag labels evidence; it doesn't change what the model credits.
+    const plain = exerciseEvents(L, E1, [{ concept: "loops", passed: true }, { concept: "loops", passed: true }, { concept: "ranges", passed: true }], 0, stamp);
+    expect(buildModel([L], evs).concepts.get("loops")).toEqual(buildModel([L], plain).concepts.get("loops"));
+  });
+
   it("records each directly checked concept by its own checks, and untested concepts by the overall result", () => {
     const evs = exerciseEvents(L, E1, [{ concept: "loops", passed: true }, { concept: "loops", passed: true }, { concept: "ranges", passed: false }], 0, stamp);
     expect(evs.map((e) => [e.concept, e.passed, e.task, e.stepId, e.lessonId])).toEqual([

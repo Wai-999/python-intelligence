@@ -191,6 +191,20 @@ def check_verbatim(lesson: dict, index: ExtractIndex | HashedIndex) -> list[str]
     return errs
 
 
+def check_difficulty(lesson: dict) -> list[str]:
+    """Every exercise is tagged 1 (warm-up), 2 (core) or 3 (stretch); a transfer problem is never a warm-up."""
+    errs = []
+    for s in lesson.get("steps", []):
+        if s.get("kind") not in EXERCISE_KINDS:
+            continue
+        d = s.get("difficulty")
+        if not isinstance(d, int) or isinstance(d, bool) or d not in (1, 2, 3):
+            errs.append(f"{lesson.get('id')}/{s.get('id')}: difficulty must be 1 (warm-up), 2 (core) or 3 (stretch)")
+        elif s["kind"] == "transfer" and d == 1:
+            errs.append(f"{lesson.get('id')}/{s.get('id')}: a transfer problem can't be a warm-up")
+    return errs
+
+
 def check_meta(lesson: dict) -> list[str]:
     """The master prompt's lesson metadata: an objective, one analogy, common misconceptions with corrections, a rubric,
     spaced-review metadata (a free-recall prompt) and one transfer problem. Required unless the lesson is still pending."""
@@ -509,6 +523,8 @@ def main() -> int:
         errs.append(f"prerequisite cycle among {sorted(set(deps) - done)}")
 
     errs += check_diagnostic(json.loads(DIAGNOSTIC.read_text()), {l["id"]: l for l in lessons})
+    for l in lessons:
+        errs += check_difficulty(l)
 
     if errs:
         print("\n".join(f"✗ {e}" for e in errs))

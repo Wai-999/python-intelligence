@@ -273,6 +273,7 @@
     {
       "id": "std",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: standard deviation from scratch",
       "body": "Without NumPy or `statistics`, complete `std(xs, sample=False)`. With `sample=False` divide the sum\nof squared distances by `N`; with `sample=True` divide by `N − 1`. Raise `ValueError` if `xs` is\nempty, or if `sample=True` and there are fewer than two values.",
       "starter": "def std(xs, sample=False):\n    m = sum(xs) / len(xs)\n    return sum(abs(x - m) for x in xs) / len(xs)\n",
@@ -308,6 +309,7 @@
     {
       "id": "outliers",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: flag unusual values",
       "body": "A simple outlier rule flags values more than `k` standard deviations from the mean. Write\n`outliers(values, k=2)` with NumPy, using the population standard deviation, and return the flagged\nvalues as a list in their original order. A value exactly `k` standard deviations away is not\nflagged. If every value is the same, nothing is unusual: return `[]`.",
       "starter": "import numpy as np\n\ndef outliers(values, k=2):\n    arr = np.array(values)\n    return arr[arr > arr.mean()].tolist()\n",
@@ -358,6 +360,7 @@
     {
       "id": "weighted",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: weighted marks and relative spread",
       "body": "Write `weighted_mean(values, weights)` and `weighted_variance(values, weights)`, the weighted average of squared deviations\nfrom the weighted mean (weights needn't add up to 1). Then write `coefficient_of_variation(values)`: the population\nstandard deviation divided by the mean.",
       "starter": "import numpy as np\n\n\ndef weighted_mean(values, weights):\n    return float(np.mean(values))\n\n\ndef weighted_variance(values, weights):\n    return float(np.var(values))\n\n\ndef coefficient_of_variation(values):\n    return 0.0\n",

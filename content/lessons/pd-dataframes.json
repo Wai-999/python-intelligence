@@ -274,6 +274,7 @@
     {
       "id": "passrate",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: pass rate",
       "body": "Complete `pass_rate(df)` so it returns the fraction of rows whose `\"score\"` is at least 50, rounded to\n2 decimal places. Count missing scores as **not** passing (they are part of the total). Careful: in some columns a comparison\nwith a missing value gives *missing* rather than `False`, so fill those with `False` first.",
       "starter": "import pandas as pd\n\ndef pass_rate(df):\n    return 0.0",
@@ -314,6 +315,7 @@
     {
       "id": "summary",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: team averages",
       "body": "Write `team_averages(df)` returning a plain dictionary mapping each team to its **average** score,\nrounded to 1 decimal place, skipping missing scores. The starter totals instead of averaging.",
       "starter": "import pandas as pd\n\ndef team_averages(df):\n    return df.groupby(\"team\")[\"score\"].sum().to_dict()",
@@ -344,6 +346,7 @@
     {
       "id": "sales",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a sales table",
       "body": "A DataFrame has columns `order`, `region`, `qty` and `price` (price may be missing). Write `revenue_by_region(df)`: a dict from\nregion to the total of qty × price (missing prices count as 0), with regions in order of revenue, highest first.\nWrite `big_orders(df, min_qty)`: a DataFrame of just the `order` and `qty` columns for rows with `qty` of at least `min_qty`.\nWrite `missing_counts(df)`: a dict from column name to its number of missing values.",
       "starter": "import pandas as pd\n\n\ndef revenue_by_region(df):\n    return {}\n\n\ndef big_orders(df, min_qty):\n    return df\n\n\ndef missing_counts(df):\n    return {}\n",

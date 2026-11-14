@@ -326,6 +326,7 @@
     {
       "id": "load",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: from CSV text to examples",
       "body": "Complete `load_examples(csv_text, features, label)`. Read the CSV with pandas, drop the rows missing\nany of the `features` columns or the `label` column (keep rows that are only missing other\ncolumns), and return `(X, y)`: `X` is a list with one list of floats per row, in the order the\n`features` are given, and `y` is the list of labels.",
       "starter": "import io\nimport pandas as pd\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    return df[features].values.tolist(), df[label].tolist()\n",
@@ -406,6 +407,7 @@
     {
       "id": "pipeline",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: the whole pipeline",
       "body": "The starter gives you `load_examples`, `fit_centroids` and `predict_centroids`. Write\n`run_pipeline(csv_text, features, label, test_fraction, seed)`:\n\n1. Load and clean the examples with `load_examples`.\n2. Shuffle the positions `0 … n−1` of the cleaned rows with `random.Random(seed).shuffle`; the first\n   `int(n * test_fraction)` positions are the test set and the rest the training set. Raise\n   `ValueError` if either set is empty.\n3. The baseline guess is the most common **training** label (a tie goes to the label first in sorted\n   order; labels may be text or numbers, and numbers sort as numbers).\n4. Fit the centroids on the **training** rows only with `fit_centroids`, and predict the test rows with\n   `predict_centroids`.\n\nReturn a dictionary with `'n_train'`, `'n_test'`, `'baseline_label'`, and the test-set accuracies\n`'baseline'` and `'model'`, as unrounded floats.",
       "starter": "import io\nimport random\nimport numpy as np\nimport pandas as pd\n\n\ndef load_examples(csv_text, features, label):\n    df = pd.read_csv(io.StringIO(csv_text))\n    df = df.dropna(subset=features + [label])\n    return df[features].astype(float).values.tolist(), df[label].tolist()\n\n\ndef fit_centroids(X, y):\n    X = np.array(X, dtype=float)\n    centroids = {}\n    for label in set(y):\n        rows = [i for i in range(len(y)) if y[i] == label]\n        centroids[label] = X[rows].mean(axis=0).tolist()\n    return centroids\n\n\ndef predict_centroids(centroids, X):\n    labels = sorted(centroids)\n    out = []\n    for x in np.array(X, dtype=float):\n        dists = [float(np.sum((x - np.array(centroids[l])) ** 2)) for l in labels]\n        out.append(labels[dists.index(min(dists))])\n    return out\n\n\ndef run_pipeline(csv_text, features, label, test_fraction, seed):\n    X, y = load_examples(csv_text, features, label)\n    return {'n_train': len(y), 'n_test': 0, 'baseline_label': y[0], 'baseline': 0.0, 'model': 0.0}\n",
@@ -496,6 +498,7 @@
     {
       "id": "audit",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a pipeline audit",
       "body": "Write `clean(df)`: return a new DataFrame without rows that have any missing value and without duplicate rows (keep the\nfirst), with a fresh 0..n−1 index. Write `majority_baseline(y_train, y_test)`: the accuracy on `y_test` of always\npredicting the most common label in `y_train` (ties to the smallest label). Write `leaky_columns(df, target)`: the\nsorted names of other columns whose values equal the target column in every row.",
       "starter": "import pandas as pd\n\n\ndef clean(df):\n    return df\n\n\ndef majority_baseline(y_train, y_test):\n    return 0.0\n\n\ndef leaky_columns(df, target):\n    return []\n",

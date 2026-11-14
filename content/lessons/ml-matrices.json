@@ -216,6 +216,7 @@
     {
       "id": "multiply",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: multiply two matrices",
       "body": "Write `matmul(A, B)` for matrices given as lists of rows, without NumPy. Return a new `m × p` list of\nlists whose entry `(i, j)` is the sum of `A[i][k] * B[k][j]`. Raise `ValueError` if either matrix is\nempty or has an empty row, if a matrix's rows differ in length, or if `A`'s columns don't match `B`'s\nrows. Don't change the inputs.",
       "starter": "def matmul(A, B):\n    return [[0] * len(B[0]) for _ in A]\n",
@@ -271,6 +272,7 @@
     {
       "id": "eliminate",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: Gaussian elimination",
       "body": "Write `solve(A, b)` by Gaussian elimination with partial pivoting and back substitution, following the\nprecise rules. `A` is a square list of rows and `b` a list; return `x` as a list of floats. Raise\n`ValueError` if `A` isn't a non-empty square matrix, `b` has the wrong length, or `A` is singular by\nthe lesson's rule. Don't change `A` or `b` (work on a copy).",
       "starter": "def solve(A, b):\n    return [0.0 for _ in b]\n",
@@ -346,6 +348,7 @@
     {
       "id": "rotate",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: rotating points and mixing paint",
       "body": "Write `rotate(points, degrees)`: `points` is an (n, 2) array of x, y coordinates; return them rotated anticlockwise about the\norigin, using a 2×2 rotation matrix and matrix multiplication. Then write `mix(A, b)`: each column of `A` says how much of\neach pigment one paint contains, and `b` is the pigment mix wanted; return how much of each paint to use (solve A x = b).",
       "starter": "import numpy as np\n\n\ndef rotate(points, degrees):\n    return points\n\n\ndef mix(A, b):\n    return np.zeros(len(b))\n",

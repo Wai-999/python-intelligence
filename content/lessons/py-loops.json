@@ -255,6 +255,7 @@
     {
       "id": "threes",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: add up the multiples of 3",
       "body": "Complete `sum_multiples_of_3(limit)` so it returns the sum of every number from 1 to `limit` (inclusive)\nthat divides by 3. For example, `sum_multiples_of_3(10)` is 3 + 6 + 9 = 18.\n\nThe accumulator and the `return` are already there; you need the loop.",
       "starter": "def sum_multiples_of_3(limit):\n    total = 0\n    # loop over 1..limit and add the multiples of 3\n    return total",
@@ -290,6 +291,7 @@
     {
       "id": "digits",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: count the digits",
       "body": "Write `count_digits(n)` that returns how many digits a whole number `n >= 0` has. `count_digits(42)` is 2\nand `count_digits(1000)` is 4.\n\nThis challenge is practice for `while` and `//`, so count with arithmetic rather than converting `n` to\ntext. Idea: `n // 10` drops the last digit. Careful with one special case: what should `count_digits(0)` be?\n\nThe checks include a 5,001-digit number (by default Python 3.12 won't turn integers that long into text)\nand spot common shortcuts such as `str`, f-strings and `log10`. They can't rule out every shortcut,\nthough, so whether you practise the loop is up to you.",
       "starter": "def count_digits(n):\n    count = 0\n    while n > 0:\n        n = n // 10\n        count = count + 1\n    return count",
@@ -343,6 +345,7 @@
     {
       "id": "savings",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: savings and a first warning",
       "body": "Write `years_to_target(balance, rate, target)`: how many whole years of growth (each year the balance is multiplied by\n`1 + rate`) until the balance reaches at least `target`; 0 if it already has. Then write `first_negative(numbers)`:\nthe position of the first negative number, or -1 if there is none. Stop looking once you find one.",
       "starter": "def years_to_target(balance, rate, target):\n    return 0\n\n\ndef first_negative(numbers):\n    return -1\n",

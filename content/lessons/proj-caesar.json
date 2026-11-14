@@ -215,6 +215,7 @@
     {
       "id": "decrypt",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: decrypt",
       "body": "`encrypt` is done. Complete `decrypt(message, key)` so it undoes `encrypt` with the same key. Reuse\n`encrypt` rather than writing the loop again.",
       "starter": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, key)\n",
@@ -245,6 +246,7 @@
     {
       "id": "crack",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: break the cipher",
       "body": "With only 26 possible keys, an attacker can simply try them all. Write `crack(ciphertext, words)`:\ntry every key from 0 to 25, score each decryption by how many of its space-separated words are in\nthe set `words`, and return `(key, plaintext)` for the best score. If keys tie, keep the smallest.",
       "starter": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\ndef decrypt(message, key):\n    return encrypt(message, -key)\n\n\ndef crack(ciphertext, words):\n    return 0, ciphertext\n",
@@ -288,6 +290,7 @@
     {
       "id": "vigenere",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a Vigenère cipher",
       "body": "A Vigenère cipher shifts each letter by the next letter of a keyword (a = 0, b = 1, ...), cycling through the keyword; only\nletters use up keyword letters, and case is kept. Write `vigenere(text, key)` and `unvigenere(text, key)`. Then write\n`find_shift(cipher, word)`: the Caesar shift (0 to 25) that, undone, makes `word` appear in the text, or `None`.",
       "starter": "def vigenere(text, key):\n    return text\n\n\ndef unvigenere(text, key):\n    return text\n\n\ndef find_shift(cipher, word):\n    return None\n",

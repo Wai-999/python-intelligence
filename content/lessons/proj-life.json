@@ -199,6 +199,7 @@
     {
       "id": "next",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: one generation",
       "body": "Write `step(grid)`, returning the next generation as a new list of new rows, by the precise rules. Don't\nchange `grid`, and don't reuse its rows. Raise `ValueError` if the grid has fewer than 3 rows or 3\ncolumns, the rows differ in length, or a cell isn't 0 or 1.",
       "starter": "def step(grid):\n    return grid\n",
@@ -259,6 +260,7 @@
     {
       "id": "cycle",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: when does it repeat?",
       "body": "The starter gives you `step`. Write `find_cycle(grid, max_steps)`. Number the generations: `grid` is step 0,\n`step(grid)` is step 1, and so on up to step `max_steps`. Find the first step whose grid equals an earlier\none, and return `(start, period)`: `start` is the step at which that grid first appeared and `period` the\nnumber of steps between the two. Return `None` if no grid among steps 0 to `max_steps` repeats. Raise\n`ValueError` if `max_steps` is negative or the grid is invalid (as `step` would), even when `max_steps` is 0.",
       "starter": "def step(grid):\n    if len(grid) < 3 or len(grid[0]) < 3 or any(len(row) != len(grid[0]) for row in grid):\n        raise ValueError('need a rectangular grid of at least 3 x 3')\n    if any(cell not in (0, 1) for row in grid for cell in row):\n        raise ValueError('cells must be 0 or 1')\n    rows, cols = len(grid), len(grid[0])\n    new = []\n    for r in range(rows):\n        row = []\n        for c in range(cols):\n            n = sum(grid[(r + dr) % rows][(c + dc) % cols]\n                    for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n            row.append(1 if n == 3 or (grid[r][c] == 1 and n == 2) else 0)\n        new.append(row)\n    return new\n\n\ndef find_cycle(grid, max_steps):\n    return None\n",
@@ -299,6 +301,7 @@
     {
       "id": "ring",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a one-dimensional world",
       "body": "In an elementary cellular automaton, a row of 0/1 cells lives on a ring (the ends touch). Each cell's next state depends on\nitself and its two neighbours, read as a 3-bit number n = 4·left + 2·centre + right; the next state is bit n of a rule\nnumber from 0 to 255, `(rule >> n) & 1`. Write `rule_step(cells, rule)`: the next row, as a new list, every cell updated\nfrom the old row. Then write `rule_cycle(cells, rule, max_steps)`: step until a row seen before comes back and return\n`(start, length)`, or `None` if no row repeats within `max_steps` steps (a repeat found at exactly step `max_steps` counts).",
       "starter": "def rule_step(cells, rule):\n    return cells\n\n\ndef rule_cycle(cells, rule, max_steps):\n    return None\n",

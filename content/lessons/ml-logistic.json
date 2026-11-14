@@ -259,6 +259,7 @@
     {
       "id": "probs",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: the sigmoid and the log loss",
       "body": "Complete two functions.\n\n`sigmoid(z)` returns `1 / (1 + e^(−z))` as a float, accurately and without raising for any finite float\n`z` (try `-1000` and `1000`).\n\n`log_loss(y, p)` takes a list of labels and a list of predicted probabilities and returns the mean log\nloss as a float. Raise `ValueError` if the lists are empty or differ in length, if any label isn't 0 or 1,\nor if any probability isn't strictly between 0 and 1.",
       "starter": "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef log_loss(y, p):\n    return sum(abs(label - prob) for label, prob in zip(y, p))\n",
@@ -329,6 +330,7 @@
     {
       "id": "train",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: fit by gradient descent",
       "body": "The starter gives you `sigmoid`. Write `fit_logistic(X, y, lr=0.1, steps=1000)`, where `X` is a list of\nrows (each a list of numbers) and `y` a list of 0/1 labels. Start from `w = [0.0, ...]` (one weight per\nfeature) and `b = 0.0`, and take exactly `steps` gradient descent steps on the mean log loss with\nlearning rate `lr`, computing all the gradients from the old values before updating. Return `(w, b)`:\n`w` a list of floats and `b` a float. Raise `ValueError` if there are no rows, `X` and `y` differ in\nlength, the rows differ in length, a label isn't 0 or 1, `lr <= 0` or `steps < 0`.",
       "starter": "import math\n\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\n\ndef fit_logistic(X, y, lr=0.1, steps=1000):\n    w, b = [0.0] * len(X[0]), 0.0\n    return w, b\n",
@@ -404,6 +406,7 @@
     {
       "id": "stable",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a safe sigmoid for many features",
       "body": "Write `sigmoid(z)` that never overflows (for z ≥ 0 use 1/(1+e^−z); for z < 0 use e^z/(1+e^z)); `predict_proba(w, b, x)` for\nlists `w` and `x` of equal length (the sigmoid of w·x + b); and `log_loss(ys, ps)`, the mean of −[y log p + (1−y) log(1−p)]\nwith each p clipped to [1e-12, 1 − 1e-12].",
       "starter": "import math\n\n\ndef sigmoid(z):\n    return 1 / (1 + math.exp(-z))\n\n\ndef predict_proba(w, b, x):\n    return sigmoid(b)\n\n\ndef log_loss(ys, ps):\n    return 0.0\n",

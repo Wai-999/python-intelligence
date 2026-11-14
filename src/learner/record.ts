@@ -56,7 +56,7 @@ export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { co
   return [...direct.map((c) => [c, outcome(c), true] as const), ...untested.map((c) => [c, overall, false] as const)].map(([concept, passed, isDirect]) => {
     const tags = passed ? [] : tagsFor(concept, isDirect);
     return { id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance,
-      policy: POLICY_VERSION, ...(tags.length ? { tags } : {}) };
+      policy: POLICY_VERSION, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}) };
   });
 }
 

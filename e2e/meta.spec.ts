@@ -21,6 +21,7 @@ for (const lesson of done) {
     expect(at).toBeGreaterThan(0);
     await page.goto(`./#/lesson/${lesson.id}/${at}`);
     await expect(page.getByRole("region", { name: "Transfer problem" })).toBeVisible();
+    await expect(page.locator("p.difficulty")).toHaveText(/^Difficulty: (Core|Stretch)/);
     await page.locator("textarea.editor-input").fill((lesson.steps[at] as ExerciseStep).solution);
     await page.getByRole("button", { name: "▶ Run checks" }).click();
     await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 180_000 });

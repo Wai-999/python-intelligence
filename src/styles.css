@@ -216,3 +216,7 @@ main { min-width: 0; outline: none; }
 .diag-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .placement ul { margin: 4px 0 8px; }
 .placement-link { font-size: 16px; }
+
+/* Exercise difficulty (G-13): the word carries the meaning; the dots are decoration. */
+.difficulty { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.difficulty strong { color: var(--text); }

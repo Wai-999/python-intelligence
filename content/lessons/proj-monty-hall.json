@@ -200,6 +200,7 @@
     {
       "id": "simulate",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: play and simulate",
       "body": "Complete two functions by the precise rules.\n\n`play(rng, switch)` plays one game with the generator `rng` and returns `True` if the player wins.\n\n`simulate(n, switch, seed)` plays `n` games with one `random.Random(seed)` and returns the win rate as a\nfloat. Raise `ValueError` if `n < 1`.",
       "starter": "import random\n\n\ndef play(rng, switch):\n    return rng.randrange(3) == 0\n\n\ndef simulate(n, switch, seed):\n    return 0.5\n",
@@ -245,6 +246,7 @@
     {
       "id": "exact",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: exact odds for any number of doors",
       "body": "Write `exact_win(doors, opened, switch)` returning the exact probability of winning as a\n`fractions.Fraction`, for a game with `doors` doors where the host opens `opened` goat doors you didn't pick\nand a switching player moves to one of the other closed doors at random. Raise `ValueError` unless\n`doors >= 3` and `0 <= opened <= doors - 2`. You may reason it out or enumerate every case.",
       "starter": "from fractions import Fraction\n\n\ndef exact_win(doors, opened, switch):\n    return Fraction(1, 2)\n",
@@ -280,6 +282,7 @@
     {
       "id": "forgetful",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: the forgetful host",
       "body": "In this version the host forgets where the car is and opens one of the other doors at random. Games where he reveals the\ncar don't count. With `n` doors, after he reveals a goat you switch to a random other unopened door. Write\n`simulate(n, trials, seed)`: among the games that count, the share that switching wins, using `random.Random(seed)`.\nWrite `exact(n)`: that probability as a `Fraction` (it is 1/(n − 1)).",
       "starter": "from fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    return 0.0\n\n\ndef exact(n):\n    return Fraction(2, 3)\n",

@@ -76,6 +76,7 @@
     {
       "id": "circle",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: the area of a circle",
       "body": "The area of a circle is π × r². The starter code defines `radius` and `pi`. Create a name `area` that holds\nthe area of the circle. In Python, `**` means \"to the power of\", so `r ** 2` is r².",
       "starter": "radius = 3\npi = 3.14159\n# create `area` on the next line",
@@ -106,6 +107,7 @@
     {
       "id": "bill",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a shopping bill",
       "body": "A new situation with the same ideas. Four items cost `2.5` each, and tax is 20% of the subtotal. Starting from\nthe names `price` and `count`, make `subtotal`, then `tax`, then `total` (subtotal plus tax), each computed from\nthe names before it. (Printing the total is up to you: the checks look at the names.)",
       "starter": "price = 2.5\ncount = 4\n",

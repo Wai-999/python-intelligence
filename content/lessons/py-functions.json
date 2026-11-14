@@ -162,6 +162,7 @@
     {
       "id": "temps",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Guided practice: convert temperatures",
       "body": "Write `celsius_to_fahrenheit(c)` so it **returns** the temperature in Fahrenheit, using **F = C × 9/5 + 32**.\nThe checks call your function with several values.",
       "socratic": {
@@ -203,6 +204,7 @@
     {
       "id": "triangle",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: functions that use functions",
       "body": "A right triangle with legs `a` and `b` has hypotenuse √(a² + b²). In Python, `x ** 0.5` is the square root\nof `x`.\n\n1. Write `hypotenuse(a, b)`.\n2. Write `perimeter_right_triangle(a, b)`, which returns a + b + the hypotenuse. **Call your `hypotenuse`\n   function** instead of repeating the formula.",
       "starter": "def hypotenuse(a, b):\n    pass\n\n\ndef perimeter_right_triangle(a, b):\n    pass",
@@ -232,6 +234,7 @@
     {
       "id": "delivery",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: delivery costs",
       "body": "A shop charges 4.0 plus 1.5 per kilogram to deliver. Write `shipping(weight_kg)` that returns that cost. Then write\n`order_total(price, quantity, weight_kg)`: the price of `quantity` items plus the shipping for all of them, where\neach item weighs `weight_kg`. `order_total` should use `shipping` rather than repeat its formula.",
       "starter": "def shipping(weight_kg):\n    pass\n\n\ndef order_total(price, quantity, weight_kg):\n    pass\n",

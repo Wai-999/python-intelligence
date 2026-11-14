@@ -224,6 +224,7 @@
     {
       "id": "sample",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: bootstrap and vote",
       "body": "Complete two functions.\n\n`bootstrap(n, rng)` returns `(draws, oob)`: the `n` indices drawn with `rng.randrange(n)`, in the order\ndrawn, and the sorted list of indices never drawn. Raise `ValueError` if `n < 1`.\n\n`vote(labels)` returns the most common label, with ties going to the label first in sorted order. Raise\n`ValueError` for an empty list. Don't change the list.",
       "starter": "def bootstrap(n, rng):\n    return list(range(n)), []\n\n\ndef vote(labels):\n    return labels[0]\n",
@@ -279,6 +280,7 @@
     {
       "id": "forest",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: a bagged forest",
       "body": "The starter gives you `build_tree` and `predict_tree` from the decision-tree lesson, plus `bootstrap` and\n`vote`. Write three functions by the precise rules.\n\n`fit_forest(X, y, n_trees, max_depth, seed)` returns a list of `(tree, oob)` pairs, one per tree. Raise\n`ValueError` if `n_trees < 1`, or if `build_tree` would reject `X`, `y` or `max_depth` (check this on the\nfull data, before sampling: a sample might miss the bad row).\n\n`predict_forest(forest, X)` returns the forest's vote for each row of `X`; raise `ValueError` for an empty\nforest.\n\n`oob_accuracy(forest, X, y)` takes the training data the forest was fitted on and returns the out-of-bag\naccuracy as a float, or `None` if no row was left out by any tree. Raise `ValueError` for an empty forest\nor if `X` and `y` differ in length.",
       "starter": "import random\n\n\ndef gini(labels):\n    if not labels:\n        raise ValueError('gini of no labels')\n    n = len(labels)\n    return 1 - sum((labels.count(c) / n) ** 2 for c in set(labels))\n\n\ndef best_split(X, y):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X):\n        raise ValueError('need rows of equal length, one label each')\n    best = None\n    for f in range(len(X[0])):\n        values = sorted(set(row[f] for row in X))\n        for a, b in zip(values, values[1:]):\n            t = (a + b) / 2\n            left = [label for row, label in zip(X, y) if row[f] <= t]\n            right = [label for row, label in zip(X, y) if row[f] > t]\n            score = (len(left) * gini(left) + len(right) * gini(right)) / len(y)\n            if best is None or score < best[2] - 1e-9:\n                best = (f, t, score)\n    return best\n\n\ndef build_tree(X, y, max_depth):\n    if not X or len(X) != len(y) or any(len(row) != len(X[0]) for row in X) or max_depth < 0:\n        raise ValueError('need rows of equal length, one label each, and max_depth >= 0')\n    split = best_split(X, y) if max_depth > 0 and len(set(y)) > 1 else None\n    if split is None:\n        return {'leaf': max(sorted(set(y)), key=y.count)}\n    f, t, _ = split\n    left = [i for i, row in enumerate(X) if row[f] <= t]\n    right = [i for i, row in enumerate(X) if row[f] > t]\n    return {'feature': f, 'threshold': t,\n            'left': build_tree([X[i] for i in left], [y[i] for i in left], max_depth - 1),\n            'right': build_tree([X[i] for i in right], [y[i] for i in right], max_depth - 1)}\n\n\ndef predict_tree(tree, X):\n    out = []\n    for x in X:\n        node = tree\n        while 'leaf' not in node:\n            node = node['left'] if x[node['feature']] <= node['threshold'] else node['right']\n        out.append(node['leaf'])\n    return out\n\n\ndef bootstrap(n, rng):\n    if n < 1:\n        raise ValueError('need at least one row')\n    draws = [rng.randrange(n) for _ in range(n)]\n    return draws, sorted(set(range(n)) - set(draws))\n\n\ndef vote(labels):\n    if not labels:\n        raise ValueError('nothing to vote on')\n    return max(sorted(set(labels)), key=labels.count)\n\n\ndef fit_forest(X, y, n_trees, max_depth, seed):\n    return [(build_tree(X, y, max_depth), [])]\n\n\ndef predict_forest(forest, X):\n    return predict_tree(forest[0][0], X)\n\n\ndef oob_accuracy(forest, X, y):\n    return None\n",
@@ -339,6 +341,7 @@
     {
       "id": "oob",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: out-of-bag points and votes",
       "body": "Write `out_of_bag(n, sample)`: given n data points and a bootstrap sample (a list of indices, possibly repeated), return the\nsorted list of indices that never appear in the sample. Then write `vote(predictions)`: the most common prediction,\nwith ties going to the smallest value.",
       "starter": "def out_of_bag(n, sample):\n    return []\n\n\ndef vote(predictions):\n    return predictions[0]\n",

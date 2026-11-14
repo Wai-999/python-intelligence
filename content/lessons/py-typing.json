@@ -218,6 +218,7 @@
     {
       "id": "item",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: a dataclass",
       "body": "The starter is a hand-written class. Turn `Item` into a dataclass with the fields `name: str`,\n`price: float` and `quantity: int` (default 1), in that order, and add a method `total(self) -> float`\nthat returns the price times the quantity.",
       "starter": "from dataclasses import dataclass\n\n\nclass Item:\n    def __init__(self, name, price, quantity=1):\n        self.name = name\n        self.price = price\n        self.quantity = quantity\n",
@@ -263,6 +264,7 @@
     {
       "id": "cart",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: checks the hints can't do",
       "body": "Hints don't stop `Item(\"pen\", \"cheap\")`. Add a `__post_init__` to `Item` that raises `TypeError` if `price`\nisn't an `int` or a `float`, or `quantity` isn't an `int` (in both cases a `bool` doesn't count), and\n`ValueError` if `price` is negative or `quantity` is below 1. Then make `Cart` a dataclass with one field,\n`items: list[Item]`, defaulting to a new empty list for every cart, a method `add(item)` that appends to it,\nand `total() -> float`, the sum of the items' totals.",
       "starter": "from dataclasses import dataclass\n\n\n@dataclass\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1\n\n    def total(self) -> float:\n        return self.price * self.quantity\n\n\n@dataclass\nclass Cart:\n    pass\n",
@@ -318,6 +320,7 @@
     {
       "id": "library",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: a book record",
       "body": "Write a dataclass `Book` with fields `title: str`, `pages: int` and `tags: list[str]` (default: a new empty list). In\n`__post_init__`, raise `TypeError` if `title` isn't a `str` or `pages` isn't an `int` (a `bool` doesn't count), and\n`ValueError` if `pages` is below 1. Then write `longest(books: list[Book]) -> Book | None`, which returns the book with\nthe most pages (the first such book on a tie), or `None` for an empty list.",
       "starter": "from dataclasses import dataclass\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n\n\ndef longest(books):\n    return None\n",

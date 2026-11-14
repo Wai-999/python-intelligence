@@ -232,6 +232,7 @@
     {
       "id": "knn",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: a kNN classifier",
       "body": "Complete `knn_predict(X_train, y_train, X, k)`, where each row is a list of numbers. For every row of\n`X`, find the `k` nearest training rows (Euclidean distance; equal distances keep training order),\ncount their labels and predict the most common one (a tie goes to the label first in sorted order).\nReturn the list of predictions. Raise `ValueError` if there are no training rows, if `X_train` and\n`y_train` differ in length, or unless `1 <= k <= len(X_train)`.",
       "starter": "def knn_predict(X_train, y_train, X, k):\n    return [y_train[0] for _ in X]\n",
@@ -307,6 +308,7 @@
     {
       "id": "choose",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: choose k on validation data",
       "body": "The starter gives you `knn_predict`. Write `choose_k(X_train, y_train, X_val, y_val, ks)`: for each `k`\nin `ks`, predict the validation rows from the training rows and record the validation accuracy (a\nfloat). Return `{'scores': {k: accuracy, ...}, 'best': k}`, with the scores in the order the `ks` were\ngiven, where `best` has the highest accuracy;\nif several tie, the smallest of them. Raise `ValueError` if `ks` is empty, there are no validation\nrows, or `X_val` and `y_val` differ in length (and let `knn_predict` reject a `k` that's too big).",
       "starter": "def knn_predict(X_train, y_train, X, k):\n    if not X_train or len(X_train) != len(y_train) or not 1 <= k <= len(X_train):\n        raise ValueError('need training rows with one label each, and 1 <= k <= len(X_train)')\n    out = []\n    for x in X:\n        dist = [sum((a - b) ** 2 for a, b in zip(row, x)) for row in X_train]\n        order = sorted(range(len(X_train)), key=lambda i: dist[i])\n        votes = {}\n        for i in order[:k]:\n            votes[y_train[i]] = votes.get(y_train[i], 0) + 1\n        out.append(max(sorted(votes), key=votes.get))\n    return out\n\n\ndef choose_k(X_train, y_train, X_val, y_val, ks):\n    return {'scores': {k: 0.0 for k in ks}, 'best': ks[0]}\n",
@@ -367,6 +369,7 @@
     {
       "id": "regress",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: kNN for numbers",
       "body": "Training data is a list of `(features, value)` pairs, where features is a tuple of numbers. Write `knn_value(train, query, k)`:\nthe mean value of the k training points closest to `query` by Euclidean distance (on a tie in distance, the earlier\npoint wins). Then write `best_k(train, valid, ks)`: the k from `ks` with the smallest mean squared error on the `valid`\npairs (ties go to the smaller k).",
       "starter": "def knn_value(train, query, k):\n    return 0.0\n\n\ndef best_k(train, valid, ks):\n    return ks[0]\n",

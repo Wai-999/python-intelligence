@@ -246,6 +246,7 @@
     {
       "id": "cosine",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: cosine similarity",
       "body": "Complete `cosine(u, v)` so it returns the cosine similarity of two lists of numbers as a plain\nPython `float`, using the dot product and the two lengths. A zero vector has no direction: if either\nvector has length 0, return `0.0` instead of dividing by zero.",
       "starter": "import numpy as np\n\ndef cosine(u, v):\n    u, v = np.array(u, dtype=float), np.array(v, dtype=float)\n    return float(np.sum(u * v))\n",
@@ -291,6 +292,7 @@
     {
       "id": "nearest",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: nearest neighbour",
       "body": "A **nearest-neighbour** search finds the stored item closest to a query. Write\n`nearest(query, items)`, where `items` is a dictionary from names to vectors. Return the name whose\nvector has the smallest Euclidean **distance** to `query`; if two tie, keep the one listed first.",
       "starter": "import numpy as np\n\ndef nearest(query, items):\n    return next(iter(items))\n",
@@ -331,6 +333,7 @@
     {
       "id": "angles",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: unit vectors and angles",
       "body": "Write `normalize_rows(M)`: given a 2-D numpy array, return a new array whose rows are scaled to length 1 (a row of all\nzeros stays all zeros). Then write `angle_degrees(u, v)`: the angle between two non-zero vectors, in degrees.",
       "starter": "import numpy as np\n\n\ndef normalize_rows(M):\n    return M\n\n\ndef angle_degrees(u, v):\n    return 0.0\n",

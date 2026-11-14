@@ -242,6 +242,7 @@
     {
       "id": "split",
       "kind": "guided",
+      "difficulty": 1,
       "title": "Your turn: train_test_split",
       "body": "Complete `train_test_split(xs, ys, test_fraction, seed)`. Follow this recipe exactly, so results are\nreproducible: make the positions `list(range(len(xs)))`, shuffle them with\n`random.Random(seed).shuffle`, let `cut = int(len(xs) * test_fraction)`, use the first `cut`\nshuffled positions for the test set and the rest for training (both in shuffled order). Return\n`(x_train, y_train, x_test, y_test)` as lists, keep each `x` with its `y`, don't change the input\nlists, and raise `ValueError` if `xs` and `ys` have different lengths.",
       "starter": "import random\n\ndef train_test_split(xs, ys, test_fraction, seed):\n    cut = int(len(xs) * test_fraction)\n    return xs[cut:], ys[cut:], xs[:cut], ys[:cut]\n",
@@ -302,6 +303,7 @@
     {
       "id": "kfold",
       "kind": "challenge",
+      "difficulty": 2,
       "title": "Challenge: K-fold cross-validation",
       "body": "Write `cross_val_mse(xs, ys, k)` for the straight-line model (`fit_line` and `mse` are given). Fold\n`i` (for `i` from 0 to `k − 1`) is the positions `i, i + k, i + 2k, …`. For each fold, fit on all the\nother positions and compute the mean squared error on the fold. Return the average of the `k` fold\nerrors as a float. Raise `ValueError` unless `2 <= k <= len(xs)`.",
       "starter": "import numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\ndef cross_val_mse(xs, ys, k):\n    w, b = fit_line(xs, ys)\n    return mse([w * x + b for x in xs], ys)\n",
@@ -352,6 +354,7 @@
     {
       "id": "loo",
       "kind": "transfer",
+      "difficulty": 3,
       "title": "Transfer: leave-one-out",
       "body": "Write `leave_one_out(n)`: a list of n `(train, test)` pairs of numpy index arrays, where the i-th pair tests on index i\nalone and trains on all the others. Then write `pick(train_errors, valid_errors)`: given the errors of several candidate\nmodels, return the position of the model to choose, judged by validation error (ties to the earlier one).",
       "starter": "import numpy as np\n\n\ndef leave_one_out(n):\n    return []\n\n\ndef pick(train_errors, valid_errors):\n    return int(np.argmin(train_errors))\n",
