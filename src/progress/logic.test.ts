@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LESSONS } from "../content/lessons";
-import { applyOutcome, visitStep } from "./logic";
+import { applyOutcome, reconcile, visitStep } from "./logic";
 
 const lesson = LESSONS.find((l) => l.id === "py-values-names")!;
 
@@ -46,5 +46,31 @@ describe("visitStep", () => {
     p = visitStep(lesson, p, 1);
     expect(p.furthestStep).toBe(3);
     expect(visitStep(lesson, p, 99).furthestStep).toBe(lesson.steps.length - 1);
+  });
+});
+
+describe("reconcile", () => {
+  const graded = lesson.steps.filter((st) => st.kind === "guided" || st.kind === "challenge" || st.kind === "transfer" || st.kind === "quiz");
+  const transfer = lesson.steps.find((st) => st.kind === "transfer")!;
+  const pass = { passed: true, attempts: 1, updatedAt: "2026-11-01T10:00:00.000Z" };
+  const stale = { lessonId: lesson.id, furthestStep: 5, completed: true, completedAt: "2026-11-01T10:00:00.000Z", mastery: 1, struggles: {},
+    steps: Object.fromEntries(graded.filter((st) => st.id !== transfer.id).map((st) => [st.id, { ...pass, ...(st.kind === "quiz" ? { score: 1 } : {}) }])) };
+
+  it("a completion saved before the transfer step existed no longer stands, and mastery is recomputed", () => {
+    const r = reconcile(lesson, stale);
+    expect(r.completed).toBe(false);
+    expect(r.completedAt).toBeUndefined();
+    expect(r.mastery).toBeLessThan(1);
+    expect(r.steps).toEqual(stale.steps); // the earned step results are kept
+    expect(stale.completed).toBe(true); // pure: the input is untouched
+  });
+  it("a completion that still holds keeps its date and is returned as is", () => {
+    const full = { ...stale, steps: { ...stale.steps, [transfer.id]: pass } };
+    expect(reconcile(lesson, full)).toBe(full);
+  });
+  it("a lesson whose steps all pass but wasn't marked complete becomes complete, dated by its latest step", () => {
+    const r = reconcile(lesson, { ...stale, completed: false, completedAt: undefined, steps: { ...stale.steps, [transfer.id]: { ...pass, updatedAt: "2026-11-02T09:00:00.000Z" } } });
+    expect(r.completed).toBe(true);
+    expect(r.completedAt).toBe("2026-11-02T09:00:00.000Z");
   });
 });

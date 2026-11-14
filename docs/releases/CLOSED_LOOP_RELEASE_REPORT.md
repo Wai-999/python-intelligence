@@ -43,6 +43,10 @@ Progress lives in IndexedDB in the learner's browser, with export and import as 
   token so a tab built on older progress can't write into an import or reset (`src/progress/store.ts`).
 - e2e: "complete lesson 1, refresh mid-lesson 2, resume exactly, get next recommendation"; "export, reset, and import
   restore progress"; "a corrupt import is rejected and leaves progress unchanged"; cross-tab import and reset cases.
+- Saved progress is re-judged against today's lessons whenever it is loaded or imported (`reconcile` in
+  `src/progress/logic.ts`): completion and mastery are recomputed, so a lesson completed before it gained its transfer
+  problem shows as in progress until that problem is solved. e2e: "a completion saved before the lesson gained its
+  transfer problem doesn't stand after an import".
 - Every lesson recommends a specific next lesson (`recommendNext`), with remediation for repeated failures on a concept
   taught earlier.
 

@@ -48,3 +48,21 @@ test("a lesson completed with a hint says it was completed with help", async ({ 
   await expect(page.locator(".map-item.done .map-meta")).toContainText("Completed with help");
   await expect(page.locator(".map-item.done .map-meta")).not.toContainText("independently");
 });
+
+test("a completion saved before the lesson gained its transfer problem doesn't stand after an import", async ({ page }) => {
+  const graded = first.steps.filter((s) => ["guided", "challenge", "quiz"].includes(s.kind));
+  const at = "2026-11-01T10:00:00.000Z";
+  const backup = { format: "python-intelligence-progress", version: 2, exportedAt: at, drafts: {}, position: null, assistance: {}, events: [],
+    lessons: [{ lessonId: first.id, furthestStep: 5, completed: true, completedAt: at, mastery: 1, struggles: {},
+      steps: Object.fromEntries(graded.map((s) => [s.id, { passed: true, attempts: 1, updatedAt: at, ...(s.kind === "quiz" ? { score: 1 } : {}) }])) }] };
+  await page.goto("./#/");
+  await page.getByRole("button", { name: "Progress" }).click();
+  await page.locator("input[type=file]").setInputFiles({ name: "old.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+  await expect(page.getByText("Progress imported.")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.locator(".map-item.done")).toHaveCount(0);
+  await expect(page.getByLabel(/^0 of \d+ lessons completed$/)).toBeVisible();
+  await expect(page.locator(".map-item").first()).toContainText("In progress");
+  await page.reload(); // re-read from IndexedDB: still not complete
+  await expect(page.locator(".map-item.done")).toHaveCount(0);
+});

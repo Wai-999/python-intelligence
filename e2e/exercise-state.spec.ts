@@ -292,7 +292,11 @@ test("an import in one tab shows up in another open tab without it writing anyth
   await expect(page.locator(".overall")).toContainText("0/");
   const other = await context.newPage();
   await other.goto("./#/");
-  const done = { lessonId: "py-values-names", steps: {}, furthestStep: 0, completed: true, completedAt: "2026-03-01T09:00:00.000Z", mastery: 1, struggles: {} };
+  // A real completion: every graded step passed (the app re-judges stored completion against the lesson's steps).
+  const at = "2026-03-01T09:00:00.000Z";
+  const steps = Object.fromEntries((valuesNames as unknown as Lesson).steps.filter((s) => ["guided", "challenge", "transfer", "quiz"].includes(s.kind))
+    .map((s) => [s.id, { passed: true, attempts: 1, updatedAt: at, ...(s.kind === "quiz" ? { score: 1 } : {}) }]));
+  const done = { lessonId: "py-values-names", steps, furthestStep: 0, completed: true, completedAt: at, mastery: 1, struggles: {} };
   const file = { format: "python-intelligence-progress", version: 2, exportedAt: "2026-03-01T09:00:00.000Z", lessons: [done], drafts: {}, position: null, events: [], assistance: {} };
   await other.getByRole("button", { name: "Progress" }).click();
   await other.locator("input[type=file]").setInputFiles({ name: "p.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) });

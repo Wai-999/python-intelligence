@@ -16,7 +16,7 @@ import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
 import { getRunner } from "./py/runner";
 import { waitForController } from "./sw-register";
-import { applyOutcome, visitStep } from "./progress/logic";
+import { applyOutcome, reconcile, visitStep } from "./progress/logic";
 import { groupDrafts } from "./progress/drafts";
 import { openProgressStore, StaleProgressError } from "./progress/store";
 import type { LessonProgress, ProgressStore } from "./progress/types";
@@ -95,7 +95,8 @@ export function App() {
         }
       }
     }
-    setProgress(new Map(all.map((p) => [p.lessonId, p])));
+    // Re-judged against today's lessons: a completion saved before a graded step was added doesn't stand.
+    setProgress(new Map(all.map((p) => { const l = graph.byId.get(p.lessonId); return [p.lessonId, l ? reconcile(l, p) : p]; })));
     setDrafts(d);
     setEvents(exp.events);
     eventsRef.current = exp.events;

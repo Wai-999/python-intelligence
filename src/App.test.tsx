@@ -2,7 +2,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildModel, type LearnerEvent } from "./learner/model";
 import { creditedConcepts, quizEvents } from "./learner/record";
-import type { ExerciseStep, Lesson, QuizStep } from "./content/types";
+import { isGraded, type ExerciseStep, type Lesson, type QuizStep } from "./content/types";
+import { LESSONS } from "./content/lessons";
 import { StaleProgressError } from "./progress/store";
 import type { LessonProgress, ProgressExport, ProgressStore } from "./progress/types";
 
@@ -45,7 +46,9 @@ const fake: ProgressStore & { close(): void } = {
     if (exportGate) await exportGate;
     if (failExport) throw new Error("disk went away");
     return { format: "python-intelligence-progress", version: 2, exportedAt: new Date().toISOString(),
-    lessons, drafts, position: null, events: history, assistance: {} };
+    // As in a real version 2 store, a submitted quiz has already recorded that its answers were shown (help 4).
+    lessons, drafts, position: null, events: history, assistance: Object.fromEntries(lessons.flatMap((p) => Object.entries(p.steps)
+      .filter(([, r]) => r.score !== undefined && r.attempts > 0).map(([id]) => [`${p.lessonId}:${id}`, 4]))) };
   },
   load: () => { loads += 1; staleWrites = false; return fake.exportAll(); },
   importAll: () => new Promise<void>((resolve) => { pendingImports.push(resolve); }),
@@ -184,7 +187,7 @@ describe("App", () => {
     await openQuiz();
     await startImport();
     failExport = true;
-    lessonsAfter = [{ lessonId: "py-values-names", steps: {}, furthestStep: 0, completed: true, mastery: 1, struggles: {} } as unknown as LessonProgress];
+    lessonsAfter = [{ ...completedRecord(), furthestStep: 0 }];
     await act(async () => { finishImport(); await Promise.resolve(); });
     await screen.findByText(/couldn't be read back: disk went away/);
     // Nothing from the half-finished read is shown: the lesson list read succeeded, but it isn't published alone.
@@ -201,7 +204,10 @@ describe("App", () => {
     expect(screen.getByLabelText(/lessons completed/).getAttribute("aria-label")).toMatch(/^1 of /);
   });
 
-  const completedRecord = () => ({ lessonId: "py-values-names", steps: {}, furthestStep: 9, completed: true, mastery: 1, struggles: {} }) as unknown as LessonProgress;
+  // A real completion: every graded step of the lesson passed (stored completion is re-judged on load, see reconcile).
+  const completedRecord = () => ({ lessonId: "py-values-names", furthestStep: 9, completed: true, mastery: 1, struggles: {},
+    steps: Object.fromEntries(LESSONS.find((l) => l.id === "py-values-names")!.steps.filter(isGraded)
+      .map((st) => [st.id, { passed: true, attempts: 1, updatedAt: "2026-11-01T10:00:00.000Z", ...(st.kind === "quiz" ? { score: 1 } : {}) }])) }) as LessonProgress;
 
   it("writes nothing until saved progress has been read on start", async () => {
     lessonsAfter = [completedRecord()];

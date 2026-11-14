@@ -30,6 +30,20 @@ export function applyOutcome(lesson: Lesson, prev: LessonProgress | undefined, s
   return p;
 }
 
+/**
+ * Re-judges saved progress against the lesson as it is now. A lesson can gain a graded step after progress was saved
+ * (G-5 added a transfer problem to every lesson), so completion and mastery are recomputed, never trusted from storage.
+ * A completion that still holds keeps its date; nothing is written back until the next real save.
+ */
+export function reconcile(lesson: Lesson, p: LessonProgress): LessonProgress {
+  const completed = isComplete(lesson, p);
+  const mastery = Math.min(1, Math.max(0, computeMastery(lesson, p)));
+  if (completed === p.completed && mastery === p.mastery) return p;
+  const { completedAt, ...rest } = p;
+  const latest = Object.values(p.steps).map((s) => s.updatedAt).sort().at(-1);
+  return { ...rest, completed, mastery, ...(completed ? { completedAt: completedAt ?? latest ?? new Date(0).toISOString() } : {}) };
+}
+
 export function visitStep(lesson: Lesson, prev: LessonProgress | undefined, stepIndex: number): LessonProgress {
   const p: LessonProgress = structuredClone(prev ?? emptyProgress(lesson.id));
   p.furthestStep = Math.max(p.furthestStep, Math.min(stepIndex, lesson.steps.length - 1));

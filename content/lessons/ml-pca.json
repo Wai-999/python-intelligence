@@ -372,7 +372,7 @@
         },
         {
           "name": "several components",
-          "code": "import numpy as np\nX = np.array([[2.0, 0.0], [0.0, 4.0], [4.0, 2.0]])\nZ = project(X, np.eye(2))\nassert Z.shape == (3, 2) and np.allclose(Z.mean(axis=0), 0)",
+          "code": "import numpy as np\nX = np.array([[2.0, 0.0], [0.0, 4.0], [4.0, 2.0]])\nZ = project(X, np.eye(2))\nassert Z.shape == (3, 2) and np.allclose(Z.mean(axis=0), 0)\nC = np.array([[1.0, -1.0], [1.0, 1.0]]) / np.sqrt(2)\nr = np.sqrt(2)\nassert np.allclose(project(X, C), [[r, -r], [-2 * r, 0.0], [r, r]]), 'keep each component as given, signs included'",
           "concept": "dimensionality-reduction"
         },
         {

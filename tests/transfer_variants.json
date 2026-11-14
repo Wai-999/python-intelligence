@@ -4,13 +4,15 @@
    "price = 2.5\ncount = 4\n",
    "price = 2.5\ncount = 4\nsubtotal = 10\ntax = 2\ntotal = 11\n",
    "price = 2.5\ncount = 4\nsubtotal = 10.0\ntax = 2.0\ntotal = 12.0\nprint(total)\n",
-   "price = 2.5\ncount = 4\nsubtotal = 10.0\nsubtotal = subtotal * 1\ntax = 2.0\ntotal = 12.0\n"
+   "price = 2.5\ncount = 4\nsubtotal = 10.0\nsubtotal = subtotal * 1\ntax = 2.0\ntotal = 12.0\n",
+   "price = 2.5\ncount = 4\n\n\ndef unused():\n    subtotal = price * count\n    tax = subtotal * 0.2\n    total = subtotal + tax\n\n\nsubtotal = 10.0\ntax = 2.0\ntotal = 12.0\n"
   ],
   "accept": [
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n",
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = tax + subtotal\n",
    "price = 2.5\ncount = 4\nsubtotal = price\nsubtotal = subtotal * count\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
-   "price = 2.5\ncount = 4\nsubtotal = price\nsubtotal *= count\ntax = subtotal * 0.2\ntotal = subtotal\ntotal += tax\n"
+   "price = 2.5\ncount = 4\nsubtotal = price\nsubtotal *= count\ntax = subtotal * 0.2\ntotal = subtotal\ntotal += tax\n",
+   "price = 2.5\ncount = 4\nif count > 0:\n    subtotal = price * count\nelse:\n    subtotal = 0.0\ntax: float = subtotal * 0.2\ntotal = subtotal + tax\n"
   ]
  },
  "py-functions": {
@@ -294,7 +296,8 @@
  },
  "ml-pca": {
   "reject": [
-   "import numpy as np\n\n\ndef project(X, components):\n    return X @ components.T\n\n\ndef components_needed(eigenvalues, share):\n    return len(eigenvalues)\n"
+   "import numpy as np\n\n\ndef project(X, components):\n    return X @ components.T\n\n\ndef components_needed(eigenvalues, share):\n    return len(eigenvalues)\n",
+   "import numpy as np\n\n\ndef project(X, components):\n    X = np.asarray(X, dtype=float)\n    return (X - X.mean(axis=0)) @ np.abs(np.asarray(components, dtype=float)).T\n\n\ndef components_needed(eigenvalues, share):\n    ratios = np.sort(np.asarray(eigenvalues, dtype=float))[::-1] / np.sum(eigenvalues)\n    return int(np.searchsorted(np.cumsum(ratios), share - 1e-12) + 1)\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef project(X, components):\n    X = np.asarray(X, dtype=float)\n    return (X - X.mean(axis=0)) @ np.asarray(components, dtype=float).T\n\n\ndef components_needed(eigenvalues, share):\n    ratios = np.sort(np.asarray(eigenvalues, dtype=float))[::-1] / np.sum(eigenvalues)\n    total = 0.0\n    for i, r in enumerate(ratios):\n        total += r\n        if total >= share - 1e-12:\n            return i + 1\n    return len(ratios)\n"
