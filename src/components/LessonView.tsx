@@ -36,7 +36,12 @@ interface Props {
   suggestTier: (step: ExerciseStep) => number;
   /** The meso-loop panel for this lesson's step, if one is showing. */
   mesoFor: (stepId: string) => ReactNode | undefined;
+  /** Why this lesson (§1.4): the lessons it builds on and the ones it opens. */
+  why: { buildsOn: string[]; opens: string[] };
 }
+
+const links = (ids: string[], titleOf: (id: string) => string) =>
+  ids.map((id, k) => <span key={id}>{k > 0 && (k === ids.length - 1 ? " and " : ", ")}<a href={`#/lesson/${id}/0`}>{titleOf(id)}</a></span>);
 
 export function LessonView(p: Props) {
   const { lesson, stepIndex, progress } = p;
@@ -58,6 +63,9 @@ export function LessonView(p: Props) {
       <header className="lesson-head">
         <p className="eyebrow">{lesson.title} · {passedCount}/{graded.length} graded steps passed
           {progress?.completed && <> · <span className="ok">completed ✓</span></>}</p>
+        <p className="why"><strong>Why this lesson:</strong>{" "}
+          {p.why.buildsOn.length ? <>it builds on {links(p.why.buildsOn, p.titleOf)}</> : <>it's where the course starts</>}
+          {p.why.opens.length ? <>, and it opens {links(p.why.opens, p.titleOf)}.</> : <>, and it rounds off this path.</>}</p>
         <nav aria-label="Lesson steps">
           <ol className="stepper">
             {lesson.steps.map((s, i) => {
@@ -157,6 +165,8 @@ export function Recommend({ r, titleOf, go, currentId }: { r: Recommendation; ti
         <p>You've had trouble with <strong>{r.concept}</strong> several times. A short review of the lesson that
            teaches it will make the rest easier.</p>
       )}
+      {r.kind === "continue" && <p className="muted">You started it and haven't finished it yet.</p>}
+      {r.kind === "next" && <p className="muted">It's the first lesson whose prerequisites are all done (or tested out).</p>}
       <button type="button" className="btn primary" onClick={() => go(r.lessonId, 0)}>
         {label}: {titleOf(r.lessonId)} →
       </button>

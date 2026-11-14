@@ -91,6 +91,10 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   // A day later, after a reload (events come back from IndexedDB), the review is due.
   await page.clock.setSystemTime(new Date(T0.getTime() + 24 * 3600_000));
   await page.reload();
+  // The map says which lesson has a review due, in words (§10), and the review page agrees.
+  await page.goto("./#/");
+  await expect(page.locator(".map-item.due")).toHaveCount(1);
+  await expect(page.locator(".map-item.due .map-meta")).toContainText("review due");
   await page.goto("./#/review");
   await expect(badge(page)).toHaveText("1");
   await expect(page.getByText(/1 due · names/)).toBeVisible();
@@ -98,6 +102,9 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   await expect(page.getByText("Nothing is due for review right now.")).toBeVisible();
   await expect(badge(page)).toHaveCount(0);
   expect(await reviewEvents(page)).toEqual([["names", true, 24]]);
+  await page.goto("./#/");
+  await expect(page.locator(".map-item.due")).toHaveCount(0); // answered: no longer due
+  await page.goto("./#/review");
 
   // A success moves the next review out to three days: not due just before, due just after.
   expect(await dueAt(page, 24 + 71.5)).toBe(false);

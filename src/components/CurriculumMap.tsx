@@ -1,6 +1,7 @@
 import type { Graph, ProgressMap, Recommendation } from "../curriculum/graph";
 import { isUnlocked } from "../curriculum/graph";
 import { Recommend } from "./LessonView";
+import type { Completion } from "../curriculum/standing";
 
 interface Props {
   graph: Graph;
@@ -11,9 +12,13 @@ interface Props {
   compact?: boolean;
   /** Lessons tested out of in the placement check: reachable, but not complete. */
   testedOut?: ReadonlySet<string>;
+  /** How a completed lesson was completed, and whether a review is due (§10). */
+  standing?: (lessonId: string) => { completion: Completion | null; reviewDue: boolean };
 }
 
-export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact, testedOut = new Set() }: Props) {
+const DONE_TEXT: Record<Completion, string> = { independent: "Completed independently", assisted: "Completed with help", unknown: "Completed" };
+
+export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact, testedOut = new Set(), standing }: Props) {
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
   return (
     <nav className={`map ${compact ? "compact" : ""}`} aria-label="Curriculum">
@@ -26,9 +31,11 @@ export function CurriculumMap({ graph, progress, recommendation, currentId, go, 
           const unlocked = isUnlocked(graph, id, progress, testedOut);
           const state = p?.completed ? "done" : p && p.furthestStep > 0 && unlocked ? "started" : testedOut.has(id) ? "tested" : !unlocked ? "locked" : "open";
           const resume = p && !p.completed ? Math.min(p.furthestStep, l.steps.length - 1) : 0;
-          const text = { done: "Completed", locked: "Locked", started: "In progress", open: "Ready", tested: "Tested out" }[state];
+          const st = standing?.(id);
+          const text = { done: DONE_TEXT[st?.completion ?? "unknown"], locked: "Locked", started: "In progress", open: "Ready", tested: "Tested out" }[state]
+            + (st?.reviewDue ? ", review due" : "");
           return (
-            <li key={id} className={`map-item ${state} ${id === currentId ? "current" : ""}`}>
+            <li key={id} className={`map-item ${state} ${id === currentId ? "current" : ""} ${st?.reviewDue ? "due" : ""}`}>
               <span className="map-badge" aria-hidden="true">{state === "done" ? "✓" : state === "locked" ? "🔒" : state === "tested" ? "↷" : n + 1}</span>
               <div className="map-body">
                 {state === "locked" ? (

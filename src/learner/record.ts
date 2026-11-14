@@ -56,7 +56,7 @@ export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { co
   return [...direct.map((c) => [c, outcome(c), true] as const), ...untested.map((c) => [c, overall, false] as const)].map(([concept, passed, isDirect]) => {
     const tags = passed ? [] : tagsFor(concept, isDirect);
     return { id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance,
-      policy: POLICY_VERSION, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}) };
+      policy: POLICY_VERSION, stepPassed: overall, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}) };
   });
 }
 
@@ -74,6 +74,7 @@ export function quizEvents(lesson: Lesson, step: QuizStep, correct: boolean[], s
   for (const c of lesson.concepts) if (!askedBy(lesson).has(c)) byConcept.set(c, passed);
   return [...byConcept].map(([concept, ok]) => ({
     id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "quiz" as const, concept, passed: ok, assistance, policy: POLICY_VERSION,
+    stepPassed: passed,
   }));
 }
 

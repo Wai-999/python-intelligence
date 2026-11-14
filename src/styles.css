@@ -220,3 +220,8 @@ main { min-width: 0; outline: none; }
 /* Exercise difficulty (G-13): the word carries the meaning; the dots are decoration. */
 .difficulty { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
 .difficulty strong { color: var(--text); }
+
+/* Why this lesson, completion and review-due states (G-16): the words carry the meaning. */
+.lesson-head .why { margin: 4px 0 8px; font-size: 14px; color: var(--muted); }
+.lesson-head .why strong { color: var(--text); }
+.map-item.due { border-left: 4px solid var(--accent); }

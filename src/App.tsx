@@ -10,6 +10,7 @@ import { interventionEvent, mesoTrigger, transferTarget, type Intervention, type
 import { MesoPanel } from "./components/MesoPanel";
 import { DiagnosticView } from "./components/DiagnosticView";
 import { DIAGNOSTIC, diagnosticEvents, placement } from "./curriculum/placement";
+import { completionOf, reviewDueFor, whyThisLesson } from "./curriculum/standing";
 import { isExercise, type Lesson } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -202,7 +203,10 @@ export function App() {
   }, [model, now]);
   useEffect(() => { setNow(new Date().toISOString()); }, [route, events]);
   useEffect(() => { setMeso(null); }, [route]); // a step back belongs to the task on screen
-  const dueCount = dueReviews(model, now).filter((s) => reviewItem(LESSONS, s.concept, 0) !== null).length;
+  // Due concepts that have a review question: the Review page's count, and the map's "review due".
+  const due = dueReviews(model, now).filter((s) => reviewItem(LESSONS, s.concept, 0) !== null);
+  const dueCount = due.length;
+  const dueConcepts = new Set(due.map((s) => s.concept));
 
   // Only the latest replacement unlocks the page, and only once its reload has succeeded.
   const finishReplacement = (token: number) => {
@@ -253,6 +257,10 @@ export function App() {
   const rec = useMemo(() => recommendNext(graph, progress, current, place.testedOut), [progress, current, place]);
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
   const completed = [...progress.values()].filter((p) => p.completed).length;
+  const standing = (id: string) => {
+    const l = graph.byId.get(id)!;
+    return { completion: progress.get(id)?.completed ? completionOf(l, events) : null, reviewDue: reviewDueFor(l, dueConcepts) };
+  };
 
   return (
     <div className="app">
@@ -280,7 +288,7 @@ export function App() {
 
       <div className={`layout layout--${route.view}`} inert={replacing}>
         {route.view === "lesson" && (
-          <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} testedOut={place.testedOut} /></aside>
+          <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} testedOut={place.testedOut} standing={standing} /></aside>
         )}
         <main id="main" tabIndex={-1} aria-busy={replacing}>
           {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
@@ -302,7 +310,7 @@ export function App() {
                   ? <>Placement check: you tested out of {place.testedOut.size} lesson{place.testedOut.size === 1 ? "" : "s"}. <a href="#/diagnostic">Retake it</a></>
                   : <>Know some Python already? <a href="#/diagnostic">Take the placement check</a> to find your starting point.</>}</p>
               </section>
-              <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} testedOut={place.testedOut} />
+              <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} testedOut={place.testedOut} standing={standing} />
               <p className="fineprint">The tutor on this site is an <strong>offline guide</strong>: pre-written explanations and
                  questions matched to your results, not a generative AI. Code runs in a sandboxed browser worker. Don't paste
                  secrets into it.</p>
@@ -315,6 +323,7 @@ export function App() {
               drafts={drafts[route.lessonId] ?? {}}
               recommendation={rec}
               unlocked={isUnlocked(graph, route.lessonId, progress, place.testedOut)}
+              why={whyThisLesson(graph, route.lessonId)}
               titleOf={titleOf}
               go={go}
               generation={generation}
