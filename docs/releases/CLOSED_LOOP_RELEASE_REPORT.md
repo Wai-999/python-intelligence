@@ -9,7 +9,7 @@ Master prompt §15. Every claim below points at code, a test, or a CI run you ca
 |---|---|
 | Deployed URL | https://wai-999.github.io/python-intelligence/ |
 | Branch | `main` (every push that passes all gates deploys; owner decision 2026-11-08) |
-| Release commit | `2b9e6cecea305046d580c29139fda9ae6f9013a4`, verified live. This report was brought up to date in the docs-only commit that follows it; `docs/` isn't part of the site, so the published files differ only in their build stamp (`pi-build`). |
+| Release commit | `2b9e6cecea305046d580c29139fda9ae6f9013a4`, verified live. Everything below describes that release. Later commits (`git log 2b9e6ce..main`) changed grading and progress handling (saved completion is re-judged against today's lessons, transfer checks were tightened, the worker wording on the home page was corrected); they are outside this report's verification until a new release report covers them. |
 | GitHub Actions run | [run 43583609105](https://github.com/Wai-999/python-intelligence/actions/runs/43583609105) (`gates` and `deploy` both green) |
 | Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `2b9e6cecea305046d580c29139fda9ae6f9013a4`. |
 
@@ -43,7 +43,7 @@ Progress lives in IndexedDB in the learner's browser, with export and import as 
   token so a tab built on older progress can't write into an import or reset (`src/progress/store.ts`).
 - e2e: "complete lesson 1, refresh mid-lesson 2, resume exactly, get next recommendation"; "export, reset, and import
   restore progress"; "a corrupt import is rejected and leaves progress unchanged"; cross-tab import and reset cases.
-- Saved progress is re-judged against today's lessons whenever it is loaded or imported (`reconcile` in
+- (Added after this release, so not yet covered by its verification.) Saved progress is re-judged against today's lessons whenever it is loaded or imported (`reconcile` in
   `src/progress/logic.ts`): completion and mastery are recomputed, so a lesson completed before it gained its transfer
   problem shows as in progress until that problem is solved. e2e: "a completion saved before the lesson gained its
   transfer problem doesn't stand after an import".

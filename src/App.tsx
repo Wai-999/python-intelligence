@@ -313,7 +313,7 @@ export function App() {
               </section>
               <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} testedOut={place.testedOut} standing={standing} />
               <p className="fineprint">The tutor on this site is an <strong>offline guide</strong>: pre-written explanations and
-                 questions matched to your results, not a generative AI. Code runs in a sandboxed browser worker. Don't paste
+                 questions matched to your results, not a generative AI. Code runs in Pyodide in a dedicated browser worker, which keeps the page responsive but is not a security sandbox. Don't paste
                  secrets into it.</p>
             </>
           ) : (

@@ -60,3 +60,16 @@ test("a due review starts with the lesson's free-recall prompt", async ({ page }
   await page.goto("./#/review");
   await expect(page.locator("p.recall")).toContainText(l.review!.recall.slice(0, 25));
 });
+
+test("in the browser, lesson 1's transfer traces the code that runs: hard-coded values fail only the structure check", async ({ page }) => {
+  test.setTimeout(240_000);
+  const l = valuesNames as unknown as Lesson;
+  const at = l.steps.findIndex((s) => s.kind === "transfer");
+  await page.goto(`./#/lesson/${l.id}/${at}`);
+  await page.locator("textarea.editor-input").fill("price = 2.5\ncount = 4\nif False:\n    subtotal = price * count\nsubtotal = 10.0\ntax = 2.0\ntotal = 12.0\nprint(total)\n");
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  const failed = page.locator(".checks li.fail");
+  await expect(failed).toHaveCount(1, { timeout: 180_000 });
+  await expect(failed).toContainText("computed from the names before it");
+  await expect(page.locator(".console pre").first()).toHaveText("12.0\n"); // the traced re-run printed nothing extra
+});
