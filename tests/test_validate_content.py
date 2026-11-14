@@ -164,7 +164,8 @@ def test_the_pending_list_only_names_real_lessons_without_metadata():
 def test_a_further_example_must_declare_the_packages_it_imports():
     l = copy.deepcopy(LESSON)
     ex = next(s for s in l["steps"] if s["kind"] == "example")
-    ex["more"] = [{"title": "Arrays", "body": "Predict it.", "code": "import numpy as np\nprint(np.arange(3).sum())", "expected_output": "3\n"}]
+    ex["more"] = [{"title": "Plain", "body": "Predict it.", "code": "print(1 + 2)", "expected_output": "3\n"},
+                  {"title": "Arrays", "body": "Predict it.", "code": "import numpy as np\nprint(np.arange(3).sum())", "expected_output": "3\n"}]
     assert any("imports numpy but the lesson does not declare it" in e for e in vc.check_packages(l, None))
     l["packages"] = ["numpy"]
     assert not any("does not declare" in e for e in vc.check_packages(l, None))
