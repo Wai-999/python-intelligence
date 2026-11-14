@@ -192,6 +192,11 @@ main { min-width: 0; outline: none; }
 .concepts th, .concepts td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .concepts thead th { color: var(--muted); font-weight: 600; }
 .concepts tbody th { font-weight: 600; }
+/* Phones scroll the table sideways; the concept name stays in view. */
+@media (max-width: 700px) { .concepts tbody th, .concepts thead th:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; } }
+.review-next, .start { margin-top: 12px; }
+.trace-link { margin-top: 8px; font-size: 14px; }
+.saved-at { font-size: 14px; color: var(--muted); }
 
 /* Scaffold fading (G-3) and the meso loop's step back (G-4). */
 .support { font-size: 14px; margin: 8px 0; }

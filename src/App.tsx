@@ -269,6 +269,8 @@ export function App() {
   const nowId = current ?? position?.lessonId ?? (rec.kind !== "done" ? rec.lessonId : undefined);
   const nowLesson = nowId ? graph.byId.get(nowId) : undefined;
   const atNow = !!current;
+  // A first visit (nothing practised, no saved position, no placement yet): finding a starting point leads.
+  const firstVisit = ready && events.length === 0 && !position && progress.size === 0;
   // Resume is offered whenever the saved position isn't the step on screen.
   const resumeHref = ready && position && !(route.view === "lesson" && route.lessonId === position.lessonId && route.step === position.stepIndex)
     ? `#/lesson/${position.lessonId}/${position.stepIndex}` : null;
@@ -319,6 +321,7 @@ export function App() {
         <main id="main" tabIndex={-1} aria-busy={replacing}>
           {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
             <ReviewView key={generation} lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
+                        continueTo={position ? { href: `#/lesson/${position.lessonId}/${position.stepIndex}`, title: titleOf(position.lessonId) } : undefined}
                         onAnswer={(item, correct) => { if (live()) record([reviewEvent(item, correct, stampNow())]); }} />
           ) : route.view === "diagnostic" ? (
             <DiagnosticView key={generation} diagnostic={DIAGNOSTIC} placement={place} recommendation={rec} titleOf={titleOf} go={go}
@@ -335,8 +338,12 @@ export function App() {
                   : place.at
                   ? <>Placement check: you tested out of {place.testedOut.size} lesson{place.testedOut.size === 1 ? "" : "s"}. <a href="#/diagnostic">Retake it</a></>
                   : <>Know some Python already? <a href="#/diagnostic">Take the placement check</a> to find your starting point.</>}</p>
+                {firstVisit && (
+                  <p className="start"><a className="btn primary" href="#/diagnostic">Find your starting point</a>{" "}
+                    <span className="muted">a short check that skips what you already know, or start from the first lesson below</span></p>
+                )}
               </section>
-              <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} testedOut={place.testedOut} standing={standing} />
+              <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} testedOut={place.testedOut} standing={standing} recommendSecondary={firstVisit} />
               <p className="fineprint">The tutor on this site is an <strong>offline guide</strong>: pre-written explanations and
                  questions matched to your results, not a generative AI. Code runs in Pyodide in a dedicated browser worker, which keeps the page responsive but is not a security sandbox. Don't paste
                  secrets into it.</p>

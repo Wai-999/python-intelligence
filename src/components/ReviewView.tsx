@@ -4,9 +4,11 @@ import { dueReviews, type ConceptState, type LearnerEvent, type LearnerModel } f
 import { reviewItem, type ReviewItem } from "../learner/record";
 import { inline } from "./Prose";
 
+// Plain words for the model's states (§10): what the learner has done, not the model's vocabulary.
 const STATUS: Record<ConceptState["status"], string> = {
-  new: "not started", learning: "learning", complete: "complete (reviews pending)", mastered: "durably mastered",
+  new: "not started", learning: "practising", complete: "learned · reviews ahead", mastered: "remembered over weeks",
 };
+const EVIDENCE: Record<ConceptState["uncertainty"], string> = { high: "early guess", medium: "some evidence", low: "plenty of evidence" };
 
 interface Props {
   lessons: Lesson[];
@@ -15,10 +17,12 @@ interface Props {
   now: string;
   titleOf: (lessonId: string) => string;
   onAnswer: (item: ReviewItem, correct: boolean) => void;
+  /** Where the learner left off, offered when nothing is due. */
+  continueTo?: { href: string; title: string };
 }
 
 /** Spaced retrieval (master prompt §5): due concepts one question at a time, then the evidence behind each concept. */
-export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: Props) {
+export function ReviewView({ lessons, model, events, now, titleOf, onAnswer, continueTo }: Props) {
   // Spaced-review metadata: each lesson's free-recall prompt, asked before its retrieval question.
   const recallFor = (lessonId: string) => lessons.find((l) => l.id === lessonId)?.review?.recall;
   // Only concepts with a question of their own can be reviewed; the others are listed, never faked.
@@ -85,7 +89,10 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
           )}
         </form>
       ) : (
-        <p className="pill ok" role="status" tabIndex={-1} ref={emptyLine}>Nothing is due for review right now.</p>
+        <>
+          <p className="pill ok" role="status" tabIndex={-1} ref={emptyLine}>Nothing is due for review right now.</p>
+          {continueTo && <p className="review-next"><a className="btn primary" href={continueTo.href}>Continue: {continueTo.title} →</a></p>}
+        </>
       )}
 
       {unreviewable.length > 0 && (
@@ -106,7 +113,7 @@ export function ReviewView({ lessons, model, events, now, titleOf, onAnswer }: P
                   <th scope="row">{s.concept}</th>
                   <td><a href={`#/lesson/${s.lessonId}/0`}>{titleOf(s.lessonId)}</a></td>
                   <td>{STATUS[s.status]}{!s.prerequisitesMet && s.evidenceReady ? " · finish its prerequisites" : ""}</td>
-                  <td>{Math.round(s.masteryEstimate * 100)}% <span className="muted">({s.uncertainty} uncertainty)</span></td>
+                  <td>{Math.round(s.masteryEstimate * 100)}% <span className="muted">· {EVIDENCE[s.uncertainty]}</span></td>
                   <td>{!s.reviewDue ? "—" : reviewItem(lessons, s.concept, 0) === null ? "no review question yet"
                     : new Date(s.reviewDue).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</td>
                 </tr>

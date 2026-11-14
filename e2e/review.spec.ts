@@ -80,7 +80,7 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   await expect(page.getByText("Progress imported.")).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
   const names = page.getByRole("row", { name: /^names/ });
-  await expect(names).toContainText("complete (reviews pending)");
+  await expect(names).toContainText("learned · reviews ahead");
   await expect(page.getByText("Nothing is due for review right now.")).toBeVisible();
   await expect(badge(page)).toHaveCount(0);
 
@@ -115,5 +115,5 @@ test("practice is recorded, a completed concept comes back after a day, and the 
   expect(await dueAt(page, 96.5 + 23.5)).toBe(false);
   expect(await dueAt(page, 96.5 + 24.5)).toBe(true);
 
-  await expect(names).toContainText("complete (reviews pending)"); // a lapse doesn't take away completion
+  await expect(names).toContainText("learned · reviews ahead"); // a lapse doesn't take away completion
 });

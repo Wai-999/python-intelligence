@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import type { ProgressStore } from "../progress/types";
+import type { ProgressExport, ProgressStore } from "../progress/types";
+
+/** The newest time anything with a timestamp was saved: a step result, the reading position or a learner event. */
+export function lastSaved(data: ProgressExport): string | null {
+  const times = [...data.lessons.flatMap((l) => Object.values(l.steps).map((s) => s.updatedAt)), ...data.events.map((e) => e.at)];
+  if (data.position) times.push(data.position.updatedAt);
+  return times.length ? times.sort().at(-1)! : null;
+}
 
 /** Export/import/reset. Progress lives only in this browser; export is the only way to move or back it up. */
 /**
@@ -11,6 +18,9 @@ export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose }: 
   const [confirmReset, setConfirmReset] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const [saved, setSaved] = useState<string | null | undefined>(undefined); // undefined while reading
+  const refreshSaved = () => { store.exportAll().then((d) => setSaved(lastSaved(d)), () => setSaved(undefined)); };
+  useEffect(refreshSaved, [store]);
 
   // Keyboard users land in the panel when it opens and return to whatever opened it when it closes.
   useEffect(() => {
@@ -40,6 +50,7 @@ export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose }: 
       setMsg({ ok: false, text: `Import failed, and your current progress was left unchanged. ${(e as Error).message}` });
     } finally {
       onChanged(token); // even after a rejected import: reload (unchanged) storage and catch the views up
+      refreshSaved();
     }
   };
 
@@ -49,6 +60,8 @@ export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose }: 
       <h2 id="pp-title" ref={heading} tabIndex={-1}>Your progress</h2>
       <p>Your progress is saved in <strong>this browser only</strong>. Nothing is sent to a server. To move it to another
          device, or to back it up, export it to a file and import that file elsewhere.</p>
+      <p className="saved-at">{saved === undefined ? "Checking what is saved…" : saved === null ? "Nothing saved yet."
+        : <>Last saved: <time dateTime={saved}>{new Date(saved).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</time>. Code you type is saved as you go.</>}</p>
       <div className="run-bar">
         <button type="button" className="btn primary" onClick={doExport}>Export progress</button>
         <button type="button" className="btn" onClick={() => file.current?.click()} disabled={busy}>Import from file…</button>
@@ -58,7 +71,7 @@ export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose }: 
           <button type="button" className="btn danger" onClick={() => setConfirmReset(true)} disabled={busy}>Reset…</button>
         ) : (
           <span className="confirm">This erases all progress and drafts in this browser.{" "}
-            <button type="button" className="btn danger" disabled={busy} onClick={async () => { const token = onReplacing(); try { await store.clear(); } finally { onChanged(token); } setConfirmReset(false); setMsg({ ok: true, text: "Progress reset." }); }}>Erase everything</button>{" "}
+            <button type="button" className="btn danger" disabled={busy} onClick={async () => { const token = onReplacing(); try { await store.clear(); } finally { onChanged(token); refreshSaved(); } setConfirmReset(false); setMsg({ ok: true, text: "Progress reset." }); }}>Erase everything</button>{" "}
             <button type="button" className="btn ghost" onClick={() => setConfirmReset(false)}>Cancel</button>
           </span>
         )}

@@ -15,11 +15,13 @@ interface Props {
   testedOut?: ReadonlySet<string>;
   /** How a completed lesson was completed, and whether a review is due (§10). */
   standing?: (lessonId: string) => { completion: Completion | null; reviewDue: boolean };
+  /** Another action on the page leads (a first visit's "Find your starting point"), so the recommendation is secondary. */
+  recommendSecondary?: boolean;
 }
 
 const DONE_TEXT: Record<Completion, string> = { independent: "Completed independently", assisted: "Completed with help", unknown: "Completed" };
 
-export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact, testedOut = new Set(), standing }: Props) {
+export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact, testedOut = new Set(), standing, recommendSecondary = false }: Props) {
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
   const index = new Map(graph.order.map((id, n) => [id, n]));
   const isLocked = (id: string) => !progress.get(id)?.completed && !testedOut.has(id) && !isUnlocked(graph, id, progress, testedOut);
@@ -59,7 +61,7 @@ export function CurriculumMap({ graph, progress, recommendation, currentId, go, 
   };
   return (
     <nav className={`map ${compact ? "compact" : ""}`} aria-label="Curriculum">
-      {!compact && <Recommend r={recommendation} titleOf={titleOf} go={go} />}
+      {!compact && <Recommend r={recommendation} titleOf={titleOf} go={go} secondary={recommendSecondary} />}
       {groups.map((g) => {
         const visible = g.ids.filter((id) => !isLocked(id));
         const locked = g.ids.filter(isLocked);

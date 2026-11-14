@@ -61,6 +61,12 @@ export function LessonView(p: Props) {
   const mixUpStep = firstOf("formal", "example");
   // §5 "Challenge me independently": the lesson's transfer problem, reachable from every other step.
   const transferAt = lesson.steps.findIndex((s) => s.kind === "transfer");
+  // §5 "Show execution trace": from code steps to the lesson's traced program (a trace of the learner's own code is later work).
+  const visualAt = lesson.steps.findIndex((s) => s.kind === "visual");
+  const traceLink = visualAt >= 0 && (step.kind === "example" || isExercise(step)) && (
+    <p className="trace-link"><a href={`#/lesson/${lesson.id}/${visualAt}`}>Show execution trace →</a>{" "}
+      <span className="muted">step through this lesson's traced program line by line</span></p>
+  );
 
   return (
     <article className="lesson" aria-labelledby="step-title">
@@ -121,6 +127,7 @@ export function LessonView(p: Props) {
 
       {step.kind === "visual" && <TraceViewer key={`${lesson.id}:${step.id}`} visual={step.visual} />}
       {step.kind === "example" && <Examples key={`${lesson.id}:${step.id}`} lessonId={lesson.id} step={step} packages={lesson.packages} />}
+      {step.kind === "example" && traceLink}
       {isExercise(step) && (
         <Exercise key={`${lesson.id}:${step.id}:${p.generation}`} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}
@@ -128,6 +135,7 @@ export function LessonView(p: Props) {
                   onDraft={(c) => p.onDraft(step.id, c)}
                   onResult={(passed, fc, detail) => p.onExercise(step.id, passed, fc, detail)} />
       )}
+      {isExercise(step) && traceLink}
       {step.kind === "quiz" && (
         <Quiz key={`${lesson.id}:${step.id}:${p.generation}`} step={step} record={progress?.steps[step.id]} lead={!progress?.steps[step.id]?.passed && !p.mesoActive?.(step.id)}
               onResult={(score, passed, missed, correct) => p.onQuiz(step.id, score, passed, missed, correct)} />
