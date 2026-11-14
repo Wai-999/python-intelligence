@@ -90,3 +90,26 @@ test("one primary action when a passed quiz is retaken and failed, and while a s
   await expect(panel.getByRole("status")).toBeVisible();
   await expect(primaries(page)).toHaveText(["▶ Run checks"]); // answered: the exercise leads again
 });
+
+test("a step back on an exercise passed earlier still leaves one primary action", async ({ page }) => {
+  test.setTimeout(240_000);
+  const guided = first.steps.findIndex((s) => s.kind === "guided");
+  await page.goto(`./#/lesson/py-values-names/${guided}`);
+  await page.locator("textarea.editor-input").fill((first.steps[guided] as unknown as { solution: string }).solution);
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 120_000 });
+  await expect(primaries(page)).toHaveText(["Next →"]);
+  for (let i = 0; i < 3; i++) {
+    await page.locator("textarea.editor-input").fill('radius = "3"\narea = 3.14 * radius + 1\n');
+    await page.getByRole("button", { name: "▶ Run checks" }).click();
+    await expect(page.getByRole("button", { name: "▶ Run checks" })).toBeEnabled({ timeout: 90_000 });
+  }
+  const panel = page.locator("section.meso");
+  await expect(panel).toBeVisible();
+  await expect(primaries(page)).toHaveCount(1);
+  await expect(panel.locator(".btn.primary")).toHaveCount(1);
+  await panel.getByRole("radio").first().check();
+  await panel.locator(".btn.primary").click();
+  await expect(panel.getByRole("status")).toBeVisible();
+  await expect(primaries(page)).toHaveText(["Next →"]); // answered, and the step was passed: Next leads again
+});

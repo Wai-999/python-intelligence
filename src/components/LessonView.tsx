@@ -137,8 +137,9 @@ export function LessonView(p: Props) {
 
       <nav className="pager" aria-label="Step navigation">
         <button type="button" className="btn" disabled={stepIndex === 0} onClick={() => p.go(lesson.id, stepIndex - 1)}>← Back</button>
-        {/* One primary action (§10): on a graded step not yet passed, the step's own action leads and Next steps back. */}
-        {!last && <button type="button" className={isGraded(step) && !progress?.steps[step.id]?.passed ? "btn" : "btn primary"}
+        {/* One primary action (§10): on a graded step not yet passed, or while a step back waits for an answer, the step's
+            own action (or the panel's) leads and Next steps back. */}
+        {!last && <button type="button" className={(isGraded(step) && !progress?.steps[step.id]?.passed) || p.mesoActive?.(step.id) ? "btn" : "btn primary"}
                           onClick={() => p.go(lesson.id, stepIndex + 1)}>Next →</button>}
       </nav>
     </article>
