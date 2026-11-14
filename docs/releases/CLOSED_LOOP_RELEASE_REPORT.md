@@ -58,7 +58,7 @@ questions, editable exercises with tests, one transfer problem, rubric, misconce
 mapping and spaced-review metadata (G-5). Every exercise has a difficulty tag (G-13), and help used is recorded on each
 attempt. Codex audited every transfer problem's checks (G-5a: 30 findings, then 21 re-audit rounds, until it found no
 further plausible learner mistake that passes). Every mistake the audit found is now rejected, and the valid alternatives
-it raised are accepted; 276 rejected and accepted variants in `tests/transfer_variants.json` pin that. Like any finite set
+it raised are accepted; 277 rejected and accepted variants in `tests/transfer_variants.json` pin that. Like any finite set
 of checks, they can't rule out every possible error. The checks are learning feedback, not anti-cheating: they run in the learner's own browser.
 Five open books are used: three adapted with attribution, two (MML and the Big Book) cited only. No PDF is
 published, and a 12-word shingle check keeps book text out of lessons and out of `dist/`.
