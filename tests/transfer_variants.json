@@ -227,7 +227,8 @@
  },
  "ml-classification": {
   "reject": [
-   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) > threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
+   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) > threshold).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n",
+   "import numpy as np\n\n\ndef predict(scores, threshold):\n    return (np.asarray(scores) >= 0.5).astype(int)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef predict(scores, threshold):\n    return np.where(np.asarray(scores) >= threshold, 1, 0)\n\n\ndef precision_recall(y_true, y_pred):\n    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)\n    tp = int(np.sum((y_true == 1) & (y_pred == 1)))\n    predicted, actual = int(np.sum(y_pred == 1)), int(np.sum(y_true == 1))\n    return (tp / predicted if predicted else 0.0, tp / actual if actual else 0.0)\n"
@@ -367,7 +368,8 @@
  },
  "stats-simulation": {
   "reject": [
-   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random()\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random()\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n",
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    ways = sum(1 for a in range(1, 7) for b in range(1, 7) if a + b == target)\n    return ways / 36\n"
   ],
   "accept": [
    "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        if x ** 2 + y ** 2 <= 1:\n            inside += 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"

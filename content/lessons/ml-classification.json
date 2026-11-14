@@ -368,6 +368,11 @@
           "concept": "decision-boundary"
         },
         {
+          "name": "the threshold argument is used",
+          "code": "import numpy as np\ns = [0.2, 0.5, 0.9]\nassert np.array_equal(predict(s, 0.2), [1, 1, 1]) and np.array_equal(predict(s, 0.9), [0, 0, 1])\nassert np.array_equal(predict(s, 0.95), [0, 0, 0]), 'compare against the threshold you are given'",
+          "concept": "decision-boundary"
+        },
+        {
           "name": "precision and recall",
           "code": "p, r = precision_recall([1, 1, 0, 0, 1], [1, 0, 1, 0, 1])\nassert abs(p - 2 / 3) < 1e-12 and abs(r - 2 / 3) < 1e-12, (p, r)\np, r = precision_recall([1, 0, 0, 0], [1, 1, 1, 1])\nassert (p, r) == (0.25, 1.0), (p, r)",
           "concept": "classification"

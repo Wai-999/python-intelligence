@@ -130,7 +130,7 @@ fading (its Phase 5), a tutor gateway (its Phase 6, if authorized) and more curr
 
 | ID | Owner → Reviewer | Task | Status |
 |---|---|---|---|
-| P5-1 | Claude → Codex | axe-core WCAG 2.1 A/AA scans of every page state in light + dark mode; keyboard focus checks for the progress panel | ✅ fixed: locked-item contrast (opacity), progress-panel focus management |
+| P5-1 | Claude → Codex | axe-core WCAG 2.1 A/AA scans of the main page states in light + dark mode; keyboard focus checks for the progress panel | ◐ partial: the scanned states (listed in docs/releases/CLOSED_LOOP_RELEASE_REPORT.md) have no violations, and contrast (locked items) and progress-panel focus were fixed; the Review page, the transfer step, a passed exercise, the placement check in dark mode and the remaining step kinds are not scanned yet (UNVERIFIED) |
 | P5-2 | Codex → Claude | Offline: service worker (shell precached on first visit; Pyodide cached cache-first; navigations network-first) | ✅ merged on attempt 3 (rejected once: offline after ONE visit failed); Claude follow-up: warm Python after SW control |
 | P5-3 | Claude → Codex | Post-deploy check: commit-stamped build (`pi-build` meta), bounded wait until THIS build is live, desktop+mobile smoke and a real Pyodide run on the live URL | ✅ |
 | P5-4 ⛔ | Owner | Production deploys are automatic on push to main (owner decision 2026-11-08); consider branch protection | open |

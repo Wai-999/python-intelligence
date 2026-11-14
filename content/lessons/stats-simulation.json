@@ -423,6 +423,11 @@
           "name": "dice probabilities",
           "code": "assert abs(dice_probability(7, 40000, 5) - 6 / 36) < 0.01 and abs(dice_probability(2, 40000, 5) - 1 / 36) < 0.005\nassert dice_probability(13, 1000, 5) == 0",
           "concept": "simulation"
+        },
+        {
+          "name": "it really rolls the dice",
+          "code": "assert all(dice_probability(7, 1, seed) in (0.0, 1.0) for seed in range(10)), 'one trial is a hit or a miss'\nassert len({dice_probability(7, 200, seed) for seed in range(6)}) > 1, 'different seeds should give slightly different estimates'",
+          "concept": "simulation"
         }
       ],
       "solution": "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
