@@ -350,7 +350,7 @@
         },
         {
           "name": "square_evens uses a list comprehension",
-          "code": "import ast\n_fn = next(n for n in ast.walk(ast.parse(__source__)) if isinstance(n, ast.FunctionDef) and n.name == 'square_evens')\nassert any(isinstance(n, ast.ListComp) for n in ast.walk(_fn)), 'build the list with a list comprehension'",
+          "code": "import ast\n_tree = ast.parse(__source__)\n_defs = {n.name: n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef)}\ndef _reach(names):\n    seen, todo = set(), list(names)\n    while todo:\n        name = todo.pop()\n        if name in seen or name not in _defs:\n            continue\n        seen.add(name)\n        todo += [c.func.id for c in ast.walk(_defs[name]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]\n    return [_defs[n] for n in seen]\nassert any(isinstance(n, ast.ListComp) for f in _reach(['square_evens']) for n in ast.walk(f)), 'build the list with a list comprehension'",
           "concept": "list-comprehensions"
         }
       ],

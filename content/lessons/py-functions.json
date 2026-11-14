@@ -256,7 +256,7 @@
         },
         {
           "name": "order_total uses shipping",
-          "code": "import ast\n_fn = next(n for n in ast.walk(ast.parse(__source__)) if isinstance(n, ast.FunctionDef) and n.name == 'order_total')\n_nums = {c.value for c in ast.walk(_fn) if isinstance(c, ast.Constant) and type(c.value) in (int, float)}\nassert not ({4.0, 1.5} & _nums), \"order_total should call shipping instead of repeating its formula (4.0 + 1.5 per kg)\"\nassert any(isinstance(c, ast.Call) for c in ast.walk(_fn)), 'order_total should call shipping'",
+          "code": "import ast\ndef _swap(body):\n    out = []\n    for s in body:\n        out.append(s)\n        if isinstance(s, ast.FunctionDef) and s.name == 'shipping':\n            out.append(ast.Assign([ast.Name('shipping', ast.Store())], ast.Name('__shipping__', ast.Load())))\n    return out\n_tree = ast.parse(__source__)\n_tree.body = _swap(_tree.body)\nast.fix_missing_locations(_tree)\nimport io, contextlib\n_g = {'__builtins__': __builtins__, '__shipping__': lambda w: 100.0}\nwith contextlib.redirect_stdout(io.StringIO()):\n    exec(compile(_tree, '<rerun>', 'exec'), _g)\nassert _g['order_total'](1, 1, 1) == 101.0, 'order_total should call shipping instead of repeating its formula'",
           "concept": "functions"
         },
         {

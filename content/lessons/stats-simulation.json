@@ -438,6 +438,11 @@
           "name": "the estimate counts real points",
           "code": "assert all(estimate_pi(1, seed) in (0.0, 4.0) for seed in range(8)), 'one point is inside or outside'\nfor seed in range(5):\n    v = estimate_pi(10, seed) * 10 / 4\n    assert abs(v - round(v)) < 1e-9, 'with 10 points, 4 x the share inside is a multiple of 0.4'",
           "concept": "estimation"
+        },
+        {
+          "name": "the points decide the estimate",
+          "code": "import random as _random\nclass _Fixed:\n    def __init__(self, seed=None):\n        self._v = iter([0.1, 0.1, 0.9, 0.9, 1.0, 0.0, 0.0, 0.5])\n    def random(self):\n        return next(self._v)\n    def uniform(self, a, b):\n        return a + (b - a) * next(self._v)\n_real = _random.Random\n_own = globals().get('Random') is _real\n_random.Random = _Fixed\nif _own:\n    globals()['Random'] = _Fixed\ntry:\n    got = estimate_pi(4, 0)\nfinally:\n    _random.Random = _real\n    if _own:\n        globals()['Random'] = _real\nassert got == 3.0, f'points (0.1, 0.1), (0.9, 0.9), (1.0, 0.0) and (0.0, 0.5): three are inside (on the circle counts), so 4 x 3/4 = 3.0; got {got}'",
+          "concept": "estimation"
         }
       ],
       "solution": "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"

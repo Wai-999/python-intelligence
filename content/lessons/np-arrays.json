@@ -327,7 +327,7 @@
         },
         {
           "name": "no Python loops",
-          "code": "import ast\n_tree = ast.parse(__source__)\nfor _name in ('count_in_range', 'zero_negatives', 'column_means'):\n    _fn = next(n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef) and n.name == _name)\n    _loops = [n for n in ast.walk(_fn) if isinstance(n, (ast.For, ast.While, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))]\n    assert not _loops, f'{_name} uses a Python loop; use masks and numpy functions instead'",
+          "code": "import ast\n_tree = ast.parse(__source__)\n_defs = {n.name: n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef)}\ndef _reach(names):\n    seen, todo = set(), list(names)\n    while todo:\n        name = todo.pop()\n        if name in seen or name not in _defs:\n            continue\n        seen.add(name)\n        todo += [c.func.id for c in ast.walk(_defs[name]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]\n    return [_defs[n] for n in seen]\nfor _name in ('count_in_range', 'zero_negatives', 'column_means'):\n    _loops = [n for f in _reach([_name]) for n in ast.walk(f) if isinstance(n, (ast.For, ast.While, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))]\n    assert not _loops, f'{_name} (or a helper it calls) uses a Python loop; use masks and numpy functions instead'",
           "concept": "vectorization"
         }
       ],
