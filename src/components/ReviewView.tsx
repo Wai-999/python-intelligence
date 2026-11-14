@@ -6,7 +6,7 @@ import { inline } from "./Prose";
 
 // Plain words for the model's states (§10): what the learner has done, not the model's vocabulary.
 const STATUS: Record<ConceptState["status"], string> = {
-  new: "not started", learning: "practising", complete: "learned · reviews ahead", mastered: "remembered over weeks",
+  new: "not started", learning: "practising", complete: "learned · reviews ahead", mastered: "remembered in spaced reviews",
 };
 const EVIDENCE: Record<ConceptState["uncertainty"], string> = { high: "early guess", medium: "some evidence", low: "plenty of evidence" };
 
