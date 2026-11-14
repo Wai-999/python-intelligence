@@ -3,6 +3,14 @@ import type { PyTest } from "../content/types";
 export const PYODIDE_VERSION = "0.27.8"; // Python 3.12.7; pinned, verified 2026-11-08
 export const PYODIDE_INDEX = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
 
+/**
+ * Program output kept per run, in characters (stdout and stderr together, a newline counting as one). The worker drops
+ * the rest before it reaches the page, so a print loop can't flood the main thread or the console's live region; the
+ * run's time limit still stops a loop that keeps going.
+ */
+export const MAX_OUTPUT_CHARS = 100_000;
+export const OUTPUT_TRUNCATED = `[output truncated: only the first ${MAX_OUTPUT_CHARS.toLocaleString("en")} characters are shown]`;
+
 export interface PyError {
   type: string;
   message: string;
