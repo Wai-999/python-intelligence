@@ -153,3 +153,25 @@ test("the recap's reflection is saved in this browser and comes back after a rel
   await page.reload();
   await expect(page.getByLabel("In one sentence: what does this lesson let you do now?")).toHaveValue("Name values and build new ones from them.");
 });
+
+test("the exercise's result status is one region, exposed before, during and after a run", async ({ page }) => {
+  test.setTimeout(240_000);
+  const guided = first.steps.findIndex((s) => s.kind === "guided");
+  await page.goto(`./#/lesson/py-values-names/${guided}`);
+  const region = page.locator(".cell.exercise p.result-summary[role=status]");
+  await expect(region).toHaveCount(1);
+  await expect(region).toHaveText("");
+  const exposed = () => region.evaluate((el) => getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden" && !el.closest("[aria-hidden=true]"));
+  expect(await exposed()).toBe(true);
+  await region.evaluate((el) => { (window as unknown as { __region: Element }).__region = el; });
+  const same = () => region.evaluate((el) => el === (window as unknown as { __region: Element }).__region);
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  expect(await exposed()).toBe(true); // during the run (it may still be empty)
+  await expect(region).toHaveText(/checks failed/, { timeout: 120_000 });
+  expect(await same()).toBe(true);
+  await page.locator("textarea.editor-input").fill((first.steps[guided] as unknown as { solution: string }).solution);
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(region).toHaveText(/All checks pass/, { timeout: 120_000 });
+  expect(await same()).toBe(true);
+  expect(await exposed()).toBe(true);
+});

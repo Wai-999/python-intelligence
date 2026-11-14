@@ -260,5 +260,6 @@ main { min-width: 0; outline: none; }
 .reflection { margin: 16px 0; }
 .reflection label { display: block; margin: 4px 0 6px; }
 .reflect-input { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
-.result-summary:empty { display: none; }
+/* Empty but still exposed (never display:none), so assistive technology hears the text when it arrives. */
+.result-summary:empty { margin: 0; padding: 0; }
 .result-summary.pill.ok { color: var(--ok); }
