@@ -345,6 +345,11 @@
           "name": "doesn't hide other errors",
           "code": "try:\n    valid_ages(['3', None])\nexcept ValueError:\n    raise AssertionError('None is not text: that error should not become a ValueError')\nexcept Exception:\n    pass\nelse:\n    raise AssertionError('valid_ages hid an error that is not a ValueError: catch only ValueError')",
           "concept": "try-except"
+        },
+        {
+          "name": "out-of-range ages say why",
+          "code": "for bad in ['-1', '151']:\n    try:\n        parse_age(bad)\n    except ValueError as e:\n        assert str(e).strip(), f'parse_age({bad!r}) should raise ValueError with a message saying what is wrong'\n    else:\n        raise AssertionError(f'parse_age({bad!r}) should raise ValueError')",
+          "concept": "raising"
         }
       ],
       "solution": "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
