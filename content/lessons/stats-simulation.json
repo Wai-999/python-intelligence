@@ -431,7 +431,7 @@
         },
         {
           "name": "the seed makes the dice repeatable",
-          "code": "assert dice_probability(7, 500, 3) == dice_probability(7, 500, 3), 'the same seed must give the same estimate: create the generator with random.Random(seed)'",
+          "code": "for seed in range(5):\n    runs = {dice_probability(7, 2000, seed) for _ in range(3)}\n    assert len(runs) == 1, 'the same seed must give the same estimate: create the generator with random.Random(seed)'",
           "concept": "randomness"
         }
       ],
