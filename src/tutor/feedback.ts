@@ -41,7 +41,7 @@ const BY_ERROR: Record<string, (e: PyError) => Feedback> = {
   }),
   IndexError: (e) => ({
     diagnosis: `${where(e)} asked for a position that the list (or string) doesn't have: ${e.message}.`,
-    question: "How long is the sequence at that moment, and which index was used? The last valid index is len(x) - 1.",
+    question: "How long is the sequence at that moment, and which index was used? If it isn't empty, its last index is len(x) - 1; an empty one has no valid index at all.",
     action: "Print len(x) and the index just before that line, or loop over the items instead of counting positions.",
   }),
   KeyError: (e) => ({
