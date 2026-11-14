@@ -246,9 +246,9 @@
       "more": [
         {
           "title": "A missing menu item",
-          "body": "`bill` adds up `price_of` each item, and `cake` is not on the menu. Predict the frames, oldest first, and notice that the generator expression inside `sum` gets a frame of its own.",
-          "code": "import traceback\n\nprices = {\"tea\": 2, \"scone\": 3}\n\ndef price_of(item):\n    return prices[item]\n\ndef bill(items):\n    return sum(price_of(i) for i in items)\n\ntry:\n    print(bill([\"tea\", \"cake\"]))\nexcept KeyError as err:\n    for frame in traceback.extract_tb(err.__traceback__):\n        print(\"line\", frame.lineno, \"in\", frame.name)\n    print(type(err).__name__ + \":\", err)",
-          "expected_output": "line 12 in <module>\nline 9 in bill\nline 9 in <genexpr>\nline 6 in price_of\nKeyError: 'cake'\n"
+          "body": "`bill` adds up `price_of` each item, and `cake` is not on the menu. Predict the frames, oldest first, and which line of `bill` the second frame points at.",
+          "code": "import traceback\n\nprices = {\"tea\": 2, \"scone\": 3}\n\ndef price_of(item):\n    return prices[item]\n\ndef bill(items):\n    total = 0\n    for i in items:\n        total += price_of(i)\n    return total\n\ntry:\n    print(bill([\"tea\", \"cake\"]))\nexcept KeyError as err:\n    for frame in traceback.extract_tb(err.__traceback__):\n        print(\"line\", frame.lineno, \"in\", frame.name)\n    print(type(err).__name__ + \":\", err)",
+          "expected_output": "line 15 in <module>\nline 11 in bill\nline 6 in price_of\nKeyError: 'cake'\n"
         },
         {
           "title": "An age that is not a number",
