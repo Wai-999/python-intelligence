@@ -12,7 +12,8 @@
    "price = 2.5\ncount = 4\nprint(price, count); subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nx = price * count; subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + 2.0\n",
-   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = price * count * 0.2\ntotal = price * count * 1.2\n"
+   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = price * count * 0.2\ntotal = price * count * 1.2\n",
+   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = price * count * 1.2\n"
   ],
   "accept": [
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n",
