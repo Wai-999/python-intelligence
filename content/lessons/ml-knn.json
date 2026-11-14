@@ -387,6 +387,11 @@
           "concept": "k-nearest-neighbours"
         },
         {
+          "name": "distance uses every feature",
+          "code": "train = [((0, 10), 1.0), ((3, 0), 2.0)]\nassert knn_value(train, (0, 0), 1) == 2.0, 'the nearest point by Euclidean distance is (3, 0)'",
+          "concept": "k-nearest-neighbours"
+        },
+        {
           "name": "k is chosen on validation data",
           "code": "train = [((0,), 0.0), ((1,), 0.0), ((2,), 0.0), ((3,), 9.0)]\nvalid = [((0.1,), 0.0), ((2.9,), 9.0)]\nassert best_k(train, valid, [3, 1, 4]) == 1, best_k(train, valid, [3, 1, 4])",
           "concept": "validation-set"

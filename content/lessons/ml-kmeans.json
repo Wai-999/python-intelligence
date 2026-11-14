@@ -406,34 +406,39 @@
       "solution": "import numpy as np\n\ndef assign(X, centroids):\n    C = np.array(centroids, dtype=float)\n    if C.ndim != 2 or len(C) == 0:\n        raise ValueError('need at least one centroid')\n    X = np.array(X, dtype=float).reshape(-1, C.shape[1])\n    return [int(np.argmin(np.sum((C - x) ** 2, axis=1))) for x in X]\n\n\ndef kmeans(X, init, max_iter=100):\n    X = np.array(X, dtype=float)\n    C = np.array(init, dtype=float)\n    if X.ndim != 2 or len(X) == 0 or C.ndim != 2 or len(C) == 0 or C.shape[1] != X.shape[1] or max_iter < 1:\n        raise ValueError('need rows, starting centroids of the same width, and max_iter >= 1')\n    labels = None\n    for _ in range(max_iter):\n        new = assign(X, C)\n        for j in range(len(C)):\n            members = [i for i in range(len(new)) if new[i] == j]\n            if members:\n                C[j] = X[members].mean(axis=0)\n        if new == labels:\n            break\n        labels = new\n    labels = new\n    inertia = float(sum(np.sum((X[i] - C[labels[i]]) ** 2) for i in range(len(X))))\n    return {'centroids': C.tolist(), 'labels': labels, 'inertia': inertia}\n"
     },
     {
-      "id": "update",
+      "id": "stores",
       "kind": "transfer",
-      "title": "Transfer: the update step and inertia",
-      "body": "Write `update(points, labels, centroids)`: a new (k, d) array where centroid j is the mean of the points labelled j, or\nstays as it was if no point has that label. Then write `inertia(points, labels, centroids)`: the sum of squared\ndistances from each point to its assigned centroid.",
-      "starter": "import numpy as np\n\n\ndef update(points, labels, centroids):\n    return centroids\n\n\ndef inertia(points, labels, centroids):\n    return 0.0\n",
+      "title": "Transfer: placing shops for weighted customers",
+      "body": "Neighbourhoods are points, and each has a number of customers (its weight). Write `weighted_update(points, weights, labels,\ncentroids)`: a new (k, d) array where shop j moves to the weighted mean of the neighbourhoods assigned to it (Σ w·p / Σ w),\nor stays where it was if none are. Then write `weighted_inertia(points, weights, labels, centroids)`: the sum over\nneighbourhoods of weight × squared distance to its shop.",
+      "starter": "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    return centroids\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    return 0.0\n",
       "hints": [
-        "For each j: `members = points[labels == j]`; if it isn't empty, use `members.mean(axis=0)`.",
-        "`np.sum((points - centroids[labels]) ** 2)`.",
-        "import numpy as np\n\n\ndef update(points, labels, centroids):\n    points, labels = np.asarray(points, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        members = points[labels == j]\n        if len(members):\n            new[j] = members.mean(axis=0)\n    return new\n\n\ndef inertia(points, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    return float(np.sum((points - centroids[np.asarray(labels)]) ** 2))\n"
+        "For each j: `mask = labels == j`; if any, `(weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()`.",
+        "`np.sum(weights * np.sum((points - centroids[labels]) ** 2, axis=1))`.",
+        "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[np.asarray(labels)]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n"
       ],
       "tests": [
         {
-          "name": "centroids move to their points' means",
-          "code": "import numpy as np\nP = np.array([[0.0, 0.0], [2.0, 0.0], [10.0, 10.0]])\nC = update(P, np.array([0, 0, 1]), np.array([[5.0, 5.0], [0.0, 0.0]]))\nassert np.allclose(C, [[1, 0], [10, 10]]), C",
+          "name": "shops move to the weighted mean",
+          "code": "import numpy as np\nP = np.array([[0.0, 0.0], [4.0, 0.0], [10.0, 10.0]])\nC = weighted_update(P, np.array([3.0, 1.0, 5.0]), np.array([0, 0, 1]), np.array([[9.0, 9.0], [0.0, 0.0]]))\nassert np.allclose(C, [[1, 0], [10, 10]]), C",
           "concept": "k-means"
         },
         {
-          "name": "an empty cluster keeps its centroid",
-          "code": "import numpy as np\nold = np.array([[0.0, 0.0], [7.0, 7.0]])\nC = update(np.array([[1.0, 1.0]]), np.array([0]), old)\nassert np.allclose(C, [[1, 1], [7, 7]]) and np.allclose(old, [[0, 0], [7, 7]]), (C, old)",
+          "name": "equal weights give the plain mean",
+          "code": "import numpy as np\nP = np.array([[0.0], [2.0], [7.0]])\nC = weighted_update(P, np.ones(3), np.array([0, 0, 0]), np.zeros((1, 1)))\nassert np.allclose(C, [[3.0]]), C",
           "concept": "clustering"
         },
         {
-          "name": "inertia",
-          "code": "import numpy as np\nP = np.array([[0.0, 0.0], [2.0, 0.0], [10.0, 10.0]])\nassert abs(inertia(P, np.array([0, 0, 1]), np.array([[1.0, 0.0], [10.0, 10.0]])) - 2.0) < 1e-12",
+          "name": "a shop with no neighbourhoods stays put",
+          "code": "import numpy as np\nold = np.array([[0.0, 0.0], [7.0, 7.0]])\nC = weighted_update(np.array([[1.0, 1.0]]), np.array([2.0]), np.array([0]), old)\nassert np.allclose(C, [[1, 1], [7, 7]]) and np.allclose(old, [[0, 0], [7, 7]]), (C, old)",
+          "concept": "clustering"
+        },
+        {
+          "name": "weighted squared distances",
+          "code": "import numpy as np\nP = np.array([[3.0, 4.0], [0.0, 1.0]])\nassert abs(weighted_inertia(P, np.array([2.0, 1.0]), np.array([0, 0]), np.array([[0.0, 0.0]])) - (2 * 25 + 1)) < 1e-12, 'distance (3, 4) is 25 when squared'",
           "concept": "inertia"
         }
       ],
-      "solution": "import numpy as np\n\n\ndef update(points, labels, centroids):\n    points, labels = np.asarray(points, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        members = points[labels == j]\n        if len(members):\n            new[j] = members.mean(axis=0)\n    return new\n\n\ndef inertia(points, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    return float(np.sum((points - centroids[np.asarray(labels)]) ** 2))\n"
+      "solution": "import numpy as np\n\n\ndef weighted_update(points, weights, labels, centroids):\n    points, weights, labels = np.asarray(points, dtype=float), np.asarray(weights, dtype=float), np.asarray(labels)\n    new = np.array(centroids, dtype=float)\n    for j in range(len(new)):\n        mask = labels == j\n        if mask.any():\n            new[j] = (weights[mask, None] * points[mask]).sum(axis=0) / weights[mask].sum()\n    return new\n\n\ndef weighted_inertia(points, weights, labels, centroids):\n    points, centroids = np.asarray(points, dtype=float), np.asarray(centroids, dtype=float)\n    sq = np.sum((points - centroids[np.asarray(labels)]) ** 2, axis=1)\n    return float(np.sum(np.asarray(weights, dtype=float) * sq))\n"
     },
     {
       "id": "check",

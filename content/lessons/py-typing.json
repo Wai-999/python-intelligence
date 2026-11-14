@@ -328,6 +328,11 @@
       ],
       "tests": [
         {
+          "name": "Book is a dataclass",
+          "code": "import dataclasses\nassert dataclasses.is_dataclass(Book), 'put @dataclass above the class'",
+          "concept": "dataclasses"
+        },
+        {
           "name": "a valid book, with its own tags list",
           "code": "a, b = Book('Emma', 474), Book('Kim', 300)\na.tags.append('classic')\nassert b.tags == [] and a.pages == 474, 'each book needs its own tags list: use default_factory'",
           "concept": "dataclasses"

@@ -346,6 +346,11 @@
           "name": "a missing file means no notes",
           "code": "assert read_notes('nothing-here.txt') == []",
           "concept": "files"
+        },
+        {
+          "name": "notes come back exactly, spaces and empty notes included",
+          "code": "notes = ['  indented', '', 'trailing space ']\nsave_notes('n.txt', notes)\nassert read_notes('n.txt') == notes, read_notes('n.txt')",
+          "concept": "files"
         }
       ],
       "solution": "def save_notes(path, notes):\n    with open(path, \"w\") as f:\n        for note in notes:\n            f.write(note + \"\\n\")\n\n\ndef add_note(path, note):\n    with open(path, \"a\") as f:\n        f.write(note + \"\\n\")\n\n\ndef read_notes(path):\n    try:\n        with open(path) as f:\n            return [line.rstrip(\"\\n\") for line in f]\n    except FileNotFoundError:\n        return []\n"

@@ -314,8 +314,8 @@
       "starter": "class Scoreboard:\n    scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = points\n",
       "hints": [
         "Create `self.scores = {}` in `__init__`, so each scoreboard gets its own dict.",
-        "For the leader: `min(self.scores, key=lambda p: (-self.scores[p], p))`, once you know the dict isn't empty.",
-        "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n"
+        "For the leader, loop over the players keeping the best so far: a higher score wins, and on an equal score the name that comes first.",
+        "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        best = None\n        for player in self.scores:\n            if best is None or self.scores[player] > self.scores[best]:\n                best = player\n            elif self.scores[player] == self.scores[best] and player < best:\n                best = player\n        return best\n"
       ],
       "tests": [
         {
@@ -344,7 +344,7 @@
           "concept": "classes"
         }
       ],
-      "solution": "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        if not self.scores:\n            return None\n        return min(self.scores, key=lambda p: (-self.scores[p], p))\n"
+      "solution": "class Scoreboard:\n    def __init__(self):\n        self.scores = {}\n\n    def add(self, player, points):\n        self.scores[player] = self.scores.get(player, 0) + points\n\n    def score(self, player):\n        return self.scores.get(player, 0)\n\n    def leader(self):\n        best = None\n        for player in self.scores:\n            if best is None or self.scores[player] > self.scores[best]:\n                best = player\n            elif self.scores[player] == self.scores[best] and player < best:\n                best = player\n        return best\n"
     },
     {
       "id": "check",

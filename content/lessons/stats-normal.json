@@ -327,6 +327,11 @@
           "concept": "cumulative-probability"
         },
         {
+          "name": "intervals off-centre, above and below the mean",
+          "code": "assert abs(prob_between(170, 185, 170, 10) - 0.4331927987311419) < 1e-12\nassert abs(prob_between(150, 160, 170, 10) - 0.13590512198327787) < 1e-12\nassert abs(prob_between(185, 200, 170, 10) - 0.06545730323722798) < 1e-12",
+          "concept": "cumulative-probability"
+        },
+        {
           "name": "the peak of the density",
           "code": "import math\nassert abs(peak(1) - 0.3989422804014327) < 1e-15 and peak(0.1) > 1, 'a narrow curve is taller than 1'",
           "concept": "probability-density"

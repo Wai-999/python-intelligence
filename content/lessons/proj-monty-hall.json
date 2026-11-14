@@ -308,6 +308,11 @@
           "name": "the seed makes it repeatable",
           "code": "assert simulate(3, 2000, 42) == simulate(3, 2000, 42)",
           "concept": "monte-carlo-estimates"
+        },
+        {
+          "name": "it really simulates",
+          "code": "values = {simulate(3, 300, seed) for seed in range(6)}\nassert len(values) > 1, 'different seeds should give slightly different estimates: play the games'\nassert all(0 <= v <= 1 for v in values)",
+          "concept": "monte-carlo-estimates"
         }
       ],
       "solution": "import random\nfrom fractions import Fraction\n\n\ndef simulate(n, trials, seed):\n    rng = random.Random(seed)\n    counted = wins = 0\n    for _ in range(trials):\n        car, pick = rng.randrange(n), rng.randrange(n)\n        opened = rng.choice([d for d in range(n) if d != pick])\n        if opened == car:\n            continue\n        new = rng.choice([d for d in range(n) if d not in (pick, opened)])\n        counted += 1\n        wins += new == car\n    return wins / counted\n\n\ndef exact(n):\n    return Fraction(1, n - 1)\n"

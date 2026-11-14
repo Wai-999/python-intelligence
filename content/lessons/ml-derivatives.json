@@ -319,7 +319,7 @@
         },
         {
           "name": "the h parameter is used",
-          "code": "assert abs(second_derivative(lambda x: x ** 4, 1.0, h=1e-2) - 12.0) < 2e-3",
+          "code": "assert abs(second_derivative(lambda x: x ** 4, 1.0, h=0.1) - 12.02) < 1e-9, second_derivative(lambda x: x ** 4, 1.0, h=0.1)",
           "concept": "finite-differences"
         },
         {
