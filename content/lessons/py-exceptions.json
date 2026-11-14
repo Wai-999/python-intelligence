@@ -347,8 +347,8 @@
           "concept": "try-except"
         },
         {
-          "name": "out-of-range ages say why",
-          "code": "for bad in ['-1', '151']:\n    try:\n        parse_age(bad)\n    except ValueError as e:\n        assert str(e).strip(), f'parse_age({bad!r}) should raise ValueError with a message saying what is wrong'\n    else:\n        raise AssertionError(f'parse_age({bad!r}) should raise ValueError')",
+          "name": "every rejected age says why",
+          "code": "for bad in ['ten', '4.5', '', '-1', '151']:\n    try:\n        parse_age(bad)\n    except ValueError as e:\n        assert str(e).strip(), f'parse_age({bad!r}) should raise ValueError with a message saying what is wrong'\n    else:\n        raise AssertionError(f'parse_age({bad!r}) should raise ValueError')",
           "concept": "raising"
         }
       ],
