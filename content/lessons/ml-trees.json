@@ -432,7 +432,7 @@
         {
           "name": "entropy of pure, even and empty sets",
           "code": "assert entropy(['a', 'a']) == 0 and abs(entropy(['a', 'b']) - 1) < 1e-12 and entropy([]) == 0\nassert abs(entropy(['a', 'b', 'c', 'd']) - 2) < 1e-12",
-          "concept": "gini-impurity"
+          "concept": "decision-trees"
         },
         {
           "name": "a perfect split gains everything",

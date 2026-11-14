@@ -386,7 +386,7 @@
         {
           "name": "a constant column: its span of 0 is replaced by 1",
           "code": "import numpy as np\ntr, te = min_max_scale(np.array([[3.0, 1.0], [3.0, 2.0]]), np.array([[4.0, 1.5]]))\nassert np.allclose(tr[:, 0], 0) and np.allclose(te[:, 0], 1) and np.allclose(te[:, 1], 0.5), (tr, te)",
-          "concept": "standardization"
+          "concept": "feature-scaling"
         },
         {
           "name": "the inputs are unchanged and a tuple comes back",

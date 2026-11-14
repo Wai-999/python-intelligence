@@ -11,7 +11,8 @@
    "price = 2.5\ncount = 4\nprint(price, count)\nsubtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nprint(price, count); subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nx = price * count; subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
-   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + 2.0\n"
+   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = subtotal * 0.2\ntotal = subtotal + 2.0\n",
+   "price = 2.5\ncount = 4\nsubtotal = price * count\ntax = price * count * 0.2\ntotal = price * count * 1.2\n"
   ],
   "accept": [
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n",
@@ -21,7 +22,8 @@
    "price = 2.5\ncount = 4\nif count > 0:\n    subtotal = price * count\nelse:\n    subtotal = 0.0\ntax: float = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nsubtotal = (price\n            * count)\ntax = (subtotal\n       * 0.2)\ntotal = subtotal + \\\n    tax\n",
    "price = 2.5\ncount = 4\nsubtotal = price * count; tax = subtotal * 0.2; total = subtotal + tax\n",
-   "price = 2.5\ncount = 4\n\n\ndef cost():\n    return price * count\n\n\nsubtotal = cost()\ntax = subtotal * 0.2\ntotal = subtotal + tax\n"
+   "price = 2.5\ncount = 4\n\n\ndef cost():\n    return price * count\n\n\nsubtotal = cost()\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
+   "price = 2.5\ncount = 4\nsubtotal = price * count\nrate = 0.2\ntax = subtotal * rate\ntotal = subtotal * (1 + rate)\n"
   ]
  },
  "py-functions": {
