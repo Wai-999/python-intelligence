@@ -9,9 +9,9 @@ Master prompt §15. Every claim below points at code, a test, or a CI run you ca
 |---|---|
 | Deployed URL | https://wai-999.github.io/python-intelligence/ |
 | Branch | `main` (every push that passes all gates deploys; owner decision 2026-11-08) |
-| Release commit | `2b9e6cecea305046d580c29139fda9ae6f9013a4`, verified live. Everything below describes that release. Later commits (`git log 2b9e6ce..main`) changed grading and progress handling (saved completion is re-judged against today's lessons, transfer checks were tightened, the worker wording on the home page was corrected); they are outside this report's verification until a new release report covers them. |
-| GitHub Actions run | [run 43583609105](https://github.com/Wai-999/python-intelligence/actions/runs/43583609105) (`gates` and `deploy` both green) |
-| Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `2b9e6cecea305046d580c29139fda9ae6f9013a4`. |
+| Release commit | `91107e251e3e5554f4b6cb1c2fd9a4aa6de2a18f`, verified live. This report was brought up to date in the docs-only commit that follows it; `docs/` isn't part of the site, so the published files differ only in their build stamp (`pi-build`). |
+| GitHub Actions run | [run 43587735024](https://github.com/Wai-999/python-intelligence/actions/runs/43587735024) (`gates` and `deploy` both green) |
+| Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `91107e251e3e5554f4b6cb1c2fd9a4aa6de2a18f`. |
 
 ## Operating mode: A (static-first)
 
@@ -43,7 +43,7 @@ Progress lives in IndexedDB in the learner's browser, with export and import as 
   token so a tab built on older progress can't write into an import or reset (`src/progress/store.ts`).
 - e2e: "complete lesson 1, refresh mid-lesson 2, resume exactly, get next recommendation"; "export, reset, and import
   restore progress"; "a corrupt import is rejected and leaves progress unchanged"; cross-tab import and reset cases.
-- (Added after this release, so not yet covered by its verification.) Saved progress is re-judged against today's lessons whenever it is loaded or imported (`reconcile` in
+- Saved progress is re-judged against today's lessons whenever it is loaded or imported (`reconcile` in
   `src/progress/logic.ts`): completion and mastery are recomputed, so a lesson completed before it gained its transfer
   problem shows as in progress until that problem is solved. e2e: "a completion saved before the lesson gained its
   transfer problem doesn't stand after an import".
@@ -59,16 +59,16 @@ mapping and spaced-review metadata (G-5). Every exercise has a difficulty tag (G
 attempt. Five open books are used: three adapted with attribution, two (MML and the Big Book) cited only. No PDF is
 published, and a 12-word shingle check keeps book text out of lessons and out of `dist/`.
 
-## Test results at `2b9e6ce`
+## Test results at `91107e2`
 
 | Suite | Result |
 |---|---|
-| Python (orchestrator, content gate, ingest, rights manifest, transfer variants, diagnostic) | 584 passed, 3 skipped (the live agent-CLI contract tests, which run only with `PI_LIVE=1` and the real CLIs installed) |
-| Frontend unit (Vitest) | 220 passed |
-| Browser e2e (Playwright, production build under the sub-path) | 129 passed |
+| Python (orchestrator, content gate, ingest, rights manifest, transfer variants, diagnostic) | 602 passed, 3 skipped (the live agent-CLI contract tests, which run only with `PI_LIVE=1` and the real CLIs installed) |
+| Frontend unit (Vitest) | 223 passed |
+| Browser e2e (Playwright, production build under the sub-path) | 132 passed |
 | Content gate | 44 lessons and 220 executable steps verified in CPython 3.12; 15 placement questions verified |
 | Accessibility | axe-core WCAG 2.1 A/AA, no violations, on these states in both light and dark mode (`e2e/a11y.spec.ts`): home, library, an intuition step with sources and the look-ahead notice, the call-trace viewer, a quiz, a recap with further reading, the progress panel, an example with output, failed checks with the tutor note, the suggested-support note, and the meso step back (prediction, explanation and transfer link). The placement check (intro, a checked group, result) is scanned in light mode only (`e2e/diagnostic.spec.ts`). Not scanned, so **UNVERIFIED**: the Review page, the transfer step, a passed exercise, the placement check in dark mode, and the remaining step kinds. |
-| Performance | `dist/` is 1,257,948 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,231,034 bytes because all 44 lessons are bundled. Pyodide (CPython 3.12.7 in WebAssembly) loads from the pinned CDN on first use and is cached for offline use. Load time, interaction latency and memory were not measured: **UNVERIFIED**. |
+| Performance | `dist/` is 1,260,979 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,233,928 bytes because all 44 lessons are bundled. Pyodide (CPython 3.12.7 in WebAssembly) loads from the pinned CDN on first use and is cached for offline use. Load time, interaction latency and memory were not measured: **UNVERIFIED**. |
 | Secret scan, dist licence/size gate | clean |
 
 ### Master prompt test matrix
@@ -90,7 +90,7 @@ published, and a 12-word shingle check keeps book text out of lessons and out of
 | T17 deep link on Pages | DONE | smoke test on the live URL |
 | T18 mobile, keyboard, screen reader | DONE (automated) | smoke and a11y specs; manual screen-reader testing **UNVERIFIED** |
 | T19 course completion | DONE | recommendation tests and e2e |
-| T20 production deploy | DONE | [run 43583609105](https://github.com/Wai-999/python-intelligence/actions/runs/43583609105) |
+| T20 production deploy | DONE | [run 43587735024](https://github.com/Wai-999/python-intelligence/actions/runs/43587735024) |
 
 ## BLOCKED, PARTIAL and UNVERIFIED
 
