@@ -246,6 +246,11 @@
           "name": "neither function changes the global",
           "code": "before = total\nformat_price(3.5)\nformat_price(2, currency='$', decimals=0)\nadd_tip(200)\nassert total == before, 'leave the global total alone'",
           "concept": "scope"
+        },
+        {
+          "name": "an explicit 0% tip",
+          "code": "assert add_tip(50, percent=0) == 50, add_tip(50, percent=0)",
+          "concept": "default-arguments"
         }
       ],
       "solution": "total = 100\n\n\ndef format_price(amount, currency=\"£\", decimals=2):\n    return f\"{currency}{amount:.{decimals}f}\"\n\n\ndef add_tip(total, percent=10):\n    return total + total * percent / 100\n"

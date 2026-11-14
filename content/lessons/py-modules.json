@@ -308,6 +308,11 @@
           "name": "uses the datetime module",
           "code": "import sys\nassert 'datetime' in sys.modules, 'import the datetime module'",
           "concept": "imports"
+        },
+        {
+          "name": "across a year boundary",
+          "code": "assert days_between('2023-12-31', '2024-01-01') == 1 and days_between('2024-01-01', '2023-12-31') == -1\nassert days_between('2024-12-15', '2025-01-15') == 31",
+          "concept": "standard-library"
         }
       ],
       "solution": "from datetime import date\n\n\ndef days_between(start, end):\n    return (date.fromisoformat(end) - date.fromisoformat(start)).days\n\n\ndef weekday_name(day):\n    return date.fromisoformat(day).strftime(\"%A\")\n"

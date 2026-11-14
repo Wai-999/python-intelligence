@@ -382,6 +382,11 @@
           "name": "integer rows normalise to fractions",
           "code": "import numpy as np\nM = np.array([[3, 4], [1, 1]])\nN = normalize_rows(M)\nr = 1 / np.sqrt(2)\nassert np.allclose(N, [[0.6, 0.8], [r, r]]) and np.allclose(np.linalg.norm(N, axis=1), 1)\nassert np.array_equal(M, [[3, 4], [1, 1]]), 'leave the input alone'",
           "concept": "norms"
+        },
+        {
+          "name": "a new numpy array, even when rows already have length 1 or 0",
+          "code": "import numpy as np\nM = np.array([[1.0, 0.0], [0.0, 0.0]])\nN = normalize_rows(M)\nassert isinstance(N, np.ndarray) and N is not M and np.allclose(N, M), 'return a new numpy array every time'",
+          "concept": "vectors"
         }
       ],
       "solution": "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"

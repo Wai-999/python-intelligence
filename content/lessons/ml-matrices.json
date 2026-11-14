@@ -387,6 +387,11 @@
           "name": "integer points rotated by 30 degrees",
           "code": "import numpy as np\nc, s = np.cos(np.radians(30)), np.sin(np.radians(30))\nassert np.allclose(rotate(np.array([[1, 0], [0, 2]]), 30), [[c, s], [-2 * s, 2 * c]])",
           "concept": "matrix-multiplication"
+        },
+        {
+          "name": "a three-by-three system",
+          "code": "import numpy as np\nA = np.array([[2.0, 0.0, 1.0], [1.0, 3.0, 2.0], [1.0, 1.0, 2.0]])\nb = np.array([3.0, 9.0, 3.0])\nx = mix(A, b)\nassert np.shape(x) == (3,) and np.allclose(A @ x, b), x",
+          "concept": "linear-systems"
         }
       ],
       "solution": "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
