@@ -169,8 +169,10 @@ test("the exercise's result status is one region, exposed before, during and aft
   expect(await exposed()).toBe(true); // during the run (it may still be empty)
   await expect(region).toHaveText(/checks failed/, { timeout: 120_000 });
   expect(await same()).toBe(true);
+  expect(await exposed()).toBe(true); // the failure summary itself is exposed
   await page.locator("textarea.editor-input").fill((first.steps[guided] as unknown as { solution: string }).solution);
   await page.getByRole("button", { name: "▶ Run checks" }).click();
+  expect(await exposed()).toBe(true); // during the second run
   await expect(region).toHaveText(/All checks pass/, { timeout: 120_000 });
   expect(await same()).toBe(true);
   expect(await exposed()).toBe(true);
