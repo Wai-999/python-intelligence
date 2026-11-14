@@ -10,6 +10,9 @@ export interface Feedback {
   action: string;
 }
 
+/** Where the error happened: its line when known (an error raised inside a check has none). */
+const where = (e: PyError) => (e.line ? `Line ${e.line}` : "Your code");
+
 const BY_ERROR: Record<string, (e: PyError) => Feedback> = {
   SyntaxError: (e) => ({
     diagnosis: `Python couldn't read line ${e.line ?? "?"} as valid code, so nothing ran.`,
@@ -35,6 +38,21 @@ const BY_ERROR: Record<string, (e: PyError) => Feedback> = {
     diagnosis: `A value of the right type had an unacceptable content: ${e.message}.`,
     question: "What exact value reached that line? Can you print it just before?",
     action: "Validate or convert the input before using it.",
+  }),
+  IndexError: (e) => ({
+    diagnosis: `${where(e)} asked for a position that the list (or string) doesn't have: ${e.message}.`,
+    question: "How long is the sequence at that moment, and which index was used? The last valid index is len(x) - 1.",
+    action: "Print len(x) and the index just before that line, or loop over the items instead of counting positions.",
+  }),
+  KeyError: (e) => ({
+    diagnosis: `${where(e)} looked up a key the dictionary doesn't contain: ${e.message}.`,
+    question: "Which keys does the dictionary have at that moment? Could the key differ in spelling, case or type (\"1\" vs 1)?",
+    action: "Print the dictionary's keys just before that line, or use d.get(key, default) when a missing key is expected.",
+  }),
+  AttributeError: (e) => ({
+    diagnosis: `${where(e)} used a method or attribute that this kind of value doesn't have: ${e.message}.`,
+    question: "What type is the value on the left of the dot? Is it what you expected (for example a list, not None)?",
+    action: "Print type(x) just before that line. A function that forgets to return gives None.",
   }),
   ZeroDivisionError: () => ({
     diagnosis: "The code divided by zero.",
