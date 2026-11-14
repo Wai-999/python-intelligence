@@ -319,7 +319,8 @@
  "ml-boosting": {
   "reject": [
    "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n",
-   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = 0.5 * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = 0.5 * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n",
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * abs(sum(r)) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
   ],
   "accept": [
    "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        for i in range(len(preds)):\n            preds[i] += step\n    return preds\n"
