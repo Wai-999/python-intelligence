@@ -243,3 +243,20 @@ main { min-width: 0; outline: none; }
 .full-map { margin: 12px 0 0; }
 .lesson-title { font-size: 15px; font-weight: 650; margin: 0 0 2px; color: var(--muted); }
 .trace h3 { font-size: 14px; margin: 8px 0 4px; }
+
+/* Exercise feedback (G-21): a summary line leads; one expanded guidance card; a compact empty console. */
+.result-summary { margin: 8px 0 4px; font-weight: 600; color: var(--bad); }
+.tutor.collapsed details > summary { cursor: pointer; }
+.tutor.collapsed details[open] > summary { margin-bottom: 6px; }
+.console > p.muted { margin: 0; padding: 2px 0; font-size: 13px; }
+.console:has(> p.muted) { min-height: 0; padding: 6px 14px; }
+
+/* Connection status (G-21). */
+.conn { font-size: 13px; }
+.conn.offline { color: var(--warn); font-weight: 600; background: var(--warn-soft); padding: 4px 8px; border-radius: 6px; }
+@media (max-width: 700px) { .conn.online { display: none; } }
+
+/* Reflection on the recap (G-21). */
+.reflection { margin: 16px 0; }
+.reflection label { display: block; margin: 4px 0 6px; }
+.reflect-input { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }

@@ -8,6 +8,7 @@ import { buildModel, dueReviews, type Assistance, type LearnerEvent } from "./le
 import { creditedConcepts, exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier, type Stamp } from "./learner/record";
 import { interventionEvent, mesoTrigger, transferTarget, type Intervention, type Target } from "./learner/loop";
 import { MesoPanel } from "./components/MesoPanel";
+import { ConnectionStatus } from "./components/ConnectionStatus";
 import { DiagnosticView } from "./components/DiagnosticView";
 import { DIAGNOSTIC, diagnosticEvents, placement } from "./curriculum/placement";
 import { completionOf, lessonLabel, reviewDueFor, whyThisLesson } from "./curriculum/standing";
@@ -291,6 +292,7 @@ export function App() {
           </p>
         )}
         <div className="top-right">
+          <ConnectionStatus />
           {resumeHref && <a className="btn ghost resume" href={resumeHref}>Resume ▶<span className="sr-only">: {graph.byId.get(position!.lessonId)!.title}</span></a>}
           <a className="btn ghost" href="#/library" aria-current={route.view === "library" ? "page" : undefined}>Library</a>
           <a className="btn ghost" href="#/review" aria-current={route.view === "review" ? "page" : undefined}>

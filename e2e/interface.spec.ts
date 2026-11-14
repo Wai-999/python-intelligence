@@ -113,3 +113,37 @@ test("a step back on an exercise passed earlier still leaves one primary action"
   await expect(panel.getByRole("status")).toBeVisible();
   await expect(primaries(page)).toHaveText(["Next →"]); // answered, and the step was passed: Next leads again
 });
+
+test("exercise feedback: a summary line leads, failures come first, and the note folds while a step back shows", async ({ page }) => {
+  test.setTimeout(240_000);
+  const guided = first.steps.findIndex((s) => s.kind === "guided");
+  await page.goto(`./#/lesson/py-values-names/${guided}`);
+  await expect(page.locator(".console")).toContainText("Output appears here.");
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  const summary = page.locator(".result-summary");
+  await expect(summary).toHaveText(/^\d+ of \d+ checks failed\. First: /, { timeout: 120_000 });
+  const rows = page.locator(".checks li");
+  const classes = await rows.evaluateAll((els) => els.map((e) => e.className));
+  expect(classes.indexOf("pass") === -1 || classes.lastIndexOf("fail") < classes.indexOf("pass")).toBe(true);
+  await expect(summary).toContainText((await rows.first().innerText()).replace(/^✗\s*/, "").split("\n")[0]!.replace(" failed", ""));
+  await expect(page.getByRole("complementary", { name: "Professor's note" })).not.toHaveAttribute("data-collapsed", "");
+  for (let i = 0; i < 3; i++) {
+    await page.locator("textarea.editor-input").fill('radius = "3"\narea = 3.14 * radius + 1\n');
+    await page.getByRole("button", { name: "▶ Run checks" }).click();
+    await expect(page.getByRole("button", { name: "▶ Run checks" })).toBeEnabled({ timeout: 90_000 });
+  }
+  await expect(page.locator("section.meso")).toBeVisible();
+  const note = page.getByRole("complementary", { name: "Professor's note" });
+  await expect(note).toHaveAttribute("data-collapsed", "");
+  await expect(note.locator("details")).not.toHaveAttribute("open", "");
+});
+
+test("the recap's reflection is saved in this browser and comes back after a reload", async ({ page }) => {
+  const recap = first.steps.length - 1;
+  await page.goto(`./#/lesson/py-values-names/${recap}`);
+  const box = page.getByLabel("In one sentence: what does this lesson let you do now?");
+  await box.fill("Name values and build new ones from them.");
+  await page.waitForTimeout(700); // let it reach IndexedDB
+  await page.reload();
+  await expect(page.getByLabel("In one sentence: what does this lesson let you do now?")).toHaveValue("Name values and build new ones from them.");
+});

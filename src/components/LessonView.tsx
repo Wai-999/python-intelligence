@@ -133,6 +133,15 @@ export function LessonView(p: Props) {
               onResult={(score, passed, missed, correct) => p.onQuiz(step.id, score, passed, missed, correct)} />
       )}
       {step.kind === "quiz" && p.mesoFor(step.id)}
+      {step.kind === "summary" && (
+        <section className="reflection" aria-labelledby="reflect-title">
+          <h3 id="reflect-title">In your own words</h3>
+          <label htmlFor={`reflect-${lesson.id}`}>In one sentence: what does this lesson let you do now?</label>
+          <textarea id={`reflect-${lesson.id}`} className="reflect-input" rows={2} defaultValue={p.drafts[step.id] ?? ""}
+                    key={`${lesson.id}:${p.generation}`} onChange={(e) => p.onDraft(step.id, e.target.value)} />
+          <p className="muted">Saved in this browser as you type; it's for you, and isn't graded.</p>
+        </section>
+      )}
       {step.kind === "summary" && <NextUp {...p} />}
 
       <nav className="pager" aria-label="Step navigation">

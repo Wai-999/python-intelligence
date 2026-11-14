@@ -8,9 +8,17 @@ test("offline after a single visit", async ({ page, context }) => {
   await page.goto("./");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await page.reload();
+  await expect(page.locator(".conn.online")).toHaveText("Works offline");
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Learn Python by running it." })).toBeVisible();
+  // The status follows the browser's online/offline events (fired here directly, since how emulation sets
+  // navigator.onLine for a page served by the service worker varies).
+  await page.evaluate(() => dispatchEvent(new Event("offline")));
+  await expect(page.locator(".conn.offline")).toContainText("Offline");
+  await page.evaluate(() => dispatchEvent(new Event("online")));
+  await expect(page.locator(".conn.offline")).toHaveCount(0); // back online: the notice goes
   await page.locator(".recommend").getByRole("button").click();
   await expect(page.locator("#step-title")).toBeVisible();
 });

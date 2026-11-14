@@ -143,9 +143,16 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed) && !mesoActive} />
       <Console result={result} live={live} />
 
+      {result && result.ok && !allPassed && (
+        // One line that leads the results, announced once (the full note follows).
+        <p className="result-summary" role="status">
+          {result.tests.filter((t) => !t.passed).length} of {result.tests.length} checks failed.
+          {" "}First: {result.tests.find((t) => !t.passed)?.name}
+        </p>
+      )}
       {result && result.ok && (
         <ul className="checks" aria-label="Check results">
-          {result.tests.map((t) => (
+          {[...result.tests.filter((t) => !t.passed), ...result.tests.filter((t) => t.passed)].map((t) => (
             <li key={t.name} className={t.passed ? "pass" : "fail"}>
               <span aria-hidden="true">{t.passed ? "✓" : "✗"}</span> {t.name}
               <span className="sr-only">{t.passed ? " passed" : " failed"}</span>
@@ -155,7 +162,8 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         </ul>
       )}
       {allPassed && <p className="pill ok" role="status">🎉 All checks pass. Nicely done.</p>}
-      {fb && !allPassed && <TutorNote fb={fb} />}
+      {/* At most one expanded guidance card: while a step back waits for an answer, the note folds to one line. */}
+      {fb && !allPassed && <TutorNote fb={fb} collapsed={mesoActive} />}
       {meso}
 
       {!allPassed && step.socratic && failures === 0 && (
