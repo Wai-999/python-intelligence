@@ -22,10 +22,11 @@ export const MISCONCEPTION_REPEATS = 2;
 export type Assistance = 0 | 1 | 2 | 3 | 4;
 /**
  * "exercise": a coding task; "quiz": an explanation check; "review": a delayed retrieval; "intervention": a feedback
- * controller decision (what was triggered and why; see loop.ts). Interventions are a log, never evidence of learning.
+ * controller decision (what was triggered and why; see loop.ts); "diagnostic": an answer in the placement check (see
+ * curriculum/placement.ts). Interventions and diagnostic answers are logs, never evidence of learning.
  */
-export type Task = "exercise" | "quiz" | "review" | "intervention";
-const TASKS: readonly Task[] = ["exercise", "quiz", "review", "intervention"];
+export type Task = "exercise" | "quiz" | "review" | "intervention" | "diagnostic";
+const TASKS: readonly Task[] = ["exercise", "quiz", "review", "intervention", "diagnostic"];
 /** Tags for surface slips (a syntax error, a misspelt name): recorded, but never reported as a misconception. */
 export const SLIP_TAG_PREFIX = "slip:";
 
@@ -143,7 +144,7 @@ function validate(e: unknown, i: number): LearnerEvent {
   const v = e as Record<string, unknown>;
   for (const k of ["id", "lessonId", "stepId", "concept", "policy"] as const)
     if (typeof v[k] !== "string" || (v[k] as string).length === 0) throw bad(`${k} must be a nonempty string`);
-  if (!TASKS.includes(v.task as Task)) throw bad("task must be exercise, quiz, review or intervention");
+  if (!TASKS.includes(v.task as Task)) throw bad("task must be exercise, quiz, review, intervention or diagnostic");
   if (typeof v.passed !== "boolean") throw bad("passed must be a boolean");
   if (!Number.isInteger(v.assistance) || (v.assistance as number) < 0 || (v.assistance as number) > 4) throw bad("assistance must be 0..4");
   parseTime(v.at, `event ${i} at`);
@@ -261,7 +262,8 @@ export function buildModel(lessons: Lesson[], events: readonly unknown[]): Learn
     }
   };
   for (const e of ordered(events)) {
-    if (e.task === "intervention") continue; // a decision log, not evidence
+    // A decision log, and placement answers (one multiple-choice answer is not enough to credit a concept): not evidence.
+    if (e.task === "intervention" || e.task === "diagnostic") continue;
     const lesson = owner.get(e.concept);
     if (!lesson || lesson.id !== e.lessonId) { quarantined.push(e); continue; }
     const t = parseTime(e.at);

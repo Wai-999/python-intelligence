@@ -363,6 +363,87 @@ def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], cat
     return errs
 
 
+
+DIAGNOSTIC = ROOT / "content" / "diagnostic.json"
+QUESTION_FIELDS = {"id", "lesson", "concept", "prompt", "choices", "answer", "explanation"}
+
+
+def check_diagnostic(diag, lessons: dict[str, dict]) -> list[str]:
+    """The placement check (src/curriculum/placement.ts). Checkpoints are walked in order and testing out of one unlocks
+    what follows its lessons, so each checkpoint's lessons must have every prerequisite covered by it or an earlier one.
+    Every predicted output is run in CPython and must be exactly the marked choice."""
+    errs: list[str] = []
+    if not isinstance(diag, dict) or not isinstance(diag.get("version"), int) or not isinstance(diag.get("checkpoints"), list) or not diag["checkpoints"]:
+        return ["diagnostic: needs an integer version and a nonempty checkpoints list"]
+    covered: set[str] = set()
+    cp_ids: set[str] = set()
+    q_ids: set[str] = set()
+    for cp in diag["checkpoints"]:
+        where = f"diagnostic/{cp.get('id')}"
+        if not isinstance(cp.get("id"), str) or not cp["id"] or cp["id"] in cp_ids:
+            errs.append(f"{where}: checkpoint ids must be unique nonempty strings")
+        cp_ids.add(cp.get("id"))
+        if not isinstance(cp.get("title"), str) or not cp["title"].strip():
+            errs.append(f"{where}: needs a title")
+        covers = cp.get("covers")
+        if not isinstance(covers, list) or not covers:
+            errs.append(f"{where}: covers must be a nonempty list of lesson ids")
+            covers = []
+        here = set()
+        for lid in covers:
+            if lid not in lessons:
+                errs.append(f"{where}: unknown lesson {lid}")
+            elif lid in covered or lid in here:
+                errs.append(f"{where}: lesson {lid} is covered by more than one checkpoint")
+            here.add(lid)
+        for lid in covers:
+            for pre in lessons.get(lid, {}).get("prerequisites", []):
+                if pre not in covered and pre not in here:
+                    errs.append(f"{where}: {lid} needs {pre}, which no earlier checkpoint covers (testing out would skip it)")
+        covered |= here
+        qs = cp.get("questions")
+        if not isinstance(qs, list) or not qs:
+            errs.append(f"{where}: needs questions")
+            continue
+        for q in qs:
+            qw = f"{where}/{q.get('id')}"
+            missing = QUESTION_FIELDS - set(q)
+            if missing:
+                errs.append(f"{qw}: missing {sorted(missing)}")
+                continue
+            if q["id"] in q_ids:
+                errs.append(f"{qw}: question ids must be unique across the diagnostic")
+            q_ids.add(q["id"])
+            if ":" in q["id"]:
+                errs.append(f"{qw}: question ids can't contain ':' (it separates the run id in event step ids)")
+            if q["lesson"] not in here:
+                errs.append(f"{qw}: lesson {q['lesson']} is not one this checkpoint covers")
+            elif q["concept"] not in lessons[q["lesson"]]["concepts"]:
+                errs.append(f"{qw}: concept {q['concept']} is not taught by {q['lesson']}")
+            ch = q["choices"]
+            if not isinstance(ch, list) or len(ch) < 2 or len(set(ch)) != len(ch) or not all(isinstance(c, str) and c.strip() for c in ch):
+                errs.append(f"{qw}: needs two or more distinct nonempty choices")
+                continue
+            if any(c.strip().lower() == "not sure" for c in ch):
+                errs.append(f"{qw}: 'Not sure' is added by the app; don't list it as a choice")
+            if not isinstance(q["answer"], int) or isinstance(q["answer"], bool) or not 0 <= q["answer"] < len(ch):
+                errs.append(f"{qw}: answer must index a choice")
+                continue
+            if not q["explanation"].strip() or not q["prompt"].strip():
+                errs.append(f"{qw}: needs a prompt and an explanation")
+            if q.get("output"):
+                if not isinstance(q.get("code"), str) or not q["code"].strip():
+                    errs.append(f"{qw}: an output question needs code")
+                    continue
+                res = run_snippet(q["code"])
+                out = res.get("stdout", "").rstrip("\n")
+                if not res.get("ok"):
+                    errs.append(f"{qw}: code failed: {res.get('error')}")
+                elif out != ch[q["answer"]]:  # choices are distinct, so no other choice can match too
+                    errs.append(f"{qw}: the code prints {out!r}, not the marked choice {ch[q['answer']]!r}")
+    return errs
+
+
 def main() -> int:
     files = sorted((ROOT / "content" / "lessons").glob("*.json"))
     lessons = [json.loads(f.read_text()) for f in files]
@@ -423,6 +504,8 @@ def main() -> int:
     if done != set(deps):
         errs.append(f"prerequisite cycle among {sorted(set(deps) - done)}")
 
+    errs += check_diagnostic(json.loads(DIAGNOSTIC.read_text()), {l["id"]: l for l in lessons})
+
     if errs:
         print("\n".join(f"✗ {e}" for e in errs))
         print(f"content invalid: {len(errs)} error(s)", file=sys.stderr)
@@ -430,6 +513,8 @@ def main() -> int:
     n_exec = sum(1 for l in lessons for s in l["steps"] if s["kind"] in ("example", "visual", *EXERCISE_KINDS))
     print(f"✓ content valid: {len(lessons)} lessons, {n_exec} executable steps verified with the shared harness "
           f"(CPython {py_version})")
+    print(f"✓ placement check: {sum(len(c['questions']) for c in json.loads(DIAGNOSTIC.read_text())['checkpoints'])} questions, "
+          f"predicted outputs verified")
     n_cited = sum(1 for l in lessons if l["sources"])
     if isinstance(index, ExtractIndex):
         if write_hashed_index(index):

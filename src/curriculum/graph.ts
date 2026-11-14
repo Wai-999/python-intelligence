@@ -79,9 +79,10 @@ export function buildGraph(lessons: Lesson[]): Graph {
 
 export type ProgressMap = Map<string, LessonProgress>;
 
-export function isUnlocked(g: Graph, id: string, progress: ProgressMap): boolean {
+/** A prerequisite counts once completed or tested out in the placement check (curriculum/placement.ts). */
+export function isUnlocked(g: Graph, id: string, progress: ProgressMap, testedOut: ReadonlySet<string> = new Set()): boolean {
   const l = g.byId.get(id);
-  return !!l && l.prerequisites.every((p) => progress.get(p)?.completed);
+  return !!l && l.prerequisites.every((p) => progress.get(p)?.completed || testedOut.has(p));
 }
 
 export type Recommendation =
@@ -95,7 +96,11 @@ export const STRUGGLE_THRESHOLD = 3;
 /** ...unless the lesson teaching that concept was already mastered at least this well. */
 export const REMEDIATION_MASTERY = 0.8;
 
-export function recommendNext(g: Graph, progress: ProgressMap, currentId?: string): Recommendation {
+/**
+ * Lessons tested out of in the placement check are skipped when picking a new lesson, but a started one is still offered
+ * to finish, and remediation can still send the learner back to one (its mastery is 0 until it is actually studied).
+ */
+export function recommendNext(g: Graph, progress: ProgressMap, currentId?: string, testedOut: ReadonlySet<string> = new Set()): Recommendation {
   // 1. Remediation: repeated failures on a concept taught by an earlier lesson that wasn't mastered.
   const focus = currentId ? [currentId] : g.order;
   for (const id of focus) {
@@ -112,10 +117,10 @@ export function recommendNext(g: Graph, progress: ProgressMap, currentId?: strin
   // 2. Finish what was started (in curriculum order).
   for (const id of g.order) {
     const p = progress.get(id);
-    if (p && !p.completed && p.furthestStep > 0 && isUnlocked(g, id, progress)) return { kind: "continue", lessonId: id };
+    if (p && !p.completed && p.furthestStep > 0 && isUnlocked(g, id, progress, testedOut)) return { kind: "continue", lessonId: id };
   }
   // 3. First unlocked, uncompleted lesson.
   for (const id of g.order)
-    if (!progress.get(id)?.completed && isUnlocked(g, id, progress)) return { kind: "next", lessonId: id };
+    if (!progress.get(id)?.completed && !testedOut.has(id) && isUnlocked(g, id, progress, testedOut)) return { kind: "next", lessonId: id };
   return { kind: "done" };
 }

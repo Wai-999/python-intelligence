@@ -147,7 +147,7 @@ function NextUp({ lesson, progress, recommendation: r, titleOf, go }: Props) {
 }
 
 export function Recommend({ r, titleOf, go, currentId }: { r: Recommendation; titleOf: (id: string) => string; go: (id: string, s: number) => void; currentId?: string }) {
-  if (r.kind === "done") return <p className="recommend">🎓 You've completed every lesson available so far. More are on the way.</p>;
+  if (r.kind === "done") return <p className="recommend">🎓 You've worked through every lesson available so far. More are on the way.</p>;
   if (r.kind === "continue" && r.lessonId === currentId) return null;
   const label = { remediate: "Review first", continue: "Continue", next: "Next lesson" }[r.kind];
   return (

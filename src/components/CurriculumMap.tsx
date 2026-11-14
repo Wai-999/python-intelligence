@@ -9,9 +9,11 @@ interface Props {
   currentId?: string;
   go: (lessonId: string, step: number) => void;
   compact?: boolean;
+  /** Lessons tested out of in the placement check: reachable, but not complete. */
+  testedOut?: ReadonlySet<string>;
 }
 
-export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact }: Props) {
+export function CurriculumMap({ graph, progress, recommendation, currentId, go, compact, testedOut = new Set() }: Props) {
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
   return (
     <nav className={`map ${compact ? "compact" : ""}`} aria-label="Curriculum">
@@ -21,13 +23,13 @@ export function CurriculumMap({ graph, progress, recommendation, currentId, go, 
         {graph.order.map((id, n) => {
           const l = graph.byId.get(id)!;
           const p = progress.get(id);
-          const unlocked = isUnlocked(graph, id, progress);
-          const state = p?.completed ? "done" : !unlocked ? "locked" : p && p.furthestStep > 0 ? "started" : "open";
+          const unlocked = isUnlocked(graph, id, progress, testedOut);
+          const state = p?.completed ? "done" : p && p.furthestStep > 0 && unlocked ? "started" : testedOut.has(id) ? "tested" : !unlocked ? "locked" : "open";
           const resume = p && !p.completed ? Math.min(p.furthestStep, l.steps.length - 1) : 0;
-          const text = { done: "Completed", locked: "Locked", started: "In progress", open: "Ready" }[state];
+          const text = { done: "Completed", locked: "Locked", started: "In progress", open: "Ready", tested: "Tested out" }[state];
           return (
             <li key={id} className={`map-item ${state} ${id === currentId ? "current" : ""}`}>
-              <span className="map-badge" aria-hidden="true">{state === "done" ? "✓" : state === "locked" ? "🔒" : n + 1}</span>
+              <span className="map-badge" aria-hidden="true">{state === "done" ? "✓" : state === "locked" ? "🔒" : state === "tested" ? "↷" : n + 1}</span>
               <div className="map-body">
                 {state === "locked" ? (
                   <span className="map-link" aria-disabled="true">{l.title}</span>

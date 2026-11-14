@@ -8,6 +8,8 @@ import { buildModel, dueReviews, type Assistance, type LearnerEvent } from "./le
 import { creditedConcepts, exerciseEvents, quizEvents, reviewEvent, reviewItem, suggestedTier, type Stamp } from "./learner/record";
 import { interventionEvent, mesoTrigger, transferTarget, type Intervention, type Target } from "./learner/loop";
 import { MesoPanel } from "./components/MesoPanel";
+import { DiagnosticView } from "./components/DiagnosticView";
+import { DIAGNOSTIC, diagnosticEvents, placement } from "./curriculum/placement";
 import { isExercise, type Lesson } from "./content/types";
 import { LESSONS } from "./content/lessons";
 import { buildGraph, isUnlocked, recommendNext, type ProgressMap } from "./curriculum/graph";
@@ -20,7 +22,7 @@ import type { LessonProgress, ProgressStore } from "./progress/types";
 
 const graph = buildGraph(LESSONS);
 
-type Route = { view: "home" } | { view: "library" } | { view: "review" } | { view: "lesson"; lessonId: string; step: number };
+type Route = { view: "home" } | { view: "library" } | { view: "review" } | { view: "diagnostic" } | { view: "lesson"; lessonId: string; step: number };
 
 const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 const stampNow = (): Stamp => ({ at: new Date().toISOString(), id: newId });
@@ -33,6 +35,7 @@ function parseHash(h: string): Route {
   }
   if (/^#\/library\/?$/.test(h)) return { view: "library" };
   if (/^#\/review\/?$/.test(h)) return { view: "review" };
+  if (/^#\/diagnostic\/?$/.test(h)) return { view: "diagnostic" };
   return { view: "home" };
 }
 
@@ -246,7 +249,8 @@ export function App() {
 
   const go = (lessonId: string, step: number) => { location.hash = `#/lesson/${lessonId}/${step}`; };
   const current = route.view === "lesson" ? route.lessonId : undefined;
-  const rec = useMemo(() => recommendNext(graph, progress, current), [progress, current]);
+  const place = useMemo(() => placement(DIAGNOSTIC, events), [events]);
+  const rec = useMemo(() => recommendNext(graph, progress, current, place.testedOut), [progress, current, place]);
   const titleOf = (id: string) => graph.byId.get(id)?.title ?? id;
   const completed = [...progress.values()].filter((p) => p.completed).length;
 
@@ -276,12 +280,15 @@ export function App() {
 
       <div className={`layout layout--${route.view}`} inert={replacing}>
         {route.view === "lesson" && (
-          <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} /></aside>
+          <aside className="side"><CurriculumMap compact graph={graph} progress={progress} recommendation={rec} currentId={current} go={go} testedOut={place.testedOut} /></aside>
         )}
         <main id="main" tabIndex={-1} aria-busy={replacing}>
           {!ready ? <p className="muted">Loading your progress…</p> : route.view === "library" ? <Library /> : route.view === "review" ? (
             <ReviewView key={generation} lessons={LESSONS} model={model} events={events} now={now} titleOf={titleOf}
                         onAnswer={(item, correct) => { if (live()) record([reviewEvent(item, correct, stampNow())]); }} />
+          ) : route.view === "diagnostic" ? (
+            <DiagnosticView key={generation} diagnostic={DIAGNOSTIC} placement={place} recommendation={rec} titleOf={titleOf} go={go}
+                            onFinish={(answers) => { if (live()) record(diagnosticEvents(DIAGNOSTIC, newId(), answers, stampNow())); }} />
           ) : route.view === "home" ? (
             <>
               <section className="hero">
@@ -289,8 +296,11 @@ export function App() {
                 <p>Short lessons that build on one another: a motivating problem, an intuition, a visual walkthrough,
                    the precise rules, runnable code, and practice that is checked as you go. Python runs right here in your
                    browser, with nothing to install.</p>
+                <p className="placement-link">{place.at
+                  ? <>Placement check: you tested out of {place.testedOut.size} lesson{place.testedOut.size === 1 ? "" : "s"}. <a href="#/diagnostic">Retake it</a></>
+                  : <>Know some Python already? <a href="#/diagnostic">Take the placement check</a> to find your starting point.</>}</p>
               </section>
-              <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} />
+              <CurriculumMap graph={graph} progress={progress} recommendation={rec} go={go} testedOut={place.testedOut} />
               <p className="fineprint">The tutor on this site is an <strong>offline guide</strong>: pre-written explanations and
                  questions matched to your results, not a generative AI. Code runs in a sandboxed browser worker. Don't paste
                  secrets into it.</p>
@@ -302,7 +312,7 @@ export function App() {
               progress={progress.get(route.lessonId)}
               drafts={drafts[route.lessonId] ?? {}}
               recommendation={rec}
-              unlocked={isUnlocked(graph, route.lessonId, progress)}
+              unlocked={isUnlocked(graph, route.lessonId, progress, place.testedOut)}
               titleOf={titleOf}
               go={go}
               generation={generation}

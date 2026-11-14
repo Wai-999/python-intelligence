@@ -1,0 +1,100 @@
+{
+  "_note": "Placement check (master prompt §1 success condition: 'take a diagnostic'). Original questions. Checkpoints run in order; each covers a prerequisite-closed set of lessons. A learner who answers every question of a checkpoint correctly tests out of its lessons (they unlock what follows and are skipped by the recommendation, but are never marked complete or counted as evidence of mastery). The first checkpoint with a wrong or 'not sure' answer is where they start. For a question with \"output\": true, the content gate runs the code in CPython and checks that the marked choice is exactly what it prints.",
+  "version": 1,
+  "checkpoints": [
+    {
+      "id": "basics",
+      "title": "Values, functions and decisions",
+      "covers": ["py-values-names", "py-functions", "py-conditionals"],
+      "questions": [
+        {"id": "expr", "lesson": "py-values-names", "concept": "expressions", "prompt": "What does this print?",
+         "code": "x = 3\nx = x * 2 + 1\nprint(x)", "output": true,
+         "choices": ["7", "9", "3", "an error"], "answer": 0,
+         "explanation": "The right-hand side uses the old value: 3 * 2 + 1 is 7, and that becomes the new x."},
+        {"id": "ret", "lesson": "py-functions", "concept": "return", "prompt": "What does this print?",
+         "code": "def f(n):\n    n + 1\n\nprint(f(2))", "output": true,
+         "choices": ["3", "None", "2", "an error"], "answer": 1,
+         "explanation": "The function works out n + 1 but never returns it, so the call gives None."},
+        {"id": "truthy", "lesson": "py-conditionals", "concept": "truthiness", "prompt": "What does this print?",
+         "code": "if 0:\n    print(\"a\")\nelif \"\":\n    print(\"b\")\nelse:\n    print(\"c\")", "output": true,
+         "choices": ["a", "b", "c", "nothing"], "answer": 2,
+         "explanation": "0 and the empty string are both falsy, so only the else branch runs."}
+      ]
+    },
+    {
+      "id": "loops-text",
+      "title": "Loops and strings",
+      "covers": ["py-loops", "py-strings"],
+      "questions": [
+        {"id": "acc", "lesson": "py-loops", "concept": "accumulators", "prompt": "What does this print?",
+         "code": "total = 0\nfor i in range(1, 4):\n    total += i\nprint(total)", "output": true,
+         "choices": ["6", "10", "3", "4"], "answer": 0,
+         "explanation": "range(1, 4) is 1, 2, 3 (the end is left out), and 1 + 2 + 3 is 6."},
+        {"id": "slice", "lesson": "py-strings", "concept": "slicing", "prompt": "What does this print?",
+         "code": "s = \"python\"\nprint(s[1:4])", "output": true,
+         "choices": ["yth", "pyt", "ytho", "pyth"], "answer": 0,
+         "explanation": "Indexes start at 0, and a slice stops before its end: positions 1, 2 and 3 are y, t, h."}
+      ]
+    },
+    {
+      "id": "collections",
+      "title": "Lists, dictionaries and tuples",
+      "covers": ["py-lists", "py-dicts", "py-tuples"],
+      "questions": [
+        {"id": "alias", "lesson": "py-lists", "concept": "aliasing", "prompt": "What does this print?",
+         "code": "a = [1, 2]\nb = a\nb.append(3)\nprint(a)", "output": true,
+         "choices": ["[1, 2]", "[1, 2, 3]", "[3]", "an error"], "answer": 1,
+         "explanation": "b = a doesn't copy the list: both names refer to the same list, so appending through b changes a."},
+        {"id": "count", "lesson": "py-dicts", "concept": "counting", "prompt": "What does this print?",
+         "code": "counts = {}\nfor ch in \"abca\":\n    counts[ch] = counts.get(ch, 0) + 1\nprint(counts[\"a\"])", "output": true,
+         "choices": ["1", "2", "3", "a KeyError"], "answer": 1,
+         "explanation": "get returns 0 the first time a letter is seen; \"a\" appears twice."},
+        {"id": "swap", "lesson": "py-tuples", "concept": "unpacking", "prompt": "What does this print?",
+         "code": "x, y = 4, 5\nx, y = y, x\nprint(x)", "output": true,
+         "choices": ["4", "5", "(5, 4)", "an error"], "answer": 1,
+         "explanation": "The right-hand side is built first, as the tuple (5, 4), and then unpacked: x becomes 5."}
+      ]
+    },
+    {
+      "id": "functions-errors",
+      "title": "Defaults, comprehensions, errors and modules",
+      "covers": ["py-scope-defaults", "py-comprehensions", "py-exceptions", "py-modules"],
+      "questions": [
+        {"id": "default", "lesson": "py-scope-defaults", "concept": "default-arguments", "prompt": "What does this print?",
+         "code": "def add(item, box=[]):\n    box.append(item)\n    return box\n\nadd(1)\nprint(add(2))", "output": true,
+         "choices": ["[2]", "[1, 2]", "[1]", "an error"], "answer": 1,
+         "explanation": "A default value is made once, when the function is defined, so both calls share the same list."},
+        {"id": "comp", "lesson": "py-comprehensions", "concept": "list-comprehensions", "prompt": "What does this print?",
+         "code": "print([n * n for n in range(5) if n % 2 == 0])", "output": true,
+         "choices": ["[0, 4, 16]", "[1, 9]", "[0, 1, 4, 9, 16]", "[4, 16]"], "answer": 0,
+         "explanation": "The filter keeps 0, 2 and 4; squaring them gives 0, 4 and 16."},
+        {"id": "except", "lesson": "py-exceptions", "concept": "try-except", "prompt": "What does this print?",
+         "code": "try:\n    int(\"4x\")\nexcept ValueError:\n    print(\"bad\")\nelse:\n    print(\"ok\")", "output": true,
+         "choices": ["bad", "ok", "bad and then ok", "nothing: the program crashes"], "answer": 0,
+         "explanation": "int(\"4x\") raises ValueError, which the except clause catches; else runs only when nothing was raised."},
+        {"id": "import", "lesson": "py-modules", "concept": "imports", "prompt": "What does this print?",
+         "code": "import math as m\nprint(m.floor(2.7))", "output": true,
+         "choices": ["2", "3", "2.7", "an error: math isn't defined"], "answer": 0,
+         "explanation": "import ... as gives the module a short name; floor rounds down to 2."}
+      ]
+    },
+    {
+      "id": "arrays-stats",
+      "title": "Arrays, simulation and summaries",
+      "covers": ["np-arrays", "stats-simulation", "stats-summary"],
+      "questions": [
+        {"id": "mask", "lesson": "np-arrays", "concept": "boolean-masks", "prompt": "What does this print?",
+         "code": "import numpy as np\na = np.array([1, 2, 3, 4])\nprint(a[a > 2] * 10)", "output": true,
+         "choices": ["[30 40]", "[10 20 30 40]", "[False False  True  True]", "an error"], "answer": 0,
+         "explanation": "a > 2 is a mask that keeps 3 and 4; multiplying the selected array by 10 gives [30 40]."},
+        {"id": "seed", "lesson": "stats-simulation", "concept": "randomness", "prompt": "What does this print?",
+         "code": "import random\na = random.Random(7)\nb = random.Random(7)\nprint(a.random() == b.random())", "output": true,
+         "choices": ["True", "False", "it varies from run to run", "an error"], "answer": 0,
+         "explanation": "Two generators with the same seed produce the same sequence, which is what makes a simulation repeatable."},
+        {"id": "var", "lesson": "stats-summary", "concept": "variance", "prompt": "What is the population variance of 2, 4 and 6?",
+         "choices": ["8/3 (about 2.67)", "4", "2", "6"], "answer": 0,
+         "explanation": "The mean is 4; the squared deviations are 4, 0 and 4; their average is 8/3."}
+      ]
+    }
+  ]
+}

@@ -209,3 +209,10 @@ main { min-width: 0; outline: none; }
 .misconceptions, .rubric { margin: 12px 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; }
 .misconceptions summary { cursor: pointer; font-weight: 600; }
 .rubric h3 { margin: 0 0 6px; font-size: 16px; }
+
+/* Placement check (G-12) */
+.map-item.tested .map-badge { background: var(--surface-2); color: var(--text); border: 1px dashed var(--border); }
+.diagnostic { max-width: 72ch; }
+.diag-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.placement ul { margin: 4px 0 8px; }
+.placement-link { font-size: 16px; }
