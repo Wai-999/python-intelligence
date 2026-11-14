@@ -62,7 +62,8 @@ published, and a 12-word shingle check keeps book text out of lessons and out of
 | Frontend unit (Vitest) | 206 passed |
 | Browser e2e (Playwright, production build under the sub-path) | 126 passed |
 | Content gate | 44 lessons and 220 executable steps verified in CPython 3.12; 15 placement questions verified |
-| Accessibility | axe-core WCAG 2.1 A/AA on every page state in light and dark mode: no violations |
+| Accessibility | axe-core WCAG 2.1 A/AA, no violations, on these states in both light and dark mode (`e2e/a11y.spec.ts`): home, library, an intuition step with sources and the look-ahead notice, the call-trace viewer, a quiz, a recap with further reading, the progress panel, an example with output, failed checks with the tutor note, the suggested-support note, and the meso step back (prediction, explanation and transfer link). The placement check (intro, a checked group, result) is scanned in light mode only (`e2e/diagnostic.spec.ts`). Not scanned, so **UNVERIFIED**: the Review page, the transfer step, a passed exercise, the placement check in dark mode, and the remaining step kinds. |
+| Performance | `dist/` is 1,254,423 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,227,671 bytes because all 44 lessons are bundled. Pyodide (CPython 3.12.7 in WebAssembly) loads from the pinned CDN on first use and is cached for offline use. Load time, interaction latency and memory were not measured: **UNVERIFIED**. |
 | Secret scan, dist licence/size gate | clean |
 
 ### Master prompt test matrix
@@ -107,9 +108,20 @@ Every push to `main` that passes the gates deploys, so rolling back is a revert 
 3. A run that fails any gate deploys nothing, so Pages keeps serving the last build that passed. Fix forward, or revert
    further.
 
-Learner data is unaffected by a rollback: it lives in each browser. Store versions only move forward, and older
-exports keep importing.
+Rolling back doesn't touch learners' data, which stays in each browser, but whether the older build can use it depends on
+the storage schema:
+
+- Since `998e033` (G-2) the IndexedDB database is version 2 and exports are format version 2. Rolling back to any build
+  from `998e033` onwards keeps progress usable.
+- Rolling back to a build before `998e033` is not safe for returning learners. The browser refuses to open a version 2
+  database with older code, so the old build can't read or save progress, and it can't import version 2 exports. Their
+  data stays in the browser and works again once a version 2 build is redeployed. Before such a rollback, ask learners to
+  export their progress (Progress → Export). Rollback across a schema change has not been tested: **UNVERIFIED**.
+- Check a target's schema with `git show <sha>:src/progress/store.ts | grep DB_VERSION` and
+  `git show <sha>:src/progress/types.ts | grep EXPORT_VERSION`.
 
 ## Next step with the most value
 
-The owner's decision on G-T. Everything else in the master prompt that a static site can honestly do is in place.
+The owner's decision on G-T, which needs a server and API keys. Of the static-site work, the measured gaps are those
+marked **UNVERIFIED** above: performance measurements, the remaining accessibility scans, manual screen-reader testing,
+and rollback across a schema change.
