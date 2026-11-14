@@ -333,7 +333,7 @@
         },
         {
           "name": "the peak of the density",
-          "code": "import math\nassert abs(peak(1) - 0.3989422804014327) < 1e-15 and peak(0.1) > 1, 'a narrow curve is taller than 1'",
+          "code": "import math\nassert abs(peak(1) - 0.3989422804014327) < 1e-15 and peak(0.1) > 1, 'a narrow curve is taller than 1'\nassert abs(peak(2) - 0.19947114020071635) < 1e-15, 'sigma is the standard deviation, not the variance'",
           "concept": "probability-density"
         }
       ],

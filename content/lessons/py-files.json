@@ -349,7 +349,7 @@
         },
         {
           "name": "notes come back exactly, spaces and empty notes included",
-          "code": "notes = ['  indented', '', 'trailing space ']\nsave_notes('n.txt', notes)\nassert read_notes('n.txt') == notes, read_notes('n.txt')",
+          "code": "notes = ['  indented', '', 'trailing space ']\nsave_notes('n.txt', notes)\nassert read_notes('n.txt') == notes, read_notes('n.txt')\nadd_note('n.txt', ' spaced ')\nadd_note('n.txt', '')\nassert read_notes('n.txt') == notes + [' spaced ', ''], read_notes('n.txt')",
           "concept": "files"
         }
       ],
