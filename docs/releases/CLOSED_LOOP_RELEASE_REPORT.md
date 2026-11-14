@@ -9,9 +9,9 @@ Master prompt §15. Every claim below points at code, a test, or a CI run you ca
 |---|---|
 | Deployed URL | https://wai-999.github.io/python-intelligence/ |
 | Branch | `main` (every push that passes all gates deploys; owner decision 2026-11-08) |
-| Release commit | `a5b126d4473f8df6c9d8ab2b6512d565d7ebf3e2`, verified live. This report was added in the docs-only commit that follows it; `docs/` isn't part of the site, so the published files differ only in their build stamp (`pi-build`). |
-| GitHub Actions run | [run 43580113503](https://github.com/Wai-999/python-intelligence/actions/runs/43580113503) (`gates` and `deploy` both green) |
-| Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `a5b126d4473f8df6c9d8ab2b6512d565d7ebf3e2`. |
+| Release commit | `2b9e6cecea305046d580c29139fda9ae6f9013a4`, verified live. This report was brought up to date in the docs-only commit that follows it; `docs/` isn't part of the site, so the published files differ only in their build stamp (`pi-build`). |
+| GitHub Actions run | [run 43583609105](https://github.com/Wai-999/python-intelligence/actions/runs/43583609105) (`gates` and `deploy` both green) |
+| Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `2b9e6cecea305046d580c29139fda9ae6f9013a4`. |
 
 ## Operating mode: A (static-first)
 
@@ -34,6 +34,7 @@ Progress lives in IndexedDB in the learner's browser, with export and import as 
 | Meso: repeated structural errors, explanation mismatch, reliance on strong hints | DONE | `src/learner/loop.ts` (`mesoTrigger`, cooldown 10 min, scoped to the task); typos are classified by Python's own parser and never trigger (`harness.bound_names`); every step back is logged with policy version and supporting event ids. e2e: `loop.spec.ts` ("a repeated typo never triggers a step back, but a repeated structural error does, once"; postponement). |
 | Macro: completion, spaced review, delayed retrieval | DONE | `src/learner/model.ts` review schedule 1, 3, 7, 14, 30 days; a failed or assisted review resets the spacing and durable mastery; review page with free-recall prompts. e2e: `review.spec.ts` ("a completed concept comes back after a day, and the spacing grows or resets"). |
 | Scaffold fading | DONE | `suggestedTier`: two independent successes ease off one tier, two comparable failures restore one, never past tier 3 without an explicit request. e2e: `scaffold.spec.ts`. |
+| Course map and "why" | DONE | G-16: every lesson step says why this lesson (what it builds on, what it opens); the map shows locked, ready, in progress, tested out, completed independently, completed with help, and review due, in words, with icons as decoration. Completion is "independent" only when every graded step has an unaided passing attempt; older data that can't show it is labelled plain "Completed". e2e: `standing.spec.ts`, `review.spec.ts`. |
 | Placement diagnostic | DONE | G-12: ordered checkpoints of prediction questions whose outputs the content gate runs in CPython; testing out unlocks later lessons but completes nothing and is never mastery evidence; runs carry a content fingerprint. e2e: `diagnostic.spec.ts`. |
 
 ## Persistence and course continuity
@@ -54,16 +55,16 @@ mapping and spaced-review metadata (G-5). Every exercise has a difficulty tag (G
 attempt. Five open books are used: three adapted with attribution, two (MML and the Big Book) cited only. No PDF is
 published, and a 12-word shingle check keeps book text out of lessons and out of `dist/`.
 
-## Test results at `a5b126d`
+## Test results at `2b9e6ce`
 
 | Suite | Result |
 |---|---|
-| Python (orchestrator, content gate, ingest, rights manifest, transfer variants, diagnostic) | 581 passed, 3 skipped (the live agent-CLI contract tests, which run only with `PI_LIVE=1` and the real CLIs installed) |
-| Frontend unit (Vitest) | 206 passed |
-| Browser e2e (Playwright, production build under the sub-path) | 126 passed |
+| Python (orchestrator, content gate, ingest, rights manifest, transfer variants, diagnostic) | 584 passed, 3 skipped (the live agent-CLI contract tests, which run only with `PI_LIVE=1` and the real CLIs installed) |
+| Frontend unit (Vitest) | 220 passed |
+| Browser e2e (Playwright, production build under the sub-path) | 129 passed |
 | Content gate | 44 lessons and 220 executable steps verified in CPython 3.12; 15 placement questions verified |
 | Accessibility | axe-core WCAG 2.1 A/AA, no violations, on these states in both light and dark mode (`e2e/a11y.spec.ts`): home, library, an intuition step with sources and the look-ahead notice, the call-trace viewer, a quiz, a recap with further reading, the progress panel, an example with output, failed checks with the tutor note, the suggested-support note, and the meso step back (prediction, explanation and transfer link). The placement check (intro, a checked group, result) is scanned in light mode only (`e2e/diagnostic.spec.ts`). Not scanned, so **UNVERIFIED**: the Review page, the transfer step, a passed exercise, the placement check in dark mode, and the remaining step kinds. |
-| Performance | `dist/` is 1,254,423 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,227,671 bytes because all 44 lessons are bundled. Pyodide (CPython 3.12.7 in WebAssembly) loads from the pinned CDN on first use and is cached for offline use. Load time, interaction latency and memory were not measured: **UNVERIFIED**. |
+| Performance | `dist/` is 1,257,948 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,231,034 bytes because all 44 lessons are bundled. Pyodide (CPython 3.12.7 in WebAssembly) loads from the pinned CDN on first use and is cached for offline use. Load time, interaction latency and memory were not measured: **UNVERIFIED**. |
 | Secret scan, dist licence/size gate | clean |
 
 ### Master prompt test matrix
@@ -85,10 +86,13 @@ published, and a 12-word shingle check keeps book text out of lessons and out of
 | T17 deep link on Pages | DONE | smoke test on the live URL |
 | T18 mobile, keyboard, screen reader | DONE (automated) | smoke and a11y specs; manual screen-reader testing **UNVERIFIED** |
 | T19 course completion | DONE | recommendation tests and e2e |
-| T20 production deploy | DONE | [run 43580113503](https://github.com/Wai-999/python-intelligence/actions/runs/43580113503) |
+| T20 production deploy | DONE | [run 43583609105](https://github.com/Wai-999/python-intelligence/actions/runs/43583609105) |
 
 ## BLOCKED, PARTIAL and UNVERIFIED
 
+- **PARTIAL (§5 optional controls):** "Show execution trace" exists as the call-trace viewer on visual steps, and
+  "Challenge me independently" is each lesson's help-free transfer problem. There is no separate "Why?" button or
+  "Try another example" generator.
 - **BLOCKED (owner gate G-T):** server-side tutor gateway, structured LLM prompts, cost caps. Needs a separately hosted
   server and API keys. GitHub Pages can't host it, and no keys belong in the client.
 - **BLOCKED (Mode B not authorised):** a hardened remote execution service, hidden tests, authenticated sync.
