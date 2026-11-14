@@ -380,6 +380,11 @@
           "name": "the last index can be out of bag",
           "code": "assert out_of_bag(4, [0, 1, 2]) == [3] and out_of_bag(1, []) == [0]",
           "concept": "bootstrap-sampling"
+        },
+        {
+          "name": "ties go to the smallest value, not the first seen",
+          "code": "assert vote([8, 1]) == 1 and vote([9, 2, 9, 2]) == 2",
+          "concept": "bagging"
         }
       ],
       "solution": "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"

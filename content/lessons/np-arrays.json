@@ -339,6 +339,11 @@
           "name": "integer arrays with fractional means",
           "code": "import numpy as np\nassert np.allclose(column_means(np.array([[1, 2], [2, 3]])), [1.5, 2.5]), column_means(np.array([[1, 2], [2, 3]]))",
           "concept": "array-aggregation"
+        },
+        {
+          "name": "a rectangular array",
+          "code": "import numpy as np\nassert np.allclose(column_means(np.array([[1.0, 2.0, 3.0], [2.0, 4.0, 8.0]])), [1.5, 3.0, 5.5])",
+          "concept": "array-aggregation"
         }
       ],
       "solution": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
