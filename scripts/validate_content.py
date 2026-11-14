@@ -275,7 +275,8 @@ def check_packages(lesson: dict, installed: dict[str, str | None] | None) -> lis
     for s in lesson.get("steps", []):
         used: set[str] = set()
         for code in (s.get("code"), s.get("solution"), s.get("starter"), (s.get("visual") or {}).get("code"),
-                     *[t.get("code") for t in s.get("tests", [])]):
+                     *[t.get("code") for t in s.get("tests", [])],
+                     *[m.get("code") for m in (s.get("more") or []) if isinstance(m, dict)]):
             roots = imported_roots(code or "")
             used |= {pkg for pkg, mod in IMPORT_NAMES.items() if mod in roots}
         errs += [f"step {s.get('id')}: imports {IMPORT_NAMES[pkg]} but the lesson does not declare "
