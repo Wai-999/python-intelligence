@@ -333,6 +333,11 @@
           "name": "a new list even when the title is already first",
           "code": "songs = ['a', 'b']\nout = move_to_front(songs, 'a')\nassert out == ['a', 'b'] and out is not songs, 'return a new list every time'",
           "concept": "aliasing"
+        },
+        {
+          "name": "an empty playlist gives a new empty list",
+          "code": "songs = []\nout = move_to_front(songs, 'x')\nassert out == [] and out is not songs, 'return a new list every time'",
+          "concept": "aliasing"
         }
       ],
       "solution": "def move_to_front(songs, title):\n    result = songs.copy()\n    if title in result:\n        result.remove(title)\n        result.insert(0, title)\n    return result\n\n\ndef add_unique(songs, title):\n    if title not in songs:\n        songs.append(title)\n"

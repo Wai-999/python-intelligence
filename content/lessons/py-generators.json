@@ -422,6 +422,16 @@
           "name": "any size below 1 is refused",
           "code": "for items, size in (([1], -2), ([], -1), ([], 0)):\n    try:\n        next(chunked(items, size))\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(f'chunked({items!r}, {size}) should raise ValueError')",
           "concept": "generators"
+        },
+        {
+          "name": "a chunk size of 1",
+          "code": "assert list(chunked([1, 2], 1)) == [[1], [2]]",
+          "concept": "generators"
+        },
+        {
+          "name": "None is an ordinary item",
+          "code": "assert list(chunked([None, 1, None, 2], 3)) == [[None, 1, None], [2]], 'None can be an item: stop at the end of the items (StopIteration), not at the first None'",
+          "concept": "iterators"
         }
       ],
       "solution": "def chunked(items, size):\n    if size < 1:\n        raise ValueError(\"size must be at least 1\")\n    chunk = []\n    for item in items:\n        chunk.append(item)\n        if len(chunk) == size:\n            yield chunk\n            chunk = []\n    if chunk:\n        yield chunk\n"

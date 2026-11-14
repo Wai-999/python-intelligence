@@ -344,6 +344,11 @@
           "name": "a rectangular array",
           "code": "import numpy as np\nassert np.allclose(column_means(np.array([[1.0, 2.0, 3.0], [2.0, 4.0, 8.0]])), [1.5, 3.0, 5.5])",
           "concept": "array-aggregation"
+        },
+        {
+          "name": "a new array even when nothing is negative",
+          "code": "import numpy as np\na = np.array([1, 2])\nout = zero_negatives(a)\nassert np.array_equal(out, [1, 2]) and out is not a, 'return a new array every time'",
+          "concept": "arrays"
         }
       ],
       "solution": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"

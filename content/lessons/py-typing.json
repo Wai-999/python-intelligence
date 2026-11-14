@@ -369,6 +369,11 @@
           "name": "the first of equally long books, whatever their titles",
           "code": "books = [Book('Zed', 30), Book('Amy', 30)]\nassert longest(books) is books[0]",
           "concept": "dataclasses"
+        },
+        {
+          "name": "a one-page book is fine",
+          "code": "assert Book('Leaflet', 1).pages == 1",
+          "concept": "validation"
         }
       ],
       "solution": "from dataclasses import dataclass, field\n\n\n@dataclass\nclass Book:\n    title: str\n    pages: int\n    tags: list[str] = field(default_factory=list)\n\n    def __post_init__(self):\n        if not isinstance(self.title, str):\n            raise TypeError(\"title must be a string\")\n        if isinstance(self.pages, bool) or not isinstance(self.pages, int):\n            raise TypeError(\"pages must be a whole number\")\n        if self.pages < 1:\n            raise ValueError(\"a book has at least one page\")\n\n\ndef longest(books: list[Book]) -> Book | None:\n    if not books:\n        return None\n    return max(books, key=lambda b: b.pages)\n"

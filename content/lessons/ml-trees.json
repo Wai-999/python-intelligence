@@ -453,6 +453,11 @@
           "name": "the longest path, not the number of splits",
           "code": "assert depth({'left': {'left': 1, 'right': 2}, 'right': {'left': 3, 'right': 4}}) == 2",
           "concept": "tree-depth"
+        },
+        {
+          "name": "each side by its own size",
+          "code": "import math\ndef _h(xs):\n    return -sum(xs.count(c) / len(xs) * math.log2(xs.count(c) / len(xs)) for c in set(xs)) if xs else 0.0\nparent, left, right = ['y', 'n', 'y', 'n', 'y'], ['y', 'y'], ['n', 'n', 'y']\nexpected = _h(parent) - 2 / 5 * _h(left) - 3 / 5 * _h(right)\nassert abs(information_gain(parent, left, right) - expected) < 1e-12, (information_gain(parent, left, right), expected)",
+          "concept": "decision-trees"
         }
       ],
       "solution": "import math\n\n\ndef entropy(labels):\n    n = len(labels)\n    total = 0.0\n    for c in set(labels):\n        p = labels.count(c) / n\n        total -= p * math.log2(p)\n    return total\n\n\ndef information_gain(parent, left, right):\n    n = len(parent)\n    return entropy(parent) - len(left) / n * entropy(left) - len(right) / n * entropy(right)\n\n\ndef depth(tree):\n    if not isinstance(tree, dict):\n        return 0\n    return 1 + max(depth(tree[\"left\"]), depth(tree[\"right\"]))\n"
