@@ -19,4 +19,9 @@ describe("lastSaved", () => {
     expect(lastSaved(data)).toBe("2026-11-12T09:00:00.000Z");
     expect(lastSaved({ ...data, position: { lessonId: "a", stepIndex: 1, updatedAt: "2026-11-13T09:00:00.000Z" } })).toBe("2026-11-13T09:00:00.000Z");
   });
+  it("compares instants, not strings, when times carry different UTC offsets", () => {
+    // 10:00+05:00 is 05:00Z, earlier than 06:00Z, although it sorts later as text.
+    const data = { ...base, events: [{ at: "2026-11-12T10:00:00+05:00" }, { at: "2026-11-12T06:00:00.000Z" }] } as unknown as ProgressExport;
+    expect(lastSaved(data)).toBe("2026-11-12T06:00:00.000Z");
+  });
 });

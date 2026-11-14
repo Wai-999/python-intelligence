@@ -60,3 +60,25 @@ test("the progress panel says when anything was last saved", async ({ page }) =>
   await expect(page.locator(".saved-at")).toContainText("Last saved:");
   await expect(page.locator(".saved-at time")).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT/);
 });
+
+test("Last saved follows saves and another tab's reset while the panel stays open", async ({ page, context }) => {
+  await page.goto("./#/");
+  await page.getByRole("button", { name: "Progress" }).click();
+  await expect(page.locator(".saved-at")).toHaveText("Nothing saved yet.");
+  await page.evaluate(() => { location.hash = "#/lesson/py-values-names/1"; }); // same document: the panel stays open
+  await expect(page.locator(".saved-at")).toContainText("Last saved:");
+  const first = await page.locator(".saved-at time").getAttribute("datetime");
+  await page.evaluate(() => { location.hash = "#/lesson/py-values-names/2"; });
+  await expect(page.locator(".saved-at time")).not.toHaveAttribute("datetime", first!);
+  // Home saves nothing, so after another tab's reset this view has nothing saved either (a lesson would save its position).
+  await page.evaluate(() => { location.hash = "#/"; });
+  await expect(page.locator(".recommend")).toBeVisible();
+
+  const other = await context.newPage();
+  await other.goto("./#/");
+  await other.getByRole("button", { name: "Progress" }).click();
+  await other.getByRole("button", { name: "Reset…" }).click();
+  await other.getByRole("button", { name: "Erase everything" }).click();
+  await expect(other.getByText("Progress reset.")).toBeVisible();
+  await expect(page.locator(".saved-at")).toHaveText("Nothing saved yet.");
+});

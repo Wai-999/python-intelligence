@@ -5,7 +5,8 @@ import type { ProgressExport, ProgressStore } from "../progress/types";
 export function lastSaved(data: ProgressExport): string | null {
   const times = [...data.lessons.flatMap((l) => Object.values(l.steps).map((s) => s.updatedAt)), ...data.events.map((e) => e.at)];
   if (data.position) times.push(data.position.updatedAt);
-  return times.length ? times.sort().at(-1)! : null;
+  // By instant, not by string: imported times may carry different UTC offsets. The original text is kept for display.
+  return times.reduce<string | null>((best, t) => (best === null || Date.parse(t) > Date.parse(best) ? t : best), null);
 }
 
 /** Export/import/reset. Progress lives only in this browser; export is the only way to move or back it up. */
@@ -13,14 +14,20 @@ export function lastSaved(data: ProgressExport): string | null {
  * `busy` is true while an import or reset is still being applied; another can't start until it has finished.
  * `onReplacing` returns a token for the replacement, which is handed back to `onChanged` when it finishes.
  */
-export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose }: { store: ProgressStore; busy: boolean; onReplacing: () => number; onChanged: (token: number) => void; onClose: () => void }) {
+/** `revision` changes whenever this view saves something or reloads after a replacement, so "Last saved" follows it. */
+export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose, revision = "" }: { store: ProgressStore; busy: boolean; onReplacing: () => number; onChanged: (token: number) => void; onClose: () => void; revision?: string }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const [saved, setSaved] = useState<string | null | undefined>(undefined); // undefined while reading
-  const refreshSaved = () => { store.exportAll().then((d) => setSaved(lastSaved(d)), () => setSaved(undefined)); };
-  useEffect(refreshSaved, [store]);
+  // Only the newest read may update the line, so a slow older read can't overwrite a newer answer.
+  const readNo = useRef(0);
+  const refreshSaved = () => {
+    const n = ++readNo.current;
+    store.exportAll().then((d) => { if (n === readNo.current) setSaved(lastSaved(d)); }, () => { if (n === readNo.current) setSaved(undefined); });
+  };
+  useEffect(refreshSaved, [store, revision]);
 
   // Keyboard users land in the panel when it opens and return to whatever opened it when it closes.
   useEffect(() => {
