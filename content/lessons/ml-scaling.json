@@ -191,7 +191,21 @@
       "title": "Run it: same plant, different units",
       "body": "The same training plants and the same new plant, with heights in centimetres and then millimetres.\nPredict which of the four answers change.",
       "code": "import numpy as np\n\nX = [[12.0, 3.1], [14.5, 2.8], [13.3, 3.6], [16.8, 4.4], [30.2, 4.5], [28.4, 5.1], [26.0, 4.2], [22.5, 5.0]]\ny = ['fern', 'fern', 'fern', 'fern', 'palm', 'palm', 'palm', 'palm']\nnew = [20.6, 2.5]\n\ndef nearest(X, y, x):\n    X, x = np.array(X), np.array(x)\n    cents = {c: X[[i for i in range(len(y)) if y[i] == c]].mean(axis=0) for c in sorted(set(y))}\n    return min(cents, key=lambda c: np.sum((x - cents[c]) ** 2))\n\ndef scaled(X, x):\n    X = np.array(X)\n    m, s = X.mean(axis=0), X.std(axis=0)\n    return (X - m) / s, (np.array(x) - m) / s\n\nX_mm = [[h * 10, leaf] for h, leaf in X]\nnew_mm = [new[0] * 10, new[1]]\nprint('raw, cm:', nearest(X, y, new))\nprint('raw, mm:', nearest(X_mm, y, new_mm))\nZ, z = scaled(X, new)\nprint('scaled, cm:', nearest(Z, y, z))\nZ_mm, z_mm = scaled(X_mm, new_mm)\nprint('scaled, mm:', nearest(Z_mm, y, z_mm))\n",
-      "expected_output": "raw, cm: fern\nraw, mm: palm\nscaled, cm: fern\nscaled, mm: fern\n"
+      "expected_output": "raw, cm: fern\nraw, mm: palm\nscaled, cm: fern\nscaled, mm: fern\n",
+      "more": [
+        {
+          "title": "Height and weight on one scale",
+          "body": "Four people's heights in cm and weights in kg. Predict the column means and standard deviations, the standardized table, and the mean and standard deviation of each standardized column.",
+          "code": "import numpy as np\n\nX = np.array([[150.0, 50.0], [160.0, 62.0], [170.0, 68.0], [180.0, 80.0]])\nm, s = X.mean(axis=0), X.std(axis=0)\nZ = (X - m) / s\nprint(m, np.round(s, 3))\nprint(np.round(Z, 3))\nprint(np.round(Z.mean(axis=0), 3), np.round(Z.std(axis=0), 3))",
+          "expected_output": "[165.  65.] [11.18  10.817]\n[[-1.342 -1.387]\n [-0.447 -0.277]\n [ 0.447  0.277]\n [ 1.342  1.387]]\n[0. 0.] [1. 1.]\n"
+        },
+        {
+          "title": "A column that never changes",
+          "body": "The second feature is 5 for every training example, so its standard deviation is 0. `np.where(s == 0, 1.0, s)` swaps that 0 for 1, as this lesson does. Predict the standardized table and the new example, which is scaled with the training means and standard deviations.",
+          "code": "import numpy as np\n\nX = np.array([[1.0, 5.0], [3.0, 5.0], [5.0, 5.0]])\nm = X.mean(axis=0)\ns = np.where(X.std(axis=0) == 0, 1.0, X.std(axis=0))\nprint(np.round(s, 3))\nprint(np.round((X - m) / s, 3))\n\nnew = np.array([7.0, 5.0])\nprint(np.round((new - m) / s, 3))",
+          "expected_output": "[1.633 1.   ]\n[[-1.225  0.   ]\n [ 0.     0.   ]\n [ 1.225  0.   ]]\n[2.449 0.   ]\n"
+        }
+      ]
     },
     {
       "id": "standardize",

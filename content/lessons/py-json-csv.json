@@ -222,7 +222,21 @@
       "title": "Run it: a CSV table and a JSON round trip",
       "body": "Read a three-row table, including a name with a comma in it, then send a dictionary through JSON and back.",
       "code": "import csv\nimport io\nimport json\n\ntext = 'name,team,score\\nAda,red,7\\n\"Lovelace, A.\",blue,9\\nGrace,red,8\\n'\nrows = list(csv.DictReader(io.StringIO(text)))\nprint(rows[1])\nprint(type(rows[0]['score']).__name__, '->', int(rows[0]['score']) + 1)\n\ndata = {'teams': ('red', 'blue'), 1: True, 'best': None}\nencoded = json.dumps(data)\nprint(encoded)\nprint(json.loads(encoded))\n",
-      "expected_output": "{'name': 'Lovelace, A.', 'team': 'blue', 'score': '9'}\nstr -> 8\n{\"teams\": [\"red\", \"blue\"], \"1\": true, \"best\": null}\n{'teams': ['red', 'blue'], '1': True, 'best': None}\n"
+      "expected_output": "{'name': 'Lovelace, A.', 'team': 'blue', 'score': '9'}\nstr -> 8\n{\"teams\": [\"red\", \"blue\"], \"1\": true, \"best\": null}\n{'teams': ['red', 'blue'], '1': True, 'best': None}\n",
+      "more": [
+        {
+          "title": "Prices with csv.reader",
+          "body": "`csv.reader` gives each row as a list of strings, header included, and handles the quoted name with a comma in it. Predict the two rows, the total (after `int`) and the number of rows.",
+          "code": "import csv\nimport io\n\ntext = 'item,price\\ntea,2\\n\"tea, green\",3\\nscone,3\\n'\nrows = list(csv.reader(io.StringIO(text)))\nprint(rows[0])\nprint(rows[2])\n\ntotal = 0\nfor row in rows[1:]:\n    total = total + int(row[1])\nprint(total)\nprint(len(rows))",
+          "expected_output": "['item', 'price']\n['tea, green', '3']\n8\n4\n"
+        },
+        {
+          "title": "Sorted, indented JSON",
+          "body": "`sort_keys=True` puts the keys in order, and `indent=2` spreads the text over several lines. Predict each block, the type of `score` after `json.loads`, and what a tuple turns into after a round trip.",
+          "code": "import json\n\nsettings = {\"theme\": \"dark\", \"volume\": 7, \"tags\": [\"a\", \"b\"], \"beta\": False}\nprint(json.dumps(settings, sort_keys=True))\nprint(json.dumps({\"b\": 1, \"a\": [1, 2]}, indent=2))\n\nback = json.loads('{\"score\": 9, \"name\": \"Ada\", \"ok\": true}')\nprint(back[\"ok\"], type(back[\"score\"]).__name__)\nprint(json.loads(json.dumps((1, 2))))",
+          "expected_output": "{\"beta\": false, \"tags\": [\"a\", \"b\"], \"theme\": \"dark\", \"volume\": 7}\n{\n  \"b\": 1,\n  \"a\": [\n    1,\n    2\n  ]\n}\nTrue int\n[1, 2]\n"
+        }
+      ]
     },
     {
       "id": "read",

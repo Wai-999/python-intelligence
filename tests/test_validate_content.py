@@ -39,6 +39,10 @@ def test_real_lesson_is_clean():
     (lambda l: l["steps"].reverse(), "out of teaching-arc order"),
     (lambda l: l.__setitem__("prerequisites", ["nope"]), "unknown prerequisite"),
     (lambda l: l.__setitem__("sources", [{"source_id": "pch-fluent-python", "pages": [1, 2]}]), "not cleared"),
+    (lambda l: step(l, "tax").pop("more"), "needs more"),
+    (lambda l: step(l, "tax").__setitem__("more", []), "nonempty list of further examples"),
+    (lambda l: step(l, "tax")["more"][0].__setitem__("expected_output", "wrong\n"), "more[0]: stdout"),
+    (lambda l: step(l, "tax")["more"][1].__setitem__("code", step(l, "tax")["code"]), "repeats another example's code"),
 ])
 def test_broken_lessons_are_rejected(mutate, expect):
     errs = errors(mutate)

@@ -194,7 +194,21 @@
       "title": "Run it: neighbour counts that wrap",
       "body": "Three live cells in the top row of a 4 × 5 grid. Each line prints a row, then each cell's live-neighbour\ncount. Notice the bottom row: its neighbours below are the top row. Which cells will be alive next?",
       "code": "def neighbours(grid, r, c):\n    rows, cols = len(grid), len(grid[0])\n    return sum(grid[(r + dr) % rows][(c + dc) % cols]\n               for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n\ngrid = [[0] * 5 for _ in range(4)]\nfor c in (1, 2, 3):\n    grid[0][c] = 1\n\nfor r in range(4):\n    print(''.join('#' if v else '.' for v in grid[r]), [neighbours(grid, r, c) for c in range(5)])\n",
-      "expected_output": ".###. [1, 1, 2, 1, 1]\n..... [1, 2, 3, 2, 1]\n..... [0, 0, 0, 0, 0]\n..... [1, 2, 3, 2, 1]\n"
+      "expected_output": ".###. [1, 1, 2, 1, 1]\n..... [1, 2, 3, 2, 1]\n..... [0, 0, 0, 0, 0]\n..... [1, 2, 3, 2, 1]\n",
+      "more": [
+        {
+          "title": "A lonely corner cell",
+          "body": "One live cell sits in the top-left corner of a 4 × 4 grid. Thanks to wraparound, the far corners and edges are its neighbours too. Predict which counts are 1, then whether the cell survives.",
+          "code": "def neighbours(grid, r, c):\n    rows, cols = len(grid), len(grid[0])\n    return sum(grid[(r + dr) % rows][(c + dc) % cols]\n               for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n\ngrid = [[0] * 4 for _ in range(4)]\ngrid[0][0] = 1\n\nfor r in range(4):\n    print(''.join('#' if v else '.' for v in grid[r]), [neighbours(grid, r, c) for c in range(4)])",
+          "expected_output": "#... [0, 1, 0, 1]\n.... [1, 1, 0, 1]\n.... [0, 0, 0, 0]\n.... [1, 1, 0, 1]\n"
+        },
+        {
+          "title": "A block that never changes",
+          "body": "A 2 × 2 block of live cells in a 5 × 5 grid. Each line prints a row and its live-neighbour counts. Predict the counts, then use the rules to explain why no cell is born or dies.",
+          "code": "def neighbours(grid, r, c):\n    rows, cols = len(grid), len(grid[0])\n    return sum(grid[(r + dr) % rows][(c + dc) % cols]\n               for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (dr, dc) != (0, 0))\n\ngrid = [[0] * 5 for _ in range(5)]\nfor r in (1, 2):\n    for c in (1, 2):\n        grid[r][c] = 1\n\nfor r in range(5):\n    print(''.join('#' if v else '.' for v in grid[r]), [neighbours(grid, r, c) for c in range(5)])",
+          "expected_output": "..... [1, 2, 2, 1, 0]\n.##.. [2, 3, 3, 2, 0]\n.##.. [2, 3, 3, 2, 0]\n..... [1, 2, 2, 1, 0]\n..... [0, 0, 0, 0, 0]\n"
+        }
+      ]
     },
     {
       "id": "next",

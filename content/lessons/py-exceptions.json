@@ -239,7 +239,21 @@
       "title": "Run it: a safe division table",
       "body": "Predict all four lines. Which branch runs for each pair?",
       "code": "def safe_divide(a, b):\n    try:\n        result = a / b\n    except ZeroDivisionError:\n        return \"undefined\"\n    else:\n        return round(result, 2)\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\ntry:\n    print(safe_divide(\"10\", 2))\nexcept TypeError as err:\n    print(\"TypeError:\", type(err).__name__)\nprint(\"done\")",
-      "expected_output": "2.5\nundefined\nTypeError: TypeError\ndone\n"
+      "expected_output": "2.5\nundefined\nTypeError: TypeError\ndone\n",
+      "more": [
+        {
+          "title": "Sorting good and bad ages",
+          "body": "`int` raises `ValueError` for text that isn't a whole number, and the `except` puts that text aside instead of stopping the program. Predict both lists and the count.",
+          "code": "good = []\nbad = []\nfor text in [\"34\", \"forty\", \"7\", \"\"]:\n    try:\n        good.append(int(text))\n    except ValueError:\n        bad.append(text)\nprint(good)\nprint(bad)\nprint(len(bad))",
+          "expected_output": "[34, 7]\n['forty', '']\n2\n"
+        },
+        {
+          "title": "finally always runs",
+          "body": "Taking an item that isn't in `stock` raises `KeyError`. Predict the order of the five printed lines: when does `else` run, and when does `finally`?",
+          "code": "stock = {\"apples\": 3}\n\ndef take(item):\n    try:\n        stock[item] = stock[item] - 1\n    except KeyError:\n        print(\"no\", item)\n    else:\n        print(\"took\", item)\n    finally:\n        print(\"checked\", item)\n\ntake(\"apples\")\ntake(\"pears\")\nprint(stock)",
+          "expected_output": "took apples\nchecked apples\nno pears\nchecked pears\n{'apples': 2}\n"
+        }
+      ]
     },
     {
       "id": "toint",

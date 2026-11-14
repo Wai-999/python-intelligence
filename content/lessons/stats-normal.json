@@ -187,7 +187,21 @@
       "title": "Run it: exact answers and a simulation",
       "body": "Adult heights modelled as normal with `μ = 170` cm and `σ = 8` cm. Predict the first number before running.",
       "code": "import random\nfrom statistics import NormalDist\n\nheights = NormalDist(mu=170, sigma=8)\nprint(round(heights.cdf(178) - heights.cdf(162), 4))\nprint(round(1 - heights.cdf(186), 4))\nprint(round(heights.inv_cdf(0.9), 1))\n\nrng = random.Random(7)\nsample = [rng.gauss(170, 8) for _ in range(10_000)]\ninside = sum(162 < h <= 178 for h in sample) / len(sample)\nprint(round(inside, 2))\n",
-      "expected_output": "0.6827\n0.0228\n180.3\n0.68\n"
+      "expected_output": "0.6827\n0.0228\n180.3\n0.68\n",
+      "more": [
+        {
+          "title": "Which machine underfills more often?",
+          "body": "Machine A fills bags with mean 1000 g and standard deviation 5 g; machine B aims higher at 1005 g but varies more, with 10 g. Predict which one fills more bags under 990 g, then compare the weights below which 1% of bags fall and the heights of the two density curves at their means.",
+          "code": "from statistics import NormalDist\n\na = NormalDist(mu=1000, sigma=5)\nb = NormalDist(mu=1005, sigma=10)\nprint(round(a.cdf(990), 4), round(b.cdf(990), 4))\nprint(round(a.inv_cdf(0.01), 1), round(b.inv_cdf(0.01), 1))\nprint(round(a.pdf(1000), 4), round(b.pdf(1005), 4))",
+          "expected_output": "0.0228 0.0668\n988.4 981.7\n0.0798 0.0399\n"
+        },
+        {
+          "title": "The 95% rule, simulated",
+          "body": "`NormalDist()` with no arguments is the standard normal, with mean 0 and standard deviation 1. Predict the simulated share within 2 standard deviations, the exact share, and the cut-off that leaves 2.5% in the top tail.",
+          "code": "import random\nfrom statistics import NormalDist\n\nrng = random.Random(11)\ndraws = [rng.gauss(0, 1) for _ in range(20_000)]\ninside = sum(-2 < d <= 2 for d in draws) / len(draws)\nprint(round(inside, 3))\n\nz = NormalDist()\nprint(round(z.cdf(2) - z.cdf(-2), 4))\nprint(round(z.inv_cdf(0.975), 2))",
+          "expected_output": "0.956\n0.9545\n1.96\n"
+        }
+      ]
     },
     {
       "id": "pdf",

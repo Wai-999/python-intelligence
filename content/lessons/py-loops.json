@@ -250,7 +250,21 @@
       "title": "Run it: how many halvings?",
       "body": "How many times can you halve a number (rounding down) before it reaches 1? We don't know in advance, so\nthis is a job for `while`. Predict the three answers, then **Run**.",
       "code": "def halvings(n):\n    steps = 0\n    while n > 1:\n        n = n // 2\n        steps = steps + 1\n    return steps\n\nprint(halvings(1))\nprint(halvings(8))\nprint(halvings(100))",
-      "expected_output": "0\n3\n6\n"
+      "expected_output": "0\n3\n6\n",
+      "more": [
+        {
+          "title": "How long to double your savings?",
+          "body": "Money grows by `rate` each year, and nobody knows in advance how many years it takes to double, so `while` keeps going until it has. Predict the three answers.",
+          "code": "def years_to_double(balance, rate):\n    target = balance * 2\n    years = 0\n    while balance < target:\n        balance = balance * (1 + rate)\n        years = years + 1\n    return years\n\nprint(years_to_double(100, 0.10))\nprint(years_to_double(100, 0.07))\nprint(years_to_double(100, 1.0))",
+          "expected_output": "8\n11\n1\n"
+        },
+        {
+          "title": "Adding up, then stopping early",
+          "body": "The first loop adds 1 to 5. The second searches for the first number whose square is over 50 and uses `break` to leave as soon as it finds it. Predict all three lines.",
+          "code": "total = 0\nfor n in range(1, 6):\n    total = total + n\nprint(total)\n\nfor n in range(1, 20):\n    if n * n > 50:\n        break\nprint(n)\nprint(n * n)",
+          "expected_output": "15\n8\n64\n"
+        }
+      ]
     },
     {
       "id": "threes",

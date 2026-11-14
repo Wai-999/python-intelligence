@@ -213,7 +213,21 @@
       "title": "Run it: the start matters",
       "body": "Seven points on a line, three clusters, two different starting centres. Predict which start finds the\nthree obvious groups.",
       "code": "import numpy as np\n\nX = np.array([1.0, 2.0, 3.0, 10.0, 11.0, 12.0, 30.0])\n\ndef kmeans_1d(X, centres):\n    centres = np.array(centres, dtype=float)\n    labels = None\n    while True:\n        new = np.argmin(np.abs(X[:, None] - centres[None, :]), axis=1)\n        for j in range(len(centres)):\n            if np.any(new == j):\n                centres[j] = X[new == j].mean()\n        if labels is not None and np.array_equal(new, labels):\n            return new.tolist(), centres.tolist()\n        labels = new\n\nfor start in ([1, 10, 30], [1, 2, 3]):\n    labels, centres = kmeans_1d(X, start)\n    inertia = sum((x - centres[l]) ** 2 for x, l in zip(X, labels))\n    print(start, labels, centres, round(float(inertia), 2))\n",
-      "expected_output": "[1, 10, 30] [0, 0, 0, 1, 1, 1, 2] [2.0, 11.0, 30.0] 4.0\n[1, 2, 3] [0, 1, 1, 2, 2, 2, 2] [1.0, 2.5, 15.75] 273.25\n"
+      "expected_output": "[1, 10, 30] [0, 0, 0, 1, 1, 1, 2] [2.0, 11.0, 30.0] 4.0\n[1, 2, 3] [0, 1, 1, 2, 2, 2, 2] [1.0, 2.5, 15.75] 273.25\n",
+      "more": [
+        {
+          "title": "One assign and one update, by hand",
+          "body": "Five points in 2D and two starting centres. Predict each point's label (ties go to centre 0), where each centre moves after the update, and the inertia afterwards.",
+          "code": "import numpy as np\n\nX = np.array([[1.0, 1.0], [1.5, 2.0], [5.0, 5.0], [6.0, 5.5], [1.0, 0.5]])\ncentres = np.array([[1.0, 1.0], [5.0, 5.0]])\n\nlabels = []\nfor x in X:\n    d0 = np.sum((x - centres[0]) ** 2)\n    d1 = np.sum((x - centres[1]) ** 2)\n    labels.append(0 if d0 <= d1 else 1)\nprint(labels)\n\nfor j in range(2):\n    centres[j] = X[np.array(labels) == j].mean(axis=0)\nprint(centres.tolist())\nprint(round(float(sum(np.sum((x - centres[l]) ** 2) for x, l in zip(X, labels))), 3))",
+          "expected_output": "[0, 0, 1, 1, 0]\n[[1.1666666666666667, 1.1666666666666667], [5.5, 5.25]]\n1.958\n"
+        },
+        {
+          "title": "More clusters, lower inertia",
+          "body": "The same seven points with 1, 2 and 3 starting centres. Predict how the inertia changes as `k` grows, and why that means inertia alone can't choose `k`.",
+          "code": "import numpy as np\n\nX = np.array([1.0, 2.0, 3.0, 10.0, 11.0, 12.0, 30.0])\n\ndef kmeans_1d(X, centres):\n    centres = np.array(centres, dtype=float)\n    labels = None\n    while True:\n        new = np.argmin(np.abs(X[:, None] - centres[None, :]), axis=1)\n        for j in range(len(centres)):\n            if np.any(new == j):\n                centres[j] = X[new == j].mean()\n        if labels is not None and np.array_equal(new, labels):\n            return new.tolist(), centres.tolist()\n        labels = new\n\nfor start in ([1], [1, 10], [1, 10, 30]):\n    labels, centres = kmeans_1d(X, start)\n    inertia = sum((x - centres[l]) ** 2 for x, l in zip(X, labels))\n    print(len(start), labels, round(float(inertia), 2))",
+          "expected_output": "1 [0, 0, 0, 0, 0, 0, 0] 598.86\n2 [0, 0, 0, 1, 1, 1, 1] 274.75\n3 [0, 0, 0, 1, 1, 1, 2] 4.0\n"
+        }
+      ]
     },
     {
       "id": "assign",

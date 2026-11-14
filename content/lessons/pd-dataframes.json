@@ -269,7 +269,21 @@
       "title": "Run it: a small results table",
       "body": "Di's score is missing. Predict each line, especially the average and the group totals.",
       "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    \"name\": [\"Ana\", \"Bo\", \"Cy\", \"Di\"],\n    \"team\": [\"red\", \"blue\", \"red\", \"blue\"],\n    \"score\": [7, 9, 4, None],\n})\nprint(df.shape)\nprint(df[\"score\"].mean())\nprint(df[df[\"score\"] > 5][\"name\"].tolist())\nprint(df[\"score\"].isna().sum())\nprint(df.groupby(\"team\")[\"score\"].sum().to_dict())",
-      "expected_output": "(4, 3)\n6.666666666666667\n['Ana', 'Bo']\n1\n{'blue': 9.0, 'red': 11.0}\n"
+      "expected_output": "(4, 3)\n6.666666666666667\n['Ana', 'Bo']\n1\n{'blue': 9.0, 'red': 11.0}\n",
+      "more": [
+        {
+          "title": "Skip a gap or fill it?",
+          "body": "Tuesday's step count is missing. Predict the mean when pandas skips the gap, the mean once `fillna(0)` counts it as zero, the shape after `dropna()`, and the two selections by label and by position.",
+          "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    \"day\": [\"Mon\", \"Tue\", \"Wed\", \"Thu\"],\n    \"steps\": [4000, None, 6000, 8000],\n})\nprint(df[\"steps\"].mean())\nprint(df[\"steps\"].fillna(0).mean())\nprint(df.dropna().shape)\nprint(df.loc[2, \"day\"], df.iloc[3, 1])",
+          "expected_output": "6000.0\n4500.0\n(3, 2)\nWed 8000.0\n"
+        },
+        {
+          "title": "Sales by region",
+          "body": "Assigning to `df[\"revenue\"]` adds a new column, worked out row by row from two others. Predict the regions with at least 5 units, the total revenue of each region and the shape of the two-column table.",
+          "code": "import pandas as pd\n\ndf = pd.DataFrame({\n    \"region\": [\"north\", \"south\", \"north\", \"east\", \"south\"],\n    \"units\": [5, 3, 8, 2, 7],\n    \"price\": [2.0, 2.5, 2.0, 3.0, 2.5],\n})\ndf[\"revenue\"] = df[\"units\"] * df[\"price\"]\nprint(df[df[\"units\"] >= 5][\"region\"].tolist())\nprint(df.groupby(\"region\")[\"revenue\"].sum().to_dict())\nprint(df[[\"region\", \"units\"]].shape)",
+          "expected_output": "['north', 'north', 'south']\n{'east': 6.0, 'north': 26.0, 'south': 25.0}\n(5, 2)\n"
+        }
+      ]
     },
     {
       "id": "passrate",

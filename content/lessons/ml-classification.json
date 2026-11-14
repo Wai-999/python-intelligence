@@ -230,7 +230,21 @@
       "title": "Run it: nearest centroid",
       "body": "Two classes, A near (1, 1) and B near (4, 4). Predict which held-out point is misclassified.",
       "code": "import numpy as np\n\nX = [[1.0, 1.5], [1.5, 0.5], [0.5, 1.0], [4.0, 4.5], [4.5, 3.5], [3.5, 4.0]]\ny = ['A', 'A', 'A', 'B', 'B', 'B']\nX_test = [[1.2, 0.8], [3.0, 3.4], [2.4, 2.0], [2.6, 2.9]]\ny_test = ['A', 'B', 'B', 'B']\n\nX, X_test = np.array(X), np.array(X_test)\ncents = {label: X[[i for i in range(len(y)) if y[i] == label]].mean(axis=0) for label in ['A', 'B']}\nprint({label: c.tolist() for label, c in cents.items()})\n\npred = []\nfor x in X_test:\n    d_a = np.sum((x - cents['A']) ** 2) ** 0.5\n    d_b = np.sum((x - cents['B']) ** 2) ** 0.5\n    pred.append('A' if d_a <= d_b else 'B')\nprint(pred)\nprint(sum(p == t for p, t in zip(pred, y_test)) / len(y_test))\n",
-      "expected_output": "{'A': [1.0, 1.0], 'B': [4.0, 4.0]}\n['A', 'B', 'A', 'B']\n0.75\n"
+      "expected_output": "{'A': [1.0, 1.0], 'B': [4.0, 4.0]}\n['A', 'B', 'A', 'B']\n0.75\n",
+      "more": [
+        {
+          "title": "A linear score by hand",
+          "body": "With `w = [1, -1]` and `b = 0.5`, `np.sum(X * w, axis=1) + b` scores all four points at once. Predict the scores and the labels, remembering that a score of exactly 0 counts as `+1` in this lesson.",
+          "code": "import numpy as np\n\nw = np.array([1.0, -1.0])\nb = 0.5\nX = np.array([[2.0, 1.0], [1.0, 3.0], [0.0, 0.5], [1.0, 1.5]])\nscores = np.sum(X * w, axis=1) + b\nprint(scores)\nprint([1 if s >= 0 else -1 for s in scores])",
+          "expected_output": "[ 1.5 -1.5  0.   0. ]\n[1, -1, 1, 1]\n"
+        },
+        {
+          "title": "A test point exactly in between",
+          "body": "Two classes of points, `low` near the bottom and `high` near the top. Predict both centroids, then the class of each test point; the middle one is the same distance from both centroids.",
+          "code": "import numpy as np\n\nX = np.array([[1.0, 0.0], [3.0, 0.0], [1.0, 4.0], [3.0, 4.0]])\ny = ['low', 'low', 'high', 'high']\ncents = {label: X[[i for i in range(len(y)) if y[i] == label]].mean(axis=0) for label in ['low', 'high']}\nprint({label: c.tolist() for label, c in cents.items()})\n\npred = []\nfor x in np.array([[2.0, 1.0], [2.0, 2.0], [0.0, 3.0]]):\n    d_low = np.sum((x - cents['low']) ** 2) ** 0.5\n    d_high = np.sum((x - cents['high']) ** 2) ** 0.5\n    pred.append('low' if d_low <= d_high else 'high')\nprint(pred)",
+          "expected_output": "{'low': [2.0, 0.0], 'high': [2.0, 4.0]}\n['low', 'low', 'high']\n"
+        }
+      ]
     },
     {
       "id": "linear",

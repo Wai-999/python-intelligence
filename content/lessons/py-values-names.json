@@ -71,7 +71,21 @@
       "title": "Run it: a weekly wage",
       "body": "Press **Run**. Predict both printed lines *before* you look at the output.",
       "code": "hours = 38\nrate = 21.5\npay = hours * rate\nprint(pay)\n\nhours = 40\nprint(pay)",
-      "expected_output": "817.0\n817.0\n"
+      "expected_output": "817.0\n817.0\n",
+      "more": [
+        {
+          "title": "Splitting a bill",
+          "body": "Four friends split an 84 pound bill, then two more people join. `/` divides and always gives a decimal such as `21.0`. `each` is worked out once, from the values at that moment, so predict all three lines: does changing `people` change `each` by itself?",
+          "code": "total = 84\npeople = 4\neach = total / people\nprint(each)\n\npeople = 6\nprint(each)\neach = total / people\nprint(each)",
+          "expected_output": "21.0\n21.0\n14.0\n"
+        },
+        {
+          "title": "Celsius to Fahrenheit",
+          "body": "`*` and `/` happen before `+`, just as in maths. `celsius = celsius + 10` works out the right-hand side first, then points the name at the new value. Predict the three lines, especially the last one.",
+          "code": "celsius = 20\nfahrenheit = celsius * 9 / 5 + 32\nprint(fahrenheit)\n\ncelsius = celsius + 10\nprint(celsius)\nprint(fahrenheit)",
+          "expected_output": "68.0\n30\n68.0\n"
+        }
+      ]
     },
     {
       "id": "circle",

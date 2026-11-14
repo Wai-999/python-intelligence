@@ -103,7 +103,8 @@ export interface ExampleStep extends BaseStep {
   code: string;
   /** Expected stdout; checked by the content validator. */
   expected_output: string;
-  more?: MoreExample[];
+  /** Further worked examples of the same idea for "Try another example"; the content gate requires at least one. */
+  more: MoreExample[];
 }
 
 export interface PyTest {

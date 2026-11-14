@@ -241,7 +241,21 @@
       "title": "Run it: three measurements",
       "body": "Predict the dot product, the length and the distance before you run it.",
       "code": "import numpy as np\n\nu = np.array([1.0, 2.0, 2.0])\nv = np.array([2.0, 0.0, -1.0])\nprint(np.sum(u * v))\nprint(np.sum(u * u) ** 0.5)\nprint(np.sum((u - v) ** 2) ** 0.5)\nprint(np.sum(np.abs(u)))",
-      "expected_output": "0.0\n3.0\n3.7416573867739413\n5.0\n"
+      "expected_output": "0.0\n3.0\n3.7416573867739413\n5.0\n",
+      "more": [
+        {
+          "title": "Same direction, different size",
+          "body": "Two shopping baskets count apples, bread and cheese; `v` is `u` doubled, and `w` shares nothing with `u`. Predict both cosines, then the distance between `u` and `v`.",
+          "code": "import numpy as np\n\ndef cosine(a, b):\n    return np.sum(a * b) / (np.sum(a * a) ** 0.5 * np.sum(b * b) ** 0.5)\n\nu = np.array([2.0, 0.0, 1.0])\nv = np.array([4.0, 0.0, 2.0])\nw = np.array([0.0, 3.0, 0.0])\nprint(round(cosine(u, v), 3), round(cosine(u, w), 3))\nprint(round(np.sum((u - v) ** 2) ** 0.5, 3))",
+          "expected_output": "1.0 0.0\n2.236\n"
+        },
+        {
+          "title": "City blocks or as the crow flies",
+          "body": "From `a` to `b` on a street grid. Predict the straight-line distance, the Manhattan distance (the sum of absolute differences), and then the direction `d` divided by its own length, which always has length 1.",
+          "code": "import numpy as np\n\na = np.array([1.0, 1.0])\nb = np.array([4.0, 5.0])\nd = b - a\nprint(np.sum(d * d) ** 0.5)\nprint(np.sum(np.abs(d)))\nunit = d / np.sum(d * d) ** 0.5\nprint(unit, round(np.sum(unit * unit) ** 0.5, 6))",
+          "expected_output": "5.0\n7.0\n[0.6 0.8] 1.0\n"
+        }
+      ]
     },
     {
       "id": "cosine",

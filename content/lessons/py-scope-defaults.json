@@ -141,7 +141,21 @@
       "title": "Run it: defaults and keywords",
       "body": "`f\"...\"` is an *f-string*: Python replaces `{name}` with the value of `name`.",
       "code": "def greet(name, greeting=\"Hello\"):\n    return f\"{greeting}, {name}!\"\n\nprint(greet(\"Ada\"))\nprint(greet(\"Alan\", greeting=\"Hi\"))\nprint(greet(greeting=\"Welcome\", name=\"Grace\"))",
-      "expected_output": "Hello, Ada!\nHi, Alan!\nWelcome, Grace!\n"
+      "expected_output": "Hello, Ada!\nHi, Alan!\nWelcome, Grace!\n",
+      "more": [
+        {
+          "title": "Shipping with defaults",
+          "body": "`per_kg` and `base` have defaults, so callers can leave them out or name just the one they want to change. Predict the four costs; in the last call the keywords come in a different order from the parameters.",
+          "code": "def shipping_cost(weight, per_kg=2.5, base=4):\n    return base + weight * per_kg\n\nprint(shipping_cost(2))\nprint(shipping_cost(2, 4))\nprint(shipping_cost(2, base=0))\nprint(shipping_cost(per_kg=1, weight=10))",
+          "expected_output": "9.0\n12\n5.0\n14\n"
+        },
+        {
+          "title": "A global and a local with the same name",
+          "body": "`show` only reads `count`, so it finds the global one. `shadow` assigns to `count`, which makes a separate local name. Predict all three lines, especially the last.",
+          "code": "count = 10\n\ndef show():\n    return f\"global count is {count}\"\n\ndef shadow():\n    count = 99\n    return f\"local count is {count}\"\n\nprint(show())\nprint(shadow())\nprint(count)",
+          "expected_output": "global count is 10\nlocal count is 99\n10\n"
+        }
+      ]
     },
     {
       "id": "discount",

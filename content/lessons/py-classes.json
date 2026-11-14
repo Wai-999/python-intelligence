@@ -239,7 +239,21 @@
       "title": "Run it: two accounts",
       "body": "Predict all four lines. Which one depends on two names sharing one object?",
       "code": "class Account:\n    rate = 0.02\n\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance = self.balance + amount\n\n    def __str__(self):\n        return self.owner + \": \" + str(self.balance)\n\na = Account(\"Ana\", 100)\nb = Account(\"Bo\")\na.deposit(50)\nprint(a)\nprint(b)\nprint(a.rate, Account.rate)\nalias = a\nalias.deposit(1)\nprint(a.balance)",
-      "expected_output": "Ana: 150\nBo: 0\n0.02 0.02\n151\n"
+      "expected_output": "Ana: 150\nBo: 0\n0.02 0.02\n151\n",
+      "more": [
+        {
+          "title": "Numbered tickets",
+          "body": "`issued` is a class attribute: one value shared by every `Ticket`. Each new ticket bumps it and keeps its own `number`. Predict all three lines.",
+          "code": "class Ticket:\n    issued = 0\n\n    def __init__(self, name):\n        Ticket.issued = Ticket.issued + 1\n        self.name = name\n        self.number = Ticket.issued\n\n    def __str__(self):\n        return \"#\" + str(self.number) + \" \" + self.name\n\na = Ticket(\"Ana\")\nb = Ticket(\"Bo\")\nprint(a)\nprint(b)\nprint(Ticket.issued, a.issued)",
+          "expected_output": "#1 Ana\n#2 Bo\n2 2\n"
+        },
+        {
+          "title": "Forgetting self",
+          "body": "`grow` assigns to a plain `width`, which is a local name that vanishes when the method returns. `grow_properly` assigns to `self.width`. Predict each line.",
+          "code": "class Box:\n    def __init__(self, width):\n        self.width = width\n\n    def grow(self, extra):\n        width = self.width + extra\n\n    def grow_properly(self, extra):\n        self.width = self.width + extra\n\nbox = Box(3)\nbox.grow(2)\nprint(box.width)\nbox.grow_properly(2)\nprint(box.width)\nother = Box(10)\nprint(box.width, other.width)",
+          "expected_output": "3\n5\n5 10\n"
+        }
+      ]
     },
     {
       "id": "rect",

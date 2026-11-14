@@ -268,7 +268,21 @@
       "title": "Run it: two classes",
       "body": "Both classes average 70. Predict which numbers differ, and why the last two lines disagree.",
       "code": "import numpy as np\nimport statistics\n\na = np.array([70, 70, 70, 70])\nb = np.array([40, 100, 55, 85])\nprint(a.mean(), b.mean())\nprint(a.std(), b.std())\nprint(b.var(), b.var(ddof=1))\nprint(statistics.pvariance([40, 100, 55, 85]), statistics.variance([40, 100, 55, 85]))",
-      "expected_output": "70.0 70.0\n0.0 23.717082451262844\n562.5 750.0\n562.5 750\n"
+      "expected_output": "70.0 70.0\n0.0 23.717082451262844\n562.5 750.0\n562.5 750\n",
+      "more": [
+        {
+          "title": "Dividing by N or by N - 1",
+          "body": "Five plant heights, then just two numbers. Predict the mean, both variances and both standard deviations, and notice which data set shows the bigger gap between the two versions.",
+          "code": "import numpy as np\n\na = np.array([20, 22, 24, 26, 28])\nprint(a.mean(), a.var(), a.var(ddof=1))\nprint(round(a.std(), 3), round(a.std(ddof=1), 3))\n\nsmall = np.array([3, 5])\nprint(small.var(), small.var(ddof=1))",
+          "expected_output": "24.0 8.0 10.0\n2.828 3.162\n1.0 2.0\n"
+        },
+        {
+          "title": "One slow runner",
+          "body": "Five lap times, then one very slow lap is added. Predict how far the mean moves compared with the median, and what happens to the variance.",
+          "code": "import statistics\n\ntimes = [12, 13, 12, 14, 13]\nprint(statistics.mean(times), statistics.median(times))\nprint(statistics.pvariance(times))\n\ntimes.append(60)\nprint(round(statistics.mean(times), 2), statistics.median(times))\nprint(round(statistics.pvariance(times), 1))",
+          "expected_output": "12.8 13\n0.56\n20.67 13.0\n309.9\n"
+        }
+      ]
     },
     {
       "id": "std",

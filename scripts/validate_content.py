@@ -356,25 +356,27 @@ def check_lesson(lesson: dict, cleared_sources: set[str], all_ids: set[str], cat
             elif res["stdout"] != s["expected_output"]:
                 E(f"{where}: stdout {res['stdout']!r} != expected_output {s['expected_output']!r}")
             more = s.get("more")
-            if more is not None:
-                if not isinstance(more, list) or not more:
-                    E(f"{where}: more must be a nonempty list of further examples")
-                    more = []
-                for j, m in enumerate(more):
-                    mw = f"{where}/more[{j}]"
-                    if not isinstance(m, dict) or set(m) != {"title", "body", "code", "expected_output"}:
-                        E(f"{mw}: needs exactly title, body, code and expected_output")
-                        continue
-                    if not all(isinstance(m[f], str) and m[f].strip() for f in ("title", "body", "code", "expected_output")):
-                        E(f"{mw}: every field must be a nonempty string")
-                        continue
-                    if m["code"].strip() == s["code"].strip() or any(m["code"].strip() == o.get("code", "").strip() for o in more[:j] if isinstance(o, dict)):
-                        E(f"{mw}: repeats another example's code")
-                    r = run_snippet(m["code"])
-                    if not r["ok"]:
-                        E(f"{mw}: raises {r['error']}")
-                    elif r["stdout"] != m["expected_output"]:
-                        E(f"{mw}: stdout {r['stdout']!r} != expected_output {m['expected_output']!r}")
+            if more is None:
+                E(f"{where}: needs more: further worked examples for Try another example (master prompt section 5)")
+                more = []
+            elif not isinstance(more, list) or not more:
+                E(f"{where}: more must be a nonempty list of further examples")
+                more = []
+            for j, m in enumerate(more):
+                mw = f"{where}/more[{j}]"
+                if not isinstance(m, dict) or set(m) != {"title", "body", "code", "expected_output"}:
+                    E(f"{mw}: needs exactly title, body, code and expected_output")
+                    continue
+                if not all(isinstance(m[f], str) and m[f].strip() for f in ("title", "body", "code", "expected_output")):
+                    E(f"{mw}: every field must be a nonempty string")
+                    continue
+                if m["code"].strip() == s["code"].strip() or any(m["code"].strip() == o.get("code", "").strip() for o in more[:j] if isinstance(o, dict)):
+                    E(f"{mw}: repeats another example's code")
+                r = run_snippet(m["code"])
+                if not r["ok"]:
+                    E(f"{mw}: raises {r['error']}")
+                elif r["stdout"] != m["expected_output"]:
+                    E(f"{mw}: stdout {r['stdout']!r} != expected_output {m['expected_output']!r}")
         elif k in EXERCISE_KINDS:
             if not s["tests"]:
                 E(f"{where}: needs tests")

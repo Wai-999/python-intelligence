@@ -157,7 +157,21 @@
       "title": "Run it: the café, fixed",
       "body": "One definition, many calls. Try changing the rate in **one** place and run it again.",
       "code": "def price_with_tax(price, rate):\n    return round(price * (1 + rate), 2)\n\nprint(price_with_tax(4.50, 0.08))\nprint(price_with_tax(12.00, 0.08))\nprint(price_with_tax(7.25, 0.08))",
-      "expected_output": "4.86\n12.96\n7.83\n"
+      "expected_output": "4.86\n12.96\n7.83\n",
+      "more": [
+        {
+          "title": "Area of a room",
+          "body": "`area` returns its answer, so a call can sit inside a bigger expression. `show_double` only prints and has no `return`. Predict all five lines, including what `x` holds.",
+          "code": "def area(width, length):\n    return width * length\n\nprint(area(3, 4))\nprint(area(2.5, 4))\nprint(area(4, 3) + area(1, 2))\n\ndef show_double(n):\n    print(n * 2)\n\nx = show_double(5)\nprint(x)",
+          "expected_output": "12\n10.0\n14\n10\nNone\n"
+        },
+        {
+          "title": "A tip, then a total",
+          "body": "`total_with_tip` calls `tip`, so one function's answer feeds another. Predict the three lines before running.",
+          "code": "def tip(bill, percent):\n    return round(bill * percent / 100, 2)\n\ndef total_with_tip(bill, percent):\n    return round(bill + tip(bill, percent), 2)\n\nprint(tip(40, 15))\nprint(total_with_tip(40, 15))\nprint(total_with_tip(23.50, 20))",
+          "expected_output": "6.0\n46.0\n28.2\n"
+        }
+      ]
     },
     {
       "id": "temps",

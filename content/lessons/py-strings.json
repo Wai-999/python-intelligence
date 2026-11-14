@@ -239,7 +239,21 @@
       "title": "Run it: tidy an email address",
       "body": "Predict each printed line, then **Run**. Notice that every step makes a new string.",
       "code": "email = \"  Ada.Lovelace@Example.com \"\nclean = email.strip().lower()\nprint(clean)\nprint(clean[0])\nprint(clean[-3:])\nuser = clean[:clean.find(\"@\")]\nprint(user)\nprint(\"@\" in clean)",
-      "expected_output": "ada.lovelace@example.com\na\ncom\nada.lovelace\nTrue\n"
+      "expected_output": "ada.lovelace@example.com\na\ncom\nada.lovelace\nTrue\n",
+      "more": [
+        {
+          "title": "Tidying a name",
+          "body": "`strip`, `upper` and `replace` each return a new string and leave `name` alone. Predict each line, including the last one: the length of the untouched original.",
+          "code": "name = \"  grace HOPPER  \"\ntidy = name.strip()\nprint(tidy.upper())\nprint(tidy[0].upper() + tidy[1:5])\nprint(len(tidy))\nprint(tidy.replace(\"HOPPER\", \"Hopper\"))\nprint(len(name))",
+          "expected_output": "GRACE HOPPER\nGrace\n12\ngrace Hopper\n16\n"
+        },
+        {
+          "title": "Taking a file name apart",
+          "body": "`find` gives the position of the dot, and slices on either side of it pull out the name and the extension. Predict each line, including the reversed name and the two `in` checks, which care about capital letters.",
+          "code": "filename = \"holiday_photo.JPEG\"\ndot = filename.find(\".\")\nprint(dot)\nprint(filename[:dot])\nprint(filename[dot + 1:].lower())\nprint(filename[::-1])\nprint(\"photo\" in filename)\nprint(\"Photo\" in filename)",
+          "expected_output": "13\nholiday_photo\njpeg\nGEPJ.otohp_yadiloh\nTrue\nFalse\n"
+        }
+      ]
     },
     {
       "id": "initials",

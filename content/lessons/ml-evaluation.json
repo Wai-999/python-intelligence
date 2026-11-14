@@ -237,7 +237,21 @@
       "title": "Run it: a line versus a memoriser",
       "body": "The memoriser answers with the `y` of the nearest training example, so it is perfect on its own\ntraining data. Predict which model does better on the 3 held-out examples.",
       "code": "import random\nimport numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    if len(x) == 0 or np.all(x == x[0]):\n        raise ValueError('x must not be constant')\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\n\nxs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nys = [2.3, 3.8, 6.4, 8.1, 9.7, 12.5, 13.6, 16.2, 18.4, 19.9]\nidx = list(range(len(xs)))\nrandom.Random(0).shuffle(idx)\ntest, train = idx[:3], idx[3:]\nx_tr, y_tr = [xs[i] for i in train], [ys[i] for i in train]\nx_te, y_te = [xs[i] for i in test], [ys[i] for i in test]\n\nw, b = fit_line(x_tr, y_tr)\n\n\ndef memoriser(x):\n    best = 0\n    for i in range(len(x_tr)):\n        if abs(x_tr[i] - x) < abs(x_tr[best] - x):\n            best = i\n    return y_tr[best]\n\n\nprint(\"line     \", round(mse([w * x + b for x in x_tr], y_tr), 3), round(mse([w * x + b for x in x_te], y_te), 3))\nprint(\"memoriser\", round(mse([memoriser(x) for x in x_tr], y_tr), 3), round(mse([memoriser(x) for x in x_te], y_te), 3))\n",
-      "expected_output": "line      0.08 0.2\nmemoriser 0.0 5.257\n"
+      "expected_output": "line      0.08 0.2\nmemoriser 0.0 5.257\n",
+      "more": [
+        {
+          "title": "Each seed gives a different split",
+          "body": "The same eight points are shuffled with three different seeds, and each time the first two become the test set. Predict whether the test error stays the same from split to split.",
+          "code": "import random\nimport numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\nxs = [1, 2, 3, 4, 5, 6, 7, 8]\nys = [2.1, 3.9, 6.2, 7.8, 10.1, 12.3, 13.8, 16.4]\nfor seed in (1, 2, 3):\n    idx = list(range(len(xs)))\n    random.Random(seed).shuffle(idx)\n    test, train = idx[:2], idx[2:]\n    w, b = fit_line([xs[i] for i in train], [ys[i] for i in train])\n    err = mse([w * xs[i] + b for i in test], [ys[i] for i in test])\n    print(seed, sorted(test), round(err, 3))",
+          "expected_output": "1 [3, 6] 0.197\n2 [3, 5] 0.057\n3 [0, 5] 0.046\n"
+        },
+        {
+          "title": "Why shuffle before splitting",
+          "body": "These measurements are sorted by `x` and level off at the end. Predict which test error is worse: taking the last three rows as the test set, or shuffling first.",
+          "code": "import random\nimport numpy as np\n\ndef fit_line(x, y):\n    x, y = np.array(x, dtype=float), np.array(y, dtype=float)\n    dx = x - x.mean()\n    w = np.sum(dx * (y - y.mean())) / np.sum(dx * dx)\n    return float(w), float(y.mean() - w * x.mean())\n\ndef mse(pred, y):\n    return float(np.mean((np.array(pred, dtype=float) - np.array(y, dtype=float)) ** 2))\n\nxs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\nys = [1.0, 2.1, 2.9, 4.2, 5.0, 6.1, 6.8, 7.3, 7.5, 7.6]\n\nw, b = fit_line(xs[:7], ys[:7])\nprint('last rows', round(mse([w * x + b for x in xs[7:]], ys[7:]), 3))\n\nidx = list(range(len(xs)))\nrandom.Random(0).shuffle(idx)\ntest, train = idx[:3], idx[3:]\nw, b = fit_line([xs[i] for i in train], [ys[i] for i in train])\nprint('shuffled ', round(mse([w * xs[i] + b for i in test], [ys[i] for i in test]), 3))",
+          "expected_output": "last rows 2.589\nshuffled  0.083\n"
+        }
+      ]
     },
     {
       "id": "split",

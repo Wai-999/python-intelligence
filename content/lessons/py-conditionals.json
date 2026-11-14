@@ -238,7 +238,21 @@
       "title": "Run it: ticket prices",
       "body": "Under 5s go free; children and over-65s pay the reduced price. Predict all four lines, then **Run**.\nWhich branch handles age 70, and why doesn't it reach the `else`?",
       "code": "def ticket_price(age):\n    if age < 5:\n        return 0\n    elif age < 18 or age >= 65:\n        return 6\n    else:\n        return 12\n\nprint(ticket_price(3))\nprint(ticket_price(12))\nprint(ticket_price(30))\nprint(ticket_price(70))",
-      "expected_output": "0\n6\n12\n6\n"
+      "expected_output": "0\n6\n12\n6\n",
+      "more": [
+        {
+          "title": "Grading a test",
+          "body": "The tests run from the top and the first true one wins. Predict the grade for each score, especially 90 and 70, which sit exactly on a boundary.",
+          "code": "def grade(score):\n    if score >= 90:\n        return \"A\"\n    elif score >= 70:\n        return \"B\"\n    elif score >= 50:\n        return \"C\"\n    else:\n        return \"fail\"\n\nprint(grade(95))\nprint(grade(90))\nprint(grade(70))\nprint(grade(49))",
+          "expected_output": "A\nA\nB\nfail\n"
+        },
+        {
+          "title": "Free delivery",
+          "body": "Members, and anyone spending 50 or more, get free delivery. Predict the four charges. Then ask yourself whether the `not member` in the second test can ever make a difference.",
+          "code": "def delivery(total, member):\n    if total >= 50 or member:\n        return 0\n    elif total >= 20 and not member:\n        return 3\n    else:\n        return 5\n\nprint(delivery(60, False))\nprint(delivery(10, True))\nprint(delivery(35, False))\nprint(delivery(12, False))",
+          "expected_output": "0\n0\n3\n5\n"
+        }
+      ]
     },
     {
       "id": "parity",

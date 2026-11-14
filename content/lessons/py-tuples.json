@@ -234,7 +234,21 @@
       "title": "Run it: swaps and grid keys",
       "body": "Predict each line. The last part uses tuples as dictionary keys for a tiny grid.",
       "code": "a, b = 1, 2\na, b = b, a\nprint(a, b)\n\nsingle = (5,)\nprint(len(single), type((5)).__name__)\n\ngrid = {(0, 0): \"start\", (2, 1): \"treasure\"}\nprint(grid[(2, 1)])\nfor (row, col), label in grid.items():\n    print(row, col, label)",
-      "expected_output": "2 1\n1 int\ntreasure\n0 0 start\n2 1 treasure\n"
+      "expected_output": "2 1\n1 int\ntreasure\n0 0 start\n2 1 treasure\n",
+      "more": [
+        {
+          "title": "Lowest and highest in one return",
+          "body": "`low_high` returns two values as one tuple, and the call unpacks it into two names. Predict each line, including what a one-item list gives back and the type of the result.",
+          "code": "def low_high(values):\n    ordered = sorted(values)\n    return ordered[0], ordered[-1]\n\ntemps = [18, 25, 12, 21]\nlow, high = low_high(temps)\nprint(low, high)\n\nresult = low_high([7])\nprint(result, type(result).__name__)\n\npoint = (3, 4)\nx, y = point\nprint(x * x + y * y)",
+          "expected_output": "12 25\n(7, 7) tuple\n25\n"
+        },
+        {
+          "title": "Counting visits to grid squares",
+          "body": "A robot's path is a list of `(row, col)` tuples, and each square becomes a dictionary key. Predict the visit counts, then the length of `route`, where the commas alone make a tuple of two tuples.",
+          "code": "visits = {}\nfor square in [(0, 0), (1, 0), (0, 0), (1, 1), (0, 0)]:\n    visits[square] = visits.get(square, 0) + 1\nprint(visits)\nprint(visits[(0, 0)])\n\nroute = (0, 0), (1, 0)\nprint(len(route), route[1])",
+          "expected_output": "{(0, 0): 3, (1, 0): 1, (1, 1): 1}\n3\n2 (1, 0)\n"
+        }
+      ]
     },
     {
       "id": "stats",
