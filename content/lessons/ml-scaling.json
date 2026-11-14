@@ -392,6 +392,11 @@
           "name": "the inputs are unchanged and a tuple comes back",
           "code": "import numpy as np\ntrain, test = np.array([[0.0, 10.0], [10.0, 30.0]]), np.array([[5.0, 20.0]])\na, b = train.copy(), test.copy()\nout = min_max_scale(train, test)\nassert np.array_equal(train, a) and np.array_equal(test, b), 'scale copies; leave the inputs alone'\nassert isinstance(out, tuple) and len(out) == 2, 'return a tuple of two arrays'",
           "concept": "feature-scaling"
+        },
+        {
+          "name": "integer arrays scale to fractions",
+          "code": "import numpy as np\ntr, te = min_max_scale(np.array([[0], [3]]), np.array([[1]]))\nassert np.allclose(tr, [[0], [1]]) and np.allclose(te, [[1 / 3]]), (tr, te)",
+          "concept": "feature-scaling"
         }
       ],
       "solution": "import numpy as np\n\n\ndef min_max_scale(train, test):\n    train, test = np.asarray(train, dtype=float), np.asarray(test, dtype=float)\n    lo = train.min(axis=0)\n    span = train.max(axis=0) - lo\n    span = np.where(span == 0, 1, span)\n    return (train - lo) / span, (test - lo) / span\n"

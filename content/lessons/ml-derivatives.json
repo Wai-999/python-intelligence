@@ -339,6 +339,11 @@
           "name": "slopes exactly on the limits are flat",
           "code": "assert direction(lambda x: 1e-6 * x, 0.0) == 'flat' and direction(lambda x: -1e-6 * x, 0.0) == 'flat', 'above 1e-6 is up and below -1e-6 is down; exactly 1e-6 or -1e-6 is flat'",
           "concept": "finite-differences"
+        },
+        {
+          "name": "direction uses its own small step",
+          "code": "assert direction(lambda x: 1000 * x ** 3, 0.0) == 'flat', 'with h = 1e-5 the central difference of 1000x³ at 0 is 1e-7, which is flat'",
+          "concept": "finite-differences"
         }
       ],
       "solution": "def second_derivative(f, x, h=1e-4):\n    return (f(x + h) - 2 * f(x) + f(x - h)) / h ** 2\n\n\ndef direction(f, x):\n    h = 1e-5\n    slope = (f(x + h) - f(x - h)) / (2 * h)\n    if slope > 1e-6:\n        return \"up\"\n    if slope < -1e-6:\n        return \"down\"\n    return \"flat\"\n"

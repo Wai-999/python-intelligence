@@ -377,6 +377,11 @@
           "name": "angles in any number of dimensions",
           "code": "assert abs(angle_degrees([1, 0, 0], [0, 0, 1]) - 90) < 1e-9 and abs(angle_degrees([1, 1, 0], [1, 1, 1]) - 35.264389682754654) < 1e-9\nassert abs(angle_degrees([2], [-3]) - 180) < 1e-9",
           "concept": "similarity"
+        },
+        {
+          "name": "integer rows normalise to fractions",
+          "code": "import numpy as np\nM = np.array([[3, 4], [1, 1]])\nN = normalize_rows(M)\nr = 1 / np.sqrt(2)\nassert np.allclose(N, [[0.6, 0.8], [r, r]]) and np.allclose(np.linalg.norm(N, axis=1), 1)\nassert np.array_equal(M, [[3, 4], [1, 1]]), 'leave the input alone'",
+          "concept": "norms"
         }
       ],
       "solution": "import numpy as np\n\n\ndef normalize_rows(M):\n    M = np.asarray(M, dtype=float)\n    norms = np.linalg.norm(M, axis=1, keepdims=True)\n    return M / np.where(norms == 0, 1, norms)\n\n\ndef angle_degrees(u, v):\n    u, v = np.asarray(u, dtype=float), np.asarray(v, dtype=float)\n    cos = u @ v / (np.linalg.norm(u) * np.linalg.norm(v))\n    return float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))\n"

@@ -376,7 +376,7 @@
       "kind": "transfer",
       "difficulty": 3,
       "title": "Transfer: the first repeat",
-      "body": "Write `first_repeat(items)`: return the first item that appears for the second time as you read the list from the start,\nor `None` if no item repeats. It must scale: the checks count comparisons and hash computations on 1,000 items.",
+      "body": "Write `first_repeat(items)`: return the first item that appears for the second time as you read the list from the start,\nor `None` if no item repeats. It must scale: keep one set of the items seen so far and add to it (don't rebuild or copy it on each step); the\nchecks count comparisons and hash computations on 1,000 items.",
       "starter": "def first_repeat(items):\n    for i in range(len(items)):\n        if items[i] in items[:i]:\n            return items[i]\n    return None\n",
       "hints": [
         "Keep a set of the items seen so far.",
@@ -403,6 +403,11 @@
           "name": "grows linearly",
           "code": "class _C:\n    ops = 0\n\n    def __init__(self, v):\n        self.v = v\n\n    def __eq__(self, other):\n        _C.ops += 1\n        return isinstance(other, _C) and self.v == other.v\n\n    def __hash__(self):\n        _C.ops += 1\n        return hash(self.v)\n\ndef _ops(n):\n    items = [_C(i) for i in range(n)]\n    _C.ops = 0\n    first_repeat(items)\n    return _C.ops\nsmall, big = _ops(400), _ops(800)\nassert big <= 3 * small, f'doubling the input took the work from {small} to {big} operations'",
           "concept": "order-of-growth"
+        },
+        {
+          "name": "one set, added to as you go",
+          "code": "import ast\n_tree = ast.parse(__source__)\n_defs = {n.name: n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef)}\ndef _reach(names):\n    seen, todo = set(), list(names)\n    while todo:\n        name = todo.pop()\n        if name in seen or name not in _defs:\n            continue\n        seen.add(name)\n        todo += [c.func.id for c in ast.walk(_defs[name]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]\n    return [_defs[n] for n in seen]\n_loops = [n for f in _reach(['first_repeat']) for n in ast.walk(f) if isinstance(n, (ast.For, ast.While))]\n_inside = [n for loop in _loops for s in loop.body for n in ast.walk(s)]\n_rebuild = [n for n in _inside if (isinstance(n, ast.BinOp) and isinstance(n.op, (ast.BitOr, ast.Add)))\n            or (isinstance(n, ast.Call) and ((isinstance(n.func, ast.Name) and n.func.id in ('set', 'frozenset', 'list', 'sorted'))\n                or (isinstance(n.func, ast.Attribute) and n.func.attr in ('copy', 'union'))))]\nassert not _rebuild, f'line {_rebuild[0].lineno if _rebuild else 0} builds a new collection on every step: add to one set instead (seen.add(item))'",
+          "concept": "data-structure-choice"
         }
       ],
       "solution": "def first_repeat(items):\n    seen = set()\n    for item in items:\n        if item in seen:\n            return item\n        seen.add(item)\n    return None\n"

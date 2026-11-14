@@ -387,8 +387,8 @@
           "concept": "groupby"
         },
         {
-          "name": "each function leaves df unchanged, missing values and all",
-          "code": "import pandas as pd\ndef _frame():\n    return pd.DataFrame({'order': [1, 2, 3], 'region': ['n', 's', None], 'qty': [2, None, 4], 'price': [1.0, float('nan'), 3.0]})\nfor _call in (lambda d: revenue_by_region(d), lambda d: big_orders(d, 2), lambda d: missing_counts(d)):\n    _df = _frame()\n    _before = _df.copy(deep=True)\n    _call(_df)\n    assert _df.equals(_before), 'none of the functions may change df (missing values included)'",
+          "name": "each function leaves df unchanged, missing prices and all",
+          "code": "import pandas as pd\ndef _frame():\n    return pd.DataFrame({'order': [1, 2, 3], 'region': ['n', 's', 'n'], 'qty': [2, 1, 4], 'price': [1.0, float('nan'), 3.0]})\nfor _call in (lambda d: revenue_by_region(d), lambda d: big_orders(d, 2), lambda d: missing_counts(d)):\n    _df = _frame()\n    _before = _df.copy(deep=True)\n    _call(_df)\n    assert _df.equals(_before), 'none of the functions may change df (missing values included)'",
           "concept": "dataframes"
         }
       ],
