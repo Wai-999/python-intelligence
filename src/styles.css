@@ -260,3 +260,5 @@ main { min-width: 0; outline: none; }
 .reflection { margin: 16px 0; }
 .reflection label { display: block; margin: 4px 0 6px; }
 .reflect-input { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.result-summary:empty { display: none; }
+.result-summary.pill.ok { color: var(--ok); }

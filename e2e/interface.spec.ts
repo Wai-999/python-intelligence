@@ -122,10 +122,16 @@ test("exercise feedback: a summary line leads, failures come first, and the note
   await page.getByRole("button", { name: "▶ Run checks" }).click();
   const summary = page.locator(".result-summary");
   await expect(summary).toHaveText(/^\d+ of \d+ checks failed\. First: /, { timeout: 120_000 });
+  // pass, fail, pass in declaration order ("area exists", "area is correct", "radius unchanged"): the failure leads.
+  await page.locator("textarea.editor-input").fill("radius = 3\npi = 3.14159\narea = 0\n");
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(summary).toHaveText("1 of 3 checks failed. First: area is correct", { timeout: 120_000 });
   const rows = page.locator(".checks li");
-  const classes = await rows.evaluateAll((els) => els.map((e) => e.className));
-  expect(classes.indexOf("pass") === -1 || classes.lastIndexOf("fail") < classes.indexOf("pass")).toBe(true);
-  await expect(summary).toContainText((await rows.first().innerText()).replace(/^✗\s*/, "").split("\n")[0]!.replace(" failed", ""));
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toHaveClass(/fail/);
+  await expect(rows.nth(0)).toContainText("area is correct");
+  await expect(rows.nth(1)).toHaveClass(/pass/);
+  await expect(rows.nth(2)).toHaveClass(/pass/);
   await expect(page.getByRole("complementary", { name: "Professor's note" })).not.toHaveAttribute("data-collapsed", "");
   for (let i = 0; i < 3; i++) {
     await page.locator("textarea.editor-input").fill('radius = "3"\narea = 3.14 * radius + 1\n');

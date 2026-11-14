@@ -143,13 +143,15 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed) && !mesoActive} />
       <Console result={result} live={live} />
 
-      {result && result.ok && !allPassed && (
-        // One line that leads the results, announced once (the full note follows).
-        <p className="result-summary" role="status">
+      {/* One status region, mounted for the whole exercise and empty while a run is going, so each result is announced
+          once when its text arrives: the failure summary that leads the checks, or the success message. */}
+      <p className={`result-summary${allPassed ? " pill ok" : ""}`} role="status">
+        {result && result.ok && !allPassed && <>
           {result.tests.filter((t) => !t.passed).length} of {result.tests.length} checks failed.
           {" "}First: {result.tests.find((t) => !t.passed)?.name}
-        </p>
-      )}
+        </>}
+        {allPassed && "🎉 All checks pass. Nicely done."}
+      </p>
       {result && result.ok && (
         <ul className="checks" aria-label="Check results">
           {[...result.tests.filter((t) => !t.passed), ...result.tests.filter((t) => t.passed)].map((t) => (
@@ -161,7 +163,6 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
           ))}
         </ul>
       )}
-      {allPassed && <p className="pill ok" role="status">🎉 All checks pass. Nicely done.</p>}
       {/* At most one expanded guidance card: while a step back waits for an answer, the note folds to one line. */}
       {fb && !allPassed && <TutorNote fb={fb} collapsed={mesoActive} />}
       {meso}
