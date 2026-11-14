@@ -225,7 +225,21 @@
       "title": "Run it: create, insert, ask",
       "body": "A filtered, sorted query; a count and a minimum in one row; and a title full of SQL-looking text that a\nplaceholder treats as an ordinary (unmatched) string.",
       "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE books (title TEXT, year INTEGER)\")\ncon.executemany(\"INSERT INTO books VALUES (?, ?)\", [(\"Dune\", 1965), (\"Neuromancer\", 1984), (\"Emma\", 1815)])\n\nfor row in con.execute(\"SELECT title, year FROM books WHERE year > ? ORDER BY year\", (1900,)):\n    print(row)\n\nprint(con.execute(\"SELECT COUNT(*), MIN(year) FROM books\").fetchone())\n\nname = \"Emma'; DROP TABLE books; --\"\nprint(con.execute(\"SELECT COUNT(*) FROM books WHERE title = ?\", (name,)).fetchone())\ncon.close()\n",
-      "expected_output": "('Dune', 1965)\n('Neuromancer', 1984)\n(3, 1815)\n(0,)\n"
+      "expected_output": "('Dune', 1965)\n('Neuromancer', 1984)\n(3, 1815)\n(0,)\n",
+      "more": [
+        {
+          "title": "Expenses by category",
+          "body": "`GROUP BY` adds up each category in one query, and two more queries use placeholders for a number and a word. Predict the three totals and the two single-value rows.",
+          "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE expenses (category TEXT, amount REAL)\")\nrows = [(\"food\", 12.5), (\"travel\", 40.0), (\"food\", 7.5), (\"books\", 15.0), (\"travel\", 10.0)]\ncon.executemany(\"INSERT INTO expenses VALUES (?, ?)\", rows)\n\nfor row in con.execute(\"SELECT category, SUM(amount) FROM expenses GROUP BY category ORDER BY category\"):\n    print(row)\nprint(con.execute(\"SELECT COUNT(*) FROM expenses WHERE amount > ?\", (10,)).fetchone())\nprint(con.execute(\"SELECT MAX(amount) FROM expenses WHERE category = ?\", (\"food\",)).fetchone())\ncon.close()",
+          "expected_output": "('books', 15.0)\n('food', 20.0)\n('travel', 50.0)\n(3,)\n(12.5,)\n"
+        },
+        {
+          "title": "Updating and deleting students",
+          "body": "An `UPDATE` bumps one grade and a `DELETE` removes anyone over 90. Rows come back as tuples you can unpack in the `for`; predict what `fetchone()` returns when nobody matches.",
+          "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE students (name TEXT, grade INTEGER)\")\ncon.executemany(\"INSERT INTO students VALUES (?, ?)\", [(\"Lea\", 58), (\"Omar\", 91), (\"Pia\", 74)])\n\ncon.execute(\"UPDATE students SET grade = grade + 5 WHERE name = ?\", (\"Lea\",))\ncon.execute(\"DELETE FROM students WHERE grade > ?\", (90,))\nprint(con.execute(\"SELECT COUNT(*) FROM students\").fetchone())\nfor name, grade in con.execute(\"SELECT name, grade FROM students ORDER BY grade DESC\"):\n    print(name, grade)\nprint(con.execute(\"SELECT name FROM students WHERE name = ?\", (\"Zed\",)).fetchone())\ncon.close()",
+          "expected_output": "(2,)\nPia 74\nLea 63\nNone\n"
+        }
+      ]
     },
     {
       "id": "scores",

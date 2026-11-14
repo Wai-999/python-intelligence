@@ -219,7 +219,21 @@
       "title": "Run it: one bootstrap sample, and many",
       "body": "One bootstrap sample of 10 rows, then 2000 more to measure how many rows a sample usually leaves out.",
       "code": "import random\n\nrng = random.Random(0)\nn = 10\ndraws = [rng.randrange(n) for _ in range(n)]\nprint('drawn:', draws)\nprint('out of bag:', sorted(set(range(n)) - set(draws)))\n\nleft_out = 0\nfor _ in range(2000):\n    drawn = {rng.randrange(n) for _ in range(n)}\n    left_out += n - len(drawn)\nprint('share left out:', round(left_out / (2000 * n), 3), 'formula:', round((1 - 1 / n) ** n, 3))\n",
-      "expected_output": "drawn: [6, 6, 0, 4, 8, 7, 6, 4, 7, 5]\nout of bag: [1, 2, 3, 9]\nshare left out: 0.348 formula: 0.349\n"
+      "expected_output": "drawn: [6, 6, 0, 4, 8, 7, 6, 4, 7, 5]\nout of bag: [1, 2, 3, 9]\nshare left out: 0.348 formula: 0.349\n",
+      "more": [
+        {
+          "title": "Seven noisy voters",
+          "body": "Each of seven trees is right 70% of the time, independently. One tree alone versus a majority vote of all seven: predict roughly how much the vote helps before running.",
+          "code": "import random\n\nrng = random.Random(1)\ntrials = 5000\nsingle = 0\nforest = 0\nfor _ in range(trials):\n    votes = [rng.random() < 0.7 for _ in range(7)]\n    if votes[0]:\n        single += 1\n    if sum(votes) >= 4:\n        forest += 1\nprint('one tree:', round(single / trials, 3))\nprint('seven trees voting:', round(forest / trials, 3))",
+          "expected_output": "one tree: 0.697\nseven trees voting: 0.876\n"
+        },
+        {
+          "title": "A bootstrap of 100 rows",
+          "body": "A bootstrap sample of 100 rows leaves some rows out and repeats others. Then three random picks of 3 features out of 9, the way a forest chooses at each split. Guess how many rows end up out of bag.",
+          "code": "import random\n\nrng = random.Random(5)\nn = 100\nsample = [rng.randrange(n) for _ in range(n)]\nunique = set(sample)\nprint('unique rows:', len(unique), 'out of bag:', n - len(unique))\nprint('most repeated row count:', max(sample.count(i) for i in unique))\n\nfeatures = ['age', 'income', 'height', 'score', 'tenure', 'visits', 'debt', 'kids', 'rent']\nfor _ in range(3):\n    print(sorted(rng.sample(features, 3)))",
+          "expected_output": "unique rows: 63 out of bag: 37\nmost repeated row count: 3\n['age', 'kids', 'rent']\n['age', 'height', 'score']\n['height', 'kids', 'score']\n"
+        }
+      ]
     },
     {
       "id": "sample",

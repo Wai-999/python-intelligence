@@ -238,7 +238,21 @@
       "title": "Run it: a tiny score file",
       "body": "Write, append, read back, and handle a missing file. Predict both lines first.",
       "code": "with open(\"scores.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"ana,7\\nbo,9\\n\")\nwith open(\"scores.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"cy,4\\n\")\n\ntotal = 0\nwith open(\"scores.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        name, score = line.strip().split(\",\")\n        total = total + int(score)\nprint(total)\n\ntry:\n    open(\"missing.txt\", encoding=\"utf-8\")\nexcept FileNotFoundError:\n    print(\"no such file\")",
-      "expected_output": "20\nno such file\n"
+      "expected_output": "20\nno such file\n",
+      "more": [
+        {
+          "title": "A three-day diary",
+          "body": "Write three lines, read them all back with `readlines()`, then find the day with the longest name. Remember that each line still ends with a newline; predict the middle line.",
+          "code": "with open(\"diary.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"monday: rain\\n\")\n    f.write(\"tuesday: sun\\n\")\n    f.write(\"wednesday: fog\\n\")\n\nwith open(\"diary.txt\", encoding=\"utf-8\") as f:\n    lines = f.readlines()\nprint(len(lines))\nprint(lines[1].strip())\n\nlongest = \"\"\nfor line in lines:\n    day = line.split(\":\")[0]\n    if len(day) > len(longest):\n        longest = day\nprint(longest)",
+          "expected_output": "3\ntuesday: sun\nwednesday\n"
+        },
+        {
+          "title": "Counting stock from a file",
+          "body": "Tally the fruit names in a file into a dictionary, then open the same file in `\"w\"` mode again and see what survives. The last `open` points into a folder that does not exist; predict which exception fires.",
+          "code": "with open(\"stock.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"apple\\npear\\napple\\nplum\\napple\\n\")\n\ncounts = {}\nwith open(\"stock.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        fruit = line.strip()\n        counts[fruit] = counts.get(fruit, 0) + 1\nprint(counts)\n\nwith open(\"stock.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"kiwi\\n\")\nwith open(\"stock.txt\", encoding=\"utf-8\") as f:\n    print(f.read().strip())\n\ntry:\n    with open(\"nowhere/stock.txt\", encoding=\"utf-8\") as f:\n        print(f.read())\nexcept FileNotFoundError:\n    print(\"folder missing\")",
+          "expected_output": "{'apple': 3, 'pear': 1, 'plum': 1}\nkiwi\nfolder missing\n"
+        }
+      ]
     },
     {
       "id": "countlines",

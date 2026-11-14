@@ -321,7 +321,21 @@
       "title": "Run it: inspect the raw data",
       "body": "A small survey of plants. Before predicting how many rows survive cleaning, look at which values are missing.",
       "code": "import io\nimport pandas as pd\n\nPLANTS = 'height,leaf,site,species\\n12.0,3.1,north,fern\\n14.5,2.8,,fern\\n30.2,7.5,south,palm\\n11.1,,north,fern\\n28.4,8.1,south,palm\\n13.3,3.6,east,fern\\n26.0,6.2,east,palm\\n16.8,4.4,north,fern\\n22.5,5.9,south,palm\\n19.0,5.0,east,fern\\n24.1,4.6,,palm\\n9.5,2.2,east,moss\\n10.4,2.6,north,moss\\n'\n\ndf = pd.read_csv(io.StringIO(PLANTS))\nprint(df.shape)\nprint(df.isna().sum().to_dict())\n\nclean = df.dropna(subset=['height', 'leaf', 'species'])\nprint(clean.shape)\nprint(clean['species'].value_counts().sort_index().to_dict())\n",
-      "expected_output": "(13, 4)\n{'height': 0, 'leaf': 1, 'site': 2, 'species': 0}\n(12, 4)\n{'fern': 5, 'moss': 2, 'palm': 5}\n"
+      "expected_output": "(13, 4)\n{'height': 0, 'leaf': 1, 'site': 2, 'species': 0}\n(12, 4)\n{'fern': 5, 'moss': 2, 'palm': 5}\n",
+      "more": [
+        {
+          "title": "Filling a sensor log",
+          "body": "A home sensor log with a few blank readings. Dropping rows loses three of them; filling `temp` with its median keeps every row. Predict the shape after `dropna()` and the kitchen mean before running.",
+          "code": "import io\nimport pandas as pd\n\nLOG = 'room,temp,humidity\\nkitchen,21.5,40\\nkitchen,,42\\nbedroom,18.0,55\\nbedroom,18.5,\\nkitchen,22.0,41\\nbedroom,17.5,53\\nattic,,70\\n'\n\ndf = pd.read_csv(io.StringIO(LOG))\nprint(df.shape, df.isna().sum().to_dict())\nprint(df.dropna().shape)\n\nfilled = df.fillna({'temp': df['temp'].median()})\nprint(filled['temp'].tolist())\nprint(filled.groupby('room')['temp'].mean().round(2).to_dict())",
+          "expected_output": "(7, 3) {'room': 0, 'temp': 2, 'humidity': 1}\n(4, 3)\n[21.5, 18.5, 18.0, 18.5, 22.0, 17.5, 18.5]\n{'attic': 18.5, 'bedroom': 18.0, 'kitchen': 20.67}\n"
+        },
+        {
+          "title": "A baseline before any model",
+          "body": "Ten fruits, shuffled with a fixed `random_state` and split seven/three. The baseline always guesses the training majority; the rule says orange when `weight > 160`. Predict both accuracies on the three test rows.",
+          "code": "import io\nimport pandas as pd\n\nROWS = 'size,weight,kind\\n7.1,150,apple\\n8.0,170,orange\\n6.5,130,apple\\n7.8,165,orange\\n6.9,140,apple\\n8.4,180,orange\\n7.3,155,apple\\n8.1,172,orange\\n6.7,135,apple\\n7.9,168,orange\\n'\n\ndf = pd.read_csv(io.StringIO(ROWS))\nshuffled = df.sample(frac=1, random_state=0).reset_index(drop=True)\ntrain, test = shuffled.iloc[:7], shuffled.iloc[7:]\nprint(len(train), len(test))\nprint(train['kind'].value_counts().to_dict())\n\nmajority = train['kind'].value_counts().idxmax()\nprint('baseline:', majority, round((test['kind'] == majority).mean(), 2))\nsays_orange = test['weight'] > 160\nis_orange = test['kind'] == 'orange'\nprint('rule:', round((says_orange == is_orange).mean(), 2))",
+          "expected_output": "7 3\n{'apple': 4, 'orange': 3}\nbaseline: apple 0.33\nrule: 1.0\n"
+        }
+      ]
     },
     {
       "id": "load",

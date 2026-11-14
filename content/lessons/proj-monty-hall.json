@@ -195,7 +195,21 @@
       "title": "Run it: 30,000 games each way",
       "body": "The same seed plays the same 30,000 games for both strategies, so every game stay wins, switch loses, and\nthe other way round: the two win counts add up to exactly 30,000.",
       "code": "import random\nfrom fractions import Fraction\n\ndef play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick and d != car])\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\nfor switch in (False, True):\n    rng = random.Random(2024)\n    wins = sum(play(rng, switch) for _ in range(30_000))\n    print('switch' if switch else 'stay  ', wins, 'wins of 30000:', round(wins / 30_000, 3))\nprint('exact:', Fraction(1, 3), 'and', Fraction(2, 3))\n",
-      "expected_output": "stay   10008 wins of 30000: 0.334\nswitch 19992 wins of 30000: 0.666\nexact: 1/3 and 2/3\n"
+      "expected_output": "stay   10008 wins of 30000: 0.334\nswitch 19992 wins of 30000: 0.666\nexact: 1/3 and 2/3\n",
+      "more": [
+        {
+          "title": "Four doors, one goat shown",
+          "body": "With four doors the host still opens one goat door, and a switcher then picks at random between the two doors left. Predict which strategy wins more and compare with the exact `1/4` and `3/8` (the switcher needs an extra random draw, so the two seeds do not pair game for game).",
+          "code": "import random\nfrom fractions import Fraction\n\ndef play(rng, switch):\n    doors = [0, 1, 2, 3]\n    car = rng.randrange(4)\n    pick = rng.randrange(4)\n    host = rng.choice([d for d in doors if d != pick and d != car])\n    if switch:\n        pick = rng.choice([d for d in doors if d != pick and d != host])\n    return pick == car\n\nfor switch in (False, True):\n    rng = random.Random(11)\n    wins = sum(play(rng, switch) for _ in range(40_000))\n    print('switch' if switch else 'stay  ', wins, 'wins of 40000:', round(wins / 40_000, 3))\nprint('exact:', Fraction(1, 4), 'and', Fraction(3, 8))",
+          "expected_output": "stay   9965 wins of 40000: 0.249\nswitch 15046 wins of 40000: 0.376\nexact: 1/4 and 3/8\n"
+        },
+        {
+          "title": "The forgetful host",
+          "body": "This host has forgotten where the car is and opens one of the other two doors at random; if the car appears the game is void. Only valid games count, so predict whether switching still helps, and why the two valid-game counts match.",
+          "code": "import random\nfrom fractions import Fraction\n\ndef play(rng, switch):\n    car = rng.randrange(3)\n    pick = rng.randrange(3)\n    host = rng.choice([d for d in range(3) if d != pick])   # may reveal the car\n    if host == car:\n        return None   # the game is void\n    if switch:\n        pick = 3 - pick - host\n    return pick == car\n\nfor switch in (False, True):\n    rng = random.Random(5)\n    results = [play(rng, switch) for _ in range(30_000)]\n    valid = [r for r in results if r is not None]\n    print('switch' if switch else 'stay  ', len(valid), 'valid games, win rate', round(sum(valid) / len(valid), 3))\nprint('exact:', Fraction(1, 2), 'and', Fraction(1, 2))",
+          "expected_output": "stay   20024 valid games, win rate 0.5\nswitch 20024 valid games, win rate 0.5\nexact: 1/2 and 1/2\n"
+        }
+      ]
     },
     {
       "id": "simulate",

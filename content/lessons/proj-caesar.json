@@ -210,7 +210,21 @@
       "title": "Run it: encrypt and back",
       "body": "Characters that are not letters pass through unchanged. Predict the last line before you run it.",
       "code": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\n\nsecret = encrypt(\"Meet at noon!\", 3)\nprint(secret)\nprint(encrypt(secret, -3))\nprint(-3 % 26)\n",
-      "expected_output": "PHHW DW QRRQ!\nMEET AT NOON!\n23\n"
+      "expected_output": "PHHW DW QRRQ!\nMEET AT NOON!\n23\n",
+      "more": [
+        {
+          "title": "A key that undoes itself",
+          "body": "With a key of 13, encrypting twice brings the message back, because 13 + 13 is 26. Predict all three lines, including what happens to `xyz` with key 3.",
+          "code": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\nonce = encrypt(\"Hello, World\", 13)\nprint(once)\nprint(encrypt(once, 13))\nprint(encrypt(\"xyz\", 3))",
+          "expected_output": "URYYB, JBEYQ\nHELLO, WORLD\nABC\n"
+        },
+        {
+          "title": "Trying every key",
+          "body": "You intercept `WKH FDNH LV UHDGB` and know the word `CAKE` is in it. Try all 26 keys and print the one that reveals it; then predict what keys 26 and 27 do to a single `A`.",
+          "code": "ALPHABET = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n\ndef encrypt(message, key):\n    out = []\n    for ch in message.upper():\n        if ch in ALPHABET:\n            out.append(ALPHABET[(ALPHABET.index(ch) + key) % 26])\n        else:\n            out.append(ch)\n    return \"\".join(out)\n\nsecret = \"WKH FDNH LV UHDGB\"\nfor key in range(26):\n    guess = encrypt(secret, -key)\n    if \"CAKE\" in guess:\n        print(key, guess)\nprint(encrypt(\"A\", 26), encrypt(\"A\", 27))",
+          "expected_output": "3 THE CAKE IS READY\nA B\n"
+        }
+      ]
     },
     {
       "id": "decrypt",

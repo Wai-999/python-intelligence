@@ -201,7 +201,21 @@
       "title": "Run it: the positive test, worked and simulated",
       "body": "Bayes' rule with a 1% prior, 99% sensitivity and 95% specificity, then 100,000 simulated people as a check.",
       "code": "import random\n\nprior, sensitivity, specificity = 0.01, 0.99, 0.95\np_positive = sensitivity * prior + (1 - specificity) * (1 - prior)\nprint('P(positive) =', round(p_positive, 4))\nprint('P(ill | positive) =', round(sensitivity * prior / p_positive, 4))\n\nrng = random.Random(7)\npositives = ill_and_positive = 0\nfor _ in range(100_000):\n    ill = rng.random() < prior\n    positive = rng.random() < (sensitivity if ill else 1 - specificity)\n    if positive:\n        positives += 1\n        ill_and_positive += ill\nprint('simulated:', positives, 'positives,', ill_and_positive, 'of them ill:', round(ill_and_positive / positives, 4))\n",
-      "expected_output": "P(positive) = 0.0594\nP(ill | positive) = 0.1667\nsimulated: 5947 positives, 1018 of them ill: 0.1712\n"
+      "expected_output": "P(positive) = 0.0594\nP(ill | positive) = 0.1667\nsimulated: 5947 positives, 1018 of them ill: 0.1712\n",
+      "more": [
+        {
+          "title": "Is it spam?",
+          "body": "One email in five is spam. The word `free` appears in 60% of spam and 5% of normal mail. Predict the chance that an email containing `free` is spam, then check it against 100,000 simulated emails.",
+          "code": "import random\n\np_spam, p_free_spam, p_free_ham = 0.2, 0.6, 0.05\np_free = p_free_spam * p_spam + p_free_ham * (1 - p_spam)\nprint('P(free) =', round(p_free, 4))\nprint('P(spam | free) =', round(p_free_spam * p_spam / p_free, 4))\n\nrng = random.Random(21)\nwith_free = spam_with_free = 0\nfor _ in range(100_000):\n    spam = rng.random() < p_spam\n    if spam:\n        has_free = rng.random() < p_free_spam\n    else:\n        has_free = rng.random() < p_free_ham\n    if has_free:\n        with_free += 1\n        if spam:\n            spam_with_free += 1\nprint('simulated:', with_free, 'with \"free\",', spam_with_free, 'spam:', round(spam_with_free / with_free, 4))",
+          "expected_output": "P(free) = 0.16\nP(spam | free) = 0.75\nsimulated: 16162 with \"free\", 12172 spam: 0.7531\n"
+        },
+        {
+          "title": "Which machine made the faulty part?",
+          "body": "Machine B makes 30% of the parts with a 10% defect rate; machine A makes the rest with a 2% defect rate. Predict how likely a defective part is to come from B, then see how close 100,000 simulated parts get.",
+          "code": "import random\n\np_b, defect_a, defect_b = 0.3, 0.02, 0.10\np_defect = defect_a * (1 - p_b) + defect_b * p_b\nprint('P(defective) =', round(p_defect, 4))\nprint('P(machine B | defective) =', round(defect_b * p_b / p_defect, 4))\n\nrng = random.Random(9)\ndefective = defective_from_b = 0\nfor _ in range(100_000):\n    from_b = rng.random() < p_b\n    if from_b:\n        broken = rng.random() < defect_b\n    else:\n        broken = rng.random() < defect_a\n    if broken:\n        defective += 1\n        if from_b:\n            defective_from_b += 1\nprint('simulated:', defective, 'defective,', defective_from_b, 'from B:', round(defective_from_b / defective, 4))",
+          "expected_output": "P(defective) = 0.044\nP(machine B | defective) = 0.6818\nsimulated: 4424 defective, 2985 from B: 0.6747\n"
+        }
+      ]
     },
     {
       "id": "condition",

@@ -237,7 +237,21 @@
       "title": "Run it: a fruit stall",
       "body": "Predict each line, then **Run**. Which fruit doesn't get printed by the loop, and why?",
       "code": "stock = {\"apples\": 5, \"pears\": 0}\nstock[\"plums\"] = 12\nstock[\"apples\"] = stock[\"apples\"] - 2\nprint(stock)\nprint(\"pears\" in stock, \"kiwis\" in stock)\nprint(stock.get(\"kiwis\", 0))\nfor fruit, count in stock.items():\n    if count > 0:\n        print(fruit, count)",
-      "expected_output": "{'apples': 3, 'pears': 0, 'plums': 12}\nTrue False\n0\napples 3\nplums 12\n"
+      "expected_output": "{'apples': 3, 'pears': 0, 'plums': 12}\nTrue False\n0\napples 3\nplums 12\n",
+      "more": [
+        {
+          "title": "Library loans",
+          "body": "A dictionary of book titles and who borrowed them. Predict what the dictionary looks like after one loan is added and one is returned with `del`, then what `get` says about the returned book.",
+          "code": "loans = {\"Dune\": \"Ana\", \"Emma\": \"Raj\"}\nloans[\"Ulysses\"] = \"Ana\"\ndel loans[\"Emma\"]\nprint(loans)\nprint(len(loans), \"Emma\" in loans)\nprint(loans.get(\"Emma\", \"on the shelf\"))\nfor title in sorted(loans):\n    print(title, \"->\", loans[title])",
+          "expected_output": "{'Dune': 'Ana', 'Ulysses': 'Ana'}\n2 False\non the shelf\nDune -> Ana\nUlysses -> Ana\n"
+        },
+        {
+          "title": "A points table",
+          "body": "`get` with a default lets you add points for a player who is not in the table yet. Predict the table, the total, and who comes out as `best` when two players tie.",
+          "code": "points = {\"ana\": 3, \"raj\": 7}\npoints[\"ana\"] = points[\"ana\"] + 4\npoints[\"mia\"] = points.get(\"mia\", 0) + 2\nprint(points)\ntotal = 0\nfor name in points:\n    total = total + points[name]\nprint(\"total\", total)\nbest = \"ana\"\nfor name, score in points.items():\n    if score > points[best]:\n        best = name\nprint(\"best\", best, points[best])",
+          "expected_output": "{'ana': 7, 'raj': 7, 'mia': 2}\ntotal 16\nbest ana 7\n"
+        }
+      ]
     },
     {
       "id": "words",

@@ -213,7 +213,21 @@
       "title": "Run it: labels, not locks",
       "body": "The hint says `int`, but a string goes through. Then a dataclass with a default and a default factory: each\norder gets its own list of tags.",
       "code": "from dataclasses import dataclass, field\n\ndef double(n: int) -> int:\n    return n * 2\n\nprint(double(4), double(\"ab\"))\nprint(double.__annotations__)\n\n@dataclass\nclass Order:\n    item: str\n    qty: int = 1\n    tags: list[str] = field(default_factory=list)\n\na = Order(\"pen\")\nb = Order(\"pen\")\na.tags.append(\"gift\")\nprint(a)\nprint(b)\nprint(a == Order(\"pen\", 1, [\"gift\"]))\n",
-      "expected_output": "8 abab\n{'n': <class 'int'>, 'return': <class 'int'>}\nOrder(item='pen', qty=1, tags=['gift'])\nOrder(item='pen', qty=1, tags=[])\nTrue\n"
+      "expected_output": "8 abab\n{'n': <class 'int'>, 'return': <class 'int'>}\nOrder(item='pen', qty=1, tags=['gift'])\nOrder(item='pen', qty=1, tags=[])\nTrue\n",
+      "more": [
+        {
+          "title": "A Point with a method",
+          "body": "A dataclass can have methods like any class. `shifted` returns a new `Point` rather than changing the old one; predict both equality checks and what `__annotations__` holds for the class.",
+          "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: float\n    y: float = 0.0\n\n    def shifted(self, dx: float) -> \"Point\":\n        return Point(self.x + dx, self.y)\n\np = Point(1.5)\nq = p.shifted(2)\nprint(p)\nprint(q)\nprint(p == Point(1.5, 0.0), p == q)\nprint(Point.__annotations__)",
+          "expected_output": "Point(x=1.5, y=0.0)\nPoint(x=3.5, y=0.0)\nTrue False\n{'x': <class 'float'>, 'y': <class 'float'>}\n"
+        },
+        {
+          "title": "Playlists with their own songs",
+          "body": "The hint says `list[float]` but a list of ints goes straight through. Then each `Playlist` gets a fresh song list from `default_factory`; predict what the second playlist starts with.",
+          "code": "from dataclasses import dataclass, field\n\ndef average(values: list[float]) -> float:\n    return sum(values) / len(values)\n\nprint(average([1, 2, 3, 4]))\nprint(average.__annotations__[\"return\"])\n\n@dataclass\nclass Playlist:\n    name: str\n    songs: list[str] = field(default_factory=list)\n\n    def add(self, song: str) -> int:\n        self.songs.append(song)\n        return len(self.songs)\n\nroad = Playlist(\"road trip\")\nprint(road.add(\"Drive\"), road.add(\"Highway\"))\nprint(road)\nprint(Playlist(\"quiet\").songs)",
+          "expected_output": "2.5\n<class 'float'>\n1 2\nPlaylist(name='road trip', songs=['Drive', 'Highway'])\n[]\n"
+        }
+      ]
     },
     {
       "id": "item",

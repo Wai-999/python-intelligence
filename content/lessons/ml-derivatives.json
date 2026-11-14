@@ -178,7 +178,21 @@
       "title": "Run it: too big, just right, too small",
       "body": "The derivative of `x³` at 2 is exactly 12. Watch both errors as `h` shrinks. (Multiplying `x * x * x`\nand building `h` from text keeps the printed digits identical on every platform.)",
       "code": "def f(x):\n    return x * x * x\n\nexact = 12.0\nfor k in (1, 3, 5, 7, 9, 11, 13):\n    h = float(f'1e-{k}')\n    forward = (f(2.0 + h) - f(2.0)) / h\n    central = (f(2.0 + h) - f(2.0 - h)) / (2 * h)\n    print(f'h = {h:.0e}  forward error {abs(forward - exact):.1e}  central error {abs(central - exact):.1e}')\n",
-      "expected_output": "h = 1e-01  forward error 6.1e-01  central error 1.0e-02\nh = 1e-03  forward error 6.0e-03  central error 1.0e-06\nh = 1e-05  forward error 6.0e-05  central error 2.1e-10\nh = 1e-07  forward error 5.8e-07  central error 6.3e-09\nh = 1e-09  forward error 9.9e-07  central error 9.9e-07\nh = 1e-11  forward error 9.9e-07  central error 9.9e-07\nh = 1e-13  forward error 9.6e-03  central error 9.6e-03\n"
+      "expected_output": "h = 1e-01  forward error 6.1e-01  central error 1.0e-02\nh = 1e-03  forward error 6.0e-03  central error 1.0e-06\nh = 1e-05  forward error 6.0e-05  central error 2.1e-10\nh = 1e-07  forward error 5.8e-07  central error 6.3e-09\nh = 1e-09  forward error 9.9e-07  central error 9.9e-07\nh = 1e-11  forward error 9.9e-07  central error 9.9e-07\nh = 1e-13  forward error 9.6e-03  central error 9.6e-03\n",
+      "more": [
+        {
+          "title": "A parabola's slope",
+          "body": "For `f(x) = x * x` the slope at 3 is exactly 6. Predict how the forward error changes each time `h` shrinks, and what happens to the central estimate, which is exact for a parabola apart from rounding.",
+          "code": "def f(x):\n    return x * x\n\nexact = 6.0\nfor k in (1, 2, 3, 4, 8):\n    h = float(f'1e-{k}')\n    forward = (f(3.0 + h) - f(3.0)) / h\n    central = (f(3.0 + h) - f(3.0 - h)) / (2 * h)\n    print(f'h = {h:.0e}  forward error {abs(forward - exact):.1e}  central error {abs(central - exact):.1e}')",
+          "expected_output": "h = 1e-01  forward error 1.0e-01  central error 5.3e-15\nh = 1e-02  forward error 1.0e-02  central error 1.3e-13\nh = 1e-03  forward error 1.0e-03  central error 6.6e-13\nh = 1e-04  forward error 1.0e-04  central error 1.3e-11\nh = 1e-08  forward error 3.6e-08  central error 3.6e-08\n"
+        },
+        {
+          "title": "Three learning rates",
+          "body": "Gradient descent on `(x - 2)**2` starts at 0 and takes five steps with a step size of 0.1, 0.5 and 1.1. Each step multiplies the distance from 2 by `1 - 2 * lr`, so predict which run creeps, which lands exactly, and which blows up.",
+          "code": "def grad(x):\n    return 2 * (x - 2)\n\nfor lr in (0.1, 0.5, 1.1):\n    x = 0.0\n    for _ in range(5):\n        x = x - lr * grad(x)\n    print(f'lr = {lr}  x after 5 steps = {x:.4f}')",
+          "expected_output": "lr = 0.1  x after 5 steps = 1.3446\nlr = 0.5  x after 5 steps = 2.0000\nlr = 1.1  x after 5 steps = 6.9766\n"
+        }
+      ]
     },
     {
       "id": "estimate",

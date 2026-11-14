@@ -277,7 +277,21 @@
       "title": "Run it: linear and binary search",
       "body": "Both find the last item of a sorted list of n numbers. Each line shows n, then the steps for a linear\nscan, then the steps for binary search.",
       "code": "def linear_steps(xs, target):\n    steps = 0\n    for x in xs:\n        steps += 1\n        if x == target:\n            break\n    return steps\n\ndef binary_steps(xs, target):\n    lo, hi, steps = 0, len(xs) - 1, 0\n    while lo <= hi:\n        steps += 1\n        mid = (lo + hi) // 2\n        if xs[mid] == target:\n            break\n        elif xs[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return steps\n\nfor n in (10, 100, 1000, 10000):\n    xs = list(range(n))\n    print(n, linear_steps(xs, n - 1), binary_steps(xs, n - 1))\n",
-      "expected_output": "10 10 4\n100 100 7\n1000 1000 10\n10000 10000 14\n"
+      "expected_output": "10 10 4\n100 100 7\n1000 1000 10\n10000 10000 14\n",
+      "more": [
+        {
+          "title": "Checking for duplicates",
+          "body": "Two ways to look for repeated values in a list of `n` items: compare every pair, or walk the list once while remembering what you have seen in a set. Predict how the two step counts grow when `n` is multiplied by 10.",
+          "code": "def pair_steps(xs):\n    steps = 0\n    for i in range(len(xs)):\n        for j in range(i + 1, len(xs)):\n            steps += 1\n    return steps\n\ndef seen_steps(xs):\n    seen = set()\n    steps = 0\n    for x in xs:\n        steps += 1\n        seen.add(x)\n    return steps\n\nfor n in (10, 100, 1000):\n    xs = list(range(n))\n    print(n, pair_steps(xs), seen_steps(xs))",
+          "expected_output": "10 45 10\n100 4950 100\n1000 499500 1000\n"
+        },
+        {
+          "title": "Adding up 1 to n",
+          "body": "`loop_sum` adds the numbers one at a time and counts its steps; `formula_sum` uses `n * (n + 1) // 2` in a single step. Predict the totals and the step counts for each `n` before running.",
+          "code": "def loop_sum(n):\n    total, steps = 0, 0\n    for k in range(1, n + 1):\n        total += k\n        steps += 1\n    return total, steps\n\ndef formula_sum(n):\n    return n * (n + 1) // 2, 1\n\nfor n in (10, 1000, 100000):\n    print(n, loop_sum(n), formula_sum(n))",
+          "expected_output": "10 (55, 10) (55, 1)\n1000 (500500, 1000) (500500, 1)\n100000 (5000050000, 100000) (5000050000, 1)\n"
+        }
+      ]
     },
     {
       "id": "growth",

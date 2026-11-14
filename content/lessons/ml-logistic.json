@@ -254,7 +254,21 @@
       "title": "Run it: hours of study and passing",
       "body": "Ten students, the hours each studied and whether they passed. Watch the log loss fall from `log 2`\n(every probability 0.5) and see where the model puts its 50% point.",
       "code": "import math\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\nhours = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]\npassed = [0, 0, 0, 1, 0, 1, 0, 1, 1, 1]\nw, b, lr = 0.0, 0.0, 0.1\n\nfor step in range(3001):\n    p = [sigmoid(w * x + b) for x in hours]\n    if step in (0, 10, 100, 1000, 3000):\n        loss = -sum(math.log(q) if y else math.log(1 - q) for q, y in zip(p, passed)) / len(p)\n        print(step, round(loss, 4))\n    dw = sum((q - y) * x for q, y, x in zip(p, passed, hours)) / len(p)\n    db = sum(q - y for q, y in zip(p, passed)) / len(p)\n    w, b = w - lr * dw, b - lr * db\n\nprint('w', round(w, 2), 'b', round(b, 2), '50% at', round(-b / w, 2), 'hours')\nfor x in (1.0, 2.75, 4.5):\n    print(x, 'hours:', round(sigmoid(w * x + b), 2))\n",
-      "expected_output": "0 0.6931\n10 0.6355\n100 0.5357\n1000 0.4351\n3000 0.4335\nw 1.35 b -3.71 50% at 2.75 hours\n1.0 hours: 0.09\n2.75 hours: 0.5\n4.5 hours: 0.91\n"
+      "expected_output": "0 0.6931\n10 0.6355\n100 0.5357\n1000 0.4351\n3000 0.4335\nw 1.35 b -3.71 50% at 2.75 hours\n1.0 hours: 0.09\n2.75 hours: 0.5\n4.5 hours: 0.91\n",
+      "more": [
+        {
+          "title": "Sleep and being late",
+          "body": "Ten mornings: hours of sleep and whether the person was late. More sleep means less lateness, so predict the sign of `w` and roughly where the 50% point lands before running.",
+          "code": "import math\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\nsleep = [4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5]\nlate = [1, 1, 1, 0, 1, 0, 1, 0, 0, 0]\nw, b, lr = 0.0, 0.0, 0.1\n\nfor step in range(2001):\n    p = [sigmoid(w * x + b) for x in sleep]\n    dw = sum((q - y) * x for q, y, x in zip(p, late, sleep)) / len(p)\n    db = sum(q - y for q, y in zip(p, late)) / len(p)\n    w, b = w - lr * dw, b - lr * db\n\nprint('w', round(w, 2), 'b', round(b, 2), '50% at', round(-b / w, 2), 'hours')\nfor x in (4.0, 6.25, 8.5):\n    print(x, 'hours:', round(sigmoid(w * x + b), 2))",
+          "expected_output": "w -0.97 b 6.0 50% at 6.18 hours\n4.0 hours: 0.89\n6.25 hours: 0.48\n8.5 hours: 0.09\n"
+        },
+        {
+          "title": "Moving the threshold",
+          "body": "A model with fixed `w` and `b` scores eight shoppers by ad spend. The same probabilities become different predictions at a 0.5 and a 0.8 cutoff; predict which cutoff gets more right, then check the log loss.",
+          "code": "import math\n\ndef sigmoid(z):\n    if z >= 0:\n        return 1 / (1 + math.exp(-z))\n    e = math.exp(z)\n    return e / (1 + e)\n\nspend = [1, 2, 3, 4, 5, 6, 7, 8]\nbought = [0, 0, 0, 1, 0, 1, 1, 1]\nw, b = 1.2, -5.4\n\nprobs = [sigmoid(w * x + b) for x in spend]\nprint([round(p, 2) for p in probs])\nfor threshold in (0.5, 0.8):\n    preds = [1 if p >= threshold else 0 for p in probs]\n    correct = sum(1 for p, y in zip(preds, bought) if p == y)\n    print(threshold, preds, correct, '/', len(bought))\nloss = -sum(math.log(p) if y else math.log(1 - p) for p, y in zip(probs, bought)) / len(probs)\nprint('log loss', round(loss, 3))",
+          "expected_output": "[0.01, 0.05, 0.14, 0.35, 0.65, 0.86, 0.95, 0.99]\n0.5 [0, 0, 0, 0, 1, 1, 1, 1] 6 / 8\n0.8 [0, 0, 0, 0, 0, 1, 1, 1] 7 / 8\nlog loss 0.313\n"
+        }
+      ]
     },
     {
       "id": "probs",

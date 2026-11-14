@@ -220,7 +220,21 @@
       "title": "Run it: the same tests on two versions",
       "body": "Three tests for `clamp`, run on a correct version and then on a buggy one. The counts are (tests run,\nfailures, errors).",
       "code": "import unittest\n\ndef clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n\nclass TestClamp(unittest.TestCase):\n    def test_inside(self):\n        self.assertEqual(clamp(5, 0, 10), 5)\n\n    def test_below(self):\n        self.assertEqual(clamp(-3, 0, 10), 0)\n\n    def test_above(self):\n        self.assertEqual(clamp(42, 0, 10), 10)\n\ndef run(case):\n    suite = unittest.defaultTestLoader.loadTestsFromTestCase(case)\n    result = unittest.TestResult()\n    suite.run(result)\n    return result.testsRun, len(result.failures), len(result.errors)\n\nprint('correct clamp:', run(TestClamp))\nclamp = lambda x, lo, hi: min(lo, max(x, hi))   # a buggy version\nprint('buggy clamp:  ', run(TestClamp))\ntry:\n    assert clamp(5, 0, 10) == 5, 'clamp(5, 0, 10) should be 5'\nexcept AssertionError as err:\n    print('AssertionError:', err)\n",
-      "expected_output": "correct clamp: (3, 0, 0)\nbuggy clamp:   (3, 2, 0)\nAssertionError: clamp(5, 0, 10) should be 5\n"
+      "expected_output": "correct clamp: (3, 0, 0)\nbuggy clamp:   (3, 2, 0)\nAssertionError: clamp(5, 0, 10) should be 5\n",
+      "more": [
+        {
+          "title": "Failures versus errors",
+          "body": "Three tests for an email cleaner: two check results and one expects an `AttributeError` for a number. The second version forgets to strip spaces; the third calls a method that does not exist, so predict which counts go up as failures and which as errors.",
+          "code": "import unittest\n\ndef normalise(email):\n    return email.strip().lower()\n\nclass TestNormalise(unittest.TestCase):\n    def test_lowercases(self):\n        self.assertEqual(normalise('Ana@Example.COM'), 'ana@example.com')\n\n    def test_strips_spaces(self):\n        self.assertEqual(normalise('  raj@site.org '), 'raj@site.org')\n\n    def test_rejects_non_text(self):\n        with self.assertRaises(AttributeError):\n            normalise(42)\n\ndef run(case):\n    suite = unittest.defaultTestLoader.loadTestsFromTestCase(case)\n    result = unittest.TestResult()\n    suite.run(result)\n    return result.testsRun, len(result.failures), len(result.errors)\n\nprint('strip and lower:', run(TestNormalise))\nnormalise = lambda email: email.lower()                      # forgot to strip\nprint('lower only:     ', run(TestNormalise))\nnormalise = lambda email: email.replace(' ', '').lowercase()  # no such method\nprint('typo version:   ', run(TestNormalise))",
+          "expected_output": "strip and lower: (3, 0, 0)\nlower only:      (3, 1, 0)\ntypo version:    (3, 0, 2)\n"
+        },
+        {
+          "title": "Which leap-year test fails?",
+          "body": "Four tests pin down the leap-year rule, and `failing_tests` returns the names of the ones that fail. Predict which test name appears when `is_leap` is replaced by the naive `year % 4 == 0`.",
+          "code": "import unittest\n\ndef is_leap(year):\n    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)\n\nclass TestLeap(unittest.TestCase):\n    def test_ordinary(self):\n        self.assertFalse(is_leap(2023))\n\n    def test_four(self):\n        self.assertTrue(is_leap(2024))\n\n    def test_century(self):\n        self.assertFalse(is_leap(1900))\n\n    def test_four_hundred(self):\n        self.assertTrue(is_leap(2000))\n\ndef failing_tests(case):\n    result = unittest.TestResult()\n    unittest.defaultTestLoader.loadTestsFromTestCase(case).run(result)\n    return sorted(test.id().split('.')[-1] for test, _ in result.failures)\n\nprint('full rule:', failing_tests(TestLeap))\nis_leap = lambda year: year % 4 == 0\nprint('divisible by 4 only:', failing_tests(TestLeap))",
+          "expected_output": "full rule: []\ndivisible by 4 only: ['test_century']\n"
+        }
+      ]
     },
     {
       "id": "traceback",
@@ -228,7 +242,21 @@
       "title": "Run it: read a traceback, frame by frame",
       "body": "`report` averages each group, and one group is empty. Instead of letting the error stop the program, this\ncatches it and lists the traceback's frames, oldest first: the call at the bottom of the program, then\n`report`, then `average`, where the division failed. The empty list was passed in by `report`.",
       "code": "import traceback\n\ndef average(xs):\n    return sum(xs) / len(xs)\n\ndef report(groups):\n    return [round(average(g), 1) for g in groups]\n\ntry:\n    report([[2, 4], [], [5]])\nexcept ZeroDivisionError as err:\n    for frame in traceback.extract_tb(err.__traceback__):\n        print(\"line\", frame.lineno, \"in\", frame.name)\n    print(type(err).__name__ + \":\", err)\n",
-      "expected_output": "line 10 in <module>\nline 7 in report\nline 4 in average\nZeroDivisionError: division by zero\n"
+      "expected_output": "line 10 in <module>\nline 7 in report\nline 4 in average\nZeroDivisionError: division by zero\n",
+      "more": [
+        {
+          "title": "A missing menu item",
+          "body": "`bill` adds up `price_of` each item, and `cake` is not on the menu. Predict the frames, oldest first, and notice that the generator expression inside `sum` gets a frame of its own.",
+          "code": "import traceback\n\nprices = {\"tea\": 2, \"scone\": 3}\n\ndef price_of(item):\n    return prices[item]\n\ndef bill(items):\n    return sum(price_of(i) for i in items)\n\ntry:\n    print(bill([\"tea\", \"cake\"]))\nexcept KeyError as err:\n    for frame in traceback.extract_tb(err.__traceback__):\n        print(\"line\", frame.lineno, \"in\", frame.name)\n    print(type(err).__name__ + \":\", err)",
+          "expected_output": "line 12 in <module>\nline 9 in bill\nline 9 in <genexpr>\nline 6 in price_of\nKeyError: 'cake'\n"
+        },
+        {
+          "title": "An age that is not a number",
+          "body": "`oldest` converts each entry with `int` and one of them is the word `forty`. Predict how many frames the traceback has, which line each one points at, and the exact message `ValueError` carries.",
+          "code": "import traceback\n\ndef parse_age(text):\n    return int(text)\n\ndef oldest(entries):\n    ages = []\n    for entry in entries:\n        ages.append(parse_age(entry))\n    return max(ages)\n\ntry:\n    print(oldest([\"34\", \"41\", \"forty\"]))\nexcept ValueError as err:\n    frames = traceback.extract_tb(err.__traceback__)\n    print(len(frames), \"frames\")\n    for frame in frames:\n        print(\"line\", frame.lineno, \"in\", frame.name)\n    print(type(err).__name__ + \":\", err)",
+          "expected_output": "3 frames\nline 13 in <module>\nline 9 in oldest\nline 4 in parse_age\nValueError: invalid literal for int() with base 10: 'forty'\n"
+        }
+      ]
     },
     {
       "id": "testcase",

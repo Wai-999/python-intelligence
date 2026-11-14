@@ -207,7 +207,21 @@
       "title": "Run it: a quick standard-library tour",
       "body": "Predict each line. Seeding `random` makes its numbers repeatable.",
       "code": "import statistics\nfrom collections import Counter\nimport random as rnd\n\nscores = [72, 90, 85, 90, 64]\nprint(statistics.mean(scores), statistics.median(scores))\nprint(Counter(scores).most_common(1))\nrnd.seed(7)\nprint(rnd.randint(1, 6) in range(1, 7))\nprint(__name__)",
-      "expected_output": "80.2 85\n[(90, 2)]\nTrue\n__main__\n"
+      "expected_output": "80.2 85\n[(90, 2)]\nTrue\n__main__\n",
+      "more": [
+        {
+          "title": "Maths and letters",
+          "body": "Three ways to import: the whole `math` module, just `gcd` from it, and `string` under the alias `st`. Predict each line, including what `math.__name__` is.",
+          "code": "import math\nfrom math import gcd\nimport string as st\n\nprint(math.sqrt(49), math.floor(2.7), math.ceil(2.1))\nprint(round(math.pi, 3))\nprint(gcd(36, 48))\nprint(st.ascii_lowercase[:5], len(st.digits))\nprint(math.__name__)",
+          "expected_output": "7.0 2 3\n3.142\n12\nabcde 10\nmath\n"
+        },
+        {
+          "title": "Shuffling, counting and the mode",
+          "body": "Seeding `random` makes the shuffle repeatable, `Counter` counts letters in `mississippi`, and `statistics.mode` finds the most common value. Predict the two `Counter` results and the mode.",
+          "code": "import random\nfrom collections import Counter\nimport statistics\n\nrandom.seed(3)\ndeck = [\"A\", \"K\", \"Q\", \"J\", \"10\"]\nrandom.shuffle(deck)\nprint(deck)\nprint(random.choice([\"red\", \"blue\"]) in [\"red\", \"blue\"])\nletters = Counter(\"mississippi\")\nprint(letters[\"s\"], letters.most_common(2))\nprint(statistics.mode([2, 5, 5, 9]))",
+          "expected_output": "['A', 'Q', 'J', '10', 'K']\nTrue\n4 [('i', 4), ('s', 4)]\n5\n"
+        }
+      ]
     },
     {
       "id": "avgword",

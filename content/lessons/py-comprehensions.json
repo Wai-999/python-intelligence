@@ -236,7 +236,21 @@
       "title": "Run it: three comprehensions",
       "body": "Predict each line, including what the set comprehension does with the duplicate.",
       "code": "words = [\"apple\", \"Bob\", \"cat\", \"apple\"]\nprint([w.upper() for w in words if len(w) > 3])\nprint({w: len(w) for w in words})\nprint(sorted({w[0].lower() for w in words}))",
-      "expected_output": "['APPLE', 'APPLE']\n{'apple': 5, 'Bob': 3, 'cat': 3}\n['a', 'b', 'c']\n"
+      "expected_output": "['APPLE', 'APPLE']\n{'apple': 5, 'Bob': 3, 'cat': 3}\n['a', 'b', 'c']\n",
+      "more": [
+        {
+          "title": "Squares of the evens",
+          "body": "A list comprehension with a filter, a dict comprehension that records each remainder, and a sum over a filtered list. Predict all three lines.",
+          "code": "nums = [3, 8, 11, 14, 20]\nprint([n * n for n in nums if n % 2 == 0])\nprint({n: n % 2 for n in nums})\nprint(sum([n for n in nums if n > 10]))",
+          "expected_output": "[64, 196, 400]\n{3: 1, 8: 0, 11: 1, 14: 0, 20: 0}\n45\n"
+        },
+        {
+          "title": "Unpacking score tuples",
+          "body": "Each comprehension unpacks a `(name, score)` pair as it goes. Watch what the set comprehension does with the two 45s, and predict the order of the pairs on the last line.",
+          "code": "scores = [(\"ana\", 72), (\"bo\", 45), (\"cy\", 88), (\"di\", 45)]\nprint([name for name, score in scores if score >= 70])\nprint({name: score // 10 for name, score in scores})\nprint(sorted({score for name, score in scores}))\nprint([(x, y) for x in [1, 2] for y in [\"a\", \"b\"]])",
+          "expected_output": "['ana', 'cy']\n{'ana': 7, 'bo': 4, 'cy': 8, 'di': 4}\n[45, 72, 88]\n[(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]\n"
+        }
+      ]
     },
     {
       "id": "positives",

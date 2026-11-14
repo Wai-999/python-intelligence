@@ -223,7 +223,21 @@
       "title": "Run it: two days of temperatures",
       "body": "Rows are days, columns are morning/noon/evening. Predict each line, including the shapes.",
       "code": "import numpy as np\n\ntemps = np.array([[18, 21, 17], [24, 22, 19]])\nprint(temps.shape)\nprint(temps.mean())\nprint(temps.max(axis=1))\nprint(temps[temps > 20])\nprint(temps * 2 - 1)",
-      "expected_output": "(2, 3)\n20.166666666666668\n[21 24]\n[21 24 22]\n[[35 41 33]\n [47 43 37]]\n"
+      "expected_output": "(2, 3)\n20.166666666666668\n[21 24]\n[21 24 22]\n[[35 41 33]\n [47 43 37]]\n",
+      "more": [
+        {
+          "title": "Sales by product and day",
+          "body": "Rows are three products, columns are four days. Predict each line: the totals per day, per product, the day each product sold best, how many zero cells there are, and the bottom-right corner slice.",
+          "code": "import numpy as np\n\nsales = np.array([[3, 5, 2, 4], [1, 0, 6, 2], [7, 7, 1, 3]])\nprint(sales.shape)\nprint(sales.sum(axis=0))\nprint(sales.sum(axis=1))\nprint(sales.argmax(axis=1))\nprint((sales == 0).sum())\nprint(sales[1:, 2:])",
+          "expected_output": "(3, 4)\n[11 12  9  9]\n[14  9 18]\n[1 2 0]\n1\n[[6 2]\n [1 3]]\n"
+        },
+        {
+          "title": "Sprint times",
+          "body": "Four 100 m times in seconds. Predict the fastest time and its index, the gaps to it, the boolean mask, the speeds in metres per second, and what happens when the array is reshaped to 2 by 2.",
+          "code": "import numpy as np\n\ntimes = np.array([12.5, 11.8, 13.1, 12.0])\nprint(times.min(), times.argmin())\nprint(times - times.min())\nprint(times < 12.4)\nprint(np.round(100 / times, 2))\ngrid = times.reshape(2, 2)\nprint(grid)\nprint(grid.mean(axis=0))",
+          "expected_output": "11.8 1\n[0.7 0.  1.3 0.2]\n[False  True False  True]\n[8.   8.47 7.63 8.33]\n[[12.5 11.8]\n [13.1 12. ]]\n[12.8 11.9]\n"
+        }
+      ]
     },
     {
       "id": "above",

@@ -276,7 +276,21 @@
       "title": "Run it: next, single use, and laziness",
       "body": "Two values by hand with `next`, the rest with `list`, then nothing on the second `list`. Then a sum of a\nmillion squares that never builds a list, and the first five even numbers from an endless counter.",
       "code": "def squares(n):\n    for k in range(n):\n        yield k * k\n\ngen = squares(4)\nprint(next(gen), next(gen))\nprint(list(gen))\nprint(list(gen))\n\nprint(sum(x * x for x in range(1_000_000)))\n\nimport itertools\nevens = (n for n in itertools.count() if n % 2 == 0)\nprint(list(itertools.islice(evens, 5)))\n",
-      "expected_output": "0 1\n[4, 9]\n[]\n333332833333500000\n[0, 2, 4, 6, 8]\n"
+      "expected_output": "0 1\n[4, 9]\n[]\n333332833333500000\n[0, 2, 4, 6, 8]\n",
+      "more": [
+        {
+          "title": "A countdown that announces liftoff",
+          "body": "`countdown` prints `liftoff` only after its last `yield`. Predict the order of the first lines, then what happens when `next` is called on a finished generator, and finally two one-line generator expressions over some readings.",
+          "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n    print('liftoff')\n\ngen = countdown(3)\nprint(next(gen))\nprint(list(gen))\ntry:\n    next(gen)\nexcept StopIteration:\n    print('nothing left')\n\nreadings = [3, 8, 12, 5, 20, 1]\nprint(any(r > 10 for r in readings))\nprint(sum(1 for r in readings if r % 2 == 0))",
+          "expected_output": "3\nliftoff\n[2, 1]\nnothing left\nTrue\n3\n"
+        },
+        {
+          "title": "Endless Fibonacci numbers",
+          "body": "`fib` never ends, so `itertools.islice` and a loop with `break` decide how much of it to take. Predict the three lines, then the running totals from a second, finite generator.",
+          "code": "import itertools\n\ndef fib():\n    a, b = 0, 1\n    while True:\n        yield a\n        a, b = b, a + b\n\nprint(list(itertools.islice(fib(), 8)))\nsmall = []\nfor x in fib():\n    if x >= 50:\n        break\n    small.append(x)\nprint(small)\nprint(sum(itertools.islice(fib(), 10)))\n\ndef running_total(values):\n    total = 0\n    for v in values:\n        total += v\n        yield total\n\nprint(list(running_total([5, 10, 20])))",
+          "expected_output": "[0, 1, 1, 2, 3, 5, 8, 13]\n[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]\n88\n[5, 15, 35]\n"
+        }
+      ]
     },
     {
       "id": "running",

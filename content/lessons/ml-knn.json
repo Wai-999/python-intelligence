@@ -227,7 +227,21 @@
       "title": "Run it: k from 1 to 9",
       "body": "One training example (3.5) is labelled `b` among the `a`s. Predict which `k` copes best with it.",
       "code": "train_x = [1.0, 2.0, 2.5, 3.0, 3.5, 6.0, 7.0, 8.0, 9.0, 10.0]\ntrain_y = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b']\nval_x = [3.4, 3.6, 4.0, 6.5, 2.2]\nval_y = ['a', 'a', 'a', 'b', 'a']\n\ndef predict(x, k):\n    order = sorted(range(len(train_x)), key=lambda i: abs(train_x[i] - x))\n    votes = {}\n    for i in order[:k]:\n        votes[train_y[i]] = votes.get(train_y[i], 0) + 1\n    return max(sorted(votes), key=votes.get)\n\nfor k in (1, 3, 5, 9):\n    preds = [predict(x, k) for x in val_x]\n    acc = sum(p == t for p, t in zip(preds, val_y)) / len(val_y)\n    print(k, preds, acc)\n",
-      "expected_output": "1 ['b', 'b', 'b', 'b', 'a'] 0.4\n3 ['a', 'a', 'a', 'b', 'a'] 1.0\n5 ['a', 'a', 'a', 'b', 'a'] 1.0\n9 ['b', 'b', 'b', 'b', 'b'] 0.2\n"
+      "expected_output": "1 ['b', 'b', 'b', 'b', 'a'] 0.4\n3 ['a', 'a', 'a', 'b', 'a'] 1.0\n5 ['a', 'a', 'a', 'b', 'a'] 1.0\n9 ['b', 'b', 'b', 'b', 'b'] 0.2\n",
+      "more": [
+        {
+          "title": "Cats and dogs on a grid",
+          "body": "Eight animals sit on a 2D grid, with one `dog` at `(2, 2)` in the middle of the cats. Using squared distance, predict the label of the three query points for `k` of 1, 3 and 5.",
+          "code": "train = [(1, 1, 'cat'), (1, 2, 'cat'), (2, 1, 'cat'), (2, 2, 'dog'),\n         (6, 6, 'dog'), (7, 6, 'dog'), (6, 7, 'dog'), (7, 7, 'dog')]\nqueries = [(1.4, 1.6), (2.3, 2.1), (6.4, 6.6)]\n\ndef predict(qx, qy, k):\n    order = sorted(train, key=lambda p: (p[0] - qx) ** 2 + (p[1] - qy) ** 2)\n    votes = {}\n    for x, y, label in order[:k]:\n        votes[label] = votes.get(label, 0) + 1\n    return max(sorted(votes), key=votes.get)\n\nfor k in (1, 3, 5):\n    print(k, [predict(qx, qy, k) for qx, qy in queries])",
+          "expected_output": "1 ['cat', 'dog', 'dog']\n3 ['cat', 'cat', 'dog']\n5 ['cat', 'cat', 'dog']\n"
+        },
+        {
+          "title": "Pricing a flat by its neighbours",
+          "body": "k-nearest neighbours can predict a number too: average the prices of the `k` flats closest in size. Predict the price of an 85 m² and a 115 m² flat for each `k`, and think about what `k = 7` means when there are only seven flats.",
+          "code": "sizes = [50, 60, 70, 80, 90, 100, 120]\nprices = [150, 175, 200, 230, 260, 300, 350]\n\ndef predict_price(size, k):\n    order = sorted(range(len(sizes)), key=lambda i: abs(sizes[i] - size))\n    nearest = order[:k]\n    return round(sum(prices[i] for i in nearest) / k, 1)\n\nfor k in (1, 2, 3, 7):\n    print(k, predict_price(85, k), predict_price(115, k))",
+          "expected_output": "1 230.0 350.0\n2 245.0 325.0\n3 230.0 303.3\n7 237.9 237.9\n"
+        }
+      ]
     },
     {
       "id": "knn",

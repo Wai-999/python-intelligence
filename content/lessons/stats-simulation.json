@@ -309,6 +309,20 @@
       "expected_output": "10000\n2 12\n0.1704\n7.04\n",
       "cites": [
         "bb-dice"
+      ],
+      "more": [
+        {
+          "title": "Twenty coin flips, then five thousand",
+          "body": "A seeded `random.Random` makes the run repeatable. Twenty flips can land well away from half heads; predict whether the 5000-flip share lands closer to 0.5.",
+          "code": "import random\n\nrng = random.Random(7)\nflips = [rng.choice(\"HT\") for _ in range(20)]\nprint(\"\".join(flips))\nprint(flips.count(\"H\") / len(flips))\n\nheads = 0\nfor _ in range(5000):\n    if rng.random() < 0.5:\n        heads = heads + 1\nprint(heads / 5000)",
+          "expected_output": "THTHHHTHHHHTTHHHTHHH\n0.7\n0.4986\n"
+        },
+        {
+          "title": "Shared birthdays in a room of 23",
+          "body": "Put 23 random birthdays in a room 4000 times and count how often at least two match, using `set` to spot a repeat. Guess the share before running; most people guess too low.",
+          "code": "import random\n\nrng = random.Random(3)\ntrials = 4000\nmatches = 0\nfor _ in range(trials):\n    birthdays = [rng.randint(1, 365) for _ in range(23)]\n    if len(set(birthdays)) < 23:\n        matches = matches + 1\nprint(matches)\nprint(round(matches / trials, 2))",
+          "expected_output": "2036\n0.51\n"
+        }
       ]
     },
     {
