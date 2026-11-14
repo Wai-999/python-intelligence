@@ -2,12 +2,12 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { isExercise, isGraded, type Lesson, type Step, type ExerciseStep } from "../content/types";
 import type { Recommendation } from "../curriculum/graph";
 import type { LessonProgress } from "../progress/types";
-import { CodeCell } from "./CodeCell";
 import { Exercise, type AttemptDetail } from "./Exercise";
 import { inline, Prose } from "./Prose";
 import { Quiz } from "./Quiz";
 import { FurtherReading, StepSources } from "./Sources";
 import { TraceViewer } from "./TraceViewer";
+import { Examples } from "./Examples";
 
 const KIND_LABEL: Record<Step["kind"], string> = {
   motivation: "Why it matters", intuition: "Intuition", visual: "See it run", formal: "The rules",
@@ -117,7 +117,7 @@ export function LessonView(p: Props) {
       <StepSources lesson={lesson} step={step} />
 
       {step.kind === "visual" && <TraceViewer key={`${lesson.id}:${step.id}`} visual={step.visual} />}
-      {step.kind === "example" && <CodeCell key={`${lesson.id}:${step.id}`} id={`ex-${lesson.id}-${step.id}`} initial={step.code} packages={lesson.packages} />}
+      {step.kind === "example" && <Examples key={`${lesson.id}:${step.id}`} lessonId={lesson.id} step={step} packages={lesson.packages} />}
       {isExercise(step) && (
         <Exercise key={`${lesson.id}:${step.id}:${p.generation}`} step={step} packages={lesson.packages} lessonId={lesson.id} draft={p.drafts[step.id]}
                   record={progress?.steps[step.id]}

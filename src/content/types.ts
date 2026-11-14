@@ -90,11 +90,20 @@ export interface VisualStep extends BaseStep {
   visual: { type: "call-trace"; code: string; frames: TraceFrame[] };
 }
 
+/** A further worked example for the same idea (§5 "Try another example"); its output is checked like the main one. */
+export interface MoreExample {
+  title: string;
+  body: string;
+  code: string;
+  expected_output: string;
+}
+
 export interface ExampleStep extends BaseStep {
   kind: "example";
   code: string;
   /** Expected stdout; checked by the content validator. */
   expected_output: string;
+  more?: MoreExample[];
 }
 
 export interface PyTest {
