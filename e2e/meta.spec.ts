@@ -73,3 +73,18 @@ test("in the browser, lesson 1's transfer traces the code that runs: hard-coded 
   await expect(failed).toContainText("computed from the names before it");
   await expect(page.locator(".console pre").first()).toHaveText("12.0\n"); // the traced re-run printed nothing extra
 });
+
+test("in the browser, a multi-line answer passes lesson 1's structure check and a same-line read before a literal doesn't", async ({ page }) => {
+  test.setTimeout(240_000);
+  const l = valuesNames as unknown as Lesson;
+  const at = l.steps.findIndex((s) => s.kind === "transfer");
+  await page.goto(`./#/lesson/${l.id}/${at}`);
+  await page.locator("textarea.editor-input").fill("price = 2.5\ncount = 4\nsubtotal = (price\n            * count)\ntax = (subtotal\n       * 0.2)\ntotal = subtotal + tax\n");
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  await expect(page.getByText("All checks pass")).toBeVisible({ timeout: 180_000 });
+  await page.locator("textarea.editor-input").fill("price = 2.5\ncount = 4\nprint(price, count); subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n");
+  await page.getByRole("button", { name: "▶ Run checks" }).click();
+  const failed = page.locator(".checks li.fail");
+  await expect(failed).toHaveCount(1, { timeout: 180_000 });
+  await expect(failed).toContainText("computed from the names before it");
+});

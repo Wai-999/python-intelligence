@@ -8,14 +8,18 @@
    "price = 2.5\ncount = 4\n\n\ndef unused():\n    subtotal = price * count\n    tax = subtotal * 0.2\n    total = subtotal + tax\n\n\nsubtotal = 10.0\ntax = 2.0\ntotal = 12.0\n",
    "price = 2.5\ncount = 4\nif False:\n    subtotal = price * count\n    tax = subtotal * 0.2\n    total = subtotal + tax\nsubtotal = 10.0\ntax = 2.0\ntotal = 12.0\n",
    "price = 2.5\ncount = 4\nsubtotal = price * count\nsubtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
-   "price = 2.5\ncount = 4\nprint(price, count)\nsubtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n"
+   "price = 2.5\ncount = 4\nprint(price, count)\nsubtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
+   "price = 2.5\ncount = 4\nprint(price, count); subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
+   "price = 2.5\ncount = 4\nx = price * count; subtotal = 10.0\ntax = subtotal * 0.2\ntotal = subtotal + tax\n"
   ],
   "accept": [
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = subtotal * 1.2\n",
    "price = 2.5\ncount = 4\nsubtotal = count * price\ntax = 0.2 * subtotal\ntotal = tax + subtotal\n",
    "price = 2.5\ncount = 4\nsubtotal = price\nsubtotal = subtotal * count\ntax = subtotal * 0.2\ntotal = subtotal + tax\n",
    "price = 2.5\ncount = 4\nsubtotal = price\nsubtotal *= count\ntax = subtotal * 0.2\ntotal = subtotal\ntotal += tax\n",
-   "price = 2.5\ncount = 4\nif count > 0:\n    subtotal = price * count\nelse:\n    subtotal = 0.0\ntax: float = subtotal * 0.2\ntotal = subtotal + tax\n"
+   "price = 2.5\ncount = 4\nif count > 0:\n    subtotal = price * count\nelse:\n    subtotal = 0.0\ntax: float = subtotal * 0.2\ntotal = subtotal + tax\n",
+   "price = 2.5\ncount = 4\nsubtotal = (price\n            * count)\ntax = (subtotal\n       * 0.2)\ntotal = subtotal + \\\n    tax\n",
+   "price = 2.5\ncount = 4\nsubtotal = price * count; tax = subtotal * 0.2; total = subtotal + tax\n"
   ]
  },
  "py-functions": {
