@@ -375,6 +375,11 @@
           "name": "the most common value, not the middle one",
           "code": "assert vote([1, 1, 5, 6, 7]) == 1 and vote([4, 4, 2, 2, 9]) == 2",
           "concept": "bagging"
+        },
+        {
+          "name": "the last index can be out of bag",
+          "code": "assert out_of_bag(4, [0, 1, 2]) == [3] and out_of_bag(1, []) == [0]",
+          "concept": "bootstrap-sampling"
         }
       ],
       "solution": "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"

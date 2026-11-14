@@ -387,6 +387,11 @@
           "name": "predictions move down as well as up",
           "code": "assert all(abs(p + 1.5) < 1e-12 for p in boost([-2.0, -4.0], 1, 0.5)), boost([-2.0, -4.0], 1, 0.5)\nassert all(abs(p + 3.0) < 1e-6 for p in boost([-2.0, -4.0], 30, 0.5))",
           "concept": "boosting"
+        },
+        {
+          "name": "the learner fits the mean, not the median",
+          "code": "assert all(abs(p - 3.0) < 1e-12 for p in boost([0.0, 0.0, 9.0], 1, 1.0)), boost([0.0, 0.0, 9.0], 1, 1.0)",
+          "concept": "boosting"
         }
       ],
       "solution": "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"

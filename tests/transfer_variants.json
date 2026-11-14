@@ -129,7 +129,8 @@
    "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except:\n            pass\n    return ages\n",
    "def parse_age(text):\n    age = int(text.strip())\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n",
    "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n",
-   "def parse_age(text):\n    try:\n        age = int(text.strip())\n    except ValueError:\n        raise ValueError\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
+   "def parse_age(text):\n    try:\n        age = int(text.strip())\n    except ValueError:\n        raise ValueError\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n",
+   "def parse_age(text):\n    age = int(text.strip())\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except (ValueError, TypeError):\n            pass\n    return ages\n"
   ],
   "accept": [
    "def parse_age(text):\n    age = int(text)\n    if not 0 <= age <= 150:\n        raise ValueError(f\"age must be between 0 and 150, not {age}\")\n    return age\n\n\ndef valid_ages(texts):\n    ages = []\n    for t in texts:\n        try:\n            ages.append(parse_age(t))\n        except ValueError:\n            pass\n    return ages\n"
@@ -211,7 +212,8 @@
   ],
   "accept": [
    "def first_repeat(items):\n    seen = {}\n    for item in items:\n        if item in seen:\n            return item\n        seen[item] = True\n    return None\n",
-   "def first_repeat(items):\n    seen = set()\n    for item in items:\n        if item in seen:\n            return item\n        seen |= {item}\n    return None\n"
+   "def first_repeat(items):\n    seen = set()\n    for item in items:\n        if item in seen:\n            return item\n        seen |= {item}\n    return None\n",
+   "def first_repeat(items):\n    seen = set()\n    i = 0\n    while i < len(items):\n        item = items[i]\n        if item in seen:\n            return item\n        seen.add(item)\n        i = i + 1\n    return None\n"
   ]
  },
  "ml-vectors": {
@@ -331,7 +333,8 @@
  "ml-forests": {
   "reject": [
    "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return max(p for p, c in counts.items() if c == top)\n",
-   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    return sorted(predictions)[(len(predictions) - 1) // 2]\n"
+   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n)) - set(sample))\n\n\ndef vote(predictions):\n    return sorted(predictions)[(len(predictions) - 1) // 2]\n",
+   "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    return sorted(set(range(n - 1)) - set(sample))\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"
   ],
   "accept": [
    "from collections import Counter\n\n\ndef out_of_bag(n, sample):\n    used = set(sample)\n    return [i for i in range(n) if i not in used]\n\n\ndef vote(predictions):\n    counts = Counter(predictions)\n    top = max(counts.values())\n    return min(p for p, c in counts.items() if c == top)\n"
@@ -341,7 +344,8 @@
   "reject": [
    "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n",
    "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = 0.5 * sum(r) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n",
-   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * abs(sum(r)) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n"
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * abs(sum(r)) / len(r)\n        preds = [p + step for p in preds]\n    return preds\n",
+   "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sorted(r)[len(r) // 2]\n        preds = [p + step for p in preds]\n    return preds\n"
   ],
   "accept": [
    "def residuals(ys, preds):\n    return [y - p for y, p in zip(ys, preds)]\n\n\ndef boost(ys, rounds, lr):\n    preds = [0.0] * len(ys)\n    for _ in range(rounds):\n        r = residuals(ys, preds)\n        step = lr * sum(r) / len(r)\n        for i in range(len(preds)):\n            preds[i] += step\n    return preds\n"
@@ -394,7 +398,8 @@
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return sum(1 for v in a if lo <= v <= hi)\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return _count(a, lo, hi)\n\n\ndef _count(a, lo, hi):\n    n = 0\n    for v in a:\n        n += lo <= v <= hi\n    return n\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return _counter(a, lo, hi)\n\n\ndef _count(a, lo, hi):\n    n = 0\n    for v in a:\n        n += lo <= v <= hi\n    return n\n\n\n_counter = _count\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
-   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    M = np.asarray(M, dtype=float)\n    return np.sum(M, axis=0) // len(M)\n"
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    M = np.asarray(M, dtype=float)\n    return np.sum(M, axis=0) // len(M)\n",
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    M = np.asarray(M)\n    out = np.empty_like(M[0])\n    out[:] = M.mean(axis=0)\n    return out\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.count_nonzero((lo <= a) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
