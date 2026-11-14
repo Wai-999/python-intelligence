@@ -335,6 +335,11 @@
           "name": "swaps each pair",
           "code": "pairs = [(1, 'a'), (2, 'b')]\nassert swap_pairs(pairs) == [('a', 1), ('b', 2)]\nassert pairs == [(1, 'a'), (2, 'b')] and swap_pairs([]) == []",
           "concept": "unpacking"
+        },
+        {
+          "name": "points that are all negative",
+          "code": "assert bounding_box([(-5, -2), (-1, -7)]) == ((-5, -7), (-1, -2)), bounding_box([(-5, -2), (-1, -7)])",
+          "concept": "unpacking"
         }
       ],
       "solution": "def bounding_box(points):\n    min_x, min_y = points[0]\n    max_x, max_y = points[0]\n    for x, y in points:\n        min_x, max_x = min(min_x, x), max(max_x, x)\n        min_y, max_y = min(min_y, y), max(max_y, y)\n    return ((min_x, min_y), (max_x, max_y))\n\n\ndef swap_pairs(pairs):\n    swapped = []\n    for a, b in pairs:\n        swapped.append((b, a))\n    return swapped\n"
