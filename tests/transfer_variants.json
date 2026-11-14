@@ -258,7 +258,8 @@
   "accept": [
    "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.asarray(points, dtype=float) @ R.T\n\n\ndef mix(A, b):\n    return np.linalg.inv(np.asarray(A, dtype=float)) @ np.asarray(b, dtype=float)\n",
    "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return np.matmul(np.asarray(points, dtype=float), R.T)\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n",
-   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return R.dot(np.asarray(points, dtype=float).T).T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    return R.dot(np.asarray(points, dtype=float).T).T\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n",
+   "import numpy as np\n\n\ndef rotate(points, degrees):\n    t = np.radians(degrees)\n    R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])\n    from numpy import matmul as mm\n    return mm(np.asarray(points, dtype=float), R.T)\n\n\ndef mix(A, b):\n    return np.linalg.solve(np.asarray(A, dtype=float), np.asarray(b, dtype=float))\n"
   ]
  },
  "ml-derivatives": {
