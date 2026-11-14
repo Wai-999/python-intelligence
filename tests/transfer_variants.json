@@ -103,7 +103,8 @@
   "reject": [
    "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name: price for name, price in items if price > 0}\n",
    "def square_evens(numbers):\n    out = []\n    for n in numbers:\n        if n % 2 == 0:\n            out.append(n * n)\n    return out\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n",
-   "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price != 0}\n"
+   "def square_evens(numbers):\n    return [n * n for n in numbers if n % 2 == 0]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price != 0}\n",
+   "def square_evens(numbers):\n    unused = [n for n in numbers]\n    out = []\n    for n in numbers:\n        if n % 2 == 0:\n            out.append(n * n)\n    return out\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n"
   ],
   "accept": [
    "def square_evens(numbers):\n    return [n * n for n in numbers if not n % 2]\n\n\ndef price_index(items):\n    return {name.lower(): price for name, price in items if price > 0}\n",
@@ -355,7 +356,8 @@
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return 0\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return M.mean()\n",
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.sum((a >= lo) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return sum(1 for v in a if lo <= v <= hi)\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
-   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return _count(a, lo, hi)\n\n\ndef _count(a, lo, hi):\n    n = 0\n    for v in a:\n        n += lo <= v <= hi\n    return n\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return _count(a, lo, hi)\n\n\ndef _count(a, lo, hi):\n    n = 0\n    for v in a:\n        n += lo <= v <= hi\n    return n\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n",
+   "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return _counter(a, lo, hi)\n\n\ndef _count(a, lo, hi):\n    n = 0\n    for v in a:\n        n += lo <= v <= hi\n    return n\n\n\n_counter = _count\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
   ],
   "accept": [
    "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    a = np.asarray(a)\n    return int(np.count_nonzero((lo <= a) & (a <= hi)))\n\n\ndef zero_negatives(a):\n    return np.where(np.asarray(a) < 0, 0, a)\n\n\ndef column_means(M):\n    return np.asarray(M, dtype=float).mean(axis=0)\n"
@@ -434,7 +436,8 @@
   ],
   "accept": [
    "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.random(), rng.random()\n        if x ** 2 + y ** 2 <= 1:\n            inside += 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n",
-   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.uniform(0, 1), rng.uniform(0, 1)\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    inside = 0\n    for _ in range(n):\n        x, y = rng.uniform(0, 1), rng.uniform(0, 1)\n        inside += x * x + y * y <= 1\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n",
+   "import random\n\n\ndef estimate_pi(n, seed):\n    rng = random.Random(seed)\n    xs = [rng.random() for _ in range(n)]\n    ys = [rng.random() for _ in range(n)]\n    inside = sum(x * x + y * y <= 1 for x, y in zip(xs, ys))\n    return 4 * inside / n\n\n\ndef dice_probability(target, trials, seed):\n    rng = random.Random(seed)\n    hits = sum(rng.randint(1, 6) + rng.randint(1, 6) == target for _ in range(trials))\n    return hits / trials\n"
   ]
  },
  "stats-summary": {

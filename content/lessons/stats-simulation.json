@@ -441,7 +441,7 @@
         },
         {
           "name": "the points decide the estimate",
-          "code": "import random as _random\nclass _Fixed:\n    def __init__(self, seed=None):\n        self._v = iter([0.1, 0.1, 0.9, 0.9, 1.0, 0.0, 0.0, 0.5])\n    def random(self):\n        return next(self._v)\n    def uniform(self, a, b):\n        return a + (b - a) * next(self._v)\n_real = _random.Random\n_own = globals().get('Random') is _real\n_random.Random = _Fixed\nif _own:\n    globals()['Random'] = _Fixed\ntry:\n    got = estimate_pi(4, 0)\nfinally:\n    _random.Random = _real\n    if _own:\n        globals()['Random'] = _real\nassert got == 3.0, f'points (0.1, 0.1), (0.9, 0.9), (1.0, 0.0) and (0.0, 0.5): three are inside (on the circle counts), so 4 x 3/4 = 3.0; got {got}'",
+          "code": "import random as _random\ndef _estimate(value):\n    class _Fixed:\n        def __init__(self, seed=None):\n            pass\n        def random(self):\n            return value\n        def uniform(self, a, b):\n            return a + (b - a) * value\n    real, own = _random.Random, globals().get('Random') is _random.Random\n    _random.Random = _Fixed\n    if own:\n        globals()['Random'] = _Fixed\n    try:\n        return estimate_pi(4, 0)\n    finally:\n        _random.Random = real\n        if own:\n            globals()['Random'] = real\nassert _estimate(0.75) == 0.0, 'every point at (0.75, 0.75) is outside the circle (0.75² + 0.75² = 1.125), so the estimate is 0'\nassert _estimate(0.5) == 4.0, 'every point at (0.5, 0.5) is inside the circle, so the estimate is 4'",
           "concept": "estimation"
         }
       ],

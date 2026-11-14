@@ -297,7 +297,7 @@
       "kind": "transfer",
       "difficulty": 3,
       "title": "Transfer: cleaning sensor readings",
-      "body": "Write `count_in_range(a, lo, hi)`: how many values lie between `lo` and `hi`, inclusive. Write `zero_negatives(a)`: a new array\nwith negative values replaced by 0 (don't change `a`). Write `column_means(M)`: the mean of each column of a 2-D array.\nUse masks and numpy functions rather than Python loops.",
+      "body": "Write `count_in_range(a, lo, hi)`: how many values lie between `lo` and `hi`, inclusive. Write `zero_negatives(a)`: a new array\nwith negative values replaced by 0 (don't change `a`). Write `column_means(M)`: the mean of each column of a 2-D array.\nUse masks and numpy functions: no Python loops or comprehensions anywhere in your code.",
       "starter": "import numpy as np\n\n\ndef count_in_range(a, lo, hi):\n    return 0\n\n\ndef zero_negatives(a):\n    a[a < 0] = 0\n    return a\n\n\ndef column_means(M):\n    return M.mean()\n",
       "hints": [
         "`int(np.sum((a >= lo) & (a <= hi)))`; `np.where(a < 0, 0, a)` builds a new array.",
@@ -327,7 +327,7 @@
         },
         {
           "name": "no Python loops",
-          "code": "import ast\n_tree = ast.parse(__source__)\n_defs = {n.name: n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef)}\ndef _reach(names):\n    seen, todo = set(), list(names)\n    while todo:\n        name = todo.pop()\n        if name in seen or name not in _defs:\n            continue\n        seen.add(name)\n        todo += [c.func.id for c in ast.walk(_defs[name]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]\n    return [_defs[n] for n in seen]\nfor _name in ('count_in_range', 'zero_negatives', 'column_means'):\n    _loops = [n for f in _reach([_name]) for n in ast.walk(f) if isinstance(n, (ast.For, ast.While, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))]\n    assert not _loops, f'{_name} (or a helper it calls) uses a Python loop; use masks and numpy functions instead'",
+          "code": "import ast\n_loops = [n for n in ast.walk(ast.parse(__source__)) if isinstance(n, (ast.For, ast.While, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))]\nassert not _loops, f'line {_loops[0].lineno if _loops else 0} uses a Python loop or comprehension; use masks and numpy functions instead'",
           "concept": "vectorization"
         }
       ],

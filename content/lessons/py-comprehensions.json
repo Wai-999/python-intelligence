@@ -315,7 +315,7 @@
       "kind": "transfer",
       "difficulty": 3,
       "title": "Transfer: a price list",
-      "body": "Write `square_evens(numbers)`, which returns the squares of the even numbers, in order, using a list comprehension.\nThen write `price_index(items)`, where `items` is a list of `(name, price)` pairs: return a dict from each name in\nlower case to its price, keeping only items with a price above 0.",
+      "body": "Write `square_evens(numbers)`, which returns the squares of the even numbers, in order, using a list comprehension (no for or while\nstatements).\nThen write `price_index(items)`, where `items` is a list of `(name, price)` pairs: return a dict from each name in\nlower case to its price, keeping only items with a price above 0.",
       "starter": "def square_evens(numbers):\n    return []\n\n\ndef price_index(items):\n    return {}\n",
       "hints": [
         "`[n * n for n in numbers if n % 2 == 0]`.",
@@ -350,7 +350,7 @@
         },
         {
           "name": "square_evens uses a list comprehension",
-          "code": "import ast\n_tree = ast.parse(__source__)\n_defs = {n.name: n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef)}\ndef _reach(names):\n    seen, todo = set(), list(names)\n    while todo:\n        name = todo.pop()\n        if name in seen or name not in _defs:\n            continue\n        seen.add(name)\n        todo += [c.func.id for c in ast.walk(_defs[name]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]\n    return [_defs[n] for n in seen]\nassert any(isinstance(n, ast.ListComp) for f in _reach(['square_evens']) for n in ast.walk(f)), 'build the list with a list comprehension'",
+          "code": "import ast\n_tree = ast.parse(__source__)\n_defs = {n.name: n for n in ast.walk(_tree) if isinstance(n, ast.FunctionDef)}\ndef _reach(names):\n    seen, todo = set(), list(names)\n    while todo:\n        name = todo.pop()\n        if name in seen or name not in _defs:\n            continue\n        seen.add(name)\n        todo += [c.func.id for c in ast.walk(_defs[name]) if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)]\n    return [_defs[n] for n in seen]\n_fns = _reach(['square_evens'])\nassert not [n for f in _fns for n in ast.walk(f) if isinstance(n, (ast.For, ast.While))], 'square_evens (or a helper it calls) uses a for or while statement: build the list with a list comprehension'\nassert any(isinstance(n, ast.ListComp) for f in _fns for n in ast.walk(f)), 'build the list with a list comprehension'",
           "concept": "list-comprehensions"
         }
       ],
