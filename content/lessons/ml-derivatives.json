@@ -188,7 +188,7 @@
         },
         {
           "title": "Three learning rates",
-          "body": "Gradient descent on `(x - 2)**2` starts at 0 and takes five steps with a step size of 0.1, 0.5 and 1.1. Each step multiplies the distance from 2 by `1 - 2 * lr`, so predict which run creeps, which lands exactly, and which blows up.",
+          "body": "Gradient descent on `(x - 2)**2` starts at 0 and takes five steps with a step size of 0.1, 0.5 and 1.1. Each step multiplies the signed error `x - 2` by `1 - 2 * lr`, so predict which run creeps towards 2, which lands exactly, and which overshoots further on every step.",
           "code": "def grad(x):\n    return 2 * (x - 2)\n\nfor lr in (0.1, 0.5, 1.1):\n    x = 0.0\n    for _ in range(5):\n        x = x - lr * grad(x)\n    print(f'lr = {lr}  x after 5 steps = {x:.4f}')",
           "expected_output": "lr = 0.1  x after 5 steps = 1.3446\nlr = 0.5  x after 5 steps = 2.0000\nlr = 1.1  x after 5 steps = 6.9766\n"
         }

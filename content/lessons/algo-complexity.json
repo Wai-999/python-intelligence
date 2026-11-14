@@ -281,9 +281,9 @@
       "more": [
         {
           "title": "Checking for duplicates",
-          "body": "Two ways to look for repeated values in a list of `n` items: compare every pair, or walk the list once while remembering what you have seen in a set. Predict how the two step counts grow when `n` is multiplied by 10.",
-          "code": "def pair_steps(xs):\n    steps = 0\n    for i in range(len(xs)):\n        for j in range(i + 1, len(xs)):\n            steps += 1\n    return steps\n\ndef seen_steps(xs):\n    seen = set()\n    steps = 0\n    for x in xs:\n        steps += 1\n        seen.add(x)\n    return steps\n\nfor n in (10, 100, 1000):\n    xs = list(range(n))\n    print(n, pair_steps(xs), seen_steps(xs))",
-          "expected_output": "10 45 10\n100 4950 100\n1000 499500 1000\n"
+          "body": "Two ways to ask whether a list of `n` items repeats a value: compare every pair, or walk the list once while remembering what you have seen in a set. Each returns whether it found a repeat and how many steps it took. With no repeats both must look at everything, so predict how the step counts grow when `n` is multiplied by 10, then how quickly each one spots the repeat in the last line.",
+          "code": "def pair_check(xs):\n    steps = 0\n    for i in range(len(xs)):\n        for j in range(i + 1, len(xs)):\n            steps += 1\n            if xs[i] == xs[j]:\n                return True, steps\n    return False, steps\n\ndef seen_check(xs):\n    seen = set()\n    steps = 0\n    for x in xs:\n        steps += 1\n        if x in seen:\n            return True, steps\n        seen.add(x)\n    return False, steps\n\nfor n in (10, 100, 1000):\n    xs = list(range(n))\n    print(n, pair_check(xs), seen_check(xs))\nprint(pair_check([4, 1, 7, 1]), seen_check([4, 1, 7, 1]))",
+          "expected_output": "10 (False, 45) (False, 10)\n100 (False, 4950) (False, 100)\n1000 (False, 499500) (False, 1000)\n(True, 5) (True, 4)\n"
         },
         {
           "title": "Adding up 1 to n",
