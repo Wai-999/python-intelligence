@@ -297,6 +297,10 @@ class _Tee:
         self.cut = False
 
     def write(self, text):
+        self.record(text)
+        return self.inner.write(text)
+
+    def record(self, text):
         if not self.cut:
             room = MAX_TRACE_OUTPUT - self.kept
             if len(text) <= room:
@@ -308,7 +312,11 @@ class _Tee:
                 self.parts.append("\n" + TRACE_OUTPUT_CUT + "\n")
                 self.kept = MAX_TRACE_OUTPUT
                 self.cut = True
-        return self.inner.write(text)
+
+    @property
+    def buffer(self):
+        """Bytes written to sys.stdout.buffer are kept (decoded) as well as passed on."""
+        return _BinaryTee(self, self.inner.buffer)
 
     def writelines(self, lines):
         for line in lines:
@@ -318,6 +326,23 @@ class _Tee:
         text = "".join(self.parts)
         self.parts.clear()
         return text
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+
+class _BinaryTee:
+    def __init__(self, tee, inner):
+        self.tee = tee
+        self.inner = inner
+
+    def write(self, data):
+        self.tee.record(bytes(data).decode(getattr(self.tee.inner, "encoding", None) or "utf-8", "replace"))
+        return self.inner.write(data)
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
 
     def __getattr__(self, name):
         return getattr(self.inner, name)
@@ -384,7 +409,10 @@ def _trace(code, max_frames):
             op = raw[at] if at >= 0 else None
             # Python 3.12 stops on the YIELD_VALUE itself; 3.13 and later on the RESUME just after it.
             at_yield = op == _YIELD or (at >= 2 and raw[at - 2] == _YIELD)
-            if at_yield and raised is GeneratorExit:
+            asynchronous = frame.f_code.co_flags & 0x380  # coroutine, iterable coroutine or async generator
+            if at_yield and raised is None and asynchronous:
+                note = name + " pauses."  # an await or async yield: the value passed is internal, so it isn't shown
+            elif at_yield and raised is GeneratorExit:
                 note = name + " is closed."
             elif at_yield and raised is not None:
                 note = name + " stops here: the error passes to its caller."

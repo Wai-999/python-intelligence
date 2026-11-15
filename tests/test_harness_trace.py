@@ -248,3 +248,25 @@ def test_print_write_and_writelines_all_reach_the_trace():
     code = "import sys\nprint('a')\nsys.stdout.write('b\\n')\nsys.stdout.writelines(['c', 'd\\n'])\nprint('e', end='')\n"
     f = frames(code)["trace"]["frames"]
     assert "".join(x.get("output", "") for x in f) == "a\nb\ncd\ne"
+
+
+def test_binary_writes_reach_the_trace_once_and_the_real_stdout():
+    import subprocess
+    import sys
+    src = Path(__file__).resolve().parents[1] / "src" / "py" / "harness.py"
+    script = ("import importlib.util as u, json\n"
+              f"s = u.spec_from_file_location('h', {str(src)!r}); h = u.module_from_spec(s); s.loader.exec_module(h)\n"
+              "r = h.trace_learner(\"import sys\\nprint('a')\\nsys.stdout.flush()\\nsys.stdout.buffer.write(b'bytes\\\\n')\\nsys.stdout.buffer.flush()\\n\")\n"
+              "import sys; sys.stderr.write(json.dumps(''.join(f.get('output', '') for f in r['trace']['frames'])))\n")
+    out = subprocess.run([sys.executable, "-I", "-c", script], capture_output=True, text=True)
+    assert out.stdout == "a\nbytes\n"  # still printed for real
+    assert __import__("json").loads(out.stderr) == "a\nbytes\n"  # and kept once in the trace
+
+
+def test_async_pauses_are_not_shown_as_values():
+    code = ("import asyncio\nasync def ticks():\n    for i in range(2):\n        await asyncio.sleep(0)\n        yield i\n\n"
+            "async def main():\n    return [v async for v in ticks()]\n\nprint(asyncio.run(main()))\n")
+    r = frames(code)
+    notes = [x["note"] for x in r["trace"]["frames"]]
+    assert r["ok"] and "".join(x.get("output", "") for x in r["trace"]["frames"]) == "[0, 1]\n"
+    assert "ticks pauses." in notes and not any("wrapped" in n or "object>" in n for n in notes)
