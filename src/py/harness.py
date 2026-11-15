@@ -146,7 +146,9 @@ MAX_TRACE_OUTPUT = 100_000  # characters of output kept in a trace, like the wor
 TRACE_OUTPUT_CUT = "[output truncated: only the first 100,000 characters are kept in the trace]"
 _HIDDEN = {"__builtins__", "__name__", "__source__"}
 _SCALARS = (int, float, complex, bool, type(None))
-_YIELD = __import__("dis").opmap.get("YIELD_VALUE")
+_OPS = __import__("dis").opmap
+_YIELD = _OPS.get("YIELD_VALUE")
+_RETURNS = {_OPS[name] for name in ("RETURN_VALUE", "RETURN_CONST") if name in _OPS}
 
 
 _TYPE_NAME = type.__dict__["__name__"]  # read a class's name without its metaclass's hooks
@@ -309,7 +311,6 @@ def _trace(code, max_frames):
     ns = {"__name__": "__main__", "__source__": code}
     frames = []
     state = {"truncated": False}
-    raising = set()  # frames an exception is passing through (cleared when a handler's line runs)
     out = _Tee(_sys.stdout)
 
     def add(info):
@@ -327,11 +328,6 @@ def _trace(code, max_frames):
     def record(frame, event, arg):
         if frame.f_code.co_filename != LEARNER_FILE:
             return None  # library code is not traced
-        if event == "exception":
-            raising.add(id(frame))
-            return tracer
-        if event == "line":
-            raising.discard(id(frame))
         if event not in ("line", "return"):
             return tracer
         if len(frames) >= max_frames:
@@ -342,15 +338,18 @@ def _trace(code, max_frames):
             note = "Next: line " + str(frame.f_lineno) + "."
         elif not frame.f_code.co_flags & 0x1:  # CO_OPTIMIZED: only functions (not the module or a class body) return
             return tracer
-        elif id(frame) in raising:
-            raising.discard(id(frame))
-            note = name + " stops here: the error passes to its caller."
-        elif _YIELD is not None and frame.f_lasti >= 0 and frame.f_code.co_code[frame.f_lasti] == _YIELD:
-            note = name + " yields " + _show(arg) + " and pauses."
-        elif frame.f_code.co_flags & 0x20:  # CO_GENERATOR, finishing
-            note = name + " has no more values to give."
         else:
-            note = name + " returns " + _show(arg) + "."
+            # How the frame is left is read from the instruction it stopped on: a return or a yield, or anything else
+            # (the raising instruction, or the re-raise at the end of a finally block) while an error passes through.
+            op = frame.f_code.co_code[frame.f_lasti] if frame.f_lasti >= 0 else None
+            if op == _YIELD:
+                note = name + " yields " + _show(arg) + " and pauses."
+            elif op not in _RETURNS:
+                note = name + " stops here: the error passes to its caller."
+            elif frame.f_code.co_flags & 0x20:  # CO_GENERATOR, finishing
+                note = name + " has no more values to give."
+            else:
+                note = name + " returns " + _show(arg) + "."
         add({"line": frame.f_lineno, "locals": _visible(frame.f_locals), "stack": _stack(frame), "note": note})
         return tracer
 

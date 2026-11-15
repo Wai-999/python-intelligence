@@ -134,3 +134,15 @@ def test_call_labels_show_every_kind_of_parameter():
     f = frames("def f(a, *rest, key=1, **more):\n    return a\n\nf(1, 2, 3, key=4, z=5)\n")["trace"]["frames"]
     calls = {x["stack"][-1] for x in f if len(x["stack"]) == 2}
     assert calls == {"f(1, *(2, 3), key=4, **{'z': 5})"}
+
+
+def test_finally_blocks_do_not_turn_an_error_into_a_return():
+    code = ("def cleanup():\n    try:\n        return 1 / 0\n    finally:\n        print('tidy')\n\n"
+            "def swallow():\n    try:\n        1 / 0\n    finally:\n        return 'kept'\n\n"
+            "def handled():\n    try:\n        1 / 0\n    except ZeroDivisionError:\n        return 'fixed'\n\n"
+            "print(swallow(), handled())\ntry:\n    cleanup()\nexcept ZeroDivisionError:\n    print('caught')\n")
+    r = frames(code)
+    notes = [x["note"] for x in r["trace"]["frames"]]
+    assert "cleanup stops here: the error passes to its caller." in notes and not any(n.startswith("cleanup returns") for n in notes)
+    assert "swallow returns 'kept'." in notes and "handled returns 'fixed'." in notes
+    assert "".join(x.get("output", "") for x in r["trace"]["frames"]) == "kept fixed\ntidy\ncaught\n"

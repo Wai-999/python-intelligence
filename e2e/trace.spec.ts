@@ -47,3 +47,20 @@ test("an exercise traces the learner's draft, including a call's stack", async (
   expect(sawCall).toBe(true);
   await expect(viewer.locator(".trace-out")).toHaveText("42");
 });
+
+test("in the browser's Python too, an error leaving through finally is not a return", async ({ page }) => {
+  test.setTimeout(180_000);
+  const at = functions.steps.findIndex((s) => s.kind === "guided");
+  await page.goto(`./#/lesson/py-functions/${at}`);
+  await page.locator("textarea.editor-input").fill(
+    "def cleanup():\n    try:\n        return 1 / 0\n    finally:\n        print('tidy')\n\ntry:\n    cleanup()\nexcept ZeroDivisionError:\n    print('caught')\n");
+  await page.getByRole("button", { name: "Show execution trace" }).click();
+  const viewer = page.getByRole("region", { name: "Execution visualiser" });
+  await expect(viewer).toBeVisible({ timeout: 120_000 });
+  const step = viewer.getByRole("button", { name: "Step ▶" });
+  const notes: string[] = [];
+  while (await step.isEnabled()) { await step.click(); notes.push(await viewer.locator(".trace-note").innerText()); }
+  expect(notes.some((n) => n.includes("cleanup stops here: the error passes to its caller."))).toBe(true);
+  expect(notes.some((n) => n.includes("cleanup returns"))).toBe(false);
+  await expect(viewer.locator(".trace-out")).toHaveText("tidy\ncaught");
+});
