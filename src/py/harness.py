@@ -337,6 +337,7 @@ def _trace(code, max_frames):
     ns = {"__name__": "__main__", "__source__": code}
     frames = []
     state = {"truncated": False, "module_line": None}  # the program's own last line, tracked past the frame cap
+    pending = {}  # frame id -> exception type raised in it since its last line (close() or throw() at a yield)
     out = _Tee(_sys.stdout)
 
     def add(info):
@@ -354,6 +355,11 @@ def _trace(code, max_frames):
     def record(frame, event, arg):
         if frame.f_code.co_filename != LEARNER_FILE:
             return None  # library code is not traced
+        if event == "exception":
+            pending[id(frame)] = arg[0]
+            return tracer
+        # A line means any exception so far was handled; a return ends the frame either way.
+        raised = pending.pop(id(frame), None) if event in ("line", "return") else None
         if event not in ("line", "return"):
             return tracer
         if event == "line" and frame.f_code.co_name == "<module>" and frame.f_back is not None \
@@ -373,7 +379,12 @@ def _trace(code, max_frames):
             raw, at = frame.f_code.co_code, frame.f_lasti
             op = raw[at] if at >= 0 else None
             # Python 3.12 stops on the YIELD_VALUE itself; 3.13 and later on the RESUME just after it.
-            if op == _YIELD or (at >= 2 and raw[at - 2] == _YIELD):
+            at_yield = op == _YIELD or (at >= 2 and raw[at - 2] == _YIELD)
+            if at_yield and raised is GeneratorExit:
+                note = name + " is closed."
+            elif at_yield and raised is not None:
+                note = name + " stops here: the error passes to its caller."
+            elif at_yield:
                 note = name + " yields " + _show(arg) + " and pauses."
             elif op not in _RETURNS:
                 note = name + " stops here: the error passes to its caller."

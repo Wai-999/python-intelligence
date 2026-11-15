@@ -64,3 +64,18 @@ test("in the browser's Python too, an error leaving through finally is not a ret
   expect(notes.some((n) => n.includes("cleanup returns"))).toBe(false);
   await expect(viewer.locator(".trace-out")).toHaveText("tidy\ncaught");
 });
+
+test("in the browser's Python, closing a paused generator reads as closed, not as another yield", async ({ page }) => {
+  test.setTimeout(180_000);
+  const at = functions.steps.findIndex((s) => s.kind === "guided");
+  await page.goto(`./#/lesson/py-functions/${at}`);
+  await page.locator("textarea.editor-input").fill("def gen():\n    yield 1\n    yield 2\n\ng = gen()\nprint(next(g))\ng.close()\n");
+  await page.getByRole("button", { name: "Show execution trace" }).click();
+  const viewer = page.getByRole("region", { name: "Execution visualiser" });
+  await expect(viewer).toBeVisible({ timeout: 120_000 });
+  const step = viewer.getByRole("button", { name: "Step ▶" });
+  const notes: string[] = [];
+  while (await step.isEnabled()) { await step.click(); notes.push(await viewer.locator(".trace-note").innerText()); }
+  expect(notes.filter((n) => n.includes("yields")).length).toBe(1);
+  expect(notes.some((n) => n.includes("gen is closed."))).toBe(true);
+});

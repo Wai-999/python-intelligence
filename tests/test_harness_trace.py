@@ -219,3 +219,13 @@ def test_numpy_scalars_are_shown_only_for_numpys_own_classes():
     assert harness.run_learner(code)["ok"]
     last = r["trace"]["frames"][-1]["locals"]
     assert last["s"] == "<Sneaky object>" and last["t"] == "7"
+
+
+def test_closing_or_throwing_into_a_generator_is_not_a_yield():
+    code = ("def gen():\n    yield 1\n    yield 2\n\ndef tough():\n    while True:\n        try:\n            yield 'ok'\n"
+            "        except ValueError:\n            pass\n\ng = gen()\nnext(g)\ng.close()\nh = gen()\nnext(h)\n"
+            "try:\n    h.throw(KeyError('x'))\nexcept KeyError:\n    pass\nt = tough()\nnext(t)\nt.throw(ValueError())\n")
+    notes = [x["note"] for x in frames(code)["trace"]["frames"]]
+    assert notes.count("gen yields 1 and pauses.") == 2 and "gen yields 2 and pauses." not in notes
+    assert "gen is closed." in notes and "gen stops here: the error passes to its caller." in notes
+    assert notes.count("tough yields 'ok' and pauses.") == 2  # caught the thrown error and yielded again
