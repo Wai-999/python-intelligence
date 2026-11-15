@@ -409,7 +409,7 @@ export function App() {
                   .catch((e) => { fail(e); return UNKNOWN_HELP; })
                   .then((stored) => {
                     if (detail.generation !== generationRef.current) return;
-                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp, detail.errorTags));
+                    record(exerciseEvents(l, step, detail.results, Math.max(detail.assistance, stored) as Assistance, stamp, detail.errorTags, detail.confidence));
                     stepBack(l, sid, creditedConcepts(l, step), Date.parse(stamp.at));
                   });
               }}

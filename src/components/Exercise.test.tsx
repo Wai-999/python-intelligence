@@ -132,3 +132,35 @@ describe("scaffold fading", () => {
     expect(note()).toBe("Suggested support: up to 1 hint. Use more or fewer as you like.");
   });
 });
+
+describe("the confidence prompt (§5 prediction)", () => {
+  beforeEach(() => run.mockReset());
+  afterEach(cleanup);
+  const fail = { ok: true, tests: [{ name: "x is 2", passed: false, message: "no", concept: "names" }], stdout: "", stderr: "", durationMs: 1 } as RunResult;
+
+  it("asks before the first run of a transfer, sends the rating with that attempt only, and never blocks running", async () => {
+    run.mockResolvedValue(fail);
+    const onResult = mount(2, { ...step, kind: "transfer" } as ExerciseStep);
+    expect(screen.getByRole("group", { name: /how sure are you/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Fairly sure" }));
+    runChecks();
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(onResult.mock.calls[0]![2].confidence).toBe(3);
+    expect(screen.queryByRole("group", { name: /how sure are you/ })).toBeNull(); // gone after the first run
+    await waitFor(() => expect((screen.getByRole("button", { name: /Run checks/ }) as HTMLButtonElement).disabled).toBe(false));
+    runChecks();
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(2));
+    expect("confidence" in onResult.mock.calls[1]![2]).toBe(false);
+  });
+
+  it("is skippable, and not asked on guided practice", async () => {
+    run.mockResolvedValue(fail);
+    const onResult = mount(2, { ...step, kind: "challenge" } as ExerciseStep);
+    runChecks(); // no rating chosen
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect("confidence" in onResult.mock.calls[0]![2]).toBe(false);
+    cleanup();
+    mount();
+    expect(screen.queryByRole("group", { name: /how sure are you/ })).toBeNull();
+  });
+});

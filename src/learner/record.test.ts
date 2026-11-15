@@ -31,6 +31,17 @@ describe("exercise events", () => {
     expect(buildModel([L], evs).concepts.get("loops")).toEqual(buildModel([L], plain).concepts.get("loops"));
   });
 
+  it("carry the learner's pre-run confidence on every event of the attempt, which feeds confidence calibration", () => {
+    const res = [{ concept: "loops", passed: false }, { concept: "loops", passed: false }, { concept: "ranges", passed: true }];
+    const evs = exerciseEvents(L, E1, res, 0, stamp, [], 5);
+    expect(evs.length).toBeGreaterThan(1);
+    expect(evs.every((e) => e.confidence === 5)).toBe(true);
+    expect(ordered(evs)).toHaveLength(evs.length); // accepted by the store's validation
+    expect(exerciseEvents(L, E1, res, 0, stamp).some((e) => "confidence" in e)).toBe(false);
+    // Certain but wrong: over-confident on loops.
+    expect(buildModel([L], evs).concepts.get("loops")!.confidenceCalibration).toBe(1);
+  });
+
   it("records each directly checked concept by its own checks, and untested concepts by the overall result", () => {
     const evs = exerciseEvents(L, E1, [{ concept: "loops", passed: true }, { concept: "loops", passed: true }, { concept: "ranges", passed: false }], 0, stamp);
     expect(evs.map((e) => [e.concept, e.passed, e.task, e.stepId, e.lessonId])).toEqual([

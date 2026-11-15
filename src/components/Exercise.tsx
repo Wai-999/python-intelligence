@@ -20,7 +20,13 @@ export interface AttemptDetail {
   generation: number;
   /** Diagnostic tags for an error in the learner's code (classifyError); empty when the checks ran. */
   errorTags: string[];
+  /** Self-rated confidence before this attempt (§5 prediction; feeds the model's confidence calibration), if given. */
+  confidence?: 1 | 3 | 5;
 }
+
+const CONFIDENCE: { value: 1 | 3 | 5; label: string }[] = [
+  { value: 1, label: "Guessing" }, { value: 3, label: "Fairly sure" }, { value: 5, label: "Certain" },
+];
 
 interface Props {
   step: ExerciseStep;
@@ -79,6 +85,11 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
     if (level > helped.current) { helped.current = level; onAssist(level); }
   };
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Before the first run of an unpassed transfer or challenge: an optional rating of how sure the learner is. It goes
+  // with that first attempt only, and never stands in the way of running.
+  const asksConfidence = (step.kind === "transfer" || step.kind === "challenge") && !record?.passed && failures === 0;
+  const [confidence, setConfidence] = useState<1 | 3 | 5 | null>(null);
+  const [rated, setRated] = useState(false); // the first run has happened in this visit
 
   useEffect(() => { setCode(draft ?? step.starter); }, [step.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -118,7 +129,9 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
         assistance: helped.current,
         generation: startedIn,
         errorTags: r.error ? classifyError(r.error) : [],
+        ...(confidence && !rated ? { confidence } : {}),
       });
+      setRated(true);
     } catch (e) {
       setResult({ ok: false, tests: [], stdout: "", stderr: "", durationMs: 0,
         error: { type: "LoadError", message: String((e as Error).message), line: null, summary: String((e as Error).message) } });
@@ -139,6 +152,16 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       <p className="difficulty" data-level={step.difficulty}>Difficulty: <strong>{DIFFICULTY_LABEL[step.difficulty]}</strong>
         <span aria-hidden="true"> {"●".repeat(step.difficulty)}{"○".repeat(3 - step.difficulty)}</span></p>
       {record?.passed && !result && <p className="pill ok">✓ Completed earlier. You can keep experimenting.</p>}
+      {asksConfidence && !rated && (
+        <fieldset className="confidence">
+          <legend>Before you run it: how sure are you that it will pass? <span className="muted">(optional)</span></legend>
+          {CONFIDENCE.map((c) => (
+            <label key={c.value} className="confidence-choice">
+              <input type="radio" name={`confidence-${lessonId}-${step.id}`} checked={confidence === c.value} onChange={() => setConfidence(c.value)} /> {c.label}
+            </label>
+          ))}
+        </fieldset>
+      )}
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
       <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed) && !mesoActive} />
       <Console result={result} live={live} />

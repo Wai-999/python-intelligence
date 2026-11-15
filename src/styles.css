@@ -313,3 +313,7 @@ main { min-width: 0; outline: none; }
   .trace-code li.active { outline: 2px solid Highlight; outline-offset: -2px; }
   :focus-visible { outline-color: Highlight; }
 }
+
+.confidence { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+.confidence legend { padding: 0 4px; font-size: 15px; }
+.confidence-choice { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; }

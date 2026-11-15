@@ -41,7 +41,8 @@ export function suggestedTier(model: LearnerModel, lesson: Lesson, step: Exercis
  * that concept's event (and to the untested concepts' events, which are credited with the overall result).
  */
 export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { concept?: string; passed: boolean; tags?: string[] }[] | null,
-                               assistance: Assistance, stamp: Stamp, errorTags: readonly string[] = []): LearnerEvent[] {
+                               assistance: Assistance, stamp: Stamp, errorTags: readonly string[] = [],
+                               confidence?: LearnerEvent["confidence"]): LearnerEvent[] {
   const lessonConcepts = new Set(lesson.concepts);
   const direct = [...new Set(step.tests.map((t) => t.concept).filter((c): c is string => !!c && lessonConcepts.has(c)))];
   const untested = lesson.concepts.filter((c) => !testedBy(lesson).has(c));
@@ -57,7 +58,8 @@ export function exerciseEvents(lesson: Lesson, step: ExerciseStep, results: { co
   return [...direct.map((c) => [c, outcome(c), true] as const), ...untested.map((c) => [c, overall, false] as const)].map(([concept, passed, isDirect]) => {
     const tags = passed ? [] : tagsFor(concept, isDirect);
     return { id: stamp.id(), at: stamp.at, lessonId: lesson.id, stepId: step.id, task: "exercise" as const, concept, passed, assistance,
-      policy: POLICY_VERSION, stepPassed: overall, attempt, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}) };
+      policy: POLICY_VERSION, stepPassed: overall, attempt, ...(tags.length ? { tags } : {}), ...(step.difficulty ? { difficulty: step.difficulty } : {}),
+      ...(confidence ? { confidence } : {}) };
   });
 }
 
