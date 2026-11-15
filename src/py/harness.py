@@ -216,7 +216,8 @@ def _show_unsafe(value, depth):
     elif issubclass(kind, type):
         text = "class " + _name_of(value)
     elif _library("numpy", "ndarray") is kind and value.dtype.kind in "biuf":
-        text = repr(value) if value.size <= 12 else "array of shape " + str(value.shape)
+        # tolist() gives plain Python numbers, formatted here: numpy's own repr would run any formatter the learner set.
+        text = "array(" + _show(value.tolist(), 0) + ")" if value.size <= 12 and value.ndim <= 2 else "array of shape " + str(tuple(int(d) for d in value.shape))
     elif _library("numpy", "generic") is not None and issubclass(kind, _library("numpy", "generic")) and value.dtype.kind in "biuf":
         text = repr(value.item())
     elif _library("pandas", "DataFrame") is kind:

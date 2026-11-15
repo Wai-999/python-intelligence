@@ -146,3 +146,16 @@ def test_finally_blocks_do_not_turn_an_error_into_a_return():
     assert "cleanup stops here: the error passes to its caller." in notes and not any(n.startswith("cleanup returns") for n in notes)
     assert "swallow returns 'kept'." in notes and "handled returns 'fixed'." in notes
     assert "".join(x.get("output", "") for x in r["trace"]["frames"]) == "kept fixed\ntidy\ncaught\n"
+
+
+def test_numpy_values_are_shown_without_numpys_configurable_printing():
+    code = ("import numpy as np\ncalls = []\n"
+            "np.set_printoptions(formatter={'int': lambda v: calls.append(v) or str(v)})\n"
+            "a = np.array([1, 2, 3])\nm = np.array([[1.5, 2.0], [3.0, 4.0]])\ns = a.sum()\nprint(len(calls))\n"
+            "np.set_printoptions(formatter=None)\n")
+    r = frames(code)
+    assert r["ok"] and "".join(x.get("output", "") for x in r["trace"]["frames"]) == "0\n"  # no formatter call while tracing
+    last = r["trace"]["frames"][-1]["locals"]
+    assert last["a"] == "array([1, 2, 3])" and last["m"] == "array([[1.5, 2.0], [3.0, 4.0]])" and last["s"] == "6"
+    import sys
+    assert sys.gettrace() is None and sys.stdout is not None  # tracing and stdout restored
