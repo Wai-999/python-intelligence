@@ -102,7 +102,7 @@ test.describe("a 320 px phone", () => {
     const m = await measure(page);
     expect(m.scrollWidth).toBeLessThanOrEqual(m.width);
     expect(m.header).toBeLessThanOrEqual(96);
-    await expect(page.locator(".conn.offline")).toContainText("lessons still work"); // the full sentence, for screen readers
+    await expect(page.locator(".conn.offline")).toContainText("lessons work"); // the full sentence, for screen readers
     // Menu reveals Library, the course total and Progress; Escape folds them back and returns focus.
     await expect(page.locator("header.top").getByRole("link", { name: "Library", exact: true })).toBeHidden();
     const toggle = page.getByRole("button", { name: "Menu" });

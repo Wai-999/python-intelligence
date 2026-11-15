@@ -318,3 +318,6 @@ main { min-width: 0; outline: none; }
 .confidence legend { padding: 0 4px; font-size: 15px; }
 .confidence-choice { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; }
 .code-trace { margin-top: 10px; }
+/* Below 1400 px the course total keeps its number but drops the decorative bar, so the header has room for the
+   offline notice even with wider fonts (CI's Linux fonts wrapped it). */
+@media (max-width: 1400px) { .overall .bar { display: none; } }

@@ -21,7 +21,7 @@ export function ConnectionStatus() {
     // aria-live, not role="status": the header is on every page, and pages keep their own status regions.
     <span className={`conn ${online ? "online" : "offline"}`} aria-live="polite">
       {online ? (controlled ? <span className="muted">Works offline</span> : null)
-        : <><span aria-hidden="true">⚠ </span>Offline<span className="conn-detail">: lessons still work; Python only if it was downloaded before</span></>}
+        : <><span aria-hidden="true">⚠ </span>Offline<span className="conn-detail">: lessons work; Python runs if downloaded earlier</span></>}
     </span>
   );
 }
