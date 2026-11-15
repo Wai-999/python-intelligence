@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import first from "../content/lessons/py-values-names.json" with { type: "json" };
+import arrays from "../content/lessons/np-arrays.json" with { type: "json" };
 
 // Interface items 10 and 15: layout guardrails on a phone (the "mobile" project) and on desktop, so the page stays
 // compact as content grows. Heights and widths are measured, not eyeballed.
@@ -48,4 +50,21 @@ test("offline, with a saved position, the header still fits the screen", async (
     expect(box.x + box.width, `${sel} inside the screen`).toBeLessThanOrEqual(m.width);
   }
   await context.setOffline(false);
+});
+
+test("the course total the phone header drops is in the progress panel", async ({ page }) => {
+  // Two completed lessons in different tracks, every graded step passed, imported like any backup.
+  const graded = new Set(["guided", "challenge", "transfer", "quiz"]);
+  const at = "2026-11-01T10:00:00.000Z";
+  const done = (l: { id: string; steps: { id: string; kind: string }[] }) => ({ lessonId: l.id, completed: true, completedAt: at, mastery: 1, struggles: {},
+    furthestStep: l.steps.length - 1,
+    steps: Object.fromEntries(l.steps.filter((s) => graded.has(s.kind)).map((s) => [s.id, { passed: true, attempts: 1, updatedAt: at, ...(s.kind === "quiz" ? { score: 1 } : {}) }])) });
+  const backup = { format: "python-intelligence-progress", version: 2, exportedAt: at, drafts: {}, position: null, assistance: {}, events: [],
+    lessons: [done(first), done(arrays)] };
+  await page.goto("./#/");
+  await page.getByRole("button", { name: "Progress" }).click();
+  await expect(page.locator(".course-total")).toHaveText("Lessons completed: 0 of 44");
+  await page.locator("input[type=file]").setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+  await expect(page.getByText("Progress imported.")).toBeVisible();
+  await expect(page.locator(".course-total")).toHaveText("Lessons completed: 2 of 44");
 });

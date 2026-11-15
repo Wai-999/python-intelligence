@@ -15,7 +15,8 @@ export function lastSaved(data: ProgressExport): string | null {
  * `onReplacing` returns a token for the replacement, which is handed back to `onChanged` when it finishes.
  */
 /** `revision` changes whenever this view saves something or reloads after a replacement, so "Last saved" follows it. */
-export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose, revision = "" }: { store: ProgressStore; busy: boolean; onReplacing: () => number; onChanged: (token: number) => void; onClose: () => void; revision?: string }) {
+/** `course` is the course total, shown here on every screen size (the header drops its counter on phones). */
+export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose, revision = "", course }: { store: ProgressStore; busy: boolean; onReplacing: () => number; onChanged: (token: number) => void; onClose: () => void; revision?: string; course?: { completed: number; total: number } }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const file = useRef<HTMLInputElement>(null);
@@ -67,6 +68,7 @@ export function ProgressPanel({ store, busy, onReplacing, onChanged, onClose, re
       <h2 id="pp-title" ref={heading} tabIndex={-1}>Your progress</h2>
       <p>Your progress is saved in <strong>this browser only</strong>. Nothing is sent to a server. To move it to another
          device, or to back it up, export it to a file and import that file elsewhere.</p>
+      {course && <p className="course-total">Lessons completed: <strong>{course.completed} of {course.total}</strong></p>}
       <p className="saved-at">{saved === undefined ? "Checking what is saved…" : saved === null ? "Nothing saved yet."
         : <>Last saved: <time dateTime={saved}>{new Date(saved).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</time>. Code you type is saved as you go.</>}</p>
       <div className="run-bar">

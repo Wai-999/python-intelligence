@@ -313,7 +313,7 @@ export function App() {
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
       {reloadFailed && <p className="pill bad" role="alert">Your saved progress couldn't be read back: {reloadFailed.message}. The page is paused so
         nothing overwrites it.{" "}<button type="button" className="btn" onClick={() => finishReplacement(reloadFailed.token)}>Try loading it again</button></p>}
-      {panel && store && <ProgressPanel store={store} busy={replacing} revision={`${generation}:${saveRev}`}
+      {panel && store && <ProgressPanel store={store} busy={replacing} revision={`${generation}:${saveRev}`} course={{ completed, total: LESSONS.length }}
                                   onReplacing={() => { generationRef.current += 1; setReplacing(true); return generationRef.current; }}
                                   onChanged={(token) => { channel.current?.postMessage("replaced"); finishReplacement(token); }}
                                   onClose={() => setPanel(false)} />}
