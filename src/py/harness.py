@@ -175,6 +175,15 @@ def _exact(kind, types):
     return any(kind is t for t in types)
 
 
+def _numpy_scalar(kind):
+    """`kind` is one of numpy's own numeric scalar classes (np.int64, np.float32, np.bool_, ...), by identity."""
+    np = _sys.modules.get("numpy")
+    if np is None:
+        return False
+    return any(kind is t for t in set(np.sctypeDict.values())
+               if isinstance(t, type) and t.__module__ == "numpy" and np.dtype(t).kind in "biuf")
+
+
 def _show(value, depth=0):
     """A short display string that never runs the learner's own code: exact built-in types are formatted here (strings
     and containers cut short), verified library arrays and tables by their shape, anything else by its type's name.
@@ -234,8 +243,8 @@ def _show_unsafe(value, depth):
     elif _library("numpy", "ndarray") is kind and value.dtype.kind in "biuf":
         # tolist() gives plain Python numbers, formatted here: numpy's own repr would run any formatter the learner set.
         text = "array(" + _show(value.tolist(), 0) + ")" if value.size <= 12 and value.ndim <= 2 else "array of shape " + str(tuple(int(d) for d in value.shape))
-    elif _library("numpy", "generic") is not None and issubclass(kind, _library("numpy", "generic")) and value.dtype.kind in "biuf":
-        text = repr(value.item())
+    elif _numpy_scalar(kind):  # numpy's own scalar classes only: a subclass could override item() or dtype
+        text = _show(value.item(), depth)
     elif _library("pandas", "DataFrame") is kind:
         text = "<DataFrame " + str(value.shape[0]) + " rows x " + str(value.shape[1]) + " columns>"
     elif _library("pandas", "Series") is kind:

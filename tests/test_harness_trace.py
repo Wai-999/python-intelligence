@@ -208,3 +208,14 @@ def test_set_displays_do_not_depend_on_the_hash_seed():
     seen = {subprocess.run([sys.executable, "-I", "-c", script], capture_output=True, text=True,
                            env={**os.environ, "PYTHONHASHSEED": seed}).stdout for seed in ("1", "2", "3", "4")}
     assert len(seen) == 1 and seen.pop().startswith("{'apple', 'date', 'fig'")
+
+
+def test_numpy_scalars_are_shown_only_for_numpys_own_classes():
+    code = ("import numpy as np\ncalls = []\nclass Sneaky(np.float64):\n    def item(self):\n        calls.append('item')\n"
+            "        return 0.0\n    @property\n    def dtype(self):\n        calls.append('dtype')\n        return np.dtype('f8')\n"
+            "s = Sneaky(2.5)\nt = np.int64(7)\nprint(len(calls))\n")
+    r = frames(code)
+    assert r["ok"] and "".join(x.get("output", "") for x in r["trace"]["frames"]) == "0\n"
+    assert harness.run_learner(code)["ok"]
+    last = r["trace"]["frames"][-1]["locals"]
+    assert last["s"] == "<Sneaky object>" and last["t"] == "7"
