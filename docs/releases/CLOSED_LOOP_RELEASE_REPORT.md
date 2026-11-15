@@ -150,4 +150,5 @@ the storage schema:
 ## Next step with the most value
 
 The owner's decision on G-T, which needs a server and API keys. Of the static-site work, what remains is marked
-**UNVERIFIED** above: manual screen-reader testing and performance on real mobile hardware.
+**UNVERIFIED** above: manual screen-reader testing, performance on real mobile hardware, end-to-end first loading
+with real compression on a slow link, and memory used inside the Python worker.
