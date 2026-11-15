@@ -208,7 +208,7 @@ def _show_unsafe(value, depth):
     elif _exact(kind, _CONTAINERS) and depth < 2:
         size = len(value)
         if kind is dict:
-            items = list(dict.items(value))[:8]
+            items = list(__import__("itertools").islice(dict.items(value), 8))  # only the shown entries
             inner = ", ".join(_show(k, depth + 1) + ": " + _show(v, depth + 1) for k, v in items)
         elif kind is set or kind is frozenset:
             if size > 200:
@@ -218,7 +218,7 @@ def _show_unsafe(value, depth):
             items = shown[:8]
             inner = ", ".join(items)
         else:
-            items = list(value)[:8]
+            items = value[:8]  # an exact list or tuple: slicing copies only what is shown
             inner = ", ".join(_show(v, depth + 1) for v in items)
         if size > len(items):
             inner += ", ..."

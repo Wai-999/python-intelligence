@@ -229,3 +229,16 @@ def test_closing_or_throwing_into_a_generator_is_not_a_yield():
     assert notes.count("gen yields 1 and pauses.") == 2 and "gen yields 2 and pauses." not in notes
     assert "gen is closed." in notes and "gen stops here: the error passes to its caller." in notes
     assert notes.count("tough yields 'ok' and pauses.") == 2  # caught the thrown error and yielded again
+
+
+def test_showing_a_large_collection_copies_only_what_it_shows():
+    import tracemalloc
+    big_list, big_dict = list(range(1_000_000)), {i: i for i in range(200_000)}
+    tracemalloc.start()
+    try:
+        assert harness._show(big_list).endswith(", ...]") and harness._show(big_dict).endswith(", ...}")
+        assert harness._show(tuple(big_list[:20]))
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+    assert peak < 200_000, peak  # a full copy of the list alone would be about 8 MB
