@@ -248,7 +248,19 @@ main { min-width: 0; outline: none; }
   .top-right .btn { padding: 8px 10px; min-height: 44px; }
   .top-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .conn.offline { flex-basis: 100%; text-align: right; } /* its own line when shown, never pushing the page sideways */
-  .overall { display: none; } /* the map and the progress panel carry the course total on phones */
+  .overall { display: none; } /* the progress panel carries the course total on phones */
+}
+/* The Menu button exists only on narrow phones; elsewhere its group sits inline as if it weren't there. */
+.menu-toggle { display: none; }
+.more-nav { display: contents; }
+@media (max-width: 400px) {
+  .menu-toggle { display: inline-block; }
+  .top-right .btn { padding: 8px; }
+  .more-nav { display: none; }
+  .more-nav.open { display: flex; flex-basis: 100%; justify-content: flex-end; align-items: center; gap: 6px; }
+  /* The short notice; the full sentence stays for screen readers. */
+  .conn-detail { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .conn.offline { flex-basis: auto; }
 }
 
 /* Course map by track (G-20) and the lesson title as the page heading. */

@@ -57,6 +57,9 @@ export function App() {
   // Where the learner last was (the saved position), for the header's Resume link.
   const [position, setPosition] = useState<{ lessonId: string; stepIndex: number } | null>(null);
   const [panel, setPanel] = useState(false);
+  // Narrow phones (≤ 400 px): Resume, Library, the course total and Progress fold behind a Menu button (see styles.css).
+  const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<LearnerEvent[]>([]);
   // The same events, updated synchronously as they are recorded, so the feedback controller sees the run just made.
@@ -148,6 +151,7 @@ export function App() {
     });
   }, [reload]);
 
+  useEffect(() => { setMenu(false); }, [route]);
   useEffect(() => {
     const on = () => setRoute(parseHash(location.hash));
     addEventListener("hashchange", on);
@@ -298,16 +302,20 @@ export function App() {
         )}
         <div className="top-right">
           <ConnectionStatus />
-          {resumeHref && <a className="btn ghost resume" href={resumeHref}>Resume ▶<span className="sr-only">: {graph.byId.get(position!.lessonId)!.title}</span></a>}
-          <a className="btn ghost" href="#/library" aria-current={route.view === "library" ? "page" : undefined}>Library</a>
           <a className="btn ghost" href="#/review" aria-current={route.view === "review" ? "page" : undefined}>
             Review{dueCount > 0 && <> <span className="badge" aria-label={`${dueCount} due`}>{dueCount}</span></>}
           </a>
-          <span className="overall" aria-label={`${completed} of ${LESSONS.length} lessons completed`}>
-            <span className="bar"><span style={{ width: `${(completed / LESSONS.length) * 100}%` }} /></span>
-            {completed}/{LESSONS.length}
-          </span>
-          <button type="button" className="btn ghost" onClick={() => setPanel((x) => !x)} aria-expanded={panel} disabled={!store}>Progress</button>
+          <button type="button" ref={menuButton} className="btn ghost menu-toggle" aria-expanded={menu} aria-controls="more-nav" onClick={() => setMenu((x) => !x)}>Menu</button>
+          <div id="more-nav" className={`more-nav${menu ? " open" : ""}`}
+               onKeyDown={(e) => { if (e.key === "Escape" && menu) { setMenu(false); menuButton.current?.focus(); } }}>
+            {resumeHref && <a className="btn ghost resume" href={resumeHref}>Resume ▶<span className="sr-only">: {graph.byId.get(position!.lessonId)!.title}</span></a>}
+            <a className="btn ghost" href="#/library" aria-current={route.view === "library" ? "page" : undefined}>Library</a>
+            <span className="overall" aria-label={`${completed} of ${LESSONS.length} lessons completed`}>
+              <span className="bar"><span style={{ width: `${(completed / LESSONS.length) * 100}%` }} /></span>
+              {completed}/{LESSONS.length}
+            </span>
+            <button type="button" className="btn ghost" onClick={() => setPanel((x) => !x)} aria-expanded={panel} disabled={!store}>Progress</button>
+          </div>
         </div>
       </header>
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}

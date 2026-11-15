@@ -68,3 +68,46 @@ test("the course total the phone header drops is in the progress panel", async (
   await expect(page.getByText("Progress imported.")).toBeVisible();
   await expect(page.locator(".course-total")).toHaveText("Lessons completed: 2 of 44");
 });
+
+test.describe("a 320 px phone", () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+  test("with a saved position, a review badge and offline, the header fits in 96 px; Menu holds Resume and the rest", async ({ page, context }) => {
+    test.skip(test.info().project.name !== "mobile", "phone only");
+    await page.clock.install({ time: new Date("2026-03-02T09:00:00Z") });
+    // A completed concept whose first review falls due a day later gives the Review badge.
+    const at = (h: number) => new Date(Date.parse("2026-03-01T09:00:00Z") + h * 3600_000).toISOString();
+    const backup = { format: "python-intelligence-progress", version: 2, exportedAt: at(0), lessons: [], drafts: {}, position: null, assistance: {},
+      events: [["circle", "exercise"], ["practice-2", "exercise"], ["check", "quiz"]].map(([stepId, task], i) => ({ id: `s${i}`, at: at(i * 0.5),
+        lessonId: "py-values-names", stepId, task, concept: "names", passed: true, assistance: 0, policy: "learner-heuristic-1" })) };
+    await page.goto("./#/lesson/py-conditionals/1"); // a saved position: Resume shows elsewhere
+    await expect(page.locator("#step-title")).toBeFocused();
+    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("button", { name: "Progress" }).click();
+    await page.locator("input[type=file]").setInputFiles({ name: "b.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+    await expect(page.getByText("Progress imported.")).toBeVisible();
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.clock.setSystemTime(new Date("2026-03-03T10:00:00Z"));
+    await page.evaluate(() => { location.hash = "#/library"; });
+    await expect(page.locator(".top .badge")).toBeVisible();
+    await context.setOffline(true);
+    await expect(page.locator(".conn.offline")).toContainText("Offline");
+    const m = await measure(page);
+    expect(m.scrollWidth).toBeLessThanOrEqual(m.width);
+    expect(m.header).toBeLessThanOrEqual(96);
+    await expect(page.locator(".conn.offline")).toContainText("lessons still work"); // the full sentence, for screen readers
+    // Menu reveals Library, the course total and Progress; Escape folds them back and returns focus.
+    await expect(page.locator("header.top").getByRole("link", { name: "Library", exact: true })).toBeHidden();
+    const toggle = page.getByRole("button", { name: "Menu" });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator("header.top").getByRole("link", { name: "Library", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Resume/ })).toHaveAttribute("href", "#/lesson/py-conditionals/1");
+    await expect(page.getByRole("button", { name: "Progress" })).toBeVisible();
+    expect((await measure(page)).scrollWidth).toBeLessThanOrEqual(320); // the open menu wraps, never scrolls sideways
+    await page.locator("header.top").getByRole("link", { name: "Library", exact: true }).focus();
+    await page.keyboard.press("Escape");
+    await expect(toggle).toBeFocused();
+    await expect(page.locator("header.top").getByRole("link", { name: "Library", exact: true })).toBeHidden();
+    await context.setOffline(false);
+  });
+});
