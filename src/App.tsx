@@ -286,11 +286,11 @@ export function App() {
     <div className="app">
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
-        <a className="brand" href="#/"><span className="logo" aria-hidden="true">py</span> Python Intelligence</a>
+        <a className="brand" href="#/"><span className="logo" aria-hidden="true">py</span> <span className="brand-name">Python Intelligence</span></a>
         {nowLesson && (
           <p className="now">
             <span className="now-course"><span className="sr-only">Course: </span>{TRACK_LABEL[nowLesson.track]}</span>
-            <span className="now-sep" aria-hidden="true"> · </span>
+            <span className="now-sep course-sep" aria-hidden="true"> · </span>
             <span className="now-lesson"><span className="sr-only">{atNow ? "Current lesson: " : "Last lesson: "}</span>{nowLesson.title}</span>
             <span className="now-sep" aria-hidden="true"> · </span>
             <span className="now-label">{lessonLabel(nowLesson, progress.get(nowLesson.id), events, place.testedOut.has(nowLesson.id))}</span>

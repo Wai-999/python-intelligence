@@ -3,6 +3,8 @@
   --border: #d5dbe6; --accent: #2456c4; --accent-ink: #ffffff; --accent-soft: #e3ebfb;
   --ok: #17713e; --ok-soft: #e2f4e9; --bad: #b3261e; --bad-soft: #fbe7e5; --warn: #7a5300; --warn-soft: #fff3d6;
   --code-bg: #0f172a; --code-ink: #e2e8f0; --hl: #fde68a;
+  /* Edges that carry state (inputs, step dots, badges) and the focus ring: at least 3:1 on every background (src/styles.test.ts). */
+  --border-strong: #7d879b; --focus: #2456c4; --hl-edge: #facc15;
   --radius: 10px; --gap: clamp(12px, 2.5vw, 20px);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -14,6 +16,7 @@
     --border: #2c3852; --accent: #7aa2ff; --accent-ink: #0b1020; --accent-soft: #1d2a4a;
     --ok: #63d394; --ok-soft: #143222; --bad: #ff8a80; --bad-soft: #3a1714; --warn: #f5c35b; --warn-soft: #3a2c0b;
     --code-bg: #0a0f1c; --hl: #4b3f12;
+    --border-strong: #6f7d9f; --focus: #9db8ff; --hl-edge: #facc15;
     color-scheme: dark;
   }
 }
@@ -21,7 +24,7 @@
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; box-shadow: 0 0 0 2px var(--surface); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip { position: absolute; left: -999px; top: 8px; background: var(--surface); padding: 8px 12px; z-index: 10; }
 .skip:focus { left: 8px; }
@@ -50,7 +53,7 @@ main { min-width: 0; outline: none; }
 .fineprint { color: var(--muted); font-size: 14px; max-width: 70ch; }
 .foot { color: var(--muted); font-size: 13px; text-align: center; padding: 16px; border-top: 1px solid var(--border); }
 
-.btn { font: inherit; font-size: 15px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+.btn { font: inherit; font-size: 15px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-strong);
   background: var(--surface); color: var(--text); cursor: pointer; min-height: 40px; }
 .btn:hover:not(:disabled) { border-color: var(--accent); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
@@ -87,7 +90,7 @@ main { min-width: 0; outline: none; }
 .lesson h2 { font-size: clamp(22px, 3.4vw, 30px); line-height: 1.2; margin: 4px 0 12px; outline: none; }
 .kind { color: var(--accent); font-weight: 600; font-size: 14px; margin: 18px 0 0; }
 .stepper { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 8px 0 0; }
-.dot { display: block; width: 26px; height: 10px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); }
+.dot { display: block; width: 26px; height: 10px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border-strong); }
 .dot.graded { border-style: dashed; }
 .dot.done { background: var(--ok); border-color: var(--ok); }
 .dot.current { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -145,7 +148,7 @@ main { min-width: 0; outline: none; }
 .trace-code { list-style: none; margin: 0; padding: 10px 0; background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius);
   font: 14px/1.7 var(--mono); overflow-x: auto; }
 .trace-code li { display: flex; gap: 12px; padding: 0 12px; white-space: pre; }
-.trace-code li.active { background: color-mix(in srgb, var(--hl) 35%, transparent); box-shadow: inset 4px 0 0 #facc15; }
+.trace-code li.active { background: color-mix(in srgb, var(--hl) 35%, transparent); box-shadow: inset 4px 0 0 var(--hl-edge); }
 .trace-code .ln { opacity: .5; min-width: 1.5em; text-align: right; }
 .trace-state h4 { margin: 0 0 4px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .stack { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; }
@@ -216,7 +219,7 @@ main { min-width: 0; outline: none; }
 .rubric h3 { margin: 0 0 6px; font-size: 16px; }
 
 /* Placement check (G-12) */
-.map-item.tested .map-badge { background: var(--surface-2); color: var(--text); border: 1px dashed var(--border); }
+.map-item.tested .map-badge { background: var(--surface-2); color: var(--text); border: 1px dashed var(--border-strong); }
 .diagnostic { max-width: 72ch; }
 .diag-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .placement ul { margin: 4px 0 8px; }
@@ -237,7 +240,15 @@ main { min-width: 0; outline: none; }
 /* Learning header (G-20): course, lesson and standing, and Resume. */
 .top .now { margin: 0; flex: 1 1 auto; min-width: 0; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .top .now-lesson { color: var(--text); font-weight: 600; }
-@media (max-width: 700px) { .top .now-course, .top .now-sep { display: none; } .top .now { flex-basis: 100%; order: 3; } }
+@media (max-width: 700px) { .top .now-course, .top .course-sep { display: none; } .top .now { flex-basis: 100%; order: 3; } }
+/* Phones: the logo alone (its name stays for screen readers) so the brand and the navigation share one row. */
+@media (max-width: 560px) {
+  .top { padding-block: 8px; row-gap: 4px; }
+  .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .top-right .btn { padding: 8px 10px; min-height: 44px; }
+  .top-right { gap: 6px; }
+  .overall { display: none; } /* the map and the progress panel carry the course total on phones */
+}
 
 /* Course map by track (G-20) and the lesson title as the page heading. */
 .track + .track { margin-top: 20px; }
@@ -264,7 +275,27 @@ main { min-width: 0; outline: none; }
 /* Reflection on the recap (G-21). */
 .reflection { margin: 16px 0; }
 .reflection label { display: block; margin: 4px 0 6px; }
-.reflect-input { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.reflect-input { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); }
 /* Empty but still exposed (never display:none), so assistive technology hears the text when it arrives. */
 .result-summary:empty { margin: 0; padding: 0; }
 .result-summary.pill.ok { color: var(--ok); }
+
+/* More contrast on request: stronger edges and muted text, and an opaque header (no translucency or blur). */
+@media (prefers-contrast: more) {
+  :root { --border: var(--border-strong); --muted: #3b4458; }
+  .top { background: var(--surface); backdrop-filter: none; }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) { :root { --muted: #c3cbdc; } }
+/* Forced colours (Windows High Contrast): backgrounds are replaced, so states keep a visible outline; their text already
+   says what they mean. */
+@media (forced-colors: active) {
+  .dot, .map-badge, .checks li, .choice.right, .choice.wrong, .pill { border: 1px solid CanvasText; }
+  .dot.done { background: CanvasText; }
+  .dot.current { outline: 2px solid Highlight; }
+  .btn.primary { border: 2px solid ButtonText; background: ButtonFace; color: ButtonText; }
+  .logo { background: Canvas; color: CanvasText; border: 1px solid CanvasText; }
+  /* Dark code surfaces would keep their fill under system text colours: use the system pair instead. */
+  .trace-code, .trace-code li, .editor-input, .console, .code-block, pre { background: Canvas; color: CanvasText; }
+  .trace-code li.active { outline: 2px solid Highlight; outline-offset: -2px; }
+  :focus-visible { outline-color: Highlight; }
+}

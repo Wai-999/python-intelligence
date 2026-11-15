@@ -136,3 +136,37 @@ for (const scheme of ["light", "dark"] as const) {
     });
   });
 }
+
+// Interface item 12: forced colours (Windows High Contrast) and a request for more contrast, in both schemes.
+for (const scheme of ["light", "dark"] as const) {
+  for (const media of [{ forcedColors: "active" as const }, { contrast: "more" as const }]) {
+    const name = "forcedColors" in media ? "forced colours" : "more contrast";
+    test(`home, a trace and failed checks have no violations with ${name} (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme, ...media });
+      await page.goto("./");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await scan(page, `home, ${name}`);
+      await page.goto("./#/lesson/py-conditionals/2");
+      await page.getByRole("button", { name: "Step ▶" }).click();
+      await scan(page, `call-trace viewer, ${name}`);
+      await page.goto("./#/lesson/py-values-names/3");
+      await page.getByRole("button", { name: "▶ Run checks" }).click();
+      await expect(page.locator(".checks li.fail").first()).toBeVisible({ timeout: 90_000 });
+      await scan(page, `failed checks + tutor note, ${name}`);
+    });
+  }
+}
+
+test("with more contrast requested, edges use the strong border and the header is opaque", async ({ page }) => {
+  await page.emulateMedia({ contrast: "more" });
+  await page.goto("./");
+  const look = await page.evaluate(() => {
+    const css = getComputedStyle(document.documentElement);
+    const top = getComputedStyle(document.querySelector(".top")!);
+    return { border: css.getPropertyValue("--border").trim(), strong: css.getPropertyValue("--border-strong").trim(), blur: top.backdropFilter, bg: top.backgroundColor };
+  });
+  expect(look.border).toBe(look.strong); // computed custom properties substitute var(), so both read #7d879b
+  expect(look.strong).toBe("#7d879b");
+  expect(look.blur).toBe("none");
+  expect(look.bg).toBe("rgb(255, 255, 255)");
+});

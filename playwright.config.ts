@@ -18,7 +18,7 @@ export default defineConfig({
   use: { baseURL: LIVE ?? `http://127.0.0.1:${PORT}${BASE_PATH}`, trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /smoke/ },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /smoke|layout/ },
   ],
   webServer: LIVE ? undefined : {
     // Serve dist/ under the sub-path to prove the relative base works without knowing the repo name.
