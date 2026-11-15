@@ -57,7 +57,7 @@ export function App() {
   // Where the learner last was (the saved position), for the header's Resume link.
   const [position, setPosition] = useState<{ lessonId: string; stepIndex: number } | null>(null);
   const [panel, setPanel] = useState(false);
-  // Narrow phones (≤ 400 px): Resume, Library, the course total and Progress fold behind a Menu button (see styles.css).
+  // Phones (≤ 560 px): Resume, Library, the course total and Progress fold behind a Menu button (see styles.css).
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const [ready, setReady] = useState(false);

@@ -238,7 +238,7 @@ main { min-width: 0; outline: none; }
 .another-bar { margin: 8px 0 0; }
 
 /* Learning header (G-20): course, lesson and standing, and Resume. */
-.top .now { margin: 0; flex: 1 1 auto; min-width: 0; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .now { margin: 0; flex: 1 1 0; min-width: 0; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .top .now-lesson { color: var(--text); font-weight: 600; }
 @media (max-width: 700px) { .top .now-course, .top .course-sep { display: none; } .top .now { flex-basis: 100%; order: 3; } }
 /* Phones: the logo alone (its name stays for screen readers) so the brand and the navigation share one row. */
@@ -250,10 +250,10 @@ main { min-width: 0; outline: none; }
   .conn.offline { flex-basis: 100%; text-align: right; } /* its own line when shown, never pushing the page sideways */
   .overall { display: none; } /* the progress panel carries the course total on phones */
 }
-/* The Menu button exists only on narrow phones; elsewhere its group sits inline as if it weren't there. */
+/* The Menu button exists only on phones; elsewhere its group sits inline as if it weren't there. */
 .menu-toggle { display: none; }
 .more-nav { display: contents; }
-@media (max-width: 400px) {
+@media (max-width: 560px) {
   .menu-toggle { display: inline-block; }
   .top-right .btn { padding: 8px; }
   .more-nav { display: none; }

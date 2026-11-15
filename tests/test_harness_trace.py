@@ -86,3 +86,51 @@ def test_showing_values_never_runs_the_learners_code():
     last = r["trace"]["frames"][-1]
     assert last["output"] == "0\n" and last["locals"]["p"] == "<P object>"
     assert last["locals"]["xs"] == "[<P object>, {'k': <P object>}]"
+
+
+def test_a_huge_integer_does_not_stop_the_program():
+    r = frames("big = 10 ** 5000\nprint(big % 7)\n")
+    assert r["ok"] and r["trace"]["frames"][-1]["output"] == "2\n"  # 10**5000 % 7 == 3**(5000 % 6) % 7
+    assert r["trace"]["frames"][-1]["locals"]["big"].startswith("<int with about 500")
+
+
+def test_metaclass_hooks_and_spoofed_library_types_are_never_run():
+    code = ("calls = []\n"
+            "class Meta(type):\n"
+            "    def __getattribute__(cls, name):\n"
+            "        calls.append(name)\n"
+            "        return type.__getattribute__(cls, name)\n"
+            "    def __repr__(cls):\n"
+            "        calls.append('repr')\n"
+            "        return 'M'\n"
+            "class Thing(metaclass=Meta):\n"
+            "    pass\n"
+            "class ndarray:\n"  # a learner class named like numpy's, with a __class__ property
+            "    @property\n"
+            "    def __class__(self):\n"
+            "        calls.append('__class__')\n"
+            "        return int\n"
+            "fake = ndarray()\n"
+            "n = len(calls)\n"
+            "print(n)\n")
+    r = frames(code)
+    plain = harness.run_learner(code)
+    assert r["ok"] and plain["ok"]
+    assert r["trace"]["frames"][-1]["output"] == "0\n"  # nothing was called while tracing
+    last = r["trace"]["frames"][-1]["locals"]
+    assert last["Thing"] == "class Thing" and last["fake"] == "<ndarray object>"
+
+
+def test_an_uncaught_error_is_shown_at_the_line_that_raised_with_its_calls():
+    r = frames("def inner(x):\n    return x / 0\n\ndef outer():\n    return inner(5)\n\nouter()\n")
+    last = r["trace"]["frames"][-1]
+    assert last["line"] == 2 and last["stack"] == ["<module>", "outer()", "inner(5)"]
+    assert last["locals"] == {"x": "5"} and last["note"].startswith("Line 2 raised ZeroDivisionError")
+    r = frames("n = 0\nwhile n < 100:\n    n += 1\nn / 0\n", limit=5)  # after truncation too
+    assert r["trace"]["truncated"] and r["trace"]["frames"][-1]["line"] == 4
+
+
+def test_call_labels_show_every_kind_of_parameter():
+    f = frames("def f(a, *rest, key=1, **more):\n    return a\n\nf(1, 2, 3, key=4, z=5)\n")["trace"]["frames"]
+    calls = {x["stack"][-1] for x in f if len(x["stack"]) == 2}
+    assert calls == {"f(1, *(2, 3), key=4, **{'z': 5})"}

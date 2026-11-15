@@ -149,16 +149,45 @@ _SCALARS = (int, float, complex, bool, type(None))
 _YIELD = __import__("dis").opmap.get("YIELD_VALUE")
 
 
+_TYPE_NAME = type.__dict__["__name__"]  # read a class's name without its metaclass's hooks
+
+
+def _name_of(cls):
+    try:
+        return _TYPE_NAME.__get__(cls)
+    except Exception:
+        return "?"
+
+
+def _library(module, name):
+    """A class from an already imported library, looked up by identity (never by a name a learner class could copy)."""
+    mod = _sys.modules.get(module)
+    return getattr(mod, name, None) if mod is not None else None
+
+
 def _show(value, depth=0):
     """A short display string that never runs the learner's own code: exact built-in types are formatted here (strings
-    and containers cut short), library arrays and tables by their shape, anything else by its type's name."""
+    and containers cut short), verified library arrays and tables by their shape, anything else by its type's name.
+    Only `type(value)` is consulted, never attributes a learner class could override. Never raises."""
+    try:
+        return _show_unsafe(value, depth)
+    except Exception:
+        return "<" + _name_of(type(value)) + " object>"
+
+
+def _show_unsafe(value, depth):
     kind = type(value)
-    if kind in _SCALARS:
+    if kind is int:
+        if abs(value).bit_length() > 190:  # about 57 digits: say how big instead of converting (huge ints can't be)
+            text = "<int with about " + str(int(abs(value).bit_length() * 0.30103) + 1) + " digits>"
+        else:
+            text = repr(value)
+    elif kind in (float, complex, bool, type(None)):
         text = repr(value)
     elif kind is str or kind is bytes:
         text = repr(value[:61])
     elif kind in (list, tuple, set, frozenset, dict) and depth < 2:
-        items = list(value.items())[:8] if kind is dict else list(value)[:8]
+        items = list(dict.items(value))[:8] if kind is dict else list(value)[:8]
         size = len(value)
         if kind is dict:
             inner = ", ".join(_show(k, depth + 1) + ": " + _show(v, depth + 1) for k, v in items)
@@ -178,20 +207,22 @@ def _show(value, depth=0):
         text = kind.__name__ + " of " + str(len(value))
     elif kind is range:
         text = repr(value)
-    elif isinstance(value, _types.FunctionType):
-        text = "function " + value.__name__
-    elif isinstance(value, type):
-        text = "class " + value.__name__
-    elif kind.__module__.startswith("numpy") and kind.__name__ == "ndarray" and value.dtype.kind in "biuf":
+    elif kind is _types.FunctionType:
+        text = "function " + _types.FunctionType.__dict__["__name__"].__get__(value)
+    elif kind in (_types.BuiltinFunctionType, _types.MethodType):
+        text = "<" + _name_of(kind) + ">"
+    elif issubclass(kind, type):
+        text = "class " + _name_of(value)
+    elif _library("numpy", "ndarray") is kind and value.dtype.kind in "biuf":
         text = repr(value) if value.size <= 12 else "array of shape " + str(value.shape)
-    elif kind.__module__.startswith("numpy") and kind.__name__ != "ndarray" and value.__class__.__mro__[-2].__name__ == "generic":
-        text = repr(value.item()) if hasattr(value, "item") else "<" + kind.__name__ + ">"
-    elif kind.__module__.startswith("pandas") and kind.__name__ == "DataFrame":
+    elif _library("numpy", "generic") is not None and issubclass(kind, _library("numpy", "generic")) and value.dtype.kind in "biuf":
+        text = repr(value.item())
+    elif _library("pandas", "DataFrame") is kind:
         text = "<DataFrame " + str(value.shape[0]) + " rows x " + str(value.shape[1]) + " columns>"
-    elif kind.__module__.startswith("pandas") and kind.__name__ == "Series":
+    elif _library("pandas", "Series") is kind:
         text = "<Series of " + str(len(value)) + ">"
     else:
-        text = "<" + kind.__name__ + " object>"
+        text = "<" + _name_of(kind) + " object>"
     text = " ".join(text.split()) if "\n" in text else text
     return text if len(text) <= 60 else text[:57] + "..."
 
@@ -199,7 +230,22 @@ def _show(value, depth=0):
 def _visible(names):
     items = list(names.items())  # a snapshot: formatting must not see the namespace change underneath it
     return {k: _show(v) for k, v in items
-            if k not in _HIDDEN and not k.startswith("__") and not isinstance(v, _types.ModuleType)}
+            if k not in _HIDDEN and not k.startswith("__") and type(v) is not _types.ModuleType}
+
+
+def _call(code, local):
+    """`name(args)` with every parameter kind: positional values, *args, keyword-only as name=value, **kwargs."""
+    names = code.co_varnames
+    n, k = code.co_argcount, code.co_kwonlyargcount
+    parts = [_show(local.get(a)) for a in names[:n]]
+    i = n + k
+    if code.co_flags & 0x04:  # CO_VARARGS
+        parts.append("*" + _show(local.get(names[i])))
+        i += 1
+    parts += [a + "=" + _show(local.get(a)) for a in names[n:n + k]]
+    if code.co_flags & 0x08:  # CO_VARKEYWORDS
+        parts.append("**" + _show(local.get(names[i])))
+    return code.co_name + "(" + ", ".join(parts) + ")"
 
 
 def _stack(frame):
@@ -208,12 +254,7 @@ def _stack(frame):
     while frame is not None:
         code = frame.f_code
         if code.co_filename == LEARNER_FILE:
-            if code.co_name == "<module>":
-                out.append("<module>")
-            else:
-                local = frame.f_locals
-                args = code.co_varnames[:code.co_argcount]
-                out.append(code.co_name + "(" + ", ".join(_show(local.get(a)) for a in args) + ")")
+            out.append("<module>" if code.co_name == "<module>" else _call(code, frame.f_locals))
         frame = frame.f_back
     return out[::-1]
 
@@ -278,6 +319,12 @@ def _trace(code, max_frames):
         frames.append(info)
 
     def tracer(frame, event, arg):
+        try:
+            return record(frame, event, arg)
+        except Exception:  # recording must never change what the program does
+            return tracer
+
+    def record(frame, event, arg):
         if frame.f_code.co_filename != LEARNER_FILE:
             return None  # library code is not traced
         if event == "exception":
@@ -316,14 +363,31 @@ def _trace(code, max_frames):
     except BaseException as exc:
         result["ok"] = False
         result["error"] = _error_info(exc, code)
+        failure = exc
+    else:
+        failure = None
     finally:
         _sys.settrace(None)
         _sys.stdout = real
-    if frames:  # a closing frame shows the final names and the last output
-        last = frames[-1]
-        note = "The program has finished." if result["ok"] else "Line " + str(last["line"]) + " raised " + result["error"]["summary"]
-        add({"line": last["line"], "locals": _visible(ns) if result["ok"] else last["locals"],
-             "stack": ["<module>"] if result["ok"] else last["stack"], "note": note})
+    if frames and failure is None:  # a closing frame shows the final names and the last output
+        add({"line": frames[-1]["line"], "locals": _visible(ns), "stack": ["<module>"], "note": "The program has finished."})
+    elif frames:
+        # The line that raised, from the traceback: its frame's names and the calls that led there, not the caller
+        # the error unwound to.
+        chain = []
+        tb = failure.__traceback__
+        while tb is not None:
+            if tb.tb_frame.f_code.co_filename == LEARNER_FILE:
+                chain.append(tb)
+            tb = tb.tb_next
+        if chain:
+            where = chain[-1]
+            stack = ["<module>" if x.tb_frame.f_code.co_name == "<module>" else _call(x.tb_frame.f_code, x.tb_frame.f_locals) for x in chain]
+            add({"line": where.tb_lineno, "locals": _visible(where.tb_frame.f_locals), "stack": stack,
+                 "note": "Line " + str(where.tb_lineno) + " raised " + result["error"]["summary"]})
+        else:
+            add({"line": frames[-1]["line"], "locals": frames[-1]["locals"], "stack": frames[-1]["stack"],
+                 "note": "The program raised " + result["error"]["summary"]})
     result["trace"] = {"frames": frames, "truncated": state["truncated"], "limit": max_frames, "outputCut": out.cut}
     return result
 
