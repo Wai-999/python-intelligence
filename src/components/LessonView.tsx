@@ -61,11 +61,11 @@ export function LessonView(p: Props) {
   const mixUpStep = firstOf("formal", "example");
   // §5 "Challenge me independently": the lesson's transfer problem, reachable from every other step.
   const transferAt = lesson.steps.findIndex((s) => s.kind === "transfer");
-  // §5 "Show execution trace": from code steps to the lesson's traced program (a trace of the learner's own code is later work).
+  // Next to the trace of the learner's own code (CodeTrace), the lesson's worked trace of its own program.
   const visualAt = lesson.steps.findIndex((s) => s.kind === "visual");
   const traceLink = visualAt >= 0 && (step.kind === "example" || isExercise(step)) && (
-    <p className="trace-link"><a href={`#/lesson/${lesson.id}/${visualAt}`}>Show execution trace →</a>{" "}
-      <span className="muted">step through this lesson's traced program line by line</span></p>
+    <p className="trace-link"><a href={`#/lesson/${lesson.id}/${visualAt}`}>See this lesson's worked trace →</a>{" "}
+      <span className="muted">its own program, explained line by line</span></p>
   );
 
   return (

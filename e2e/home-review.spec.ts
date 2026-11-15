@@ -28,14 +28,14 @@ test("example and exercise steps link to the lesson's execution trace; a lesson 
   const guided = lists.steps.findIndex((s) => s.kind === "guided");
   for (const at of [example, guided]) {
     await page.goto(`./#/lesson/py-lists/${at}`);
-    await expect(page.getByRole("link", { name: "Show execution trace →" })).toHaveAttribute("href", `#/lesson/py-lists/${visual}`);
+    await expect(page.getByRole("link", { name: "See this lesson's worked trace →" })).toHaveAttribute("href", `#/lesson/py-lists/${visual}`);
   }
   await page.goto("./#/lesson/py-lists/0"); // a prose step
   await expect(page.locator("#step-title")).toBeFocused();
-  await expect(page.getByRole("link", { name: "Show execution trace →" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "See this lesson's worked trace →" })).toHaveCount(0);
   await page.goto(`./#/lesson/py-values-names/${first.steps.findIndex((s) => s.kind === "example")}`);
   await expect(page.locator("#step-title")).toBeFocused();
-  await expect(page.getByRole("link", { name: "Show execution trace →" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "See this lesson's worked trace →" })).toHaveCount(0);
 });
 
 test("with nothing due, Review offers one way on: back to where the learner left off", async ({ page }) => {

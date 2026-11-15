@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { VisualStep } from "../content/types";
 
 /** Step-through visualisation of a program's execution: current line, call stack, local names, output. */
-export function TraceViewer({ visual }: { visual: VisualStep["visual"] }) {
+/** `lead`: Step is the screen's primary action (a lesson's "See it run" step), not when tracing the learner's code. */
+export function TraceViewer({ visual, lead = true }: { visual: VisualStep["visual"]; lead?: boolean }) {
   const [i, setI] = useState(0);
   const frames = visual.frames;
   const f = frames[i]!;
@@ -40,7 +41,7 @@ export function TraceViewer({ visual }: { visual: VisualStep["visual"] }) {
       <div className="run-bar">
         <button type="button" className="btn" onClick={() => setI(0)} disabled={i === 0}>⏮ Start</button>
         <button type="button" className="btn" onClick={() => setI(i - 1)} disabled={i === 0}>◀ Back</button>
-        <button type="button" className="btn primary" onClick={() => setI(i + 1)} disabled={i === frames.length - 1}>Step ▶</button>
+        <button type="button" className={lead ? "btn primary" : "btn"} onClick={() => setI(i + 1)} disabled={i === frames.length - 1}>Step ▶</button>
       </div>
     </section>
   );

@@ -70,7 +70,7 @@ export class PythonRunner {
 
   private queue: Promise<unknown> = Promise.resolve();
 
-  run(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void } = {}): Promise<RunResult> {
+  run(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void; trace?: boolean } = {}): Promise<RunResult> {
     // Capture declarations now: a queued cell must keep its own lesson requirements.
     const options = { ...opts, packages: [...(opts.packages ?? [])] };
     const run = this.queue.then(() => this.execute(code, tests, options));
@@ -78,7 +78,7 @@ export class PythonRunner {
     return run;
   }
 
-  private async execute(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void } = {}): Promise<RunResult> {
+  private async execute(code: string, tests: PyTest[] = [], opts: { packages?: string[]; packageTimeoutMs?: number; timeoutMs?: number; onOutput?: (stream: "stdout" | "stderr", text: string) => void; trace?: boolean } = {}): Promise<RunResult> {
     const timeoutMs = opts.timeoutMs ?? 10_000;
     await this.warm();
     const w = this.worker!;
@@ -135,7 +135,7 @@ export class PythonRunner {
       };
       w.addEventListener("message", onMsg);
       w.addEventListener("error", onError);
-      w.postMessage({ id, type: "run", code, tests, packages: opts.packages ?? [] });
+      w.postMessage({ id, type: "run", code, tests, packages: opts.packages ?? [], ...(opts.trace ? { trace: true } : {}) });
     });
   }
 }

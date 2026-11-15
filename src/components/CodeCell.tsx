@@ -5,6 +5,7 @@ import { feedbackForError } from "../tutor/feedback";
 import { Editor } from "./Editor";
 import { STATUS_TEXT, usePythonStatus } from "./usePython";
 import { TutorNote } from "./TutorNote";
+import { CodeTrace } from "./CodeTrace";
 
 export function Console({ result, live }: { result: RunResult | null; live: string }) {
   const text = result ? result.stdout + result.stderr : live;
@@ -61,6 +62,7 @@ export function CodeCell({ id, initial, packages }: { id: string; initial: strin
       <RunBar onRun={run} onReset={() => { setCode(initial); setResult(null); }} busy={busy} packages={packages} primary={false} />
       <Console result={result} live={live} />
       {result?.error && !INFRASTRUCTURE_ERRORS.has(result.error.type) && <TutorNote fb={feedbackForError(result.error)} />}
+      <CodeTrace code={code} packages={packages} />
     </section>
   );
 }

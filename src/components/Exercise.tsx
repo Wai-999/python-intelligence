@@ -4,6 +4,7 @@ import { INFRASTRUCTURE_ERRORS, type RunResult } from "../py/protocol";
 import { getRunner } from "../py/runner";
 import { feedbackForError, feedbackForTests } from "../tutor/feedback";
 import { Console, RunBar } from "./CodeCell";
+import { CodeTrace } from "./CodeTrace";
 import { Editor } from "./Editor";
 import { inline } from "./Prose";
 import { TutorNote } from "./TutorNote";
@@ -165,6 +166,7 @@ export function Exercise({ step, packages, lessonId, draft, record, assistance, 
       <Editor id={edId} label="Your solution" value={code} onChange={change} onRun={check} />
       <RunBar onRun={check} onReset={() => change(step.starter)} busy={busy} packages={packages} runLabel="Run checks" primary={!(allPassed || record?.passed) && !mesoActive} />
       <Console result={result} live={live} />
+      <CodeTrace code={code} packages={packages} />
 
       {/* One status region, mounted for the whole exercise and empty while a run is going, so each result is announced
           once when its text arrives: the failure summary that leads the checks, or the success message. */}

@@ -4,8 +4,10 @@
 import ast as _ast
 import json as _json
 import os as _os
+import sys as _sys
 import tempfile as _tempfile
 import traceback as _traceback
+import types as _types
 
 LEARNER_FILE = "<learner>"
 
@@ -136,3 +138,131 @@ def _run(code, tests):
 def run_json(code, tests_json="[]"):
     """JSON-in/JSON-out entry point used from JavaScript."""
     return _json.dumps(run_learner(code, _json.loads(tests_json)))
+
+
+# --- Execution trace of the learner's own code (master prompt section 5, "Show execution trace") ---------------------
+MAX_TRACE_FRAMES = 300
+_HIDDEN = {"__builtins__", "__name__", "__source__"}
+
+
+def _show(value):
+    """A short, deterministic display string: no memory addresses, at most 60 characters."""
+    if isinstance(value, _types.FunctionType):
+        return "function " + value.__name__
+    if isinstance(value, type):
+        return "class " + value.__name__
+    try:
+        text = repr(value)
+    except Exception:
+        text = "<unprintable " + type(value).__name__ + ">"
+    if " at 0x" in text:  # objects without a repr of their own
+        text = "<" + type(value).__name__ + " object>"
+    return text if len(text) <= 60 else text[:57] + "..."
+
+
+def _visible(names):
+    return {k: _show(v) for k, v in names.items()
+            if k not in _HIDDEN and not k.startswith("__") and not isinstance(v, _types.ModuleType)}
+
+
+def _stack(frame):
+    """The learner's frames, outermost first, each call shown with its arguments' current values."""
+    out = []
+    while frame is not None:
+        code = frame.f_code
+        if code.co_filename == LEARNER_FILE:
+            if code.co_name == "<module>":
+                out.append("<module>")
+            else:
+                args = code.co_varnames[:code.co_argcount]
+                out.append(code.co_name + "(" + ", ".join(_show(frame.f_locals.get(a)) for a in args) + ")")
+        frame = frame.f_back
+    return out[::-1]
+
+
+class _Tee:
+    """Passes output through unchanged while keeping a copy, so each traced step knows what it printed."""
+    def __init__(self, inner):
+        self.inner = inner
+        self.parts = []
+
+    def write(self, text):
+        self.parts.append(text)
+        return self.inner.write(text)
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+
+def trace_learner(code, max_frames=MAX_TRACE_FRAMES):
+    """Run `code` like run_learner, recording a frame before each line of the learner's code runs and when each of
+    its functions returns: the line, the names in the active frame, the call stack and the output that step printed.
+    At most `max_frames` frames are kept; the program still runs to the end. Never raises."""
+    prev = _os.getcwd()
+    with _tempfile.TemporaryDirectory(prefix="trace-") as tmp:
+        _os.chdir(tmp)
+        try:
+            return _trace(code, max_frames)
+        finally:
+            _os.chdir(prev)
+
+
+def _trace(code, max_frames):
+    ns = {"__name__": "__main__", "__source__": code}
+    frames = []
+    state = {"truncated": False}
+    out = _Tee(_sys.stdout)
+
+    # Output printed since the last frame is shown with the next one, once the line that printed it has run.
+
+    def add(frame_info):
+        text = "".join(out.parts).rstrip("\n")
+        out.parts.clear()
+        if text:
+            frame_info["output"] = text
+        frames.append(frame_info)
+
+    def tracer(frame, event, arg):
+        if frame.f_code.co_filename != LEARNER_FILE:
+            return None  # library code is not traced
+        if event in ("line", "return"):
+            if len(frames) >= max_frames:
+                state["truncated"] = True
+            elif event == "line":
+                add({"line": frame.f_lineno, "locals": _visible(frame.f_locals), "stack": _stack(frame),
+                     "note": "Next: line " + str(frame.f_lineno) + "."})
+            elif frame.f_code.co_name != "<module>":
+                add({"line": frame.f_lineno, "locals": _visible(frame.f_locals), "stack": _stack(frame),
+                     "note": frame.f_code.co_name + " returns " + _show(arg) + "."})
+        return tracer
+
+    result = {"ok": True, "error": None, "tests": []}
+    real = _sys.stdout
+    _sys.stdout = out
+    _sys.settrace(tracer)
+    try:
+        exec(compile(code, LEARNER_FILE, "exec"), ns)
+    except BaseException as exc:
+        result["ok"] = False
+        result["error"] = _error_info(exc, code)
+    finally:
+        _sys.settrace(None)
+        _sys.stdout = real
+    if frames:  # a closing frame shows the final names and the last output
+        last = frames[-1]
+        if result["ok"]:
+            note = "The program has finished."
+        else:
+            note = "Line " + str(last["line"]) + " raised " + result["error"]["summary"]
+        frames.append({"line": last["line"], "locals": _visible(ns) if result["ok"] else last["locals"],
+                       "stack": ["<module>"] if result["ok"] else last["stack"], "note": note})
+        text = "".join(out.parts).rstrip("\n")
+        if text:
+            frames[-1]["output"] = text
+    result["trace"] = {"frames": frames, "truncated": state["truncated"], "limit": max_frames}
+    return result
+
+
+def trace_json(code):
+    """JSON-in/JSON-out entry point used from JavaScript."""
+    return _json.dumps(trace_learner(code))

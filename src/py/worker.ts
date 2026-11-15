@@ -113,8 +113,7 @@ async function handle(msg: ToWorker) {
     return;
   }
   post({ id: msg.id, type: "packages-ready" });
-  const runJson = py.globals.get("run_json");
   currentId = msg.id;
-  const result = JSON.parse(runJson(msg.code, JSON.stringify(msg.tests)));
+  const result = JSON.parse(msg.trace ? py.globals.get("trace_json")(msg.code) : py.globals.get("run_json")(msg.code, JSON.stringify(msg.tests)));
   post({ id: msg.id, type: "result", result });
 }

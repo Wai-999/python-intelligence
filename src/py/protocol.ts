@@ -1,4 +1,4 @@
-import type { PyTest } from "../content/types";
+import type { PyTest, TraceFrame } from "../content/types";
 
 export const PYODIDE_VERSION = "0.27.8"; // Python 3.12.7; pinned, verified 2026-11-08
 export const PYODIDE_INDEX = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
@@ -37,9 +37,11 @@ export interface RunResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+  /** A traced run (harness.trace_learner): one frame per line of the learner's code, at most `limit`. */
+  trace?: { frames: TraceFrame[]; truncated: boolean; limit: number };
 }
 
-export type ToWorker = { id: number; type: "run"; code: string; tests: PyTest[]; packages?: string[] };
+export type ToWorker = { id: number; type: "run"; code: string; tests: PyTest[]; packages?: string[]; trace?: boolean };
 
 export type FromWorker =
   | { type: "ready" }
