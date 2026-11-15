@@ -38,7 +38,7 @@ export interface RunResult {
   stderr: string;
   durationMs: number;
   /** A traced run (harness.trace_learner): one frame per line of the learner's code, at most `limit`. */
-  trace?: { frames: TraceFrame[]; truncated: boolean; limit: number };
+  trace?: { frames: TraceFrame[]; truncated: boolean; limit: number; outputCut: boolean };
 }
 
 export type ToWorker = { id: number; type: "run"; code: string; tests: PyTest[]; packages?: string[]; trace?: boolean };

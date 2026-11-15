@@ -142,26 +142,63 @@ def run_json(code, tests_json="[]"):
 
 # --- Execution trace of the learner's own code (master prompt section 5, "Show execution trace") ---------------------
 MAX_TRACE_FRAMES = 300
+MAX_TRACE_OUTPUT = 100_000  # characters of output kept in a trace, like the worker's per-run cap
+TRACE_OUTPUT_CUT = "[output truncated: only the first 100,000 characters are kept in the trace]"
 _HIDDEN = {"__builtins__", "__name__", "__source__"}
+_SCALARS = (int, float, complex, bool, type(None))
+_YIELD = __import__("dis").opmap.get("YIELD_VALUE")
 
 
-def _show(value):
-    """A short, deterministic display string: no memory addresses, at most 60 characters."""
-    if isinstance(value, _types.FunctionType):
-        return "function " + value.__name__
-    if isinstance(value, type):
-        return "class " + value.__name__
-    try:
+def _show(value, depth=0):
+    """A short display string that never runs the learner's own code: exact built-in types are formatted here (strings
+    and containers cut short), library arrays and tables by their shape, anything else by its type's name."""
+    kind = type(value)
+    if kind in _SCALARS:
         text = repr(value)
-    except Exception:
-        text = "<unprintable " + type(value).__name__ + ">"
-    if " at 0x" in text:  # objects without a repr of their own
-        text = "<" + type(value).__name__ + " object>"
+    elif kind is str or kind is bytes:
+        text = repr(value[:61])
+    elif kind in (list, tuple, set, frozenset, dict) and depth < 2:
+        items = list(value.items())[:8] if kind is dict else list(value)[:8]
+        size = len(value)
+        if kind is dict:
+            inner = ", ".join(_show(k, depth + 1) + ": " + _show(v, depth + 1) for k, v in items)
+        else:
+            inner = ", ".join(_show(v, depth + 1) for v in items)
+        if size > len(items):
+            inner += ", ..."
+        if kind is list:
+            text = "[" + inner + "]"
+        elif kind is tuple:
+            text = "(" + inner + ("," if size == 1 else "") + ")"
+        elif kind is dict:
+            text = "{" + inner + "}"
+        else:
+            text = (kind.__name__ + "()") if size == 0 else ("{" + inner + "}" if kind is set else "frozenset({" + inner + "})")
+    elif kind in (list, tuple, set, frozenset, dict):
+        text = kind.__name__ + " of " + str(len(value))
+    elif kind is range:
+        text = repr(value)
+    elif isinstance(value, _types.FunctionType):
+        text = "function " + value.__name__
+    elif isinstance(value, type):
+        text = "class " + value.__name__
+    elif kind.__module__.startswith("numpy") and kind.__name__ == "ndarray" and value.dtype.kind in "biuf":
+        text = repr(value) if value.size <= 12 else "array of shape " + str(value.shape)
+    elif kind.__module__.startswith("numpy") and kind.__name__ != "ndarray" and value.__class__.__mro__[-2].__name__ == "generic":
+        text = repr(value.item()) if hasattr(value, "item") else "<" + kind.__name__ + ">"
+    elif kind.__module__.startswith("pandas") and kind.__name__ == "DataFrame":
+        text = "<DataFrame " + str(value.shape[0]) + " rows x " + str(value.shape[1]) + " columns>"
+    elif kind.__module__.startswith("pandas") and kind.__name__ == "Series":
+        text = "<Series of " + str(len(value)) + ">"
+    else:
+        text = "<" + kind.__name__ + " object>"
+    text = " ".join(text.split()) if "\n" in text else text
     return text if len(text) <= 60 else text[:57] + "..."
 
 
 def _visible(names):
-    return {k: _show(v) for k, v in names.items()
+    items = list(names.items())  # a snapshot: formatting must not see the namespace change underneath it
+    return {k: _show(v) for k, v in items
             if k not in _HIDDEN and not k.startswith("__") and not isinstance(v, _types.ModuleType)}
 
 
@@ -174,30 +211,50 @@ def _stack(frame):
             if code.co_name == "<module>":
                 out.append("<module>")
             else:
+                local = frame.f_locals
                 args = code.co_varnames[:code.co_argcount]
-                out.append(code.co_name + "(" + ", ".join(_show(frame.f_locals.get(a)) for a in args) + ")")
+                out.append(code.co_name + "(" + ", ".join(_show(local.get(a)) for a in args) + ")")
         frame = frame.f_back
     return out[::-1]
 
 
 class _Tee:
-    """Passes output through unchanged while keeping a copy, so each traced step knows what it printed."""
+    """Passes output through unchanged (the worker caps what reaches the page) and keeps an exact copy, within
+    MAX_TRACE_OUTPUT characters, so each traced step knows what it printed."""
     def __init__(self, inner):
         self.inner = inner
         self.parts = []
+        self.kept = 0
+        self.cut = False
 
     def write(self, text):
-        self.parts.append(text)
+        if not self.cut:
+            room = MAX_TRACE_OUTPUT - self.kept
+            if len(text) <= room:
+                self.parts.append(text)
+                self.kept += len(text)
+            else:
+                if room > 0:
+                    self.parts.append(text[:room])
+                self.parts.append("\n" + TRACE_OUTPUT_CUT + "\n")
+                self.kept = MAX_TRACE_OUTPUT
+                self.cut = True
         return self.inner.write(text)
+
+    def take(self):
+        text = "".join(self.parts)
+        self.parts.clear()
+        return text
 
     def __getattr__(self, name):
         return getattr(self.inner, name)
 
 
 def trace_learner(code, max_frames=MAX_TRACE_FRAMES):
-    """Run `code` like run_learner, recording a frame before each line of the learner's code runs and when each of
-    its functions returns: the line, the names in the active frame, the call stack and the output that step printed.
-    At most `max_frames` frames are kept; the program still runs to the end. Never raises."""
+    """Run `code` like run_learner, recording a frame before each line of the learner's code runs and whenever one of
+    its functions returns, yields or is left by an error: the line, the names in the active frame, the call stack and
+    the exact output the previous step printed. At most `max_frames` frames are kept (plus a closing one); the program
+    still runs to the end. Never raises."""
     prev = _os.getcwd()
     with _tempfile.TemporaryDirectory(prefix="trace-") as tmp:
         _os.chdir(tmp)
@@ -211,29 +268,43 @@ def _trace(code, max_frames):
     ns = {"__name__": "__main__", "__source__": code}
     frames = []
     state = {"truncated": False}
+    raising = set()  # frames an exception is passing through (cleared when a handler's line runs)
     out = _Tee(_sys.stdout)
 
-    # Output printed since the last frame is shown with the next one, once the line that printed it has run.
-
-    def add(frame_info):
-        text = "".join(out.parts).rstrip("\n")
-        out.parts.clear()
+    def add(info):
+        text = out.take()  # printed since the previous frame: shown once the line that printed it has run
         if text:
-            frame_info["output"] = text
-        frames.append(frame_info)
+            info["output"] = text
+        frames.append(info)
 
     def tracer(frame, event, arg):
         if frame.f_code.co_filename != LEARNER_FILE:
             return None  # library code is not traced
-        if event in ("line", "return"):
-            if len(frames) >= max_frames:
-                state["truncated"] = True
-            elif event == "line":
-                add({"line": frame.f_lineno, "locals": _visible(frame.f_locals), "stack": _stack(frame),
-                     "note": "Next: line " + str(frame.f_lineno) + "."})
-            elif frame.f_code.co_name != "<module>":
-                add({"line": frame.f_lineno, "locals": _visible(frame.f_locals), "stack": _stack(frame),
-                     "note": frame.f_code.co_name + " returns " + _show(arg) + "."})
+        if event == "exception":
+            raising.add(id(frame))
+            return tracer
+        if event == "line":
+            raising.discard(id(frame))
+        if event not in ("line", "return"):
+            return tracer
+        if len(frames) >= max_frames:
+            state["truncated"] = True
+            return tracer
+        name = frame.f_code.co_name
+        if event == "line":
+            note = "Next: line " + str(frame.f_lineno) + "."
+        elif not frame.f_code.co_flags & 0x1:  # CO_OPTIMIZED: only functions (not the module or a class body) return
+            return tracer
+        elif id(frame) in raising:
+            raising.discard(id(frame))
+            note = name + " stops here: the error passes to its caller."
+        elif _YIELD is not None and frame.f_lasti >= 0 and frame.f_code.co_code[frame.f_lasti] == _YIELD:
+            note = name + " yields " + _show(arg) + " and pauses."
+        elif frame.f_code.co_flags & 0x20:  # CO_GENERATOR, finishing
+            note = name + " has no more values to give."
+        else:
+            note = name + " returns " + _show(arg) + "."
+        add({"line": frame.f_lineno, "locals": _visible(frame.f_locals), "stack": _stack(frame), "note": note})
         return tracer
 
     result = {"ok": True, "error": None, "tests": []}
@@ -250,16 +321,10 @@ def _trace(code, max_frames):
         _sys.stdout = real
     if frames:  # a closing frame shows the final names and the last output
         last = frames[-1]
-        if result["ok"]:
-            note = "The program has finished."
-        else:
-            note = "Line " + str(last["line"]) + " raised " + result["error"]["summary"]
-        frames.append({"line": last["line"], "locals": _visible(ns) if result["ok"] else last["locals"],
-                       "stack": ["<module>"] if result["ok"] else last["stack"], "note": note})
-        text = "".join(out.parts).rstrip("\n")
-        if text:
-            frames[-1]["output"] = text
-    result["trace"] = {"frames": frames, "truncated": state["truncated"], "limit": max_frames}
+        note = "The program has finished." if result["ok"] else "Line " + str(last["line"]) + " raised " + result["error"]["summary"]
+        add({"line": last["line"], "locals": _visible(ns) if result["ok"] else last["locals"],
+             "stack": ["<module>"] if result["ok"] else last["stack"], "note": note})
+    result["trace"] = {"frames": frames, "truncated": state["truncated"], "limit": max_frames, "outputCut": out.cut}
     return result
 
 

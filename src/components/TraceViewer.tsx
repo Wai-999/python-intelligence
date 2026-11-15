@@ -8,7 +8,8 @@ export function TraceViewer({ visual, lead = true }: { visual: VisualStep["visua
   const frames = visual.frames;
   const f = frames[i]!;
   const lines = visual.code.split("\n");
-  const output = frames.slice(0, i + 1).map((x) => x.output).filter(Boolean).join("\n");
+  const parts = frames.slice(0, i + 1).map((x) => x.output).filter(Boolean);
+  const output = visual.exactOutput ? parts.join("") : parts.join("\n");
 
   return (
     <section className="trace" aria-label="Execution visualiser">

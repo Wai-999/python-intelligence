@@ -87,7 +87,8 @@ export interface TraceFrame {
 
 export interface VisualStep extends BaseStep {
   kind: "visual";
-  visual: { type: "call-trace"; code: string; frames: TraceFrame[] };
+  /** `exactOutput`: frame outputs are exact chunks to join as they are (a traced run), not lines to join with newlines. */
+  visual: { type: "call-trace"; code: string; frames: TraceFrame[]; exactOutput?: boolean };
 }
 
 /** A further worked example for the same idea (§5 "Try another example"); its output is checked like the main one. */

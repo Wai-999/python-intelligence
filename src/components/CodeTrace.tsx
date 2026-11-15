@@ -30,7 +30,8 @@ export function CodeTrace({ code, packages }: { code: string; packages?: string[
       {traced && (frames.length > 0 ? (
         <>
           {traced.result.trace!.truncated && <p className="muted">Showing the first {traced.result.trace!.limit} steps; the program kept running after that.</p>}
-          <TraceViewer key={`${frames.length}:${traced.code}`} visual={{ type: "call-trace", code: traced.code, frames }} lead={false} />
+          {traced.result.trace!.outputCut && <p className="muted">The trace keeps only the first 100,000 characters of output.</p>}
+          <TraceViewer key={`${frames.length}:${traced.code}`} visual={{ type: "call-trace", code: traced.code, frames, exactOutput: true }} lead={false} />
         </>
       ) : (
         <p className="pill warn" role="status">No trace: {traced.result.error?.summary ?? "the code has no lines to run."}</p>
