@@ -188,3 +188,23 @@ def test_yields_returns_and_unwinding_read_the_same_on_newer_pythons():
         assert out.returncode == 0, out.stderr
         assert __import__("json").loads(out.stdout) == ["gen yields 1 and pauses.", "gen has no more values to give.",
                                                         "bad stops here: the error passes to its caller.", "The program has finished."], exe
+
+
+def test_the_closing_frame_is_at_the_programs_own_last_line():
+    assert frames("def f():\n    return 1\nx = f()\n")["trace"]["frames"][-1]["line"] == 3  # not inside f
+    assert frames("def gen():\n    yield 1\n    yield 2\ng = gen()\nv = next(g)\n")["trace"]["frames"][-1]["line"] == 5
+    r = frames("n = 0\nwhile n < 50:\n    n += 1\ndone = True\n", limit=6)  # past the frame cap
+    assert r["trace"]["truncated"] and r["trace"]["frames"][-1]["line"] == 4
+
+
+def test_set_displays_do_not_depend_on_the_hash_seed():
+    import os
+    import subprocess
+    import sys
+    src = Path(__file__).resolve().parents[1] / "src" / "py" / "harness.py"
+    script = ("import importlib.util as u\n"
+              f"s = u.spec_from_file_location('h', {str(src)!r}); h = u.module_from_spec(s); s.loader.exec_module(h)\n"
+              "print(h._show({'pear', 'apple', 'fig', 'kiwi', 'plum', 'lime', 'date', 'nut', 'yam', 'oat'}), h._show(frozenset({'b', 'a'})))\n")
+    seen = {subprocess.run([sys.executable, "-I", "-c", script], capture_output=True, text=True,
+                           env={**os.environ, "PYTHONHASHSEED": seed}).stdout for seed in ("1", "2", "3", "4")}
+    assert len(seen) == 1 and seen.pop().startswith("{'apple', 'date', 'fig'")

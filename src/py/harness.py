@@ -197,11 +197,19 @@ def _show_unsafe(value, depth):
     elif kind is str or kind is bytes:
         text = repr(value[:61])
     elif _exact(kind, _CONTAINERS) and depth < 2:
-        items = list(dict.items(value))[:8] if kind is dict else list(value)[:8]
         size = len(value)
         if kind is dict:
+            items = list(dict.items(value))[:8]
             inner = ", ".join(_show(k, depth + 1) + ": " + _show(v, depth + 1) for k, v in items)
+        elif kind is set or kind is frozenset:
+            if size > 200:
+                return kind.__name__ + " of " + str(size)
+            # Sets have no order of their own (it changes with the hash seed): sort by the display strings.
+            shown = sorted(_show(v, depth + 1) for v in value)
+            items = shown[:8]
+            inner = ", ".join(items)
         else:
+            items = list(value)[:8]
             inner = ", ".join(_show(v, depth + 1) for v in items)
         if size > len(items):
             inner += ", ..."
@@ -319,7 +327,7 @@ def trace_learner(code, max_frames=MAX_TRACE_FRAMES):
 def _trace(code, max_frames):
     ns = {"__name__": "__main__", "__source__": code}
     frames = []
-    state = {"truncated": False}
+    state = {"truncated": False, "module_line": None}  # the program's own last line, tracked past the frame cap
     out = _Tee(_sys.stdout)
 
     def add(info):
@@ -339,6 +347,9 @@ def _trace(code, max_frames):
             return None  # library code is not traced
         if event not in ("line", "return"):
             return tracer
+        if event == "line" and frame.f_code.co_name == "<module>" and frame.f_back is not None \
+                and frame.f_back.f_code.co_filename != LEARNER_FILE:
+            state["module_line"] = frame.f_lineno
         if len(frames) >= max_frames:
             state["truncated"] = True
             return tracer
@@ -380,7 +391,8 @@ def _trace(code, max_frames):
         _sys.settrace(None)
         _sys.stdout = real
     if frames and failure is None:  # a closing frame shows the final names and the last output
-        add({"line": frames[-1]["line"], "locals": _visible(ns), "stack": ["<module>"], "note": "The program has finished."})
+        add({"line": state["module_line"] or frames[-1]["line"], "locals": _visible(ns), "stack": ["<module>"],
+             "note": "The program has finished."})
     elif frames:
         # The line that raised, from the traceback: its frame's names and the calls that led there, not the caller
         # the error unwound to.
