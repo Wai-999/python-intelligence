@@ -167,6 +167,14 @@ def _library(module, name):
     return getattr(mod, name, None) if mod is not None else None
 
 
+_CONTAINERS = (list, tuple, set, frozenset, dict)
+
+
+def _exact(kind, types):
+    """`kind` is one of `types`, by identity: `in` would compare with ==, which a learner's metaclass can override."""
+    return any(kind is t for t in types)
+
+
 def _show(value, depth=0):
     """A short display string that never runs the learner's own code: exact built-in types are formatted here (strings
     and containers cut short), verified library arrays and tables by their shape, anything else by its type's name.
@@ -184,11 +192,11 @@ def _show_unsafe(value, depth):
             text = "<int with about " + str(int(abs(value).bit_length() * 0.30103) + 1) + " digits>"
         else:
             text = repr(value)
-    elif kind in (float, complex, bool, type(None)):
+    elif kind is float or kind is complex or kind is bool or kind is type(None):
         text = repr(value)
     elif kind is str or kind is bytes:
         text = repr(value[:61])
-    elif kind in (list, tuple, set, frozenset, dict) and depth < 2:
+    elif _exact(kind, _CONTAINERS) and depth < 2:
         items = list(dict.items(value))[:8] if kind is dict else list(value)[:8]
         size = len(value)
         if kind is dict:
@@ -205,13 +213,13 @@ def _show_unsafe(value, depth):
             text = "{" + inner + "}"
         else:
             text = (kind.__name__ + "()") if size == 0 else ("{" + inner + "}" if kind is set else "frozenset({" + inner + "})")
-    elif kind in (list, tuple, set, frozenset, dict):
+    elif _exact(kind, _CONTAINERS):
         text = kind.__name__ + " of " + str(len(value))
     elif kind is range:
         text = repr(value)
     elif kind is _types.FunctionType:
         text = "function " + _types.FunctionType.__dict__["__name__"].__get__(value)
-    elif kind in (_types.BuiltinFunctionType, _types.MethodType):
+    elif kind is _types.BuiltinFunctionType or kind is _types.MethodType:
         text = "<" + _name_of(kind) + ">"
     elif issubclass(kind, type):
         text = "class " + _name_of(value)
@@ -342,8 +350,10 @@ def _trace(code, max_frames):
         else:
             # How the frame is left is read from the instruction it stopped on: a return or a yield, or anything else
             # (the raising instruction, or the re-raise at the end of a finally block) while an error passes through.
-            op = frame.f_code.co_code[frame.f_lasti] if frame.f_lasti >= 0 else None
-            if op == _YIELD:
+            raw, at = frame.f_code.co_code, frame.f_lasti
+            op = raw[at] if at >= 0 else None
+            # Python 3.12 stops on the YIELD_VALUE itself; 3.13 and later on the RESUME just after it.
+            if op == _YIELD or (at >= 2 and raw[at - 2] == _YIELD):
                 note = name + " yields " + _show(arg) + " and pauses."
             elif op not in _RETURNS:
                 note = name + " stops here: the error passes to its caller."

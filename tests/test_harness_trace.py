@@ -159,3 +159,32 @@ def test_numpy_values_are_shown_without_numpys_configurable_printing():
     assert last["a"] == "array([1, 2, 3])" and last["m"] == "array([[1.5, 2.0], [3.0, 4.0]])" and last["s"] == "6"
     import sys
     assert sys.gettrace() is None and sys.stdout is not None  # tracing and stdout restored
+
+
+def test_a_metaclass_overriding_equality_is_never_called():
+    code = ("calls = []\nclass Meta(type):\n    def __eq__(cls, other):\n        calls.append(1)\n        return False\n"
+            "    __hash__ = type.__hash__\nclass Odd(metaclass=Meta):\n    pass\nthing = Odd()\nprint(len(calls))\n")
+    assert "".join(x.get("output", "") for x in frames(code)["trace"]["frames"]) == "0\n"
+    assert frames(code)["trace"]["frames"][-1]["locals"]["thing"] == "<Odd object>"
+
+
+def test_yields_returns_and_unwinding_read_the_same_on_newer_pythons():
+    """Pyodide pins Python 3.12; the instruction a yield stops on moved in 3.13. Run the same check on any newer
+    interpreter installed here (skipped where there is none)."""
+    import shutil
+    import subprocess
+    import sys
+    import pytest
+    found = [p for p in (shutil.which(f"python3.{m}") for m in (13, 14)) if p]
+    if not found:
+        pytest.skip("no Python 3.13 or 3.14 installed")
+    src = Path(__file__).resolve().parents[1] / "src" / "py" / "harness.py"
+    script = ("import importlib.util as u, json, sys\n"
+              f"s = u.spec_from_file_location('h', {str(src)!r}); h = u.module_from_spec(s); s.loader.exec_module(h)\n"
+              "r = h.trace_learner(\"def gen():\\n    yield 1\\n\\nfor v in gen():\\n    pass\\ndef bad():\\n    try:\\n        return 1 / 0\\n    finally:\\n        pass\\ntry:\\n    bad()\\nexcept ZeroDivisionError:\\n    pass\\n\")\n"
+              "print(json.dumps([f['note'] for f in r['trace']['frames'] if not f['note'].startswith('Next')]))\n")
+    for exe in found:
+        out = subprocess.run([exe, "-I", "-c", script], capture_output=True, text=True, timeout=60)
+        assert out.returncode == 0, out.stderr
+        assert __import__("json").loads(out.stdout) == ["gen yields 1 and pauses.", "gen has no more values to give.",
+                                                        "bad stops here: the error passes to its caller.", "The program has finished."], exe
