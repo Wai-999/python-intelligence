@@ -246,7 +246,8 @@ main { min-width: 0; outline: none; }
   .top { padding-block: 8px; row-gap: 4px; }
   .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .top-right .btn { padding: 8px 10px; min-height: 44px; }
-  .top-right { gap: 6px; }
+  .top-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .conn.offline { flex-basis: 100%; text-align: right; } /* its own line when shown, never pushing the page sideways */
   .overall { display: none; } /* the map and the progress panel carry the course total on phones */
 }
 
@@ -290,6 +291,7 @@ main { min-width: 0; outline: none; }
    says what they mean. */
 @media (forced-colors: active) {
   .dot, .map-badge, .checks li, .choice.right, .choice.wrong, .pill { border: 1px solid CanvasText; }
+  .dot.graded { border-style: dashed; } /* graded steps stay told apart by their dashed edge */
   .dot.done { background: CanvasText; }
   .dot.current { outline: 2px solid Highlight; }
   .btn.primary { border: 2px solid ButtonText; background: ButtonFace; color: ButtonText; }

@@ -149,6 +149,10 @@ for (const scheme of ["light", "dark"] as const) {
       await page.goto("./#/lesson/py-conditionals/2");
       await page.getByRole("button", { name: "Step ▶" }).click();
       await scan(page, `call-trace viewer, ${name}`);
+      // Graded steps keep their dashed edge, so they stay distinct from the others without colour.
+      const edge = (sel: string) => page.locator(sel).first().evaluate((el) => getComputedStyle(el).borderTopStyle);
+      expect(await edge(".stepper .dot.graded")).toBe("dashed");
+      expect(await edge(".stepper .dot:not(.graded)")).toBe("solid");
       await page.goto("./#/lesson/py-values-names/3");
       await page.getByRole("button", { name: "▶ Run checks" }).click();
       await expect(page.locator(".checks li.fail").first()).toBeVisible({ timeout: 90_000 });

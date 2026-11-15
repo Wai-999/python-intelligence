@@ -33,3 +33,19 @@ test("pages stay short: the home map on desktop, a prose step on a phone", async
     expect((await measure(page)).height).toBeLessThan(2600);
   }
 });
+
+test("offline, with a saved position, the header still fits the screen", async ({ page, context }) => {
+  await page.goto("./#/lesson/py-conditionals/1"); // saves a position, so Resume shows elsewhere
+  await expect(page.locator("#step-title")).toBeFocused();
+  await page.evaluate(() => { location.hash = "#/review"; });
+  await expect(page.getByRole("link", { name: /^Resume/ })).toBeVisible();
+  await context.setOffline(true);
+  await expect(page.locator(".conn.offline")).toContainText("Offline");
+  const m = await measure(page);
+  expect(m.scrollWidth).toBeLessThanOrEqual(m.width);
+  for (const sel of [".conn.offline", ".resume", ".top-right .btn:last-child"]) {
+    const box = (await page.locator(sel).boundingBox())!;
+    expect(box.x + box.width, `${sel} inside the screen`).toBeLessThanOrEqual(m.width);
+  }
+  await context.setOffline(false);
+});
