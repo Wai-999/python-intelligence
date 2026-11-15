@@ -28,8 +28,11 @@ export class PythonRunner {
     this.listeners.forEach((fn) => fn(s));
   }
 
-  /** Start loading Pyodide (idempotent). */
-  warm(loadTimeoutMs = 90_000): Promise<void> {
+  /**
+   * Start loading Pyodide (idempotent). The first load downloads about 6 MB from the CDN: about 40 s on a 1.6 Mbps
+   * link (measured with a throttled profile), so the limit is generous rather than assuming a fast connection.
+   */
+  warm(loadTimeoutMs = 240_000): Promise<void> {
     if (this.loaded) return this.loaded;
     this.set("loading");
     const w = this.makeWorker();

@@ -181,3 +181,17 @@ it("returns package validation errors and allows a corrected run", async () => {
   worker.send({ id: 2, type: "result", result });
   expect(await retry).toMatchObject({ ok: true, stdout: "1\n" });
 });
+
+it("a slow first load is given minutes, not seconds, before it counts as failed", async () => {
+  vi.useFakeTimers();
+  const worker = { addEventListener: vi.fn(), removeEventListener: vi.fn(), postMessage: vi.fn(), terminate: vi.fn() };
+  const runner = new PythonRunner(() => worker as unknown as Worker);
+  let failed: unknown = null;
+  runner.warm().catch((e) => { failed = e; });
+  await vi.advanceTimersByTimeAsync(120_000); // two minutes of a slow download: still loading
+  expect(failed).toBeNull();
+  expect(runner.status).toBe("loading");
+  await vi.advanceTimersByTimeAsync(121_000);
+  expect(String(failed)).toMatch(/took too long to load/);
+  vi.useRealTimers();
+});

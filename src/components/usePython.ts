@@ -9,8 +9,8 @@ export function usePythonStatus(): RunnerStatus {
 }
 
 export const STATUS_TEXT: Record<RunnerStatus, string> = {
-  idle: "Python not loaded yet. It downloads on first run (about 10 MB, then cached).",
-  loading: "Loading Python… the first time takes a few seconds.",
+  idle: "Python not loaded yet. It downloads on first run (about 6 MB, then cached).",
+  loading: "Loading Python… the first time takes a few seconds, or a minute or more on a slow connection.",
   "loading-packages": "Loading lesson packages… the first download may take a minute. Run again to retry if it fails.",
   ready: "Python ready",
   running: "Running…",
