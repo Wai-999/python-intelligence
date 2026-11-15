@@ -70,6 +70,12 @@ test("Last saved follows saves and another tab's reset while the panel stays ope
   const first = await page.locator(".saved-at time").getAttribute("datetime");
   await page.evaluate(() => { location.hash = "#/lesson/py-values-names/2"; });
   await expect(page.locator(".saved-at time")).not.toHaveAttribute("datetime", first!);
+  // Back to a step saved before: the same position is saved again, with a new time.
+  const second = await page.locator(".saved-at time").getAttribute("datetime");
+  await page.evaluate(() => { location.hash = "#/"; });
+  await expect(page.locator(".recommend")).toBeVisible();
+  await page.evaluate(() => { location.hash = "#/lesson/py-values-names/2"; });
+  await expect(page.locator(".saved-at time")).not.toHaveAttribute("datetime", second!);
   // Home saves nothing, so after another tab's reset this view has nothing saved either (a lesson would save its position).
   await page.evaluate(() => { location.hash = "#/"; });
   await expect(page.locator(".recommend")).toBeVisible();

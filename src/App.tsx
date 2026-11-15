@@ -69,6 +69,9 @@ export function App() {
   routeRef.current = route;
   const [assist, setAssist] = useState<Record<string, number>>({});
   const [generation, setGeneration] = useState(0);
+  // Counts finished timestamped writes (position, step results, learner events), so the progress panel's "Last saved" follows them.
+  const [saveRev, setSaveRev] = useState(0);
+  const saved = useCallback(() => setSaveRev((k) => k + 1), []);
   // Bumped synchronously when an import or reset starts; results of runs started earlier are then ignored.
   // It starts one ahead of `generation`: the first read of saved progress counts as a replacement, so nothing
   // (not even recording a visit) can write before what is already saved has been read.
@@ -171,15 +174,15 @@ export function App() {
 
   const save = useCallback(async (p: LessonProgress) => {
     setProgress((m) => new Map(m).set(p.lessonId, p));
-    await store?.putLesson(p).catch(fail);
-  }, [store, fail]);
+    await store?.putLesson(p).then(saved, fail);
+  }, [store, fail, saved]);
 
   // Track position + furthest step whenever the visible step changes. Not while an import or reset is being applied:
   // the visit is applied to the reloaded progress instead, once `generation` catches up.
   useEffect(() => {
     if (route.view !== "lesson" || !store || !live()) return;
     const lesson = graph.byId.get(route.lessonId)!;
-    void store.setPosition(route.lessonId, route.step).catch(fail);
+    void store.setPosition(route.lessonId, route.step).then(saved, fail);
     setPosition({ lessonId: route.lessonId, stepIndex: route.step });
     const prev = progress.get(route.lessonId);
     const next = visitStep(lesson, prev, route.step);
@@ -194,8 +197,8 @@ export function App() {
     if (evs.length === 0) return;
     setEvents((prev) => [...prev, ...evs]);
     eventsRef.current = [...eventsRef.current, ...evs];
-    void store?.appendEvents(evs).catch(fail);
-  }, [store, fail]);
+    void store?.appendEvents(evs).then(saved, fail);
+  }, [store, fail, saved]);
   const model = useMemo(() => buildModel(LESSONS, events), [events]);
   useEffect(() => {
     const tick = () => setNow(new Date().toISOString());
@@ -310,7 +313,7 @@ export function App() {
       {storeError && <p className="pill bad" role="alert">Progress can't be saved in this browser ({storeError}). Private browsing modes often block storage.</p>}
       {reloadFailed && <p className="pill bad" role="alert">Your saved progress couldn't be read back: {reloadFailed.message}. The page is paused so
         nothing overwrites it.{" "}<button type="button" className="btn" onClick={() => finishReplacement(reloadFailed.token)}>Try loading it again</button></p>}
-      {panel && store && <ProgressPanel store={store} busy={replacing} revision={`${generation}:${events.length}:${position?.lessonId ?? ""}:${position?.stepIndex ?? ""}`}
+      {panel && store && <ProgressPanel store={store} busy={replacing} revision={`${generation}:${saveRev}`}
                                   onReplacing={() => { generationRef.current += 1; setReplacing(true); return generationRef.current; }}
                                   onChanged={(token) => { channel.current?.postMessage("replaced"); finishReplacement(token); }}
                                   onClose={() => setPanel(false)} />}
