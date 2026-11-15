@@ -29,8 +29,9 @@ export class PythonRunner {
   }
 
   /**
-   * Start loading Pyodide (idempotent). The first load downloads about 6 MB from the CDN: about 40 s on a 1.6 Mbps
-   * link (measured with a throttled profile), so the limit is generous rather than assuming a fast connection.
+   * Start loading Pyodide (idempotent). The first load downloads about 6 MB (compressed) from the CDN: roughly 40 s on
+   * a 1.6 Mbps link by a bandwidth estimate (a throttled, uncompressed simulation took 78 s), so the limit is generous
+   * rather than assuming a fast connection.
    */
   warm(loadTimeoutMs = 240_000): Promise<void> {
     if (this.loaded) return this.loaded;
