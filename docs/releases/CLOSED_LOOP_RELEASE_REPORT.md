@@ -9,9 +9,9 @@ Master prompt §15. Every claim below points at code, a test, or a CI run you ca
 |---|---|
 | Deployed URL | https://wai-999.github.io/python-intelligence/ |
 | Branch | `main` (every push that passes all gates deploys; owner decision 2026-11-08) |
-| Release commit | `07841e6b10c76a8e4db12e9035db53303acfcc4c`, verified live. This report was brought up to date in the docs-only commit that follows it; `docs/` isn't part of the site, so the published files differ only in their build stamp (`pi-build`). |
-| GitHub Actions run | [run 43611394347](https://github.com/Wai-999/python-intelligence/actions/runs/43611394347) (`gates` and `deploy` both green) |
-| Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `07841e6b10c76a8e4db12e9035db53303acfcc4c`. |
+| Release commit | `e05748b774e14e4b96a444f27acda05ae1c054c8`, verified live. This report was brought up to date in the docs-only commit that follows it; `docs/` isn't part of the site, so the published files differ only in their build stamp (`pi-build`). |
+| GitHub Actions run | [run 43665292702](https://github.com/Wai-999/python-intelligence/actions/runs/43665292702) (`gates` and `deploy` both green) |
+| Live verification | The deploy job waits until the page's `<meta name="pi-build">` equals the pushed SHA, then runs Playwright against the live URL (sub-path load, mobile viewport, keyboard reach, Python running in Pyodide, browser file I/O). Checked again by hand with `curl` on 2026-11-14: the live page serves build `e05748b774e14e4b96a444f27acda05ae1c054c8`. |
 
 ## Operating mode: A (static-first)
 
@@ -63,16 +63,16 @@ of checks, they can't rule out every possible error. The checks are learning fee
 Five open books are used: three adapted with attribution, two (MML and the Big Book) cited only. No PDF is
 published, and a 12-word shingle check keeps book text out of lessons and out of `dist/`.
 
-## Test results at `07841e6`
+## Test results at `e05748b`
 
 | Suite | Result |
 |---|---|
-| Python (orchestrator, content gate, ingest, rights manifest, transfer variants, diagnostic) | 740 passed, 3 skipped (the live agent-CLI contract tests, which run only with `PI_LIVE=1` and the real CLIs installed) |
-| Frontend unit (Vitest) | 223 passed |
-| Browser e2e (Playwright, production build under the sub-path) | 132 passed |
-| Content gate | 44 lessons and 220 executable steps verified in CPython 3.12; 15 placement questions verified |
-| Accessibility | axe-core WCAG 2.1 A/AA, no violations, in both light and dark mode (`e2e/a11y.spec.ts`): home, library, every step of a lesson that has all ten step kinds (motivation, intuition with sources and the look-ahead notice, the call-trace viewer, formal, example, guided, challenge, transfer, quiz, recap with further reading), an example with output, failed checks with the tutor note, the suggested-support note, a passed transfer problem, the meso step back (prediction, explanation and transfer link), the progress panel, the Review page with nothing due and with a review due, and the placement check (intro, a checked group, result). Keyboard focus is checked for the progress panel and the Review page. Manual screen-reader testing is **UNVERIFIED**. |
-| Performance | `dist/` is 1,291,926 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,264,875 bytes because all 44 lessons are bundled. `e2e/perf.spec.ts` measures a local production build in Playwright's Chromium on an Apple M4 Pro, with budgets as regression guards: DOMContentLoaded about 31 ms, first contentful paint about 72 ms (when Chromium reports it), moving between lesson steps 8–16 ms (timed until the destination step's own heading is shown), and Python on a fresh page: 1.1–1.5 s from opening an exercise to its first output, which includes Pyodide's start-up (it loads from the CDN; network conditions were not controlled, so the download may have been cached), of which 0.9–1.4 s is the wait after pressing Run, since the app starts Python in the background when a lesson with code opens; warm runs about 60 ms; main-thread heap about 10 MB. With the CPU slowed four times, page work slows about threefold (DOMContentLoaded about 85 ms, steps 26–48 ms); Python times barely change, so the Python worker probably isn't throttled and those figures don't stand for a slow device. A slow network, real mobile hardware, and memory used inside the Python worker are **UNVERIFIED**. |
+| Python (orchestrator, content gate, ingest, rights manifest, transfer variants, diagnostic, execution tracer) | 772 passed, 3 skipped (the live agent-CLI contract tests, which run only with `PI_LIVE=1` and the real CLIs installed) |
+| Frontend unit (Vitest) | 240 passed, including the WCAG contrast of every colour token pair in both schemes |
+| Browser e2e (Playwright, production build under the sub-path) | 169 passed, on desktop and, for the smoke and layout specs, a Pixel 7 viewport (and a 320 px one) |
+| Content gate | 44 lessons and 220 executable steps verified in CPython 3.12, plus two further worked examples on each of the 45 example steps (all run and compared); 15 placement questions verified |
+| Accessibility | axe-core WCAG 2.1 A/AA, no violations, in both light and dark mode (`e2e/a11y.spec.ts`): home, library, every step of a lesson that has all ten step kinds (motivation, intuition with sources and the look-ahead notice, the call-trace viewer, formal, example, guided, challenge, transfer, quiz, recap with further reading), an example with output, failed checks with the tutor note, the suggested-support note, a passed transfer problem, the meso step back (prediction, explanation and transfer link), the progress panel, the Review page with nothing due and with a review due, and the placement check (intro, a checked group, result). Since this report was last updated, scans also run with forced colours (Windows High Contrast) and with more contrast requested, in both schemes, and with a trace of the learner's own code open. Keyboard focus is checked for the progress panel, the Review page, "Try another example" and the phone Menu. Manual screen-reader testing is **UNVERIFIED**. |
+| Performance | `dist/` is 1,386,343 bytes in 5 files against a 2,000,000-byte budget (`scripts/check_dist.py`, run by `npm run build`); the main script is 1,340,575 bytes because all 44 lessons (now with their further examples) are bundled. The timings below were measured at release `07841e6` and the perf budgets still pass in every run since. `e2e/perf.spec.ts` measures a local production build in Playwright's Chromium on an Apple M4 Pro, with budgets as regression guards: DOMContentLoaded about 31 ms, first contentful paint about 72 ms (when Chromium reports it), moving between lesson steps 8–16 ms (timed until the destination step's own heading is shown), and Python on a fresh page: 1.1–1.5 s from opening an exercise to its first output, which includes Pyodide's start-up (it loads from the CDN; network conditions were not controlled, so the download may have been cached), of which 0.9–1.4 s is the wait after pressing Run, since the app starts Python in the background when a lesson with code opens; warm runs about 60 ms; main-thread heap about 10 MB. With the CPU slowed four times, page work slows about threefold (DOMContentLoaded about 85 ms, steps 26–48 ms); Python times barely change, so the Python worker probably isn't throttled and those figures don't stand for a slow device. A slow network, real mobile hardware, and memory used inside the Python worker are **UNVERIFIED**. |
 | Secret scan, dist licence/size gate | clean |
 
 ### Master prompt test matrix
@@ -94,15 +94,24 @@ published, and a 12-word shingle check keeps book text out of lessons and out of
 | T17 deep link on Pages | DONE | smoke test on the live URL |
 | T18 mobile, keyboard, screen reader | DONE (automated) | smoke and a11y specs; manual screen-reader testing **UNVERIFIED** |
 | T19 course completion | DONE | recommendation tests and e2e |
-| T20 production deploy | DONE | [run 43611394347](https://github.com/Wai-999/python-intelligence/actions/runs/43611394347) |
+| T20 production deploy | DONE | [run 43665292702](https://github.com/Wai-999/python-intelligence/actions/runs/43665292702) |
 
 ## BLOCKED, PARTIAL and UNVERIFIED
 
-- **PARTIAL (§5 optional controls):** "Show execution trace" is the call-trace viewer on visual steps, and "Challenge me
-  independently" is a link on every lesson step to its transfer problem (a new problem whose hints stay hidden unless
-  asked for; any help used is recorded). There is no separate "Why?" button (each step's header says why the lesson comes
-  where it does, and the tutor note explains failed checks) and no "Try another example" control: that needs further
-  worked examples written for each lesson.
+- **DONE (§5 optional controls, since the last report):** "Try another example" cycles two further worked examples on
+  every example step (G-22; the content gate requires them and runs each one). "Show execution trace" now traces the
+  learner's own code too: every example and exercise can step through its current code line by line, with names, the
+  call stack and output, in the lessons' viewer (G-26; at most 300 steps, values shown without running learner code).
+  "Challenge me independently" links every step to its transfer problem. There is no separate "Why?" button: each step's
+  header says why the lesson comes where it does, and the tutor note explains failed checks.
+- **Deploy history since the last report:** two pushes (G-25 and G-26) failed their gates on CI and deployed nothing,
+  because the new header-height guardrail caught the header wrapping on CI's wider Linux fonts; the site kept serving
+  the last passing build until the fix in `e05748b`.
+- **DONE (interface architecture, G-20 to G-25):** a learning header with Resume, one primary action per screen, the map
+  grouped by track, a result summary that leads, a connection status, a recap reflection, a first-visit start, a
+  plain-words Review page, "Last saved" in the progress panel, contrast tokens with high-contrast and forced-colours
+  support, a two-row phone header with a Menu, and a confidence prompt before a first transfer attempt that feeds the
+  learner model's confidence calibration.
 - **BLOCKED (owner gate G-T):** server-side tutor gateway, structured LLM prompts, cost caps. Needs a separately hosted
   server and API keys. GitHub Pages can't host it, and no keys belong in the client.
 - **BLOCKED (Mode B not authorised):** a hardened remote execution service, hidden tests, authenticated sync.
@@ -138,4 +147,4 @@ the storage schema:
 
 The owner's decision on G-T, which needs a server and API keys. Of the static-site work, what remains is marked
 **UNVERIFIED** above: manual screen-reader testing, performance on a slow network and real mobile hardware, and rollback
-across a schema change; and the two §5 controls marked PARTIAL.
+across a schema change.
