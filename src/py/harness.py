@@ -258,7 +258,7 @@ def _show_unsafe(value, depth):
 def _visible(names):
     items = list(names.items())  # a snapshot: formatting must not see the namespace change underneath it
     return {k: _show(v) for k, v in items
-            if k not in _HIDDEN and not k.startswith("__") and type(v) is not _types.ModuleType}
+            if type(k) is str and k not in _HIDDEN and not k.startswith("__") and type(v) is not _types.ModuleType}
 
 
 def _call(code, local):
@@ -442,26 +442,29 @@ def _trace(code, max_frames):
     finally:
         _sys.settrace(None)
         _sys.stdout = real
-    if frames and failure is None:  # a closing frame shows the final names and the last output
-        add({"line": state["module_line"] or frames[-1]["line"], "locals": _visible(ns), "stack": ["<module>"],
-             "note": "The program has finished."})
-    elif frames:
-        # The line that raised, from the traceback: its frame's names and the calls that led there, not the caller
-        # the error unwound to.
-        chain = []
-        tb = failure.__traceback__
-        while tb is not None:
-            if tb.tb_frame.f_code.co_filename == LEARNER_FILE:
-                chain.append(tb)
-            tb = tb.tb_next
-        if chain:
-            where = chain[-1]
-            stack = ["<module>" if x.tb_frame.f_code.co_name == "<module>" else _call(x.tb_frame.f_code, x.tb_frame.f_locals) for x in chain]
-            add({"line": where.tb_lineno, "locals": _visible(where.tb_frame.f_locals), "stack": stack,
-                 "note": "Line " + str(where.tb_lineno) + " raised " + result["error"]["summary"]})
-        else:
-            add({"line": frames[-1]["line"], "locals": frames[-1]["locals"], "stack": frames[-1]["stack"],
-                 "note": "The program raised " + result["error"]["summary"]})
+    try:  # the closing frame must never turn a finished run into an infrastructure error
+        if frames and failure is None:  # a closing frame shows the final names and the last output
+            add({"line": state["module_line"] or frames[-1]["line"], "locals": _visible(ns), "stack": ["<module>"],
+                 "note": "The program has finished."})
+        elif frames:
+            # The line that raised, from the traceback: its frame's names and the calls that led there, not the caller
+            # the error unwound to.
+            chain = []
+            tb = failure.__traceback__
+            while tb is not None:
+                if tb.tb_frame.f_code.co_filename == LEARNER_FILE:
+                    chain.append(tb)
+                tb = tb.tb_next
+            if chain:
+                where = chain[-1]
+                stack = ["<module>" if x.tb_frame.f_code.co_name == "<module>" else _call(x.tb_frame.f_code, x.tb_frame.f_locals) for x in chain]
+                add({"line": where.tb_lineno, "locals": _visible(where.tb_frame.f_locals), "stack": stack,
+                     "note": "Line " + str(where.tb_lineno) + " raised " + result["error"]["summary"]})
+            else:
+                add({"line": frames[-1]["line"], "locals": frames[-1]["locals"], "stack": frames[-1]["stack"],
+                     "note": "The program raised " + result["error"]["summary"]})
+    except Exception:
+        pass
     result["trace"] = {"frames": frames, "truncated": state["truncated"], "limit": max_frames, "outputCut": out.cut}
     return result
 

@@ -270,3 +270,12 @@ def test_async_pauses_are_not_shown_as_values():
     notes = [x["note"] for x in r["trace"]["frames"]]
     assert r["ok"] and "".join(x.get("output", "") for x in r["trace"]["frames"]) == "[0, 1]\n"
     assert "ticks pauses." in notes and not any("wrapped" in n or "object>" in n for n in notes)
+
+
+def test_non_string_names_in_the_namespace_are_skipped():
+    import sys
+    code = "globals()[1] = 'odd'\nx = 2\nprint(x)\n"
+    r = frames(code)
+    assert r["ok"] and r["trace"]["frames"][-1]["locals"] == {"x": "2"}
+    assert "".join(x.get("output", "") for x in r["trace"]["frames"]) == "2\n"
+    assert sys.gettrace() is None and harness.run_learner("y = 1\n")["ok"]  # restored, and the next run is ordinary
