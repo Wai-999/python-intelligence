@@ -310,6 +310,10 @@ class _Tee:
                 self.cut = True
         return self.inner.write(text)
 
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
     def take(self):
         text = "".join(self.parts)
         self.parts.clear()

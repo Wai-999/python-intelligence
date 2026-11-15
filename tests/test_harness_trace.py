@@ -242,3 +242,9 @@ def test_showing_a_large_collection_copies_only_what_it_shows():
     finally:
         tracemalloc.stop()
     assert peak < 200_000, peak  # a full copy of the list alone would be about 8 MB
+
+
+def test_print_write_and_writelines_all_reach_the_trace():
+    code = "import sys\nprint('a')\nsys.stdout.write('b\\n')\nsys.stdout.writelines(['c', 'd\\n'])\nprint('e', end='')\n"
+    f = frames(code)["trace"]["frames"]
+    assert "".join(x.get("output", "") for x in f) == "a\nb\ncd\ne"
